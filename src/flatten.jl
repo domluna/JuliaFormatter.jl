@@ -20,20 +20,17 @@ mutable struct EditTree{T<:CSTParser.AbstractEXPR}
     # Flag to note if a CSTParser.Block should be
     # on a single line.
     single_line::Bool
-    len::Int
 end
 
 function EditTree{T}(edits, single_line=false) where {T}
     l1 = minimum(map(e -> e.startline, edits))
     l2 = maximum(map(e -> e.endline, edits))
-    len = sum(length.(edits))
-    EditTree{T}(l1, l2, edits, single_line, len)
+    EditTree{T}(l1, l2, edits, single_line)
 end
 
 function merge(s::String, t::EditTree)
     @assert length(t.edits) > 0
     e = Edit{CSTParser.LITERAL}(t.edits[1].startline, t.edits[1].endline, s)
-    t.len += length(e)
     insert!(t.edits, 1, e)
     return t
 end
@@ -41,11 +38,10 @@ end
 function merge(t::EditTree, s::String)
     @assert length(t.edits) > 0
     e = Edit{CSTParser.LITERAL}(t.edits[end].startline, t.edits[end].endline, s)
-    t.len += length(e)
     push!(t.edits, e)
     return t
 end
-Base.length(t::EditTree) = t.len
+Base.length(t::EditTree) = length(t.edits)
 
 #= function Base.push!(t::EditTree, e::Union{EditTree,Edit}) =#
 #=     e.startline < t.startline && (t.startline = e.startline) =#
@@ -247,8 +243,8 @@ end
 
 # TODO: Block and/or If nodes causing trouble
 function flatten(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line=false)
-    sl = !ignore_single_line ? cursor_loc(s)[1] == cursor_loc(s, s.offset+x.span-1)[1] : false
-    #= @info "SINGLE LINE", sl =#
+    single_line = ignore_single_line ? false : cursor_loc(s)[1] == cursor_loc(s, s.offset+x.span-1)[1] 
+    @info "BLOCK" single_line x.args
 
     edits = Union{Edit, EditTree}[]
     for (i, a) in enumerate(x)
@@ -258,23 +254,28 @@ function flatten(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_lin
         elseif CSTParser.is_comma(a) && i != length(x)
             e = merge(e, " ")
             push!(edits, e)
-        elseif sl
-            if i == 1 ||CSTParser.is_comma(x.args[i-1])
+        elseif single_line
+            if i == 1 || CSTParser.is_comma(x.args[i-1])
                 push!(edits, e)
             else
                 e = merge(e, "; ")
                 push!(edits, e)
             end
         else
-            #= end =#
-            e = merge(e, "\n")
+            @info "" i length(x) typeof(e) e a
+            # Corner case
+            if typeof(e) !== EditTree{CSTParser.EXPR{CSTParser.If}}
+                e = merge(e, "\n")
+            end
             push!(edits, e)
         end
     end
+
     if length(edits) == 0
         loc = cursor_loc(s)
         push!(edits, Edit{CSTParser.LITERAL}(loc[1], loc[1], ""))
     end
+
     return EditTree{typeof(x)}(edits)
 end
 
@@ -515,25 +516,29 @@ function flatten(x::CSTParser.EXPR{CSTParser.If}, s::State)
 
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.IF
         push!(edits, merge(flatten(x.args[2], s), "\n"))
+        #= push!(edits, flatten(x.args[2], s)) =#
         push!(edits, flatten(x.args[3], s; ignore_single_line=true))
-        push!(edits, flatten(x.args[4], s))
+        #= push!(edits, flatten(x.args[4], s)) =#
         if length(x.args) > 4
             # this either else or elseif
+            push!(edits, flatten(x.args[4], s))
             if x.args[4].kind == Tokens.ELSEIF
-                push!(edits, flatten(x.args[5], s))
+                push!(edits, merge(flatten(x.args[5], s), "\n"))
             else
+                push!(edits, flatten(x.args[4], s))
                 push!(edits, flatten(x.args[5], s; ignore_single_line=true))
             end
             # END
             push!(edits, flatten(x.args[6], s))
         end
     else
+        # EXPR{Block}
         push!(edits, flatten(x.args[2], s; ignore_single_line=true))
         if length(x.args) > 2
-            push!(edits, flatten(x.args[3], s))
             # this either else or elseif
+            push!(edits, flatten(x.args[3], s))
             if x.args[3].kind == Tokens.ELSEIF
-                push!(edits, flatten(x.args[4], s))
+                push!(edits, merge("\n", flatten(x.args[4], s), "\n"))
             else
                 push!(edits, flatten(x.args[4], s; ignore_single_line=true))
             end

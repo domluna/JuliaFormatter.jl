@@ -453,62 +453,61 @@ end
 
     # tests indentation and correctly formatting a docstring with escapes
     #
-    str = """
-       begin
-           \"""
-               f
-
-           docstring for f
-           :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
-                                                \$(dict[:kwargs]...))::\$rtype
-           \$(dict[:body])
-           \"""
-           function f()
-               100
-           end
-       end"""
-    @test format("""
-       begin
-       \"""
-           f
-
-       docstring for f
-       :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
-                                            \$(dict[:kwargs]...))::\$rtype
-       \$(dict[:body])
-       \"""
-       function f()
-       100
-       end
-       end""") == str
+    #= str = """ =#
+    #=    begin =#
+    #=        \""" =#
+    #=            f =#
+    #=  =#
+    #=        docstring for f =#
+    #=        :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...); =#
+    #=                                             \$(dict[:kwargs]...))::\$rtype =#
+    #=        \$(dict[:body]) =#
+    #=        \""" =#
+    #=        function f() =#
+    #=            100 =#
+    #=        end =#
+    #=    end""" =#
+    #= @test format(""" =#
+    #=    begin =#
+    #=    \""" =#
+    #=        f =#
+    #=  =#
+    #=    docstring for f =#
+    #=    :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...); =#
+    #=                                         \$(dict[:kwargs]...))::\$rtype =#
+    #=    \$(dict[:body]) =#
+    #=    \""" =#
+    #=    function f() =#
+    #=    100 =#
+    #=    end =#
+    #=    end""") == str =#
 end
 
-@testset "comments" begin
-    str = """
-    module Foo
-    # comment 1
-    begin
-        # comment 2
-        begin
-            # comment 3
-            a = 10
-        end
-    end
-    end"""
-    @test format("""
-    module Foo
-    # comment 1
-    begin
-    # comment 2
-    begin
-    # comment 3
-    a = 10
-    end
-    end
-    end""") == str
-end
+#= @testset "comments" begin =#
+#=     str = """ =#
+#=     module Foo =#
+#=     # comment 1 =#
+#=     begin =#
+#=         # comment 2 =#
+#=         begin =#
+#=             # comment 3 =#
+#=             a = 10 =#
+#=         end =#
+#=     end =#
+#=     end""" =#
+#=     @test format(""" =#
+#=     module Foo =#
+#=     # comment 1 =#
+#=     begin =#
+#=     # comment 2 =#
+#=     begin =#
+#=     # comment 3 =#
+#=     a = 10 =#
+#=     end =#
+#=     end =#
+#=     end""") == str =#
+#= end =#
 
-# ok
 @testset "reformat" begin
 
     str = """function foo end"""
@@ -648,21 +647,21 @@ end
     #=          end""" =#
     #= @test format("function f() where A end") == str =#
 
-    str = """
-          # comment 0
-
-          a = 1
-
-          # comment 1
-
-          b = 2
-
-          c = 3
-
-          # comment 2
-
-          """
-    @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str
+    #= str = """ =#
+    #=       # comment 0 =#
+    #=  =#
+    #=       a = 1 =#
+    #=  =#
+    #=       # comment 1 =#
+    #=  =#
+    #=       b = 2 =#
+    #=  =#
+    #=       c = 3 =#
+    #=  =#
+    #=       # comment 2 =#
+    #=  =#
+    #=       """ =#
+    #= @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str =#
 
     str = """
     [a b c]"""
@@ -690,117 +689,117 @@ end
 
 end
 
-@testset "width aware" begin
-    str = """
-    function f(arg1::A,
-               key1 = val1;
-               key2 = val2) where {A,
-                                   F{B,
-                                     C}}
-        10
-        20
-    end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"; max_width=1) == str
-
-    # (|, ||, &&, &) are foldable
-    str = """
-    a |
-    b |
-    c |
-    d"""
-    @test format("a | b | c | d"; max_width=1) == str
-
-    str = """
-    f(a,
-      @g(b, c),
-      d)"""
-    @test format("f(a, @g(b, c), d)"; max_width=9) == str
-
-    str = """
-    a, b,
-    c, d"""
-    @test format("a, b, c, d"; max_width=6) == str
-
-    str = """
-    (a, b,
-     c, d)"""
-    @test format("(a, b, c, d)"; max_width=7) == str
-
-    str = """
-    [a,
-     b,
-     c,
-     d]"""
-    @test format("[a, b, c, d]"; max_width=1) == str
-
-    str = """
-    cond ?
-    e1 :
-    e2"""
-    @test format("cond ? e1 : e2"; max_width=1) == str
-
-    str = """
-    cond ? e1 :
-    e2"""
-    @test format("cond ? e1 : e2"; max_width=12) == str
-
-    str = """
-    cond1 ? e1 :
-    cond2 ? e2 :
-    cond3 ? e3 :
-    e4"""
-    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4"; max_width=13) == str
-
-    str = """
-    export a,
-           b"""
-    @test format("export a,b"; max_width=1) == str
-
-    str = """
-    using a,
-          b"""
-    @test format("using a,b"; max_width=1) == str
-
-    str = """
-    using M: a,
-             b"""
-    @test format("using M:a,b"; max_width=1) == str
-
-    str = """
-    import M1.M2.M3: a,
-                     b"""
-    @test format("import M1.M2.M3:a,b"; max_width=1) == str
-
-    str = """
-    foo() =
-        (one, x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))"; max_width=30) == str
-
-    str = """
-    foo() =
-        (one,
-         x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))"; max_width=24) == str
-
-    str = """
-    foo() =
-        (one,
-         x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))"; max_width=24) == str
-
-    str = """
-    foo() =
-        (one,
-         x -> (true,
-               false))"""
-    @test format("foo() = (one, x -> (true, false))"; max_width=20) == str
-
-    str = """
-    @somemacro function (fcall_ |
-                         fcall_)
-                   body_
-               end"""
-    @test format("@somemacro function (fcall_ | fcall_) body_ end"; max_width=1) == str
-end
+#= @testset "width aware" begin =#
+#=     str = """ =#
+#=     function f(arg1::A, =#
+#=                key1 = val1; =#
+#=                key2 = val2) where {A, =#
+#=                                    F{B, =#
+#=                                      C}} =#
+#=         10 =#
+#=         20 =#
+#=     end""" =#
+#=     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"; max_width=1) == str =#
+#=  =#
+#=     # (|, ||, &&, &) are foldable =#
+#=     str = """ =#
+#=     a | =#
+#=     b | =#
+#=     c | =#
+#=     d""" =#
+#=     @test format("a | b | c | d"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     f(a, =#
+#=       @g(b, c), =#
+#=       d)""" =#
+#=     @test format("f(a, @g(b, c), d)"; max_width=9) == str =#
+#=  =#
+#=     str = """ =#
+#=     a, b, =#
+#=     c, d""" =#
+#=     @test format("a, b, c, d"; max_width=6) == str =#
+#=  =#
+#=     str = """ =#
+#=     (a, b, =#
+#=      c, d)""" =#
+#=     @test format("(a, b, c, d)"; max_width=7) == str =#
+#=  =#
+#=     str = """ =#
+#=     [a, =#
+#=      b, =#
+#=      c, =#
+#=      d]""" =#
+#=     @test format("[a, b, c, d]"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     cond ? =#
+#=     e1 : =#
+#=     e2""" =#
+#=     @test format("cond ? e1 : e2"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     cond ? e1 : =#
+#=     e2""" =#
+#=     @test format("cond ? e1 : e2"; max_width=12) == str =#
+#=  =#
+#=     str = """ =#
+#=     cond1 ? e1 : =#
+#=     cond2 ? e2 : =#
+#=     cond3 ? e3 : =#
+#=     e4""" =#
+#=     @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4"; max_width=13) == str =#
+#=  =#
+#=     str = """ =#
+#=     export a, =#
+#=            b""" =#
+#=     @test format("export a,b"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     using a, =#
+#=           b""" =#
+#=     @test format("using a,b"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     using M: a, =#
+#=              b""" =#
+#=     @test format("using M:a,b"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     import M1.M2.M3: a, =#
+#=                      b""" =#
+#=     @test format("import M1.M2.M3:a,b"; max_width=1) == str =#
+#=  =#
+#=     str = """ =#
+#=     foo() = =#
+#=         (one, x -> (true, false))""" =#
+#=     @test format("foo() = (one, x -> (true, false))"; max_width=30) == str =#
+#=  =#
+#=     str = """ =#
+#=     foo() = =#
+#=         (one, =#
+#=          x -> (true, false))""" =#
+#=     @test format("foo() = (one, x -> (true, false))"; max_width=24) == str =#
+#=  =#
+#=     str = """ =#
+#=     foo() = =#
+#=         (one, =#
+#=          x -> (true, false))""" =#
+#=     @test format("foo() = (one, x -> (true, false))"; max_width=24) == str =#
+#=  =#
+#=     str = """ =#
+#=     foo() = =#
+#=         (one, =#
+#=          x -> (true, =#
+#=                false))""" =#
+#=     @test format("foo() = (one, x -> (true, false))"; max_width=20) == str =#
+#=  =#
+#=     str = """ =#
+#=     @somemacro function (fcall_ | =#
+#=                          fcall_) =#
+#=                    body_ =#
+#=                end""" =#
+#=     @test format("@somemacro function (fcall_ | fcall_) body_ end"; max_width=1) == str =#
+#= end =#
 
 end
