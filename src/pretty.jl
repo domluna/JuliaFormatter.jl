@@ -117,7 +117,7 @@ function pretty(x::CSTParser.KEYWORD, s::State)
         x.kind == Tokens.GLOBAL ? "global " :
         x.kind == Tokens.IMPORT ? "import " :
         x.kind == Tokens.IMPORTALL ? "importall " :
-        x.kind == Tokens.LET ? "let " :
+        x.kind == Tokens.LET ? "let" :
         x.kind == Tokens.LOCAL ? "local " :
         x.kind == Tokens.MACRO ? "macro " :
         x.kind == Tokens.MODULE ? "module " :
@@ -450,6 +450,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if length(x.args) > 3
+        add_node!(t, Whitespace, join_lines=true)
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
         add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
