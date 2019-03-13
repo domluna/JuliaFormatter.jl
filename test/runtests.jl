@@ -617,17 +617,22 @@ end
              end"""
     @test format("if cond1 e1;e2 else e3;e4 end") == str
 
-    str = """if cond1
-                 e1
-                 e2
-             elseif cond2
-                 e3
-                 e4
-             else
-                 e5
-                 e6
+    str = """begin
+                 if cond1
+                     e1
+                     e2
+                 elseif cond2
+                     e3
+                     e4
+                 elseif cond3
+                     e5
+                     e6
+                 else
+                     e7
+                     e8
+                 end
              end"""
-    @test format("if cond1 e1; e2 elseif cond2 e3; e4 else e5;e6 end") == str
+             @test format("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end") == str
 
     str = """if cond1
                  e1

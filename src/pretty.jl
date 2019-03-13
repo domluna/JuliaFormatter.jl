@@ -16,9 +16,6 @@
 # indent 0
 # nodes [KEYWORD, CALL 0, BLOCK 4, KEYWORD]
 # 
-struct Edit 
-end
-
 
 struct PLeaf{T<:CSTParser.LeafNode}
     startline::Int
@@ -110,7 +107,7 @@ function pretty(x::CSTParser.KEYWORD, s::State)
         x.kind == Tokens.CONTINUE ? "continue" :
         x.kind == Tokens.DO ? " do " :
         x.kind == Tokens.IF ? "if " :
-        x.kind == Tokens.ELSEIF ? "elseif " :
+        x.kind == Tokens.ELSEIF ? "elseif" :
         x.kind == Tokens.ELSE ? "else" :
         x.kind == Tokens.END ? "end" :
         x.kind == Tokens.EXPORT ? "export " :
@@ -130,8 +127,8 @@ function pretty(x::CSTParser.KEYWORD, s::State)
         x.kind == Tokens.QUOTE ? "quote" :
         x.kind == Tokens.RETURN ? "return" :
         x.kind == Tokens.STRUCT ? "struct " :
-        x.kind == Tokens.TRY ? "try" :
         x.kind == Tokens.TYPE ? "type " :
+        x.kind == Tokens.TRY ? "try" :
         x.kind == Tokens.USING ? "using " :
         x.kind == Tokens.WHILE ? "while " : ""
     s.offset += x.fullspan
@@ -458,7 +455,6 @@ function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
         add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
         s.indents -= 1
     else
-        # TODO: revisit, the indentation is tricky here
         s.indents += 1
         add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
         s.indents -= 1
@@ -467,6 +463,10 @@ function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
     t
 end
 
+# TODO: See if we can change .If in CSTParser to either
+# 1) 4 element struct i.e. "if cond block end"
+# 2) 6 element struct i.e. "if cond block1 else block2 end"
+# 3) n element struct, same as 1) or 2) but with elseif
 function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
@@ -479,6 +479,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
         if length(x.args) > 4
             s.indents += 1
             if x.args[4].kind == Tokens.ELSEIF
+                add_node!(t, Whitespace, join_lines=true)
                 add_node!(t, pretty(x.args[5], s), join_lines=true)
             else
                 add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
@@ -496,6 +497,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
 
             # this either else or elseif
             if x.args[3].kind == Tokens.ELSEIF
+                add_node!(t, Whitespace, join_lines=true)
                 add_node!(t, pretty(x.args[4], s), join_lines=true)
             else
                 add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
