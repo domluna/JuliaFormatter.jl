@@ -35,7 +35,10 @@ Whitespace = PLeaf{CSTParser.LITERAL}(-1, -1, " ")
 
 is_nl(_) = false
 is_nl(x::PLeaf{CSTParser.LITERAL}) = x === Newline
+is_comma(_) = false
 is_comma(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == ","
+is_empty_space(_) = false
+is_empty_space(x::PLeaf{CSTParser.LITERAL}) = x.text == ""
 
 mutable struct PTree{T<:CSTParser.AbstractEXPR}
     startline::Int
@@ -46,6 +49,7 @@ end
 PTree(::T, indent::Int) where T = PTree{T}(-1, -1, indent, Union{PTree,PLeaf}[])
 
 function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
+    is_empty_space(node) && (return nothing)
     if length(x.nodes) == 0
         x.startline = node.startline
         x.endline = node.endline
@@ -64,98 +68,11 @@ function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     return nothing
 end
 
-"""
-Returns an Edit, a prettified text representation of x
-along with the lines containing x in the original file.
-
-`a`
-
-# comments
-# ...
-
-`b`
-"""
-function merge(a::Edit, b::Edit, s::State; join_lines=false, indent=-1)
-    if (a.startline == b.startline || a.endline == b.endline) && indent == -1
-        return Edit(a.startline, b.endline, a.text * b.text)
-    elseif a.text == ""
-        return b
-    elseif b.text == "" && b.startline != length(s.doc.ranges)
-        return a
-    end
-
-    # default to current indentation state
-    ws = repeat(" ", indent == -1 ? s.indents * s.indent_width : indent)
-
-    text = ""
-    if a.text[end] != '\n' && !join_lines
-        text *= rstrip(a.text, ' ') * "\n" * ws
-    elseif a.text[end] == '\n'
-        text *= a.text * ws
-    else
-        text *= a.text
-    end
-
-    # TODO: try moving comments prior to the initial
-    # text if the lines are being joined
-    #
-    # comments shouldn't be in between joinable lines anyway :(
-    
-    comment_text = ""
-    #= if !join_lines =#
-    #=     comment_range = a.endline+1:b.startline-1 =#
-    #=     for (i, l) in enumerate(comment_range) =#
-    #=         v = s.doc.text[s.doc.ranges[l]] =#
-    #=  =#
-    #=         @info l, v =#
-    #=  =#
-    #=         # remove extra newlines =#
-    #=         if i < length(comment_range) && v == "\n" =#
-    #=             vn = s.doc.text[s.doc.ranges[l+1]] =#
-    #=             v == vn && (continue) =#
-    #=         end =#
-    #=  =#
-    #=         v == "\n" && (comment_text = rstrip(comment_text, ' ') * v * ws; continue) =#
-    #=  =#
-    #=         i = first(findfirst(x -> !isspace(x), v)) =#
-    #=         if v[i] == '#' =#
-    #=             comment_text *= v[i:end] * ws =#
-    #=         else =#
-    #=             # This captures the possible additional indentation in a docstring =#
-    #=             i = max(min(i, s.indents-1 * s.indent_width), 1) =#
-    #=             comment_text *= v[i:end] * ws =#
-    #=         end =#
-    #=     end =#
-    #= end =#
-    text *= comment_text * b.text
-    Edit(a.startline, b.endline, text)
-end
-
-# Determines whether the Edit `e` should be nested.
-function should_nest(e::Edit, line_offset::Int, indent::Int, max_width::Int)
-    #= line_offset + length(e) > max_width && indent + length(e) < max_width =#
-    line_offset + length(e) > max_width
-end
-
-function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    #= CSTParser.precedence(x.op) in (4, 5, 7, 9, 11) && (return true) =#
-    #= CSTParser.precedence(x.op) in (4, 5, 7, 9, 11) && (return true) =#
-    x.op.kind == Tokens.EQ && CSTParser.defines_function(x) && (return true)
-    x.op.kind == Tokens.LAZY_OR && (return true)
-    x.op.kind == Tokens.LAZY_AND && (return true)
-    x.op.kind == Tokens.OR && (return true)
-    x.op.kind == Tokens.AND && (return true)
-    false
-    #= x.op.kind == Tokens.ANON_FUNC && (return false) =#
-    #= CSTParser.precedence(x.op) == 6 && (return false) =#
-    #= CSTParser.issyntaxcall(x.op) && (return false) =#
-    #= true =#
-end
-
 function pretty(x::Union{Vector,CSTParser.AbstractEXPR}, s::State)
     t = PTree(x, nspaces(s))
     for a in x
-        add_node!(t, pretty(a, s), join_lines=true)
+        n = pretty(a, s)
+        add_node!(t, n, join_lines=true)
     end
     t
 end
@@ -268,7 +185,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     # Docstring
     t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.EXPR{CSTParser.GlobalRefDoc}
-        add_node!(t, pretty(x.args[1], s))
+        # This doesn't actually have a value
+        pretty(x.args[1], s)
+        #= add_node!(t, pretty(x.args[1], s)) =#
 
         offset = s.offset
         loc1 = cursor_loc(s)
@@ -283,8 +202,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
         quote_len = starts_tq ? 3 : 1
         #= @info "STARTS WITH TRIPLE QUOTES", starts_tq =#
 
-        #= e = Edit(loc1[1], loc1[1], tq) =#
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc1[1], loc1[1], tq))
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc1[1], loc1[1], tq), join_lines=true)
 
         if loc1[3] - loc1[2] > quote_len
             sidx = starts_tq ? offset + 3 : offset + 1
@@ -299,8 +217,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
                 #= @info "H2", v =#
             end
             #= e = merge(e, Edit(loc1[1], loc1[1], "\n" * ws * v), s) =#
-            add_node!(t, Newline)
-            add_node!(t, PLeaf{CSTParser.LITERAL}{loc1[1], loc1[1], v})
+            add_node!(t, PLeaf{CSTParser.LITERAL}(loc1[1], loc1[1], v))
         end
 
         offset = s.offset
@@ -313,7 +230,6 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
             if v  != ""
                 #= e = merge(e, Edit(loc2[1], loc2[1], v * "\n" * ws * tq), s) =#
                 add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], v))
-                add_node!(t, Newline)
                 add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], tq))
             else
                 #= e = merge(e, Edit(loc2[1], loc2[1], tq), s) =#
@@ -364,17 +280,17 @@ function pretty(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i < length(x) && CSTParser.is_comma(a) && x.args[i+1] isa CSTParser.PUNCTUATION
-            add_node!(t, n)
+            add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a) && i != length(x)
-            add_node!(t, n)
-            add_node!(t, Whitespace)
+            add_node!(t, n, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         elseif single_line
-            if i == 1 ||CSTParser.is_comma(x.args[i-1])
-                add_node!(t, n)
+            if i == 1 || CSTParser.is_comma(x.args[i-1])
+                add_node!(t, n, join_lines=true)
             else
-                add_node!(t, n)
-                add_node!(t, Semicolon)
-                add_node!(t, Whitespace)
+                add_node!(t, n, join_lines=true)
+                add_node!(t, Semicolon, join_lines=true)
+                add_node!(t, Whitespace, join_lines=true)
             end
         else
             add_node!(t, n)
@@ -405,7 +321,6 @@ function pretty(x::CSTParser.EXPR{CSTParser.FunctionDef}, s::State)
     else
         # function stub, i.e. "function foo end"
         # this should be on one line
-        e = merge(e, " " * pretty(x.args[3], s), s, join_lines=true)
         add_node!(t, Whitespace, join_lines=true)
         add_node!(t, pretty(x.args[3], s), join_lines=true)
     end
@@ -426,8 +341,8 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Mutable}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, pretty(x.args[2], s, join_lines=true))
-    add_node!(t, pretty(x.args[3], s, join_lines=true))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, pretty(x.args[3], s), join_lines=true)
     s.indents += 1
     add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
     s.indents -= 1
@@ -491,7 +406,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.ModuleH}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, pretty(x.args[2], s), join_lines=true)
-    add_node!(t, pretty(x.args[3], s))
+    if x.args[3].fullspan != 0
+        add_node!(t, pretty(x.args[3], s))
+    end
     add_node!(t, pretty(x.args[4], s))
     t
 end
@@ -501,6 +418,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Return}, s::State)
     add_node!(t, pretty(x.args[1], s))
     if x.args[2].fullspan != 0
         for a in x.args[2:end]
+            add_node!(t, Whitespace, join_lines=true)
             add_node!(t, pretty(a, s), join_lines=true)
         end
     end
@@ -533,7 +451,7 @@ end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
     t = PTree(x, nspaces(s))
-    e = pretty(x.args[1], s)
+    add_node!(t, pretty(x.args[1], s))
     if length(x.args) > 3
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
