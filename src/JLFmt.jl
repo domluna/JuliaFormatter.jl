@@ -19,14 +19,14 @@ module JLFmt
 # a CST but with prettified text instead of a CST node.
 # 2) Indent pass
 # 3) Comment pass
-# 3) Profit (jk no money in OSS)
+# 4) Profit (jk no money in OSS)
 #
 # ## Prettify pass
 #
-# At this stage just output the prettified version of the CST node. Don't worry about proper
-# indentation/nesting.
+# At this stage just output the prettified version of the CST node. The indentation (without nesting)
+# should be known.
 #
-# ## Indent pass
+# ## Width-sensitive pass
 #
 # Indent based on indent width multiplier and desired maximum width.
 #
@@ -39,21 +39,6 @@ using CSTParser
 import CSTParser.Tokenize.Tokens
 
 export format
-
-struct Document
-    text::AbstractString
-    ranges::Vector{UnitRange{Int}}
-end
-
-mutable struct State
-    indent_width::Int
-    max_width::Int
-    indents::Int
-    offset::Int
-    # 0 indicates the start of the line
-    line_offset::Int
-    doc::Document
-end
 
 function newline_ranges(text::String)
     ranges = UnitRange{Int}[]
@@ -83,47 +68,52 @@ function newline_ranges(text::String)
     ranges
 end
 
-function cursor_loc(s::State, offset::Int)
+struct Document
+    text::String
+    ranges::Vector{UnitRange{Int}}
+end
+Document(s::String) = Document(s, newline_ranges(s))
+
+
+mutable struct State
+    indent_width::Int
+    max_width::Int
+    indents::Int
+    offset::Int
+    doc::Document
+end
+
+@inline nspaces(s::State) = s.indent_width * s.indents
+
+@inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
         if offset in r
             return (l, offset - first(r) + 1, length(r))
         end
     end
-    error("indexing range 1 - $(last(s.doc.ranges[end])), index used = $(offset)")
+    error("Indexing range 1 - $(last(s.doc.ranges[end])), index used = $(offset)")
 end
-cursor_loc(s::State) = cursor_loc(s, s.offset)
-
-const Indent = Union{Int, Nothing}
+@inline cursor_loc(s::State) = cursor_loc(s, s.offset)
 
 include("pretty.jl")
-#= include("flatten.jl") =#
+include("nest.jl")
+include("print.jl")
 
-#= function format(text::String; indent_width=4, max_width=80) =#
-#=     d = Document(text, newline_ranges(text)) =#
-#=     s = State(indent_width, max_width, 0, 1, 0, d) =#
-#=     x = CSTParser.parse(text, true) =#
-#=     edits = flatten(x, s) =#
-#=     #= @info "" edits =# =#
-#=     #= return edits =# =#
-#=     io = IOBuffer() =#
-#=     print_tree(io, edits) =#
-#=     #= comments = gather_comments(s, edits.endline+1, length(s.doc.ranges)-1) =# =#
-#=     #= write(io, comments) =# =#
-#=     return String(take!(io)) =#
-#= end =#
-
-function format(text::AbstractString; indent_width=4, max_width=80)
-    d = Document(text, newline_ranges(text))
-    s = State(indent_width, max_width, 0, 1, 0, d)
+function format(text::String; indent_width=4, max_width=80)
+    d = Document(text)
+    s = State(indent_width, max_width, 0, 1, d)
     x = CSTParser.parse(text, true)
-    e = pretty(x, s)::Edit
-    if e.startline != 1
-        e = merge_edits(Edit(1, 1, d.text[d.ranges[1]]), e, s)
-    end
-    if e.endline != length(d.ranges)
-        e = merge_edits(e, Edit(length(d.ranges), length(d.ranges), text[d.ranges[end]]), s)
-    end
-    e.text
+    tree = pretty(x, s)
+    @info "" tree
+    io = IOBuffer()
+    print_tree(io, tree)
+    #= if e.startline != 1 =#
+    #=     e = merge(Edit(1, 1, d.text[d.ranges[1]]), e, s) =#
+    #= end =#
+    #= if e.endline != length(d.ranges) =#
+    #=     e = merge(e, Edit(length(d.ranges), length(d.ranges), text[d.ranges[end]]), s) =#
+    #= end =#
+    return String(take!(io))
 end
 
 end # module

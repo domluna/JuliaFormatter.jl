@@ -1,13 +1,68 @@
+# TODO: Return a tree instead of a string
+#
+# Only indent after newline
+#
+# module A
+#
+# function f(a, b, c)
+#     e1
+#     e2
+# end
+#
+# end
+# 
+# function f will have 4 nodes
+#
+# indent 0
+# nodes [KEYWORD, CALL 0, BLOCK 4, KEYWORD]
+# 
+struct Edit 
+end
 
-struct Edit
+
+struct PLeaf{T<:CSTParser.LeafNode}
     startline::Int
     endline::Int
-    text::AbstractString
-    #= text::IOBuffer =#
+    text::String
 end
-#= Base.length(e::Edit) = e.text.size =#
-Base.length(e::Edit) = length(e.text)
+PLeaf(::T, startline::Int, endline::Int, text::String) where T = PLeaf{T}(startline, endline, text)
+is_leaf(_) = false
+is_leaf(::PLeaf) = true
 
+Newline = PLeaf{CSTParser.LITERAL}(-1, -1, "\n")
+Semicolon = PLeaf{CSTParser.PUNCTUATION}(-1, -1, ";")
+Whitespace = PLeaf{CSTParser.LITERAL}(-1, -1, " ")
+
+is_nl(_) = false
+is_nl(x::PLeaf{CSTParser.LITERAL}) = x === Newline
+is_comma(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == ","
+
+mutable struct PTree{T<:CSTParser.AbstractEXPR}
+    startline::Int
+    endline::Int
+    indent::Int
+    nodes::Vector{Union{PTree,PLeaf}}
+end
+PTree(::T, indent::Int) where T = PTree{T}(-1, -1, indent, Union{PTree,PLeaf}[])
+
+function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
+    if length(x.nodes) == 0
+        x.startline = node.startline
+        x.endline = node.endline
+        push!(x.nodes, node)
+        return nothing
+    end
+
+    # add newline leaf node
+    if !is_nl(x.nodes[end]) && !join_lines
+        push!(x.nodes, Newline)
+    end
+
+    node.startline < x.startline || x.startline == -1 && (x.startline = node.startline)
+    node.endline > x.endline || x.endline == -1 && (x.endline = node.endline)
+    push!(x.nodes, node)
+    return nothing
+end
 
 """
 Returns an Edit, a prettified text representation of x
@@ -20,9 +75,8 @@ along with the lines containing x in the original file.
 
 `b`
 """
-function merge_edits(a::Edit, b::Edit, s::State; join_lines=false, indent::Indent=nothing)
-
-    if (a.startline == b.startline || a.endline == b.endline) && indent == nothing
+function merge(a::Edit, b::Edit, s::State; join_lines=false, indent=-1)
+    if (a.startline == b.startline || a.endline == b.endline) && indent == -1
         return Edit(a.startline, b.endline, a.text * b.text)
     elseif a.text == ""
         return b
@@ -31,16 +85,13 @@ function merge_edits(a::Edit, b::Edit, s::State; join_lines=false, indent::Inden
     end
 
     # default to current indentation state
-    w = repeat(" ", indent == nothing ? s.indents * s.indent_width : indent)
+    ws = repeat(" ", indent == -1 ? s.indents * s.indent_width : indent)
 
     text = ""
-
     if a.text[end] != '\n' && !join_lines
-        text *= rstrip(a.text, ' ') * "\n" * w
-        s.line_offset = length(w)
+        text *= rstrip(a.text, ' ') * "\n" * ws
     elseif a.text[end] == '\n'
-        text *= a.text * w
-        s.line_offset = length(w)
+        text *= a.text * ws
     else
         text *= a.text
     end
@@ -64,31 +115,21 @@ function merge_edits(a::Edit, b::Edit, s::State; join_lines=false, indent::Inden
     #=             v == vn && (continue) =#
     #=         end =#
     #=  =#
-    #=         v == "\n" && (comment_text = rstrip(comment_text, ' ') * v * w; continue) =#
+    #=         v == "\n" && (comment_text = rstrip(comment_text, ' ') * v * ws; continue) =#
     #=  =#
     #=         i = first(findfirst(x -> !isspace(x), v)) =#
     #=         if v[i] == '#' =#
-    #=             comment_text *= v[i:end] * w =#
+    #=             comment_text *= v[i:end] * ws =#
     #=         else =#
     #=             # This captures the possible additional indentation in a docstring =#
     #=             i = max(min(i, s.indents-1 * s.indent_width), 1) =#
-    #=             comment_text *= v[i:end] * w =#
+    #=             comment_text *= v[i:end] * ws =#
     #=         end =#
     #=     end =#
     #= end =#
     text *= comment_text * b.text
     Edit(a.startline, b.endline, text)
 end
-
-function merge_edits(a::AbstractString, b::AbstractString, s::State; kwargs...)
-    l, _, _ = cursor_loc(s)
-    merge_edits(Edit(l, l, a), Edit(l, l, b), s; kwargs...)
-end
-
-Base.:*(a::Edit, b::AbstractString) = Edit(a.startline, a.endline, a.text * b)
-Base.:*(a::AbstractString, b::Edit) = Edit(b.startline, b.endline, a * b.text)
-merge_edits(a::Edit, b::AbstractString, s::State; kwargs...) = merge_edits(a, Edit(a.startline, a.endline, b), s; kwargs...)
-merge_edits(a::AbstractString, b::Edit, s::State; kwargs...) = merge_edits(Edit(b.startline, b.endline, a), b, s; kwargs...)
 
 # Determines whether the Edit `e` should be nested.
 function should_nest(e::Edit, line_offset::Int, indent::Int, max_width::Int)
@@ -111,49 +152,33 @@ function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.Binary
     #= true =#
 end
 
-function pretty(x::CSTParser.AbstractEXPR, s::State)
-    e = ""
+function pretty(x::Union{Vector,CSTParser.AbstractEXPR}, s::State)
+    t = PTree(x, nspaces(s))
     for a in x
-        ei = pretty(a, s)
-        (ei.text == "") && (continue)
-        e = merge_edits(e, ei, s, join_lines=true)
+        add_node!(t, pretty(a, s), join_lines=true)
     end
-    e
-end
-
-function pretty(x::Vector, s::State)
-    @info "Vector" s.line_offset length(x) x
-    e = ""
-    for a in x
-        ei = pretty(a, s)
-        (ei.text == "") && (continue)
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.FileH}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for a in x
-        e = merge_edits(e, pretty(a, s), s)
-        s.line_offset = s.indents * s.indent_width
+        add_node!(t, pretty(a, s))
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.IDENTIFIER, s::State)
     loc = cursor_loc(s)
     s.offset += x.fullspan
-    s.line_offset += length(x.val)
-    Edit(loc[1], loc[1], x.val)
+    PLeaf(x, loc[1], loc[1], x.val)
 end
 
 function pretty(x::CSTParser.OPERATOR, s::State)
     loc = cursor_loc(s)
     text = string(CSTParser.Expr(x))
     s.offset += x.fullspan
-    s.line_offset += length(text)
-    Edit(loc[1], loc[1], text)
+    PLeaf(x, loc[1], loc[1], text)
 end
 
 function pretty(x::CSTParser.KEYWORD, s::State)
@@ -193,8 +218,7 @@ function pretty(x::CSTParser.KEYWORD, s::State)
         x.kind == Tokens.USING ? "using " :
         x.kind == Tokens.WHILE ? "while " : ""
     s.offset += x.fullspan
-    s.line_offset += length(text)
-    Edit(loc[1], loc[1], text)
+    PLeaf(x, loc[1], loc[1], text)
 end
 
 function pretty(x::CSTParser.PUNCTUATION, s::State)
@@ -210,8 +234,7 @@ function pretty(x::CSTParser.PUNCTUATION, s::State)
         x.kind == Tokens.AT_SIGN ? "@" :
         x.kind == Tokens.DOT ? "." : ""
     s.offset += x.fullspan
-    s.line_offset += length(text)
-    Edit(loc[1], loc[1], text)
+    PLeaf(x, loc[1], loc[1], text)
 end
 
 # TODO: don't escape newlines in TRIPLE_STRING
@@ -222,28 +245,30 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true)
            x.kind == Tokens.STRING && surround_with_quotes ? "\"" * escape_string(x.val, "\$") * "\"" :
            x.val
     s.offset += x.fullspan
-    s.line_offset += length(text)
-    Edit(loc[1], loc[1], text)
+    PLeaf(x, loc[1], loc[1], text)
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
+    add_node!(t, PLeaf{CSTParser.LITERAL}(-1, -1, "\""))
     for a in x
         if a isa CSTParser.LITERAL
-            ei = pretty(a, s, surround_with_quotes=false)
-            a.val == "" && (continue)
-            e = merge_edits(e, ei, s)
+            n = pretty(a, s, surround_with_quotes=false)
+            n.text == "" && (continue)
+            add_node!(t, n)
         else
-            e = merge_edits(e, pretty(a, s), s)
+            add_node!(t, pretty(a, s))
         end
     end
-    Edit(e.startline, e.endline, "\"" * e.text * "\"")
+    add_node!(t, PLeaf{CSTParser.LITERAL}(-1, -1, "\""))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     # Docstring
+    t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.EXPR{CSTParser.GlobalRefDoc}
-        pretty(x.args[1], s)
+        add_node!(t, pretty(x.args[1], s))
 
         offset = s.offset
         loc1 = cursor_loc(s)
@@ -252,366 +277,351 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
         #= @info "DOC POSITION START", loc1 =#
         #= @info "DOC POSITION END", loc2 =#
 
+        #= ws = repeat(" ", nspaces(s)) =#
         tq = "\"\"\""
-        w = repeat(" ", s.indent_width * s.indents)
-        is_ts = startswith(s.doc.text[offset:offset+loc1[3]-loc1[2]], tq)
-        quote_len = is_ts ? 3 : 1
-        #= @info "STARTS WITH TRIPLE QUOTES", is_ts =#
+        starts_tq = startswith(s.doc.text[offset:offset+loc1[3]-loc1[2]], tq)
+        quote_len = starts_tq ? 3 : 1
+        #= @info "STARTS WITH TRIPLE QUOTES", starts_tq =#
 
-        e = Edit(loc1[1], loc1[1], tq)
+        #= e = Edit(loc1[1], loc1[1], tq) =#
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc1[1], loc1[1], tq))
 
         if loc1[3] - loc1[2] > quote_len
-            sidx = is_ts ? offset + 3 : offset + 1
+            sidx = starts_tq ? offset + 3 : offset + 1
             if loc1[1] == loc2[1]
-                eidx = is_ts ? offset+loc1[3]-loc1[2]-4 : offset+loc1[3]-loc1[2]-2
+                eidx = starts_tq ? offset+loc1[3]-loc1[2]-4 : offset+loc1[3]-loc1[2]-2
                 v = s.doc.text[sidx:eidx]
                 #= @info "H1", v =#
             else
-                #= eidx = is_ts ? o+loc1[3]-loc1[2]-1 : o+loc1[3]-loc1[2]-1 =#
+                #= eidx = starts_tq ? o+loc1[3]-loc1[2]-1 : o+loc1[3]-loc1[2]-1 =#
                 eidx = offset+loc1[3]-loc1[2]-1
                 v = s.doc.text[sidx:eidx]
                 #= @info "H2", v =#
             end
-            e = merge_edits(e, Edit(loc1[1], loc1[1], "\n" * w * v), s)
+            #= e = merge(e, Edit(loc1[1], loc1[1], "\n" * ws * v), s) =#
+            add_node!(t, Newline)
+            add_node!(t, PLeaf{CSTParser.LITERAL}{loc1[1], loc1[1], v})
         end
 
         offset = s.offset
         if loc1[1] == loc2[1]
-            e = merge_edits(e, Edit(loc2[1]+1, loc2[1]+1, tq), s)
+            #= e = merge(e, Edit(loc2[1]+1, loc2[1]+1, tq), s) =#
+            add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1]+1, loc2[1]+1, tq))
         elseif loc2[3] > quote_len + 1
-            v = strip(is_ts ? s.doc.text[offset-loc2[2]:offset-5] : s.doc.text[offset-loc2[2]:offset-3])
+            v = strip(starts_tq ? s.doc.text[offset-loc2[2]:offset-5] : s.doc.text[offset-loc2[2]:offset-3])
             #= @info "H3", v =#
             if v  != ""
-                e = merge_edits(e, Edit(loc2[1], loc2[1], v * "\n" * w * tq), s)
+                #= e = merge(e, Edit(loc2[1], loc2[1], v * "\n" * ws * tq), s) =#
+                add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], v))
+                add_node!(t, Newline)
+                add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], tq))
             else
-                e = merge_edits(e, Edit(loc2[1], loc2[1], tq), s)
+                #= e = merge(e, Edit(loc2[1], loc2[1], tq), s) =#
+                add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], tq))
             end
         else
-            e = merge_edits(e, Edit(loc2[1], loc2[1], tq), s)
+            #= e = merge(e, Edit(loc2[1], loc2[1], tq), s) =#
+            add_node!(t, PLeaf{CSTParser.LITERAL}(loc2[1], loc2[1], tq))
         end
 
-        indent = s.indents * s.indent_width
-        return merge_edits(e, pretty(x.args[3], s), s, indent=indent)
+        add_node!(t, pretty(x.args[3], s))
+        return t
     end
 
     # same as CSTParser.EXPR{CSTParser.CALL} but whitespace sensitive
-    e = ""
     for (i, a) in enumerate(x)
-        ei = pretty(a, s)
+        n = pretty(a, s)
         @info "MACROCALL" a
 
         # i == 1 is probably redundant
         if i == 1 && a isa CSTParser.EXPR{CSTParser.MacroName}
             if a.fullspan - a.span > 0
-                e = merge_edits(e, ei * " ", s, join_lines=true)
-                s.line_offset += 1
+                add_node!(t, n, join_lines=true)
+                add_node!(t, Whitespace, join_lines=true)
             else
-                e = merge_edits(e, ei, s, join_lines=true)
+                add_node!(t, n, join_lines=true)
                 # assumes the next argument is a brace of some sort
             end
         #= elseif a isa CSTParser.KEYWORD =#
-        #=     s.line_offset += 1 =#
-        #=     e = merge_edits(e, " " * ei, s; join_lines=true) =#
+        #=     e = merge(e, " " * ei, s; join_lines=true) =#
         elseif a.fullspan - a.span > 0
-            e = merge_edits(e, ei * " ", s, join_lines=true)
-            s.line_offset += 1
+            add_node!(t, n, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
-            e = merge_edits(e, ei * " ", s, join_lines=true)
-            s.line_offset += 1
+            add_node!(t, n, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, ei, s, join_lines=true)
+            add_node!(t, n, join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line=false)
     single_line = ignore_single_line ? false : cursor_loc(s)[1] == cursor_loc(s, s.offset+x.span-1)[1] 
     #= @info "" single_line =#
-    e = ""
-    indent = s.indents * s.indent_width
-
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
-        # Reset line offset unless the block is part of a single line
-        #= !single_line && (s.line_offset = line_offset) =#
-        !single_line && (s.line_offset = s.indents * s.indent_width)
-
-        ei = pretty(a, s)
+        n = pretty(a, s)
         if i < length(x) && CSTParser.is_comma(a) && x.args[i+1] isa CSTParser.PUNCTUATION
-            e = merge_edits(e, ei, s)
+            add_node!(t, n)
         elseif CSTParser.is_comma(a) && i != length(x)
-            e = merge_edits(e, ei * " ", s)
-            s.line_offset += 1
+            add_node!(t, n)
+            add_node!(t, Whitespace)
         elseif single_line
             if i == 1 ||CSTParser.is_comma(x.args[i-1])
-                e = merge_edits(e, ei, s)
+                add_node!(t, n)
             else
-                s.line_offset += 2
-                e = merge_edits(e, "; " * ei, s)
+                add_node!(t, n)
+                add_node!(t, Semicolon)
+                add_node!(t, Whitespace)
             end
         else
-            #= @info "BLOCK LINE OFFSET" line_offset e ei =#
-            e = merge_edits(e, ei, s, indent=indent)
+            add_node!(t, n)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Abstract}, s::State)
-    e = pretty(x.args[1], s)
-    e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-    e = merge_edits(e, pretty(x.args[3], s), s, join_lines=true)
-    s.line_offset += 1
-    e = merge_edits(e, " " * pretty(x.args[4], s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, pretty(x.args[3], s), join_lines=true)
+    add_node!(t, Whitespace, join_lines=true)
+    add_node!(t, pretty(x.args[4], s), join_lines=true)
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.FunctionDef}, s::State)
-    e = pretty(x.args[1], s)
-    e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
     if length(x) > 3
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[3], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[4], s), s, indent=indent)
+        add_node!(t, pretty(x.args[4], s))
     else
         # function stub, i.e. "function foo end"
         # this should be on one line
-        s.line_offset += 1
-        e = merge_edits(e, " " * pretty(x.args[3], s), s, join_lines=true)
+        e = merge(e, " " * pretty(x.args[3], s), s, join_lines=true)
+        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, pretty(x.args[3], s), join_lines=true)
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Macro,CSTParser.Struct}
-    e = pretty(x.args[1], s)
-    e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[3], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    merge_edits(e, pretty(x.args[4], s), s, indent=indent)
+    add_node!(t, pretty(x.args[4], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Mutable}, s::State)
-    e = merge_edits(pretty(x.args[1], s), pretty(x.args[2], s), s, join_lines=true)
-    e = merge_edits(e, pretty(x.args[3], s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s, join_lines=true))
+    add_node!(t, pretty(x.args[3], s, join_lines=true))
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[4], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    merge_edits(e, pretty(x.args[5], s), s, indent=indent)
+    add_node!(t, pretty(x.args[5], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.For,CSTParser.While}
-    e = pretty(x.args[1], s)
-    if x.args[2] isa CSTParser.EXPR{CSTParser.Block}
-        e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-    else
-        e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-    end
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[3], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    merge_edits(e, pretty(x.args[4], s), s, indent=indent)
+    add_node!(t, pretty(x.args[4], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Do}, s::State)
-    e = pretty(x.args[1], s)
-    e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-    e = merge_edits(e, pretty(x.args[3], s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, pretty(x.args[3], s), join_lines=true)
     if x.args[4] isa CSTParser.EXPR{CSTParser.Block}
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[4], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
     end
-    merge_edits(e, pretty(x.args[end], s), s, indent=indent)
+    add_node!(t, pretty(x.args[end], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Try}, s::State)
-    e = pretty(x.args[1], s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[2], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[3], s), s, indent=indent)
+    add_node!(t, pretty(x.args[3], s))
 
     if x.args[4].fullspan != 0
-        s.line_offset += 1
-        e = merge_edits(e, " " * pretty(x.args[4], s), s, join_lines=true)
+        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, pretty(x.args[4], s), join_lines=true)
     end
 
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[5], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[6], s), s, indent=indent)
+    add_node!(t, pretty(x.args[6], s))
 
     if length(x.args) > 6
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[7], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[7], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[8], s), s, indent=indent)
+        add_node!(t, pretty(x.args[8], s))
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.ModuleH}, s::State)
-    e = merge_edits(pretty(x.args[1], s), pretty(x.args[2], s), s, join_lines=true)
-    e = merge_edits(e, pretty(x.args[3], s), s)
-    indent = s.indents * s.indent_width
-    merge_edits(e, pretty(x.args[4], s), s, indent=indent)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, pretty(x.args[3], s))
+    add_node!(t, pretty(x.args[4], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Return}, s::State)
-    e = pretty(x.args[1], s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
     if x.args[2].fullspan != 0
-        e *= " "
-        s.line_offset += 1
         for a in x.args[2:end]
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Begin}, s::State)
-    e = pretty(x.args[1], s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
     s.indents += 1
-    indent = s.indents * s.indent_width
-    e = merge_edits(e, pretty(x.args[2], s, ignore_single_line=true), s, indent=indent)
+    add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
     s.indents -= 1
-    indent = s.indents * s.indent_width
-    merge_edits(e, pretty(x.args[3], s), s, indent=indent)
+    add_node!(t, pretty(x.args[3], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Quote}, s::State)
+    t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.QUOTE
-        e = pretty(x.args[1], s)
+        add_node!(t, pretty(x.args[1], s))
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[2], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
-        return merge_edits(e, pretty(x.args[3], s), s; indent=indent)
+        add_node!(t, pretty(x.args[3], s))
+        return t
     end
-    pretty(x.args, s, indent)
+    add_node!(t, pretty(x.args, s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
+    t = PTree(x, nspaces(s))
     e = pretty(x.args[1], s)
     if length(x.args) > 3
-        if x.args[2] isa CSTParser.EXPR{CSTParser.Block}
-            e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-        else
-            e = merge_edits(e, pretty(x.args[2], s), s, join_lines=true)
-        end
+        add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[3], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
     else
         # TODO: revisit, the indentation is tricky here
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[2], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
     end
-    e = merge_edits(e, pretty(x.args[end], s), s, indent=indent)
+    add_node!(t, pretty(x.args[end], s))
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
-    e = pretty(x.args[1], s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.IF
-        e = merge_edits(e, pretty(x.args[2], s), s; join_lines=true)
+        add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[3], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
         s.indents -= 1
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[4], s), s, indent=indent)
+        add_node!(t, pretty(x.args[4], s))
         if length(x.args) > 4
             s.indents += 1
-            indent = s.indents * s.indent_width
             if x.args[4].kind == Tokens.ELSEIF
-                e = merge_edits(e, pretty(x.args[5], s), s, join_lines=true)
+                add_node!(t, pretty(x.args[5], s), join_lines=true)
             else
-                e = merge_edits(e, pretty(x.args[5], s, ignore_single_line=true), s, indent=indent)
+                add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
             end
             s.indents -= 1
-            indent = s.indents * s.indent_width
             # END KEYWORD
-            e = merge_edits(e, pretty(x.args[6], s), s, indent=indent)
+            add_node!(t, pretty(x.args[6], s))
         end
     else
-        indent = s.indents * s.indent_width
-        e = merge_edits(e, pretty(x.args[2], s, ignore_single_line=true), s, indent=indent)
+        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
         if length(x.args) > 2
             s.indents -= 1
-            indent = s.indents * s.indent_width
-
-            e = merge_edits(e, pretty(x.args[3], s), s, indent=indent)
-
+            add_node!(t, pretty(x.args[3], s))
             s.indents += 1
-            indent = s.indents * s.indent_width
 
             # this either else or elseif
             if x.args[3].kind == Tokens.ELSEIF
-                e = merge_edits(e, pretty(x.args[4], s), s, join_lines=true)
+                add_node!(t, pretty(x.args[4], s), join_lines=true)
             else
-                e = merge_edits(e, pretty(x.args[4], s, ignore_single_line=true), s, indent=indent)
+                add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
             end
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Comparison,CSTParser.ChainOpCall,CSTParser.Kw}
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
-        ei = pretty(a, s)
+        n = pretty(a, s)
         if a isa CSTParser.OPERATOR
-            s.line_offset += 1
-            e = merge_edits(e, " " * ei * " ", s; join_lines=true)
-            s.line_offset += 1
+            add_node!(t, Whitespace, join_lines=true)
+            add_node!(t, n, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         elseif i == length(x) - 1 && a isa CSTParser.PUNCTUATION && x.args[i+1] isa CSTParser.PUNCTUATION
-            e = merge_edits(e, ei, s; join_lines=true)
+            add_node!(t, n, join_lines=true)
         elseif a isa CSTParser.PUNCTUATION && a.kind == Tokens.COMMA && i != length(x)
-            e = merge_edits(e, ei * " ", s; join_lines=true)
-            s.line_offset += 1
+            add_node!(t, n, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, ei, s; join_lines=true)
+            add_node!(t, n, join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::T, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    e = pretty(x.arg1, s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.arg1, s))
     if CSTParser.precedence(x.op) in (8, 13, 14, 16) && x.op.kind != Tokens.ANON_FUNC
-        e = merge_edits(e, pretty(x.op, s), s; join_lines=true)
+        add_node!(t, pretty(x.op, s), join_lines=true)
     elseif x.op.kind == Tokens.EX_OR
-        s.line_offset += 1
-        e = merge_edits(e, " " * pretty(x.op, s), s, join_lines=true)
+        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, pretty(x.op, s), join_lines=true)
     else
-        s.line_offset += 1
-        e = merge_edits(e, " " * pretty(x.op, s) * " ", s, join_lines=true)
-        s.line_offset += 1
+        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, pretty(x.op, s), join_lines=true)
+        add_node!(t, Whitespace, join_lines=true)
     end
-    merge_edits(e, pretty(x.arg2, s), s, join_lines=true)
+    add_node!(t, pretty(x.arg2, s), join_lines=true)
+    t
 end
 
 # A where B
@@ -624,24 +634,16 @@ end
 #
 # line_offset
 function pretty(x::CSTParser.WhereOpCall, s::State)
-    e = pretty(x.arg1, s)
-    s.line_offset += 1
-    e = merge_edits(e, " " * pretty(x.op, s) * " ", s; join_lines=true)
-    s.line_offset += 1
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.arg1, s))
+    add_node!(t, Whitespace, join_lines=true)
+    add_node!(t, pretty(x.op, s), join_lines=true)
+    add_node!(t, Whitespace, join_lines=true)
 
-    edits = Edit[]
-    e2 = ""
-    for (i, a) in enumerate(x.args)
-        if CSTParser.is_comma(a)
-            e2 = merge_edits(e2, pretty(a, s, indent), s; join_lines=true)
-            push!(edits, e2)
-            e2 = ""
-        else
-            e2 = merge_edits(e2, pretty(a, s, indent), s; join_lines=true)
-        end
+    for a in x.args
+        add_node!(t, pretty(a, s), join_lines=true)
     end
-    push!(edits, e2)
-    merge_edits(e, e2, s)
+    t
 end
 
 # C ? E1 : E2
@@ -665,214 +667,179 @@ end
 # [C3 ?, E3 :, C4 ? E4 : E5]
 # [C4 ?, E4 :, E5]
 function pretty(x::CSTParser.ConditionalOpCall, s::State)
-    edits = Edit[]
-    e = pretty(x.cond, s)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.cond, s))
+    add_node!(t, Whitespace, join_lines=true)
+    add_node!(t, pretty(x.op1, s), join_lines=true)
+    add_node!(t, Whitespace, join_lines=true)
 
-    s.line_offset += 1
-    e = merge_edits(e, " " * pretty(x.op1, s) * " ", s, join_lines=true)
-    s.line_offset += 1
-    push!(edits, e)
+    add_node!(t, pretty(x.arg1, s)a, join_lines=true)
+    add_node!(t, Whitespace, join_lines=true)
+    add_node!(t, pretty(x.op2, s), join_lines=true)
+    add_node!(t, Whitespace, join_lines=true)
 
-    e = pretty(x.arg1, s)
-    s.line_offset += 1
-    e = merge_edits(e, " " * pretty(x.op2, s) * " ", s, join_lines=true)
-    s.line_offset += 1
-    push!(edits, e)
-    push!(edits, pretty(x.arg2, s))
-
-    e = ""
-    for (i, ei) in enumerate(edits)
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    add_node!(t, pretty(x.arg2, s), join_lines=true)
+    t
 end
 
 function pretty(x::CSTParser.UnarySyntaxOpCall, s::State)
-    @info "" typeof(x) s.line_offset 
-    e = pretty(x.arg1, s)
-    merge_edits(e, pretty(x.arg2, s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.arg1, s))
+    add_node!(t, pretty(x.arg2, s), join_lines=true)
+    t
 end
 
 function pretty(x::CSTParser.UnaryOpCall, s::State)
-    @info "" typeof(x) s.line_offset 
-    e = pretty(x.op, s)
-    merge_edits(e, pretty(x.arg, s), s, join_lines=true)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.op, s))
+    add_node!(t, pretty(x.arg, s), join_lines=true)
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly,CSTParser.Call}
-    e = pretty(x.args[1], s)
-    edits = Edit[merge_edits(e, pretty(x.args[2], s), s; join_lines=true)]
-    sep = x isa CSTParser.EXPR{CSTParser.Call} ? " " : ""
-    e = ""
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+
     for (i, a) in enumerate(x.args[3:end])
         if CSTParser.is_comma(a) && i < length(x) - 3 && !(x.args[i+1] isa CSTParser.PUNCTUATION)
-            e = merge_edits(e, pretty(a, s) * sep, s; join_lines=true)
-            s.line_offset += length(sep)
-            push!(edits, e)
-            e = ""
+            add_node!(t, pretty(a, s), join_lines=true)
+            if x isa CSTParser.EXPR{CSTParser.Call} 
+                add_node!(t, Whitespace, join_lines=true)
+            end
         elseif a isa CSTParser.EXPR{CSTParser.Parameters}
-            push!(edits, e * "; ")
-            s.line_offset += 2
-            e = ""
-            e = merge_edits(e, pretty(a, s), s; join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Semicolon, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s; join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    push!(edits, e)
-    #= edits =#
-    e = ""
-    for ei in edits
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Parameters}, s::State)
-    edits = Edit[]
-    e = ""
-    for (i, a) in enumerate(x)
+    t = PTree(x, nspaces(s))
+    for a in (x)
         if CSTParser.is_comma(a)
-            e = merge_edits(e, pretty(a, s) * " ", s; join_lines=true)
-            s.line_offset += 1
-            push!(edits, e)
-            e = ""
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e,  pretty(a, s), s; join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    push!(edits, e)
-    #= edits =#
-    e = ""
-    for ei in edits
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Vect,CSTParser.InvisBrackets,CSTParser.Braces}
-    sep = x isa CSTParser.EXPR{CSTParser.Braces} ? "" : " "
-    e = ""
-    edits = Edit[]
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
-            e = merge_edits(e, pretty(a, s) * sep, s; join_lines=true)
-            s.line_offset += length(sep)
-            push!(edits, e)
-            e = ""
+            if !(x isa CSTParser.EXPR{CSTParser.Braces})
+                add_node!(t, pretty(a, s), join_lines=true)
+                add_node!(t, Whitespace, join_lines=true)
+            end
         else
-            e = merge_edits(e, pretty(a, s), s; join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    push!(edits, e)
-    #= edits =#
-    e = ""
-    for ei in edits
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Export,CSTParser.Import,CSTParser.Using}
-    edits = Edit[pretty(x.args[1], s)]
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
     sidx = 2
-    e = ""
     for (i, a) in enumerate(x.args[2:end])
         if CSTParser.is_comma(a) || CSTParser.is_colon(a)
             CSTParser.is_colon(a) && (sidx = 3)
-            e = merge_edits(e, pretty(a, s) * " ", s; join_lines=true)
-            s.line_offset += 1
-            push!(edits, e)
-            e = ""
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s; join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    push!(edits, e)
-    #= edits =#
-    e = ""
-    for ei in edits
-        e = merge_edits(e, ei, s, join_lines=true)
-    end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Vcat}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i > 1 && i < length(x) - 1
-            e = merge_edits(e, pretty(a, s) * "; ", s, join_lines=true)
-            s.line_offset += 2
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Semicolon, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 
 function pretty(x::CSTParser.EXPR{CSTParser.TypedVcat}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i > 2 && i < length(x) - 1
-            e = merge_edits(e, pretty(a, s) * "; ", s, join_lines=true)
-            s.line_offset += 2
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Semicolon, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Hcat}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i > 1 && i < length(x) - 1
-            e = merge_edits(e, pretty(a, s) * " ", s, join_lines=true)
-            s.line_offset += 1
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.TypedHcat}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i > 2 && i < length(x) - 1
-            e = merge_edits(e, pretty(a, s) * " ", s, join_lines=true)
-            s.line_offset += 1
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.Row}, s::State)
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i < length(x)
-            e = merge_edits(e, pretty(a, s) * " ", s, join_lines=true)
-            s.line_offset += 1
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
 
 # Expr KEYWORD Expr
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Generator,CSTParser.Filter}
-    e = ""
+    t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a isa CSTParser.KEYWORD
-            s.line_offset += 1
-            e = merge_edits(e, " " * pretty(a, s), s, join_lines=true)
+            add_node!(t, Whitespace, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         else
-            e = merge_edits(e, pretty(a, s), s, join_lines=true)
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    e
+    t
 end
