@@ -705,7 +705,7 @@ end
 #=         10 =#
 #=         20 =#
 #=     end""" =#
-#=     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"; max_width=1) == str =#
+#=     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_width=1) == str =#
 #=  =#
 #=     # (|, ||, &&, &) are foldable =#
 #=     str = """ =#
@@ -713,99 +713,99 @@ end
 #=     b | =#
 #=     c | =#
 #=     d""" =#
-#=     @test format("a | b | c | d"; max_width=1) == str =#
+#=     @test format("a | b | c | d", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     f(a, =#
 #=       @g(b, c), =#
 #=       d)""" =#
-#=     @test format("f(a, @g(b, c), d)"; max_width=9) == str =#
+#=     @test format("f(a, @g(b, c), d)", max_width=9) == str =#
 #=  =#
 #=     str = """ =#
 #=     a, b, =#
 #=     c, d""" =#
-#=     @test format("a, b, c, d"; max_width=6) == str =#
+#=     @test format("a, b, c, d", max_width=6) == str =#
 #=  =#
 #=     str = """ =#
 #=     (a, b, =#
 #=      c, d)""" =#
-#=     @test format("(a, b, c, d)"; max_width=7) == str =#
+#=     @test format("(a, b, c, d)", max_width=7) == str =#
 #=  =#
 #=     str = """ =#
 #=     [a, =#
 #=      b, =#
 #=      c, =#
 #=      d]""" =#
-#=     @test format("[a, b, c, d]"; max_width=1) == str =#
+#=     @test format("[a, b, c, d]", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     cond ? =#
 #=     e1 : =#
 #=     e2""" =#
-#=     @test format("cond ? e1 : e2"; max_width=1) == str =#
+#=     @test format("cond ? e1 : e2", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     cond ? e1 : =#
 #=     e2""" =#
-#=     @test format("cond ? e1 : e2"; max_width=12) == str =#
+#=     @test format("cond ? e1 : e2", max_width=12) == str =#
 #=  =#
 #=     str = """ =#
 #=     cond1 ? e1 : =#
 #=     cond2 ? e2 : =#
 #=     cond3 ? e3 : =#
 #=     e4""" =#
-#=     @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4"; max_width=13) == str =#
+#=     @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_width=13) == str =#
 #=  =#
 #=     str = """ =#
 #=     export a, =#
 #=            b""" =#
-#=     @test format("export a,b"; max_width=1) == str =#
+#=     @test format("export a,b", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     using a, =#
 #=           b""" =#
-#=     @test format("using a,b"; max_width=1) == str =#
+#=     @test format("using a,b", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     using M: a, =#
 #=              b""" =#
-#=     @test format("using M:a,b"; max_width=1) == str =#
+#=     @test format("using M:a,b", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     import M1.M2.M3: a, =#
 #=                      b""" =#
-#=     @test format("import M1.M2.M3:a,b"; max_width=1) == str =#
+#=     @test format("import M1.M2.M3:a,b", max_width=1) == str =#
 #=  =#
 #=     str = """ =#
 #=     foo() = =#
 #=         (one, x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))"; max_width=30) == str =#
+#=     @test format("foo() = (one, x -> (true, false))", max_width=30) == str =#
 #=  =#
 #=     str = """ =#
 #=     foo() = =#
 #=         (one, =#
 #=          x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))"; max_width=24) == str =#
+#=     @test format("foo() = (one, x -> (true, false))", max_width=24) == str =#
 #=  =#
 #=     str = """ =#
 #=     foo() = =#
 #=         (one, =#
 #=          x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))"; max_width=24) == str =#
+#=     @test format("foo() = (one, x -> (true, false))", max_width=24) == str =#
 #=  =#
 #=     str = """ =#
 #=     foo() = =#
 #=         (one, =#
 #=          x -> (true, =#
 #=                false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))"; max_width=20) == str =#
+#=     @test format("foo() = (one, x -> (true, false))", max_width=20) == str =#
 #=  =#
 #=     str = """ =#
 #=     @somemacro function (fcall_ | =#
 #=                          fcall_) =#
 #=                    body_ =#
 #=                end""" =#
-#=     @test format("@somemacro function (fcall_ | fcall_) body_ end"; max_width=1) == str =#
+#=     @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str =#
 #= end =#
 
 end

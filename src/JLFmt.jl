@@ -76,11 +76,12 @@ Document(s::String) = Document(s, newline_ranges(s))
 
 
 mutable struct State
+    doc::Document
     indent_width::Int
-    max_width::Int
     indents::Int
     offset::Int
-    doc::Document
+    line_offset::Int
+    max_width::Int
 end
 
 @inline nspaces(s::State) = s.indent_width * s.indents
@@ -101,18 +102,15 @@ include("print.jl")
 
 function format(text::String; indent_width=4, max_width=80)
     d = Document(text)
-    s = State(indent_width, max_width, 0, 1, d)
+    s = State(d, indent_width, 0, 1, 0, max_width)
     x = CSTParser.parse(text, true)
     tree = pretty(x, s)
     @info "" tree
+
+    nest!(tree, s)
+
     io = IOBuffer()
-    print_tree(io, tree)
-    #= if e.startline != 1 =#
-    #=     e = merge(Edit(1, 1, d.text[d.ranges[1]]), e, s) =#
-    #= end =#
-    #= if e.endline != length(d.ranges) =#
-    #=     e = merge(e, Edit(length(d.ranges), length(d.ranges), text[d.ranges[end]]), s) =#
-    #= end =#
+    print_tree(io, tree, s)
     return String(take!(io))
 end
 

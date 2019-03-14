@@ -1,30 +1,30 @@
-function print_tree(io::IOBuffer, x::PTree)
+function print_tree(io::IOBuffer, x::PTree, s::State)
     wspace = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
-        print_tree(io, n)
-        if is_nl(n) && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+        print_tree(io, n, s)
+        if n === Newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
             write(io, repeat(" ", x.nodes[i+1].indent))
-        elseif is_nl(n)
+        elseif n === Newline
             write(io, wspace)
         end
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}})
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
     wspace = repeat(" ", x.indent)
     n1 = x.nodes[1]
     for (i, n) in enumerate(x.nodes)
-        print_tree(io, n)
-        if is_nl(n) 
+        print_tree(io, n, s)
+        if n === Newline
             if x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
-                s = x.nodes[i+1].text
+                v = x.nodes[i+1].text
                 if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
                     write(io, wspace)
-                elseif s == "elseif" || s == "else"
+                elseif v == "elseif" || v == "else"
                     if wspace != ""
-                        write(io, repeat(" ", x.indent - 4))
+                        write(io, repeat(" ", x.indent - s.indent_width))
                     end
                 else
                     write(io, wspace)
@@ -36,6 +36,4 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}})
     end
 end
 
-print_tree(io::IOBuffer, x::PLeaf) = write(io, x.text)
-
-Base.write(io::IOBuffer, x::PTree) = print_tree(io, x)
+print_tree(io::IOBuffer, x::PLeaf, ::State) = write(io, x.text)
