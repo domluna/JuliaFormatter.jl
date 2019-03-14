@@ -1,5 +1,9 @@
 # Nest
 #
+# If the line exceeds the maximum width it will be nested.
+# 
+# This is by replacing `Placeholder` nodes with `Newline` nodes
+# and updated the PTree's indent.
 
 nest!(::PLeaf, ::State) = nothing
 

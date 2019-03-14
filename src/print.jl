@@ -1,3 +1,6 @@
+# Print the PTree.
+#
+
 function print_tree(io::IOBuffer, x::PTree, s::State)
     wspace = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)

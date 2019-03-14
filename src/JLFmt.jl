@@ -17,24 +17,12 @@ module JLFmt
 #
 # 1) Prettify the CST, basically this is
 # a CST but with prettified text instead of a CST node.
-# 2) Indent pass
+# 2) Nest (width-sensitive) pass
 # 3) Comment pass
-# 4) Profit (jk no money in OSS)
+# 4) Print pass
+# 5) Profit (jk no money in OSS)
 #
-# ## Prettify pass
-#
-# At this stage just output the prettified version of the CST node. The indentation (without nesting)
-# should be known.
-#
-# ## Width-sensitive pass
-#
-# Indent based on indent width multiplier and desired maximum width.
-#
-# ## Comment pass
-#
-# The start and end line information will allow us to collect the comments in between
-# edits.
-# 
+
 using CSTParser
 import CSTParser.Tokenize.Tokens
 

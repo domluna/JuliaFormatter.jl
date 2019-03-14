@@ -1,21 +1,4 @@
-# TODO: Return a tree instead of a string
-#
-# Only indent after newline
-#
-# module A
-#
-# function f(a, b, c)
-#     e1
-#     e2
-# end
-#
-# end
-# 
-# function f will have 4 nodes
-#
-# indent 0
-# nodes [KEYWORD, CALL 0, BLOCK 4, KEYWORD]
-# 
+# Creates a pretty text version of a CST.
 
 struct PLeaf{T<:CSTParser.LeafNode}
     startline::Int
@@ -30,6 +13,7 @@ Base.length(x::PLeaf) = length(x.text)
 Newline = PLeaf{CSTParser.LITERAL}(-1, -1, "\n")
 Semicolon = PLeaf{CSTParser.PUNCTUATION}(-1, -1, ";")
 Whitespace = PLeaf{CSTParser.LITERAL}(-1, -1, " ")
+# Used to mark regions for nesting, where it may be replaced with Newline.
 Placeholder = PLeaf{CSTParser.LITERAL}(-1, -1, "")
 
 is_comma(_) = false
