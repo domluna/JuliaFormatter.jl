@@ -1,4 +1,32 @@
 # Creates a pretty text version of a CST.
+#
+# abstract type Leaf end
+#
+# struct Newline <: Leaf
+# end
+# Base.length(::Newline) = 1
+#
+# struct Semicolon <: Leaf
+# end
+# Base.length(::Semicolon) = 1
+#
+# struct Whitespace <: Leaf
+# end
+# Base.length(::Whitespace) = 0
+#
+# struct Placeholder <: Leaf
+# end
+# Base.length(::Placeholder) = 0
+#
+# struct PlaceholderWS <: Leaf
+# end
+# Base.length(::PlaceholderWS) = 1
+#
+# const newline = Newline()
+# const semicolon = Semicolon()
+# const whitespace = Whitespace()
+# const placeholder = Placeholder()
+# const placeholderWS = PlaceholderWS()
 
 struct PLeaf{T<:CSTParser.LeafNode}
     startline::Int
@@ -15,11 +43,16 @@ Semicolon = PLeaf{CSTParser.PUNCTUATION}(-1, -1, ";")
 Whitespace = PLeaf{CSTParser.LITERAL}(-1, -1, " ")
 # Used to mark regions for nesting, where it may be replaced with Newline.
 Placeholder = PLeaf{CSTParser.LITERAL}(-1, -1, "")
+PlaceholderWS = PLeaf{CSTParser.LITERAL}(-2, -2, " ")
 
 is_comma(_) = false
 is_comma(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == ","
+is_lbrace(_) = false
+is_lbrace(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{"
 is_empty_space(_) = false
 is_empty_space(x::PLeaf{CSTParser.LITERAL}) = x.text == "" && x !== Placeholder
+is_placeholder(_) = false
+is_placeholder(x::PLeaf{CSTParser.LITERAL}) = x === Placeholder || x === PlaceholderWS
 
 mutable struct PTree{T<:CSTParser.AbstractEXPR}
     startline::Int
@@ -31,6 +64,7 @@ end
 PTree(::T, indent::Int) where T = PTree{T}(-1, -1, indent, 0, Union{PTree,PLeaf}[])
 Base.length(x::PTree) = x.plength
 
+#= add_node!(x::PTree, node::Leaf; join_lines=true) = push!(x.nodes, node) =#
 function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     is_empty_space(node) && (return)
     if length(x.nodes) == 0
@@ -526,7 +560,7 @@ function pretty(x::T, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParse
     else
         add_node!(t, Whitespace, join_lines=true)
         add_node!(t, pretty(x.op, s), join_lines=true)
-        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, PlaceholderWS, join_lines=true)
     end
     add_node!(t, pretty(x.arg2, s), join_lines=true)
     t
@@ -548,10 +582,15 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     add_node!(t, Whitespace, join_lines=true)
     add_node!(t, pretty(x.op, s), join_lines=true)
     add_node!(t, Whitespace, join_lines=true)
+
+    # Used to mark where `B` starts.
     add_node!(t, Placeholder, join_lines=true)
 
     for a in x.args
         add_node!(t, pretty(a, s), join_lines=true)
+        if CSTParser.is_comma(a)
+            add_node!(t, Placeholder, join_lines=true)
+        end
     end
     t
 end
@@ -581,14 +620,12 @@ function pretty(x::CSTParser.ConditionalOpCall, s::State)
     add_node!(t, pretty(x.cond, s))
     add_node!(t, Whitespace, join_lines=true)
     add_node!(t, pretty(x.op1, s), join_lines=true)
-    add_node!(t, Whitespace, join_lines=true)
-    add_node!(t, Placeholder, join_lines=true)
+    add_node!(t, PlaceholderWS, join_lines=true)
 
-    add_node!(t, pretty(x.arg1, s)a, join_lines=true)
+    add_node!(t, pretty(x.arg1, s), join_lines=true)
     add_node!(t, Whitespace, join_lines=true)
     add_node!(t, pretty(x.op2, s), join_lines=true)
-    add_node!(t, Whitespace, join_lines=true)
-    add_node!(t, Placeholder, join_lines=true)
+    add_node!(t, PlaceholderWS, join_lines=true)
 
     add_node!(t, pretty(x.arg2, s), join_lines=true)
     t
@@ -617,9 +654,11 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
         if CSTParser.is_comma(a) && i < length(x) - 3 && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, pretty(a, s), join_lines=true)
             if x isa CSTParser.EXPR{CSTParser.Call} 
-                add_node!(t, Whitespace, join_lines=true)
+                add_node!(t, PlaceholderWS, join_lines=true)
+            else
+                add_node!(t, Placeholder, join_lines=true)
             end
-            add_node!(t, Placeholder, join_lines=true)
+            #= add_node!(t, Placeholder, join_lines=true) =#
         elseif a isa CSTParser.EXPR{CSTParser.Parameters}
             add_node!(t, pretty(a, s), join_lines=true)
             add_node!(t, Semicolon, join_lines=true)
@@ -652,9 +691,10 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
         if CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, pretty(a, s), join_lines=true)
             if !(x isa CSTParser.EXPR{CSTParser.Braces})
-                add_node!(t, Whitespace, join_lines=true)
+                add_node!(t, PlaceholderWS, join_lines=true)
+            else
+                add_node!(t, Placeholder, join_lines=true)
             end
-            add_node!(t, Placeholder, join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end

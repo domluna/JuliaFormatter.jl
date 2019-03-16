@@ -1,6 +1,15 @@
 using JLFmt: format
 using Test
 
+function run_nest(text::String, max_width::Int)
+    d = Document(text)
+    s = State(d, 4, 0, 1, 0, max_width)
+    x = CSTParser.parse(text, true)
+    t = pretty(x, s)
+    nest!(t, s)
+    s
+end
+
 @testset "All" begin
 @testset "basic" begin
     @test format("a") == "a"
@@ -695,7 +704,7 @@ end
 
 end
 
-#= @testset "width aware" begin =#
+#= @testset "width-sensitive" begin =#
 #=     str = """ =#
 #=     function f(arg1::A, =#
 #=                key1 = val1; =#
@@ -807,5 +816,36 @@ end
 #=                end""" =#
 #=     @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str =#
 #= end =#
+
+#= str = """f(a,b,c) where Union{A,B,C}""" =#
+#= str = """f(a,b,c) where {A,B,C}""" =#
+#= str = """f(a,b,c) where A""" =#
+
+@testset "nesting" begin
+    str = "a - b + c * d"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 12)
+    @test s.line_offset == 5
+    s = run_nest(str, 1)
+    @test s.line_offset == 1
+
+    #= str ="c ? e1 : e2" =#
+    #= s = run_nest(str, length(str)) =#
+
+    str = "f(a, b, c) where Union{A,B,C}"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 23)
+    @test s.line_offset == 22
+    s = run_nest(str, 20)
+    @test s.line_offset == 20
+    s = run_nest(str, 1)
+    @test s.line_offset == 14
+
+    str = "f(a, b, c) where {A,B,C}"
+
+    str = "f(a, b, c) where A"
+end
 
 end
