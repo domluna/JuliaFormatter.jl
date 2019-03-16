@@ -144,6 +144,7 @@ function nest!(x::PTree{CSTParser.WhereOpCall}, s::State)
         end
 
         # If A was nested we need to redo the indent for B
+        # TODO: need to propagate new indent
         if line_offset + Alens[1] > s.max_width
             x.indent = s.line_offset
             if is_lbrace(x.nodes[idx+1])
@@ -152,6 +153,10 @@ function nest!(x::PTree{CSTParser.WhereOpCall}, s::State)
                 # reset the indent of the Curly node, +1 for {
                 x.nodes[idx+1].indent = x.indent + length(x.nodes[idx+1].nodes[1]) + 1
                 #= x.indent = x.nodes[idx+1].indent =#
+            elseif x.nodes[idx+1] isa PTree{<:Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}}
+                # NOTE: don't need this if a binary call of ISSUBTYPE is not nestable
+                # T <: S
+                x.nodes[idx+1].indent = x.indent
             end
         end
 
@@ -246,14 +251,6 @@ function nest!(x::PTree{T}, s::State; indent=-1) where T <: Union{CSTParser.Bina
 
         s.line_offset = line_offset
         nest(x, s)
-
-        #= # this is tricky since  =#
-        #= if x.nodes[idx+1] === Newline =#
-        #=     s.line_offset = x.indent + arg2lens[1] =#
-        #= else =#
-        #=     s.line_offset += arg2lens[1] =#
-        #= end =#
-
         @info "EXIT" typeof(x) s.line_offset
     else
         for (i, n) in enumerate(x.nodes)

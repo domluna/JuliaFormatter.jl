@@ -821,7 +821,7 @@ end
 #= str = """f(a,b,c) where {A,B,C}""" =#
 #= str = """f(a,b,c) where A""" =#
 
-@testset "nesting" begin
+@testset "nesting line offset" begin
     str = "a - b + c * d"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
@@ -833,7 +833,7 @@ end
     #= str ="c ? e1 : e2" =#
     #= s = run_nest(str, length(str)) =#
 
-    str = "f(a, b, c) where Union{A,B,C}"
+    str = "f(a, b, c) where {A,B,C}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 23)
@@ -843,9 +843,27 @@ end
     s = run_nest(str, 1)
     @test s.line_offset == 14
 
-    str = "f(a, b, c) where {A,B,C}"
+    str = "f(a, b, c) where Union{A,B,C}"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 28)
+    @test s.line_offset == 27
+    s = run_nest(str, 20)
+    @test s.line_offset == 25
+    s = run_nest(str, 1)
+    @test s.line_offset == 19
 
     str = "f(a, b, c) where A"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 1)
+    @test s.line_offset == 12
+
+    str = "f(a, b, c) where A <: S"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 1)
+    @test s.line_offset == 17
 end
 
 end

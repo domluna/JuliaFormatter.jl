@@ -549,6 +549,12 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Compa
     t
 end
 
+nestable(_) = false
+function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
+    x.op.kind == Tokens.ISSUBTYPE && (return false)
+    true
+end
+
 function pretty(x::T, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.arg1, s))
@@ -557,10 +563,14 @@ function pretty(x::T, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParse
     elseif x.op.kind == Tokens.EX_OR
         add_node!(t, Whitespace, join_lines=true)
         add_node!(t, pretty(x.op, s), join_lines=true)
-    else
+    elseif nestable(x)
         add_node!(t, Whitespace, join_lines=true)
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, PlaceholderWS, join_lines=true)
+    else
+        add_node!(t, Whitespace, join_lines=true)
+        add_node!(t, pretty(x.op, s), join_lines=true)
+        add_node!(t, Whitespace, join_lines=true)
     end
     add_node!(t, pretty(x.arg2, s), join_lines=true)
     t
