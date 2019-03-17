@@ -1,4 +1,5 @@
-using JLFmt: format
+using JLFmt: format, Document, State, pretty, nest!
+using CSTParser
 using Test
 
 function run_nest(text::String, max_width::Int)
@@ -830,8 +831,29 @@ end
     s = run_nest(str, 1)
     @test s.line_offset == 1
 
-    #= str ="c ? e1 : e2" =#
-    #= s = run_nest(str, length(str)) =#
+    str ="c ? e1 : e2"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 10)
+    @test s.line_offset == 2
+    s = run_nest(str, 8)
+    @test s.line_offset == 2
+    s = run_nest(str, 1)
+    @test s.line_offset == 2
+
+    str = "c1 ? e1 : c2 ? e2 : c3 ? e3 : c4 ? e4 : e5"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 41)
+    @test s.line_offset == 32
+    s = run_nest(str, 30)
+    @test s.line_offset == 22
+    s = run_nest(str, 20)
+    @test s.line_offset == 12
+    s = run_nest(str, 10)
+    @test s.line_offset == 2
+    s = run_nest(str, 1)
+    @test s.line_offset == 2
 
     str = "f(a, b, c) where {A,B,C}"
     s = run_nest(str, 100)
@@ -864,6 +886,18 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
     @test s.line_offset == 17
+
+    str = "f(a, b, c) where Union{A,B,Union{C,D,E}}"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 1)
+    @test s.line_offset == 26
+
+    str = "f(a, b, c) where {A,{B,C,D},E}"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, 1)
+    @test s.line_offset == 14
 end
 
 end

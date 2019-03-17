@@ -28,7 +28,7 @@
 # const placeholder = Placeholder()
 # const placeholderWS = PlaceholderWS()
 
-struct PLeaf{T<:CSTParser.LeafNode}
+struct PLeaf{T}
     startline::Int
     endline::Int
     text::String
@@ -54,7 +54,7 @@ is_empty_space(x::PLeaf{CSTParser.LITERAL}) = x.text == "" && x !== Placeholder
 is_placeholder(_) = false
 is_placeholder(x::PLeaf{CSTParser.LITERAL}) = x === Placeholder || x === PlaceholderWS
 
-mutable struct PTree{T<:CSTParser.AbstractEXPR}
+mutable struct PTree{T}
     startline::Int
     endline::Int
     indent::Int
@@ -88,11 +88,10 @@ function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     return
 end
 
-function pretty(x::Union{Vector,CSTParser.AbstractEXPR}, s::State)
+function pretty(x::Union{AbstractVector,CSTParser.AbstractEXPR}, s::State)
     t = PTree(x, nspaces(s))
     for a in x
-        n = pretty(a, s)
-        add_node!(t, n, join_lines=true)
+        add_node!(t, pretty(a, s), join_lines=true)
     end
     t
 end
@@ -265,7 +264,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     # same as CSTParser.EXPR{CSTParser.CALL} but whitespace sensitive
     for (i, a) in enumerate(x)
         n = pretty(a, s)
-        @info "MACROCALL" a
+        #= @info "MACROCALL" a =#
 
         # i == 1 is probably redundant
         if i == 1 && a isa CSTParser.EXPR{CSTParser.MacroName}
