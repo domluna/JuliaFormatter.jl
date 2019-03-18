@@ -14,13 +14,18 @@ struct Whitespace <: AbstractLeaf
 end
 Base.length(::Whitespace) = 1
 
+struct Placeholder <: AbstractLeaf
+end
+Base.length(::Placeholder) = 0
+
 struct PlaceholderWS <: AbstractLeaf
 end
 Base.length(::PlaceholderWS) = 1
 
-struct Placeholder <: AbstractLeaf
+struct Spaces <: AbstractLeaf
+    n::Int
 end
-Base.length(::Placeholder) = 0
+Base.length(x::Spaces) = x.n
 
 const newline = Newline()
 const semicolon = Semicolon()
@@ -555,6 +560,7 @@ nestable(_) = false
 function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
     x.op.kind == Tokens.ISSUBTYPE && (return false)
     x.op.kind == Tokens.ISSUPERTYPE && (return false)
+    x.op.kind == Tokens.ANON_FUNC && (return false)
     true
 end
 
@@ -570,6 +576,9 @@ function pretty(x::T, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParse
         add_node!(t, whitespace)
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, placeholderWS)
+        if x.op.kind == Tokens.EQ && CSTParser.defines_function(x)
+            add_node!(t, placeholder)
+        end
     else
         add_node!(t, whitespace)
         add_node!(t, pretty(x.op, s), join_lines=true)

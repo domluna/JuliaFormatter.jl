@@ -19,7 +19,6 @@ remaining_length(x::AbstractVector) = reverse(cumsum(reverse(length.(x))))
 
 walk(f, x::AbstractLeaf, s::State) = f(x, s)
 function walk(f, x::PTree, s::State)
-    @info "" typeof(x) s.line_offset
     f(x, s)
     for n in x.nodes
         if n === newline
@@ -89,8 +88,11 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser
         x.indent = s.line_offset
         x.nodes[1] isa PLeaf{CSTParser.PUNCTUATION} && (x.indent += 1)
 
+        @info "" x.indent
+
         lens = length.(x.nodes)
         for (i, n) in enumerate(x.nodes)
+            @info "" typeof(n) n s.line_offset
             if n === newline
                 s.line_offset = x.indent
             elseif is_placeholder(n) 
@@ -214,7 +216,7 @@ function nest!(x::PTree{CSTParser.WhereOpCall}, s::State)
             # All CSTParser.Curly and CSTParser.Braces nodes
             # would have to be detented by 3.
             diff = Alens[1] - s.line_offset
-            @info "WHERE DIFF" diff Alens[1] s.line_offset
+            #= @info "WHERE DIFF" diff Alens[1] s.line_offset =#
             f = (x, s) -> begin
                 if x isa PTree{CSTParser.EXPR{CSTParser.Curly}}
                     x.indent -= diff + line_offset
@@ -263,17 +265,11 @@ function nest!(x::PTree{CSTParser.ConditionalOpCall}, s::State)
         idx2 = findlast(n -> is_placeholder(n), x.nodes)[1]
         Clens = remaining_length(x.nodes[1:idx1])
         E1lens = remaining_length(x.nodes[idx1+1:idx2])
-        E2lens = remaining_length(x.nodes[idx2+1:end])
 
         line_offset = s.line_offset
         x.indent = s.line_offset
-        s.line_offset = Clens[1] + E1lens[1]
 
-        # E2
-        if s.line_offset + E2lens[1] > s.max_width
-            x.nodes[idx2] = newline
-            s.line_offset = x.indent
-        end
+        x.nodes[idx2] = newline
         nest!(x.nodes[end], s)
 
         # E1
@@ -323,32 +319,36 @@ function nest!(x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CS
         # idx op is 1 before the placeholder
         idx = findfirst(n -> is_placeholder(n), x.nodes)[1] - 1
 
-        arg1lens = remaining_length(x.nodes[1:idx])
-        arg2lens = remaining_length(x.nodes[idx+1:end])
+        lens = remaining_length(x.nodes[1:idx])
 
         x.indent = s.line_offset
-        s.line_offset += arg1lens[1]
+        s.line_offset += lens[1]
 
-        #= @info "" typeof(x) s.line_offset x arg2lens[1] =#
-        #= @info "" arg1lens arg2lens =#
+        @info "" s.line_offset x.indent
 
-        if s.line_offset + arg2lens[1] > s.max_width
-            x.nodes[idx+1] = newline
+        x.nodes[idx+1] = newline
+
+        if is_placeholder(x.nodes[idx+2])
+            @info "BINARY FUNC0"
+            x.nodes[idx+2] = Spaces(s.indent_width)
+            s.line_offset = x.indent + s.indent_width
+            x.indent += s.indent_width
+        else
             s.line_offset = x.indent
         end
+
         # arg2
-        #= @info "nesting arg2" =#
         nest!(x.nodes[end], s)
 
         # arg1 op
         s.line_offset = line_offset
-        #= @info "nesting arg1" =#
         for (i, n) in enumerate(x.nodes[1:idx])
             nest!(n, s)
         end
 
         s.line_offset = line_offset
         walk(reset_line_offset, x, s)
+        #= is_bfunc && (s.line_offset += s.indent_width) =#
     else
         for (i, n) in enumerate(x.nodes)
             #= @info "" typeof(n) s.line_offset length(n) =#

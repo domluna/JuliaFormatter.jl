@@ -6,6 +6,7 @@ print_tree(io::IOBuffer, ::Semicolon, ::State) = write(io, ";")
 print_tree(io::IOBuffer, ::Whitespace, ::State) = write(io, " ")
 print_tree(io::IOBuffer, ::Placeholder, ::State) = write(io, "")
 print_tree(io::IOBuffer, ::PlaceholderWS, ::State) = write(io, " ")
+print_tree(io::IOBuffer, ::Spaces, ::State) = nothing
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
     wspace = repeat(" ", x.indent)
@@ -13,6 +14,7 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         print_tree(io, n, s)
         if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
             write(io, repeat(" ", x.nodes[i+1].indent))
+            #= write(io, wspace) =#
         elseif n === newline
             write(io, wspace)
         end
