@@ -705,128 +705,118 @@ end
 
 end
 
-#= @testset "width-sensitive" begin =#
-#=     str = """ =#
-#=     function f(arg1::A, =#
-#=                key1 = val1; =#
-#=                key2 = val2) where {A, =#
-#=                                    F{B, =#
-#=                                      C}} =#
-#=         10 =#
-#=         20 =#
-#=     end""" =#
-#=     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_width=1) == str =#
-#=  =#
-#=     # (|, ||, &&, &) are foldable =#
-#=     str = """ =#
-#=     a | =#
-#=     b | =#
-#=     c | =#
-#=     d""" =#
-#=     @test format("a | b | c | d", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     f(a, =#
-#=       @g(b, c), =#
-#=       d)""" =#
-#=     @test format("f(a, @g(b, c), d)", max_width=9) == str =#
-#=  =#
-#=     str = """ =#
-#=     a, b, =#
-#=     c, d""" =#
-#=     @test format("a, b, c, d", max_width=6) == str =#
-#=  =#
-#=     str = """ =#
-#=     (a, b, =#
-#=      c, d)""" =#
-#=     @test format("(a, b, c, d)", max_width=7) == str =#
-#=  =#
-#=     str = """ =#
-#=     [a, =#
-#=      b, =#
-#=      c, =#
-#=      d]""" =#
-#=     @test format("[a, b, c, d]", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     cond ? =#
-#=     e1 : =#
-#=     e2""" =#
-#=     @test format("cond ? e1 : e2", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     cond ? e1 : =#
-#=     e2""" =#
-#=     @test format("cond ? e1 : e2", max_width=12) == str =#
-#=  =#
-#=     str = """ =#
-#=     cond1 ? e1 : =#
-#=     cond2 ? e2 : =#
-#=     cond3 ? e3 : =#
-#=     e4""" =#
-#=     @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_width=13) == str =#
-#=  =#
-#=     str = """ =#
-#=     export a, =#
-#=            b""" =#
-#=     @test format("export a,b", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     using a, =#
-#=           b""" =#
-#=     @test format("using a,b", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     using M: a, =#
-#=              b""" =#
-#=     @test format("using M:a,b", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     import M1.M2.M3: a, =#
-#=                      b""" =#
-#=     @test format("import M1.M2.M3:a,b", max_width=1) == str =#
-#=  =#
-#=     str = """ =#
-#=     foo() = =#
-#=         (one, x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))", max_width=30) == str =#
-#=  =#
-#=     str = """ =#
-#=     foo() = =#
-#=         (one, =#
-#=          x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))", max_width=24) == str =#
-#=  =#
-#=     str = """ =#
-#=     foo() = =#
-#=         (one, =#
-#=          x -> (true, false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))", max_width=24) == str =#
-#=  =#
-#=     str = """ =#
-#=     foo() = =#
-#=         (one, =#
-#=          x -> (true, =#
-#=                false))""" =#
-#=     @test format("foo() = (one, x -> (true, false))", max_width=20) == str =#
-#=  =#
-#=     str = """ =#
-#=     @somemacro function (fcall_ | =#
-#=                          fcall_) =#
-#=                    body_ =#
-#=                end""" =#
-#=     @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str =#
-#= end =#
+@testset "width-sensitive" begin
+    str = """
+    function f(arg1::A,
+               key1 = val1;
+               key2 = val2) where {A,
+                                   F{B,
+                                     C}}
+        10
+        20
+    end"""
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_width=1) == str
 
-#= str = """f(a,b,c) where Union{A,B,C}""" =#
-#= str = """f(a,b,c) where {A,B,C}""" =#
-#= str = """f(a,b,c) where A""" =#
+    # (|, ||, &&, &) are foldable
+    str = """
+    a |
+    b |
+    c |
+    d"""
+    @test format("a | b | c | d", max_width=1) == str
+
+    str = """
+    f(a,
+      @g(b, c),
+      d)"""
+    @test format("f(a, @g(b, c), d)", max_width=9) == str
+
+    str = """
+    a, b,
+    c, d"""
+    @test format("a, b, c, d", max_width=6) == str
+
+    str = """
+    (a, b,
+     c, d)"""
+    @test format("(a, b, c, d)", max_width=7) == str
+
+    str = """
+    [a,
+     b,
+     c,
+     d]"""
+    @test format("[a, b, c, d]", max_width=1) == str
+
+    str = """
+    cond ?
+    e1 :
+    e2"""
+    @test format("cond ? e1 : e2", max_width=1) == str
+
+    str = """
+    cond ? e1 :
+    e2"""
+    @test format("cond ? e1 : e2", max_width=12) == str
+
+    str = """
+    cond1 ? e1 :
+    cond2 ? e2 :
+    cond3 ? e3 :
+    e4"""
+    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_width=13) == str
+
+    str = """
+    export a,
+           b"""
+    @test format("export a,b", max_width=1) == str
+
+    str = """
+    using a,
+          b"""
+    @test format("using a,b", max_width=1) == str
+
+    str = """
+    using M: a,
+             b"""
+    @test format("using M:a,b", max_width=1) == str
+
+    str = """
+    import M1.M2.M3: a,
+                     b"""
+    @test format("import M1.M2.M3:a,b", max_width=1) == str
+
+    str = """
+    foo() =
+        (one, x -> (true, false))"""
+    @test format("foo() = (one, x -> (true, false))", max_width=30) == str
+
+    str = """
+    foo() =
+        (one,
+         x -> (true, false))"""
+    @test format("foo() = (one, x -> (true, false))", max_width=24) == str
+
+    str = """
+    foo() =
+        (one,
+         x -> (true,
+               false))"""
+    @test format("foo() = (one, x -> (true, false))", max_width=20) == str
+
+    str = """
+    @somemacro function (fcall_ |
+                         fcall_)
+                   body_
+               end"""
+    @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str
+end
 
 @testset "nesting line offset" begin
     str = "a - b + c * d"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
-    s = run_nest(str, 12)
+    s = run_nest(str, length(str)-1)
     @test s.line_offset == 5
     s = run_nest(str, 1)
     @test s.line_offset == 1
@@ -834,7 +824,7 @@ end
     str ="c ? e1 : e2"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
-    s = run_nest(str, 10)
+    s = run_nest(str, length(str)-1)
     @test s.line_offset == 2
     s = run_nest(str, 8)
     @test s.line_offset == 2
@@ -844,7 +834,7 @@ end
     str = "c1 ? e1 : c2 ? e2 : c3 ? e3 : c4 ? e4 : e5"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
-    s = run_nest(str, 41)
+    s = run_nest(str, length(str)-1)
     @test s.line_offset == 32
     s = run_nest(str, 30)
     @test s.line_offset == 22
@@ -858,7 +848,7 @@ end
     str = "f(a, b, c) where {A,B,C}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
-    s = run_nest(str, 23)
+    s = run_nest(str, length(str)-1)
     @test s.line_offset == 22
     s = run_nest(str, 20)
     @test s.line_offset == 20
@@ -868,8 +858,8 @@ end
     str = "f(a, b, c) where Union{A,B,C}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
-    s = run_nest(str, 28)
-    @test s.line_offset == 27
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 25
     s = run_nest(str, 20)
     @test s.line_offset == 25
     s = run_nest(str, 1)
@@ -898,6 +888,12 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
     @test s.line_offset == 14
+
+    str = "(a, b, c, d)"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 3
 end
 
 end
