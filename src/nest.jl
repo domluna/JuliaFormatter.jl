@@ -121,8 +121,45 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser
     @info "EXIT" typeof(x) s.line_offset
 end
 
-#= function nest!(x::PTree{CSTParser.EXPR{CSTParser.MacroCall}}, s::State) =#
-function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Curly,CSTParser.Call,CSTParser.MacroCall}
+function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Curly,CSTParser.Call}
+    @info "ENTER" typeof(x) s.line_offset x
+    if s.line_offset + length(x) > s.max_width
+        x.indent = s.line_offset + length(x.nodes[1]) + length(x.nodes[2])
+        s.line_offset = x.indent
+
+        lens = length.(x.nodes[3:end])
+        #= @info "" lens s.line_offset =#
+        for (i, n) in enumerate(x.nodes[3:end])
+            @info "" typeof(n) n s.line_offset
+            if n === newline
+                s.line_offset = x.indent
+            elseif is_placeholder(n) 
+                # Check if the additional length of the nodes 
+                # before the next placholder warrant a nest.
+                j = i + 1 == length(lens) ? 1 : 2
+                if s.line_offset + sum(lens[i:i+j]) > s.max_width
+                    x.nodes[i+2] = newline
+                    s.line_offset = x.indent
+                else
+                    nest!(n, s)
+                end
+            else
+                nest!(n, s)
+            end
+        end
+    else
+        for (i, n) in enumerate(x.nodes)
+            if n === newline
+                s.line_offset = x.indent
+            else
+                nest!(n, s)
+            end
+        end
+    end
+    @info "EXIT" typeof(x) s.line_offset x
+end
+
+function nest!(x::PTree{CSTParser.EXPR{CSTParser.MacroCall}}, s::State)
     @info "ENTER" typeof(x) s.line_offset x
     if s.line_offset + length(x) > s.max_width && !(x.nodes[1] isa PTree{CSTParser.EXPR{CSTParser.GlobalRefDoc}})
         x.indent = s.line_offset + length(x.nodes[1]) + length(x.nodes[2])
