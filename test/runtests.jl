@@ -918,6 +918,12 @@ end
     str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
     s = run_nest(str, 80)
     @test s.line_offset == 41
+
+    str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
+    s = run_nest(str, length(str))
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 12
 end
 
 end

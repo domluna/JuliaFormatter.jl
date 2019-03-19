@@ -193,12 +193,12 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State)
         if a isa CSTParser.LITERAL
             n = pretty(a, s, surround_with_quotes=false)
             n.text == "" && (continue)
-            add_node!(t, n)
+            add_node!(t, n, join_lines=true)
         else
-            add_node!(t, pretty(a, s))
+            add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-    add_node!(t, PLeaf{CSTParser.LITERAL}(-1, -1, "\""))
+    add_node!(t, PLeaf{CSTParser.LITERAL}(-1, -1, "\""), join_lines=true)
     t
 end
 

@@ -72,15 +72,25 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser
         s.line_offset = x.indent
         line_offset = s.line_offset
 
-        lens = length.(x.nodes[idx:end])
+        lens = length.(x.nodes[idx-2:end])
         @info "" lens s.line_offset line_offset
-        for (i, n) in enumerate(x.nodes[idx:end])
+        for (i, n) in enumerate(x.nodes[idx-2:end])
             @info "" typeof(n) n s.line_offset
             if n === newline
                 s.line_offset = x.indent
-            elseif is_placeholder(n) && s.line_offset + lens[i] + lens[i+1] > s.max_width
-                x.nodes[i+idx-1] = newline
-                s.line_offset = x.indent
+            #= elseif is_placeholder(n) && s.line_offset + lens[i] + lens[i+1] > s.max_width =#
+            #=     x.nodes[i+idx-3] = newline =#
+            #=     s.line_offset = x.indent =#
+            elseif is_placeholder(n) 
+                # Check if the additional length of the nodes 
+                # before the next placholder warrant a nest.
+                j = i + 1 == length(lens) ? 1 : 2
+                if s.line_offset + sum(lens[i:i+j]) > s.max_width
+                    x.nodes[i+idx-3] = newline
+                    s.line_offset = x.indent
+                else
+                    nest!(n, s)
+                end
             else
                 nest!(n, s)
             end
