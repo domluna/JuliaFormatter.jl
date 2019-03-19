@@ -558,11 +558,9 @@ end
 
 nestable(_) = false
 function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    x.op.kind == Tokens.EQ && CSTParser.defines_function(x) && (return true)
     x.op.kind == Tokens.ANON_FUNC && (return false)
     x.op.kind == Tokens.PAIR_ARROW && (return false)
-    CSTParser.precedence(x.op) == 6 && (return false)
-    CSTParser.precedence(x.op) == 1 && (return false)
+    CSTParser.precedence(x.op) in (1, 6) && (return false)
     true
 end
 
@@ -579,9 +577,6 @@ function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{C
         add_node!(t, whitespace)
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, placeholderWS)
-        if x.op.kind == Tokens.EQ && CSTParser.defines_function(x)
-            add_node!(t, placeholder)
-        end
     else
         add_node!(t, whitespace)
         add_node!(t, pretty(x.op, s), join_lines=true)

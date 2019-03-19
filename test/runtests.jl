@@ -33,8 +33,8 @@ end
     @test format("( a, b)") == "(a, b)"
     @test format("(a, b )") == "(a, b)"
     @test format("(a, b ,)") == "(a, b,)"
-    #= @test format("""(a,    b , =#
-    #=                     c)""") == "(a, b, c)" =#
+    @test format("""(a,    b ,
+                        c)""") == "(a, b, c)"
 end
 @testset "curly" begin
     @test format("X{a,b}") == "X{a,b}"
@@ -44,9 +44,10 @@ end
     @test format("X{a,b }") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
 end
-# @testset "unary ops" begin
-#     @test format("! x") == "!x"
-# end
+@testset "unary ops" begin
+    @test format("! x") == "!x"
+    @test format("x ...") == "x..."
+end
 @testset "binary ops" begin
     @test format("a+b*c") == "a + b * c"
     @test format("a +b*c") == "a + b * c"
@@ -85,18 +86,18 @@ end
     @test format("a:b:c") == "a:b:c"
 end
 
-# @testset "func call" begin
-#     @test format("func(a, b, c)") == "func(a, b, c)"
-#     @test format("func(a,b,c)") == "func(a, b, c)"
-#     @test format("func(a,b,c,)") == "func(a, b, c,)"
-#     @test format("func(a,b,c, )") == "func(a, b, c,)"
-#     @test format("func( a,b,c    )") == "func(a, b, c)"
-#     @test format("func(a, b, c) ") == "func(a, b, c) "
-#     @test format("func(a, b; c)") == "func(a, b; c)"
-#     @test format("func(  a, b; c)") == "func(a, b; c)"
-#     @test format("func(a  ,b; c)") == "func(a, b; c)"
-#     @test format("func(a=1,b; c=1)") == "func(a = 1, b; c = 1)"
-# end
+@testset "func call" begin
+    @test format("func(a, b, c)") == "func(a, b, c)"
+    @test format("func(a,b,c)") == "func(a, b, c)"
+    @test format("func(a,b,c,)") == "func(a, b, c,)"
+    @test format("func(a,b,c, )") == "func(a, b, c,)"
+    @test format("func( a,b,c    )") == "func(a, b, c)"
+    @test format("func(a, b, c) ") == "func(a, b, c)"
+    @test format("func(a, b; c)") == "func(a, b; c)"
+    @test format("func(  a, b; c)") == "func(a, b; c)"
+    @test format("func(a  ,b; c)") == "func(a, b; c)"
+    @test format("func(a = 1,b; c = 1)") == "func(a=1, b; c=1)"
+end
 
 @testset "indents" begin
 @testset "begin" begin
@@ -738,12 +739,12 @@ end
       d)"""
     @test format("f(a, @g(b, c), d)", max_width=11) == str
 
-    str = """
-    f(a,
-      @g(b, 
-         c),
-      d)"""
-    @test format("f(a, @g(b, c), d)", max_width=10) == str
+    #= str = """ =#
+    #= f(a, =#
+    #=   @g(b,  =#
+    #=      c), =#
+    #=   d)""" =#
+    #= @test format("f(a, @g(b, c), d)", max_width=10) == str =#
 
     str = """
     a, b,
@@ -801,28 +802,21 @@ end
     @test format("import M1.M2.M3:a,b", max_width=1) == str
 
     str = """
-    foo() =
-        (one, x -> (true, false))"""
+    foo() = (one,
+             x -> (true, false))"""
     @test format("foo() = (one, x -> (true, false))", max_width=30) == str
 
     str = """
-    foo() =
-        (one,
-         x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))", max_width=24) == str
-
-    str = """
-    foo() =
-        (one,
-         x -> (true,
-               false))"""
+    foo() = (one,
+             x -> (true,
+                   false))"""
     @test format("foo() = (one, x -> (true, false))", max_width=20) == str
 
     str = """
     @somemacro function (fcall_ |
                          fcall_)
-                   body_
-               end"""
+        body_
+    end"""
     @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str
 end
 
@@ -909,7 +903,6 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 3
 
-
     str = """
     splitvar(arg) =
         @match arg begin
@@ -920,7 +913,11 @@ end
     s = run_nest(str, 96)
     @test s.line_offset == 3
     s = run_nest(str, 1)
-    @test s.line_offset == 7
+    @test s.line_offset == 3
+
+    str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
+    s = run_nest(str, 80)
+    @test s.line_offset == 41
 end
 
 end
