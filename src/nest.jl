@@ -14,7 +14,6 @@
 #
 # NOTE: this also applies to other nodes
 #
-#
 remaining_length(x::AbstractVector) = reverse(cumsum(reverse(length.(x))))
 
 walk(f, x::AbstractLeaf, s::State) = f(x, s)
@@ -35,16 +34,33 @@ reset_line_offset(x::AbstractLeaf, s::State) = (s.line_offset += length(x); noth
 
 nest!(x::AbstractLeaf, s::State) = (s.line_offset += length(x); nothing)
 function nest!(x::PTree, s::State)
-    @info "ENTER" typeof(x) s.line_offset
+    @info "ENTER" typeof(x) s.line_offset x.indent
     for (i, n) in enumerate(x.nodes)
-        if n === newline
+        if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            # correct the offset
+            s.line_offset = x.nodes[i+1].indent
+        elseif n === newline
             s.line_offset = x.indent
         else
             nest!(n, s)
         end
     end
-    @info "EXIT" typeof(x) s.line_offset
+    @info "EXIT" typeof(x) s.line_offset x.indent
 end
+
+#= function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Begin} =#
+#=     @info "ENTER" typeof(x) s.line_offset x.indent =#
+#=     for (i, n) in enumerate(x.nodes) =#
+#=         if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}} =#
+#=             s.line_offset = x.nodes[i+1].indent =#
+#=         elseif n === newline =#
+#=             s.line_offset = x.indent =#
+#=         else =#
+#=             nest!(n, s) =#
+#=         end =#
+#=     end =#
+#=     @info "EXIT" typeof(x) s.line_offset x.indent =#
+#= end =#
 
 function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Import,CSTParser.Using,CSTParser.Export}
     @info "ENTER" typeof(x) s.line_offset x
@@ -57,7 +73,6 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser
         line_offset = s.line_offset
 
         lens = length.(x.nodes[idx:end])
-        #= lens = rem_length(x.nodes[3:end]) =#
         @info "" lens s.line_offset line_offset
         for (i, n) in enumerate(x.nodes[idx:end])
             @info "" typeof(n) n s.line_offset
@@ -349,7 +364,7 @@ end
 # arg1 op
 # arg2
 function nest!(x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    @info "ENTER" typeof(x) s.line_offset x
+    @info "ENTER" typeof(x) s.line_offset x.indent length(x)
     # If there's no placeholder the binary call is not nestable
     if s.line_offset + length(x) > s.max_width && findfirst(n -> is_placeholder(n), x.nodes) !== nothing
         line_offset = s.line_offset
@@ -361,18 +376,22 @@ function nest!(x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CS
         x.indent = s.line_offset
         s.line_offset += lens[1]
 
-        @info "" s.line_offset x.indent
 
         x.nodes[idx+1] = newline
 
         if is_placeholder(x.nodes[idx+2])
             @info "BINARY FUNC0"
-            x.nodes[idx+2] = Spaces(s.indent_width)
             s.line_offset = x.indent + s.indent_width
+            # update so length(x) is correct
+            x.nodes[idx+2] = Spaces(s.indent_width)
             x.indent += s.indent_width
+            walk((x, s) -> x isa PTree && (x.indent += s.indent_width), x.nodes[end], s)
+            #= x.nodes[end].indent += s.indent_width =#
         else
             s.line_offset = x.indent
         end
+
+        @info "" s.line_offset x.indent
 
         # arg2
         nest!(x.nodes[end], s)
@@ -385,7 +404,6 @@ function nest!(x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CS
 
         s.line_offset = line_offset
         walk(reset_line_offset, x, s)
-        #= is_bfunc && (s.line_offset += s.indent_width) =#
     else
         for (i, n) in enumerate(x.nodes)
             #= @info "" typeof(n) s.line_offset length(n) =#
@@ -396,6 +414,6 @@ function nest!(x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CS
             end
         end
     end
-    @info "EXIT" typeof(x) s.line_offset
+    @info "EXIT" typeof(x) s.line_offset x.indent
 end
 

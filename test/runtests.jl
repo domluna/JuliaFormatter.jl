@@ -908,6 +908,19 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 3
+
+
+    str = """
+    splitvar(arg) =
+        @match arg begin
+            ::T_ => (nothing, T)
+            name_::T_ => (name, T)
+            x_ => (x, :Any)
+        end"""
+    s = run_nest(str, 96)
+    @test s.line_offset == 3
+    s = run_nest(str, 1)
+    @test s.line_offset == 7
 end
 
 end
