@@ -59,6 +59,7 @@ end
     @test format("a : b") == "a:b"
     @test format("a: b") == "a:b"
     @test format("a :b") == "a:b"
+    @test format("a +1 :b -1") == "a+1:b-1"
     @test format("a:b:c") == "a:b:c"
     @test format("a :b:c") == "a:b:c"
     @test format("a: b:c") == "a:b:c"
@@ -75,6 +76,11 @@ end
 
 @testset "comparison chain" begin
     @test format("a<b==c≥d") == "a < b == c ≥ d"
+end
+
+@testset "single line block" begin
+    @test format("(a;b;c)") == "(a; b; c)"
+    @test format("(a;)") == "(a)"
 end
 
 @testset "colon op" begin
@@ -818,6 +824,10 @@ end
         body_
     end"""
     @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str
+
+    str = "(a; b; c)"
+    @test format("(a;b;c)", max_width=100) == str
+    @test format("(a;b;c)", max_width=1) == str
 end
 
 @testset "nesting line offset" begin

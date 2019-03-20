@@ -22,10 +22,12 @@ struct PlaceholderWS <: AbstractLeaf
 end
 Base.length(::PlaceholderWS) = 1
 
-struct Spaces <: AbstractLeaf
-    n::Int
+struct Comment <: AbstractLeaf
+    startline::Int
+    endline::Int
+    indent::Int
 end
-Base.length(x::Spaces) = x.n
+Base.length(::Comment) = 0
 
 const newline = Newline()
 const semicolon = Semicolon()
@@ -67,6 +69,7 @@ function add_node!(x::PTree, node::AbstractLeaf)
     x.plength += length(node)
     push!(x.nodes, node)
 end
+
 function add_node!(x::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     is_empty_space(node) && (return)
     if length(x.nodes) == 0
@@ -305,9 +308,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line
             if i == 1 || CSTParser.is_comma(x.args[i-1])
                 add_node!(t, n, join_lines=true)
             else
-                add_node!(t, n, join_lines=true)
                 add_node!(t, semicolon)
                 add_node!(t, whitespace)
+                add_node!(t, n, join_lines=true)
             end
         else
             add_node!(t, n)
@@ -566,8 +569,11 @@ end
 
 function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
     t = PTree(x, nspaces(s))
+
+    x.op.kind == Tokens.COLON && (nospaces = true)
     arg1 = x.arg1 isa T ? pretty(x.arg1, s, nospaces=nospaces, nonest=nonest) : pretty(x.arg1, s)
     add_node!(t, arg1)
+
     if (CSTParser.precedence(x.op) in (8, 13, 14, 16) && x.op.kind != Tokens.ANON_FUNC) || nospaces
         add_node!(t, pretty(x.op, s), join_lines=true)
     elseif x.op.kind == Tokens.EX_OR
@@ -582,8 +588,10 @@ function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{C
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, whitespace)
     end
+
     arg2 = x.arg2 isa T ? pretty(x.arg2, s, nospaces=nospaces, nonest=nonest) : pretty(x.arg2, s)
     add_node!(t, arg2, join_lines=true)
+
     t
 end
 
