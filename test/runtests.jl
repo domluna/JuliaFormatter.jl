@@ -19,9 +19,11 @@ function run_pretty(text::String)
 end
 
 @testset "All" begin
+
 @testset "basic" begin
     @test format("a") == "a"
 end
+
 @testset "tuples" begin
     @test format("a,b") == "a, b"
     @test format("a ,b") == "a, b"
@@ -36,6 +38,7 @@ end
     @test format("""(a,    b ,
                         c)""") == "(a, b, c)"
 end
+
 @testset "curly" begin
     @test format("X{a,b}") == "X{a,b}"
     @test format("X{ a,b}") == "X{a,b}"
@@ -44,10 +47,12 @@ end
     @test format("X{a,b }") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
 end
+
 @testset "unary ops" begin
     @test format("! x") == "!x"
     @test format("x ...") == "x..."
 end
+
 @testset "binary ops" begin
     @test format("a+b*c") == "a + b * c"
     @test format("a +b*c") == "a + b * c"
@@ -105,12 +110,11 @@ end
     @test format("func(a = 1,b; c = 1)") == "func(a=1, b; c=1)"
 end
 
-@testset "indents" begin
 @testset "begin" begin
-str = """
-begin
-    arg
-end"""
+    str = """
+    begin
+        arg
+    end"""
     @test format("""
                 begin
                 arg
@@ -151,7 +155,6 @@ end"""
                 arg
                         end
                 end""") == str
-end
 end
 
 @testset "quote" begin
@@ -222,27 +225,6 @@ end
     for iter in I, iter2 in I2
             arg
         end""") == str
-
-    #= str = """ =#
-    #= for iter in I, iter2 in I2 =#
-    #=     arg =#
-    #= end""" =#
-    #= @test format(""" =#
-    #= for iter=I, iter2 in I2 =#
-    #=     arg =#
-    #= end""", convert_iterator_ops=true) == str =#
-    #= @test format(""" =#
-    #= for iter =I, iter2 in I2 =#
-    #=     arg =#
-    #= end""", convert_iterator_ops=true) == str =#
-    #= @test format(""" =#
-    #= for iter =I, iter2 in I2 =#
-    #=     arg =#
-    #= end""", convert_iterator_ops=true) == str =#
-    #= @test format(""" =#
-    #= for iter = I, iter2 = I2 =#
-    #=     arg =#
-    #= end""", convert_iterator_ops=true) == str =#
 end
 
 @testset "while" begin
@@ -478,60 +460,67 @@ end
 
     # tests indentation and correctly formatting a docstring with escapes
     #
-    #= str = """ =#
-    #=    begin =#
-    #=        \""" =#
-    #=            f =#
-    #=  =#
-    #=        docstring for f =#
-    #=        :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...); =#
-    #=                                             \$(dict[:kwargs]...))::\$rtype =#
-    #=        \$(dict[:body]) =#
-    #=        \""" =#
-    #=        function f() =#
-    #=            100 =#
-    #=        end =#
-    #=    end""" =#
-    #= @test format(""" =#
-    #=    begin =#
-    #=    \""" =#
-    #=        f =#
-    #=  =#
-    #=    docstring for f =#
-    #=    :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...); =#
-    #=                                         \$(dict[:kwargs]...))::\$rtype =#
-    #=    \$(dict[:body]) =#
-    #=    \""" =#
-    #=    function f() =#
-    #=    100 =#
-    #=    end =#
-    #=    end""") == str =#
+    str = """
+       begin
+           \"""
+               f
+
+           docstring for f
+           :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
+                                                \$(dict[:kwargs]...))::\$rtype
+           \$(dict[:body])
+           \"""
+           function f()
+               100
+           end
+       end"""
+    @test format("""
+       begin
+       \"""
+           f
+
+       docstring for f
+       :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
+                                            \$(dict[:kwargs]...))::\$rtype
+       \$(dict[:body])
+       \"""
+       function f()
+       100
+       end
+       end""") == str
 end
 
-#= @testset "comments" begin =#
-#=     str = """ =#
-#=     module Foo =#
-#=     # comment 1 =#
-#=     begin =#
-#=         # comment 2 =#
-#=         begin =#
-#=             # comment 3 =#
-#=             a = 10 =#
-#=         end =#
-#=     end =#
-#=     end""" =#
-#=     @test format(""" =#
-#=     module Foo =#
-#=     # comment 1 =#
-#=     begin =#
-#=     # comment 2 =#
-#=     begin =#
-#=     # comment 3 =#
-#=     a = 10 =#
-#=     end =#
-#=     end =#
-#=     end""") == str =#
-#= end =#
+@testset "comments" begin
+    str = """
+    module Foo
+    # comment 1
+    begin
+        # comment 2
+        # comment 3
+        begin
+            # comment 4
+            # comment 5
+            a = 10
+        end
+    end
+    end"""
+    @test format("""
+    module Foo
+    # comment 1
+    begin
+    # comment 2
+    # comment 3
+    begin
+    # comment 4
+    # comment 5
+    a = 10
+    end
+    end
+    end""") == str
+
+    str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
+    @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str
+end
 
 @testset "reformat" begin
 
@@ -673,26 +662,6 @@ end
              Foo"""
     @test format("\"\"\"doc for Foo\"\"\"\nFoo") == str
 
-    #= str = """function f() where {A} =#
-    #=          end""" =#
-    #= @test format("function f() where A end") == str =#
-
-    #= str = """ =#
-    #=       # comment 0 =#
-    #=  =#
-    #=       a = 1 =#
-    #=  =#
-    #=       # comment 1 =#
-    #=  =#
-    #=       b = 2 =#
-    #=  =#
-    #=       c = 3 =#
-    #=  =#
-    #=       # comment 2 =#
-    #=  =#
-    #=       """ =#
-    #= @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str =#
-
     str = """
     [a b c]"""
     @test format("[a   b         c   ]") == str
@@ -713,9 +682,27 @@ end
     T[a; b; c; e d f]"""
     @test format("T[a;   b;         c;   e  d    f   ]") == str
 
-    str = """
-    T[e for e in x]"""
+    str = """T[e for e in x]"""
     @test format("T[e  for e in x  ]") == str
+
+    #= str = """ =#
+    #= begin =#
+    #=     s = \"\"\"This is a multiline string. =#
+    #=               This is another line. =#
+    #=                   Look another 1 that is indented a bit. =#
+    #=  =#
+    #=                   cool!\"\"\" =#
+    #= end""" =#
+    #=  =#
+    #= @test format(""" =#
+    #= begin =#
+    #= s = \"\"\"This is a multiline string. =#
+    #=           This is another line. =#
+    #=               Look another 1 that is indented a bit. =#
+    #=  =#
+    #=               cool!\"\"\" =#
+    #= end""") == str =#
+
 
 end
 
@@ -731,7 +718,6 @@ end
     end"""
     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_width=1) == str
 
-    # (|, ||, &&, &) are foldable
     str = """
     a |
     b |
@@ -828,6 +814,11 @@ end
     str = "(a; b; c)"
     @test format("(a;b;c)", max_width=100) == str
     @test format("(a;b;c)", max_width=1) == str
+
+    str = "(x for x in 1:10)"
+    @test format("(x   for x  in  1 : 10)", max_width=100) == str
+    @test format("(x   for x  in  1 : 10)", max_width=1) == str
+
 end
 
 @testset "nesting line offset" begin

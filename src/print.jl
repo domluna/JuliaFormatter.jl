@@ -1,7 +1,3 @@
-# Print the PTree.
-#
-# TODO: comments
-
 print_tree(io::IOBuffer, x::PLeaf, ::State) = write(io, x.text)
 print_tree(io::IOBuffer, ::Newline, ::State) = write(io, "\n")
 print_tree(io::IOBuffer, ::Semicolon, ::State) = write(io, ";")
@@ -14,6 +10,8 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            write(io, repeat(" ", x.nodes[i+1].indent))
+        elseif n === newline && x.nodes[i+1] isa Comment
             write(io, repeat(" ", x.nodes[i+1].indent))
         elseif n === newline
             write(io, ws)
@@ -28,6 +26,8 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
         print_tree(io, n, s)
         if n === newline
             if x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa Comment
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
                 v = x.nodes[i+1].text
@@ -48,34 +48,18 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
 end
 
 function print_tree(io::IOBuffer, x::Comment, s::State)
-    comment_range = x.endline+1:x.startline-1
+    r = x.startline:x.endline
+    @info "PRINTING COMMENT" r x.indent x
     ws = repeat(" ", x.indent)
-    for (i, l) in enumerate(comment_range)
+
+    for (i, l) in enumerate(r)
         v = s.doc.text[s.doc.ranges[l]]
-
-        @info l, v
-
-        # remove extra newlines
-        if i < length(comment_range) && v == "\n"
-            vn = s.doc.text[s.doc.ranges[l+1]]
-            v == vn && (continue)
-        end
-
-        if v == "\n"
-            #= comment_text = rstrip(comment_text, ' ') * v * w =#
-            write(io, v)
-            write(io, ws)
-            continue
-        end
-
-        i = first(findfirst(x -> !isspace(x), v))
-        if v[i] == '#'
-            write(io, v[i:end])
-            write(io, ws)
-        else
-            # This captures the possible additional indentation in a docstring
-            i = max(min(i, s.indents-1 * s.indent_width), 1)
-            write(io, v[i:end])
+        idx = findfirst(x -> !isspace(x), v)
+        @info "" l v idx
+        if idx === nothing
+            v == "\n" && (write(io, v); write(io, ws))
+        elseif v[idx] == '#'
+            write(io, v[idx:end])
             write(io, ws)
         end
     end

@@ -92,13 +92,21 @@ function format(text::String; indent_width=4, max_width=80)
     d = Document(text)
     s = State(d, indent_width, 0, 1, 0, max_width)
     x = CSTParser.parse(text, true)
-    tree = pretty(x, s)
-    nest!(tree, s)
-    #= @info "" tree =#
+    t = pretty(x, s)
+    nest!(t, s)
+    #= @info "" t =#
 
     io = IOBuffer()
-    print_tree(io, tree, s)
-    return String(take!(io))
+    if t.startline > 1
+        print_tree(io, Comment(1, t.startline-1, 0), s)
+    end
+    print_tree(io, t, s)
+    if t.endline < length(s.doc.ranges)
+        print_tree(io, newline, s)
+        print_tree(io, Comment(t.endline+1, length(s.doc.ranges), 0), s)
+    end
+
+    String(take!(io))
 end
 
 end # module
