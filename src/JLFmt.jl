@@ -94,7 +94,7 @@ function format(text::String; indent_width=4, max_width=80)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
-    #= @info "" t =#
+    @info "" t
 
     io = IOBuffer()
     if t.startline > 1

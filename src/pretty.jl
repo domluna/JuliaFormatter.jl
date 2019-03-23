@@ -54,6 +54,8 @@ is_lbrace(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{"
 is_lparen(_) = false
 is_lparen(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "("
 is_placeholder(x) = x === placeholder || x === placeholderWS
+is_empty_lit(_) = false
+is_empty_lit(x::PLeaf{CSTParser.LITERAL}) = x.text == ""
 
 mutable struct PTree{T}
     startline::Int
@@ -72,6 +74,7 @@ function add_node!(t::PTree, node::AbstractLeaf)
 end
 
 function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
+    #= is_empty(node) && (return) =#
     if length(t.nodes) == 0
         t.startline = node.startline
         t.endline = node.endline
@@ -91,8 +94,12 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
         end
     end
 
-    (node.startline < t.startline || t.startline == -1) && (t.startline = node.startline)
-    (node.endline > t.endline || t.endline == -1) && (t.endline = node.endline)
+    if node.startline < t.startline || t.startline == -1 
+        t.startline = node.startline
+    end
+    if node.endline > t.endline || t.endline == -1 
+        t.endline = node.endline
+    end
     t.plength += length(node)
     push!(t.nodes, node)
     nothing
@@ -204,18 +211,19 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
     if CSTParser.is_lit_string(x)
         t = PTree{CSTParser.StringH}(nspaces(s))
 
+        # invoke stringH
+
         q = x.kind == Tokens.TRIPLE_STRING || is_doc ? "\"\"\"" : "\""
         ln = loc[1]
         if surround_with_quotes
-            n = PLeaf{CSTParser.LITERAL}(ln, ln, q)
-            add_node!(t, n)
+            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, q))
         end
 
         lines = split(x.val, "\n")
         @info "" lines x.val
 
         l = escape_string(lines[1], "\$")
-        if is_doc && l !== ""
+        if is_doc && l != ""
             ln += 1
             n = PLeaf{CSTParser.LITERAL}(ln, ln, l)
             add_node!(t, n)
@@ -225,22 +233,21 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
         end
 
         for (i, l) in enumerate(lines[2:end])
-            ln += 1
             l = escape_string(l, "\$")
-            n = PLeaf{CSTParser.LITERAL}(ln, ln, l)
-            # don't add a final newline
-            if i == length(lines)-1 && l == ""
-                #= add_node!(t, n, join_lines=true) =#
-                #= add_node!(t, newline) =#
-                add_node!(t, n)
-            else
-                add_node!(t, n)
-            end
+            @info "" i l t
+            ln += 1
+            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
         end
 
         if surround_with_quotes
             n = PLeaf{CSTParser.LITERAL}(ln, ln, q)
-            is_doc ? add_node!(t, n) : add_node!(t, n, join_lines=true) 
+            # if the last node is an empty literal
+            # there's already a newline
+            if is_empty_lit(t.nodes[end]) || !is_doc
+                add_node!(t, n, join_lines=true)
+            else
+                add_node!(t, n)
+            end
         end
 
         @info "" t
@@ -260,19 +267,24 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; is_doc=false)
         if a isa CSTParser.LITERAL
             n = pretty(a, s, surround_with_quotes=false, is_doc=is_doc)
             @info "" n
-            length(n) == 0 && (continue)
-            i == 1 ? add_node!(t, n) : add_node!(t, n, join_lines=true)
+            if i == 1 && is_doc && length(n) != 0
+                add_node!(t, n)
+            else
+                add_node!(t, n, join_lines=true)
+            end
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
     end
 
     loc = cursor_loc(s)
-    if is_doc
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q))
+    n = PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q)
+    if is_empty_lit(t.nodes[end].nodes[end]) || !is_doc
+        add_node!(t, n, join_lines=true)
     else
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q), join_lines=true)
+        add_node!(t, n)
     end
+
     t
 end
 
