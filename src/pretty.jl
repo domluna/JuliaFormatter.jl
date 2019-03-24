@@ -319,13 +319,10 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
                 # assumes the next argument is a brace of some sort
                 add_node!(t, n, join_lines=true)
             end
-        elseif i > 2 && CSTParser.is_comma(x.args[i-1])
-            add_node!(t, placeholder)
-            add_node!(t, n, join_lines=true)
-        elseif a.fullspan - a.span > 0
-            add_node!(t, n, join_lines=true)
-            add_node!(t, whitespace)
         elseif CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
+            add_node!(t, n, join_lines=true)
+            add_node!(t, placeholderWS)
+        elseif a.fullspan - a.span > 0 && i < length(x)
             add_node!(t, n, join_lines=true)
             add_node!(t, whitespace)
         else
@@ -728,11 +725,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
     for (i, a) in enumerate(x)
         if CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, pretty(a, s), join_lines=true)
-            if !(x isa CSTParser.EXPR{CSTParser.Braces})
-                add_node!(t, placeholderWS)
-            else
-                add_node!(t, placeholder)
-            end
+            add_node!(t, placeholderWS)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end

@@ -21,28 +21,6 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     end
 end
 
-#= function print_tree(io::IOBuffer, x::PTree{CSTParser.StringH}, s::State) =#
-#=     if length(x.nodes) == 3 =#
-#=         if is_empty_lit(x.nodes[1]) && x.nodes[2] === newline && is_empty_lit(x.nodes[3])  =#
-#=             print_tree(io, newline, s) =#
-#=             return =#
-#=        end =#
-#=     end =#
-#=     ws = repeat(" ", x.indent) =#
-#=     for (i, n) in enumerate(x.nodes) =#
-#=         print_tree(io, n, s) =#
-#=         if n === newline =#
-#=             if x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}} =#
-#=                 write(io, repeat(" ", x.nodes[i+1].indent)) =#
-#=             elseif x.nodes[i+1] isa Comment =#
-#=                 write(io, repeat(" ", x.nodes[i+1].indent)) =#
-#=             else =#
-#=                 write(io, ws) =#
-#=             end =#
-#=         end =#
-#=     end =#
-#= end =#
-
 function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
     ws = repeat(" ", x.indent)
     n1 = x.nodes[1]

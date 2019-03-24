@@ -460,6 +460,8 @@ end
 
     # tests indentation and correctly formatting a docstring with escapes
     #
+    # NOTE: At the moment indentation is printed after a newline even if the
+    # next line is a newline. I added some indentation so this passes for now.
     str = """
        begin
            \"""
@@ -488,6 +490,23 @@ end
        100
        end
        end""") == str
+end
+
+@testset "strings" begin
+    str = """
+    \"""
+    Interpolate using `\\\$`
+    \"""
+    """
+
+    @test format(str) == str
+
+    str = """
+    \"""
+     \\\\ 
+    \"""
+    x"""
+    @test format("\" \\\\ \" x") == str
 end
 
 @testset "comments" begin
@@ -725,18 +744,6 @@ end
     d"""
     @test format("a | b | c | d", max_width=1) == str
 
-    str = """
-    f(a,
-      @g(b, c),
-      d)"""
-    @test format("f(a, @g(b, c), d)", max_width=11) == str
-
-    #= str = """ =#
-    #= f(a, =#
-    #=   @g(b,  =#
-    #=      c), =#
-    #=   d)""" =#
-    #= @test format("f(a, @g(b, c), d)", max_width=10) == str =#
 
     str = """
     a, b,
@@ -858,9 +865,11 @@ end
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
-    @test s.line_offset == 22
+    @test s.line_offset == 20
     s = run_nest(str, 20)
     @test s.line_offset == 20
+    s = run_nest(str, 19)
+    @test s.line_offset == 14
     s = run_nest(str, 1)
     @test s.line_offset == 14
 
@@ -869,8 +878,10 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 25
-    s = run_nest(str, 20)
+    s = run_nest(str, 25)
     @test s.line_offset == 25
+    s = run_nest(str, 24)
+    @test s.line_offset == 19
     s = run_nest(str, 1)
     @test s.line_offset == 19
 
@@ -925,6 +936,95 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 12
+end
+
+@testset "additional length" begin
+    str = """
+    f(a,
+      @g(b, c),
+      d)"""
+    @test format("f(a, @g(b, c), d)", max_width=11) == str
+
+    str = """
+    f(a,
+      @g(b,
+         c),
+      d)"""
+    @test format("f(a, @g(b, c), d)", max_width=10) == str
+
+    str = """
+    (a,
+     (b,
+      c),
+     d)"""
+    @test format("(a, (b, c), d)", max_width=7) == str
+
+    str = """
+    (a,
+     {b,
+      c},
+     d)"""
+    @test format("(a, {b, c}, d)", max_width=6) == str
+
+    str = """
+    a,
+    (b,
+     c), d"""
+    @test format("a, (b, c), d", max_width=6) == str
+
+    str = """
+    a,
+    (b, c),
+    d"""
+    @test format("a, (b, c), d", max_width=7) == str
+
+    str = """
+    (var1,
+     var2) &&
+    var3"""
+    @test format("(var1,var2) && var3", max_width=14) == str
+
+    str = """
+    (var1, var2) &&
+    var3"""
+    @test format("(var1,var2) && var3", max_width=15) == str
+
+    str = """
+    (var1, var2) ?
+    (var3, var4) :
+    var5"""
+    @test format("(var1,var2) ? (var3,var4) : var5", max_width=14) == str
+
+    str = """
+    (var1,
+     var2) ?
+    (var3,
+     var4) :
+    var5"""
+    @test format("(var1,var2) ? (var3,var4) : var5", max_width=13) == str
+
+    str = """
+    (var1, var2) ? (var3, var4) :
+    var5"""
+    @test format("(var1,var2) ? (var3,var4) : var5", max_width=30) == str
+
+    str = """
+    (var1, var2) ?
+    (var3, var4) :
+    var5"""
+    @test format("(var1,var2) ? (var3,var4) : var5", max_width=29) == str
+
+    str = """
+    f(var1::A, var2::B) where {A,
+                               B}"""
+    @test format("f(var1::A, var2::B) where {A,B}", max_width=30) == str
+
+    str = """
+    f(var1::A,
+      var2::B) where {A,
+                      B}"""
+    @test format("f(var1::A, var2::B) where {A,B}", max_width=28) == str
+
 end
 
 end

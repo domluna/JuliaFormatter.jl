@@ -62,7 +62,6 @@ struct Document
 end
 Document(s::String) = Document(s, newline_ranges(s))
 
-
 mutable struct State
     doc::Document
     indent_width::Int
@@ -93,8 +92,8 @@ function format(text::String; indent_width=4, max_width=80)
     s = State(d, indent_width, 0, 1, 0, max_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
+    #= @info "" t =#
     nest!(t, s)
-    @info "" t
 
     io = IOBuffer()
     if t.startline > 1
