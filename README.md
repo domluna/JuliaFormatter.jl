@@ -60,6 +60,7 @@ Finally, the `PTree` to an `IOBuffer` with `print_tree` which is then consumed a
 
 * https://github.com/ZacLN/CSTParser.jl/issues/93
 * https://github.com/ZacLN/CSTParser.jl/issues/88
+* https://github.com/ZacLN/CSTParser.jl/issues/94
 
 If a comment is at the end of a line of code it will be removed.
 
