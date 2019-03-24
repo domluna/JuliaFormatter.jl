@@ -13,12 +13,6 @@ version = "0.5.2+"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
-[[DocumentFormat]]
-deps = ["CSTParser", "Test", "Tokenize"]
-path = "/home/domluna/.julia/dev/DocumentFormat"
-uuid = "ffa9a821-9c82-50df-894e-fbcef3ed31cd"
-version = "0.3.0+"
-
 [[InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"

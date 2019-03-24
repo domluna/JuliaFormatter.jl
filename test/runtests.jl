@@ -493,13 +493,12 @@ end
 end
 
 @testset "strings" begin
-    str = """
-    \"""
-    Interpolate using `\\\$`
-    \"""
-    """
-
-    @test format(str) == str
+    #= str = """ =#
+    #= \""" =#
+    #= Interpolate using `\\\$` =#
+    #= \""" =#
+    #= """ =#
+    #= @test format(str) == str =#
 
     str = """
     \"""
@@ -507,9 +506,27 @@ end
     \"""
     x"""
     @test format("\" \\\\ \" x") == str
+    
+    #= str = """ =#
+    #= begin =#
+    #=     s = \"\"\"This is a multiline string. =#
+    #=               This is another line. =#
+    #=                   Look another 1 that is indented a bit. =#
+    #=  =#
+    #=                   cool!\"\"\" =#
+    #= end""" =#
+    #=  =#
+    #= @test format(""" =#
+    #= begin =#
+    #= s = \"\"\"This is a multiline string. =#
+    #=           This is another line. =#
+    #=               Look another 1 that is indented a bit. =#
+    #=  =#
+    #=               cool!\"\"\" =#
+    #= end""") == str =#
 end
 
-@testset "comments" begin
+@testset "notcode" begin
     str = """
     module Foo
     # comment 1
@@ -541,7 +558,7 @@ end
     @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str
 end
 
-@testset "reformat" begin
+@testset "pretty" begin
 
     str = """function foo end"""
     @test format("""
@@ -704,28 +721,9 @@ end
     str = """T[e for e in x]"""
     @test format("T[e  for e in x  ]") == str
 
-    #= str = """ =#
-    #= begin =#
-    #=     s = \"\"\"This is a multiline string. =#
-    #=               This is another line. =#
-    #=                   Look another 1 that is indented a bit. =#
-    #=  =#
-    #=                   cool!\"\"\" =#
-    #= end""" =#
-    #=  =#
-    #= @test format(""" =#
-    #= begin =#
-    #= s = \"\"\"This is a multiline string. =#
-    #=           This is another line. =#
-    #=               Look another 1 that is indented a bit. =#
-    #=  =#
-    #=               cool!\"\"\" =#
-    #= end""") == str =#
-
-
 end
 
-@testset "width-sensitive" begin
+@testset "nesting" begin
     str = """
     function f(arg1::A,
                key1=val1;

@@ -1,33 +1,33 @@
-# Creates a pretty text version of a CST.
-#
-abstract type AbstractLeaf end
+# Creates a _prettified_ version of a CST.
 
-struct Newline <: AbstractLeaf
+abstract type AbstractPLeaf end
+
+struct Newline <: AbstractPLeaf
 end
 Base.length(::Newline) = 1
 
-struct Semicolon <: AbstractLeaf
+struct Semicolon <: AbstractPLeaf
 end
 Base.length(::Semicolon) = 1
 
-struct Whitespace <: AbstractLeaf
+struct Whitespace <: AbstractPLeaf
 end
 Base.length(::Whitespace) = 1
 
-struct Placeholder <: AbstractLeaf
+struct Placeholder <: AbstractPLeaf
 end
 Base.length(::Placeholder) = 0
 
-struct PlaceholderWS <: AbstractLeaf
+struct PlaceholderWS <: AbstractPLeaf
 end
 Base.length(::PlaceholderWS) = 1
 
-struct Comment <: AbstractLeaf
+struct NotCode <: AbstractPLeaf
     startline::Int
     endline::Int
     indent::Int
 end
-Base.length(::Comment) = 0
+Base.length(::NotCode) = 0
 
 const newline = Newline()
 const semicolon = Semicolon()
@@ -35,7 +35,7 @@ const whitespace = Whitespace()
 const placeholder = Placeholder()
 const placeholderWS = PlaceholderWS()
 
-struct PLeaf{T} <: AbstractLeaf
+struct PLeaf{T} <: AbstractPLeaf
     startline::Int
     endline::Int
     text::String
@@ -62,13 +62,13 @@ mutable struct PTree{T}
     endline::Int
     indent::Int
     plength::Int
-    nodes::Vector{Union{PTree,AbstractLeaf}}
+    nodes::Vector{Union{PTree,AbstractPLeaf}}
 end
 PTree(::T, indent::Int) where T = PTree{T}(-1, -1, indent, 0, Union{PTree,PLeaf}[])
 PTree{T}(indent::Int) where T = PTree{T}(-1, -1, indent, 0, Union{PTree,PLeaf}[])
 Base.length(x::PTree) = x.plength
 
-function add_node!(t::PTree, node::AbstractLeaf)
+function add_node!(t::PTree, node::AbstractPLeaf)
     t.plength += length(node)
     push!(t.nodes, node)
 end
@@ -84,11 +84,11 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     end
 
     if t.nodes[end] !== newline && !join_lines
-        comment_startline = t.nodes[end].endline+1 
-        comment_endline = node.startline-1
-        if comment_startline <= comment_endline && node isa PTree
+        notcode_startline = t.nodes[end].endline+1 
+        notcode_endline = node.startline-1
+        if notcode_startline <= notcode_endline && node isa PTree
             add_node!(t, newline)
-            push!(t.nodes, Comment(comment_startline, comment_endline, node.indent))
+            push!(t.nodes, NotCode(notcode_startline, notcode_endline, node.indent))
         else
             add_node!(t, newline)
         end
@@ -194,15 +194,6 @@ function pretty(x::CSTParser.PUNCTUATION, s::State)
     PLeaf(x, loc[1], loc[1], text)
 end
 
-
-
-# TODO: literal has to be split on newlines
-# newlines will be added via a Newline node.
-# This allows for multiline string literals
-# to be properly indented.
-#
-# TODO: don't escape newlines in TRIPLE_STRING
-# this needs a change in CSTParser
 function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_doc=false)
     loc = cursor_loc(s)
     s.offset += x.fullspan
@@ -220,7 +211,7 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
         end
 
         lines = split(x.val, "\n")
-        @info "" lines x.val
+        #= @info "" lines x.val =#
 
         l = escape_string(lines[1], "\$")
         if is_doc && l != ""
@@ -234,7 +225,6 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
 
         for (i, l) in enumerate(lines[2:end])
             l = escape_string(l, "\$")
-            @info "" i l t
             ln += 1
             add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
         end
@@ -250,7 +240,7 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
             end
         end
 
-        @info "" t
+        #= @info "" t =#
         return t
     end
 
@@ -266,7 +256,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; is_doc=false)
     for (i, a) in enumerate(x)
         if a isa CSTParser.LITERAL
             n = pretty(a, s, surround_with_quotes=false, is_doc=is_doc)
-            @info "" n
+            #= @info "" n =#
             if i == 1 && is_doc && length(n) != 0
                 add_node!(t, n)
             else
@@ -525,10 +515,6 @@ function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
     t
 end
 
-# TODO: See if we can change .If in CSTParser to either
-# 1) 4 element struct i.e. "if cond block end"
-# 2) 6 element struct i.e. "if cond block1 else block2 end"
-# 3) n element struct, same as 1) or 2) but with elseif
 function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))

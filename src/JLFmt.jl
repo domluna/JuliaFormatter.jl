@@ -1,34 +1,11 @@
 module JLFmt
 
-# One pass requires use of .span in order to check lengths.
-#
-# PROBLEM: The number of characters in .span doesn't equal a pretty printed version of the CST.
-# Ex: (a,b) should be 6 since the pretty printed version is (a, b) but span will return 5
-# 
-# If A comes before B, then if A has to be indented B will also need to be indented.
-# But we could indent B without indenting A. Assuming A and B don't need to be joined:
-#
-#   E1 where E2
-#
-# A is "E1 where "
-# B is "E2"
-#
-# Anyway ... here's how this will go.
-#
-# 1) Prettify the CST, basically this is
-# a CST but with prettified text instead of a CST node.
-# 2) Nest (width-sensitive) pass
-# 3) Comment pass
-# 4) Print pass
-# 5) Profit (jk no money in OSS)
-#
-
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
 export format
 
-function newline_ranges(text::String)
+function line_ranges(text::String)
     ranges = UnitRange{Int}[]
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
@@ -41,7 +18,6 @@ function newline_ranges(text::String)
                 offset += 1
             end
         elseif t.kind == Tokens.ENDMARKER
-            #= push!(ranges, 1:t.startbyte+1) =#
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
             push!(ranges, s:t.startbyte)
         elseif (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING) && t.startpos[1] != t.endpos[1]
@@ -60,7 +36,7 @@ struct Document
     text::String
     ranges::Vector{UnitRange{Int}}
 end
-Document(s::String) = Document(s, newline_ranges(s))
+Document(s::String) = Document(s, line_ranges(s))
 
 mutable struct State
     doc::Document
@@ -92,17 +68,18 @@ function format(text::String; indent_width=4, max_width=80)
     s = State(d, indent_width, 0, 1, 0, max_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
-    #= @info "" t =#
     nest!(t, s)
 
     io = IOBuffer()
+    # Print comments and whitespace before any code.
     if t.startline > 1
-        print_tree(io, Comment(1, t.startline-1, 0), s)
+        print_tree(io, NotCode(1, t.startline-1, 0), s)
     end
     print_tree(io, t, s)
+    # Print comments and whitespace after any code.
     if t.endline < length(s.doc.ranges)
         print_tree(io, newline, s)
-        print_tree(io, Comment(t.endline+1, length(s.doc.ranges), 0), s)
+        print_tree(io, NotCode(t.endline+1, length(s.doc.ranges), 0), s)
     end
 
     String(take!(io))

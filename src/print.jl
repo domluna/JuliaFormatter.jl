@@ -12,7 +12,7 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         if n === newline
             if x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
                 write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1] isa Comment
+            elseif x.nodes[i+1] isa NotCode
                 write(io, repeat(" ", x.nodes[i+1].indent))
             else
                 write(io, ws)
@@ -29,7 +29,7 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
         if n === newline
             if x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
                 write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1] isa Comment
+            elseif x.nodes[i+1] isa NotCode
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
                 v = x.nodes[i+1].text
@@ -49,15 +49,15 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
     end
 end
 
-function print_tree(io::IOBuffer, x::Comment, s::State)
+function print_tree(io::IOBuffer, x::NotCode, s::State)
     r = x.startline:x.endline
-    @info "PRINTING COMMENT" r x.indent x
+    #= @info "PRINTING NotCode" r x.indent x =#
     ws = repeat(" ", x.indent)
 
     for (i, l) in enumerate(r)
         v = s.doc.text[s.doc.ranges[l]]
         idx = findfirst(x -> !isspace(x), v)
-        @info "" l v idx
+        #= @info "" l v idx =#
         if idx === nothing
             v == "\n" && (write(io, v); write(io, ws))
         elseif v[idx] == '#'
