@@ -4,7 +4,7 @@
 
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
 
-![format example](./jlfmt0.png)
+![format example](./jlfmt.png)
 
 `JLFmt` exports a singular function:
 
