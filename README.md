@@ -6,6 +6,10 @@ Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
 
 ![format example](./jlfmt.png)
 
+```julia
+]add https://github.com/domluna/JLFmt
+```
+
 `JLFmt` exports a singular function:
 
 ```julia
