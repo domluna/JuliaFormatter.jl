@@ -64,6 +64,9 @@ include("nest.jl")
 include("print.jl")
 
 function format(text::String; indent_width=4, max_width=80)
+    if isempty(text)
+        return text
+    end
     d = Document(text)
     s = State(d, indent_width, 0, 1, 0, max_width)
     x = CSTParser.parse(text, true)

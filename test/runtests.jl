@@ -22,6 +22,7 @@ end
 
 @testset "basic" begin
     @test format("a") == "a"
+    @test format("") == ""
 end
 
 @testset "tuples" begin
@@ -466,7 +467,7 @@ end
        begin
            \"""
                f
-    
+
            docstring for f
            :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
                                                 \$(dict[:kwargs]...))::\$rtype
@@ -502,11 +503,11 @@ end
 
     str = """
     \"""
-     \\\\ 
+     \\\\
     \"""
     x"""
     @test format("\" \\\\ \" x") == str
-    
+
     #= str = """ =#
     #= begin =#
     #=     s = \"\"\"This is a multiline string. =#
