@@ -1,5 +1,7 @@
 # JLFmt
 
+[![Build Status](https://travis-ci.org/domluna/JLFmt.svg?branch=master)](https://travis-ci.org/domluna/JLFmt)
+
 **WARNING.** This an alpha release meant to find bugs. Overwrite files at your peril!
 
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
