@@ -501,12 +501,15 @@ end
     #= """ =#
     #= @test format(str) == str =#
 
+    str = """error("foo\\n\\nbar")"""
+    @test format(str) == str
+
     str = """
     \"""
-     \\\\
+    \\\\
     \"""
     x"""
-    @test format("\" \\\\ \" x") == str
+    @test format("\"\\\\\" x") == str
 
     #= str = """ =#
     #= begin =#
@@ -630,10 +633,6 @@ end
     @test format("""let a,b
                  e end""") == str
 
-    str = """module A
-             end"""
-    @test format("""module A  end""") == str
-
     str = """return a, b, c"""
     @test format("""return a,b,
                  c""") == str
@@ -645,12 +644,18 @@ end
              end"""
     @test format("""begin a; b; c end""") == str
 
+    str = """begin end"""
+    @test format("""begin \n            end""") == str
+
     str = """quote
                  a
                  b
                  c
              end"""
     @test format("""quote a; b; c end""") == str
+
+    str = """quote end"""
+    @test format("""quote \n end""") == str
 
     str = """if cond1
                  e1
@@ -721,6 +726,43 @@ end
 
     str = """T[e for e in x]"""
     @test format("T[e  for e in x  ]") == str
+
+    str = """struct Foo end"""
+    @test format("struct Foo\n      end") == str
+
+    str = """
+    struct Foo
+        body
+    end"""
+    @test format("struct Foo\n    body  end") == str
+
+    str = """macro foo() end"""
+    @test format("macro foo()\n      end") == str
+
+    str = """
+    macro foo()
+        body
+    end"""
+    @test format("macro foo()\n    body  end") == str
+
+    str = """mutable struct Foo end"""
+    @test format("mutable struct Foo\n      end") == str
+
+    str = """
+    mutable struct Foo
+        body
+    end"""
+    @test format("mutable struct Foo\n    body  end") == str
+
+    str = """
+    module Foo
+    body
+    end"""
+    @test format("module Foo\n    body  end") == str
+
+    str = """
+    module Foo end"""
+    @test format("module Foo\n    end") == str
 
 end
 
