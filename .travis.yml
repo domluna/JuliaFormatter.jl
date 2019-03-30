@@ -1,29 +1,18 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-
+coveralls: true
 os:
   - linux
-  # - osx
-
 julia:
-  - 1.0
+  - 1.1
   - nightly
-
 matrix:
   allow_failures:
     - julia: nightly
-
-      #jobs:
-      #  include:
-      #    - stage: "Documentation"
-      #      julia: 1.0
-      #      os: linux
-      #      script:
-      #        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
-      #                                               Pkg.instantiate()'
-      #        - julia --project=docs/ docs/make.jl
-      #      after_success: skip
-
-## uncomment the following lines to override the default test script
+  fast_finish: true
+notifications:
+  email: false
 script:
- - julia --color=yes -e 'using Pkg; Pkg.activate(); Pkg.instantiate(); Pkg.test()'
+  - julia --color=yes -e 'using Pkg; Pkg.activate(); Pkg.instantiate(); Pkg.test()'
+after_success:
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
