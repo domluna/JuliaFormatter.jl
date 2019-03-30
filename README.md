@@ -1,6 +1,8 @@
 # JLFmt
 
 [![Build Status](https://travis-ci.org/domluna/JLFmt.svg?branch=master)](https://travis-ci.org/domluna/JLFmt)
+[![Coverage Status](https://img.shields.io/coveralls/domluna/JLFmt.jl.svg)](https://coveralls.io/r/domluna/JLFmt.jl?branch=master)
+
 
 **WARNING.** This an alpha release meant to find bugs. Overwrite files at your peril!
 
