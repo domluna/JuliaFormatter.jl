@@ -37,7 +37,7 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
                     write(io, ws)
                 elseif v == "elseif" || v == "else"
                     if ws != ""
-                        write(io, repeat(" ", x.indent - s.indent_width))
+                        write(io, repeat(" ", x.indent - s.indent_size))
                     end
                 else
                     write(io, ws)

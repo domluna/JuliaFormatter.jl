@@ -494,12 +494,12 @@ end
 end
 
 @testset "strings" begin
-    #= str = """ =#
-    #= \""" =#
-    #= Interpolate using `\\\$` =#
-    #= \""" =#
-    #= """ =#
-    #= @test format(str) == str =#
+    str = """
+    \"""
+    Interpolate using `\\\$`
+    \"""
+    """
+    @test format(str) == str
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str

@@ -5,8 +5,9 @@ import CSTParser.Tokenize.Tokens
 
 export format
 
-function line_ranges(text::String)
+function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
+    lit_strings = LitString[]
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -27,27 +28,52 @@ function line_ranges(text::String)
                 s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                 push!(ranges, s:offset+nl)
             end
+        elseif t.kind == Tokens.COMMENT
+            @info "comment token" t
+        end
+        if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
         end
     end
     ranges
 end
 
+"""
+Raw literal string representation along
+with the location in the file.
+
+`CSTParser` unescapes strings to mimic behaviour
+of `Meta.parse`. This is problematic for formatting
+strings. 
+
+When a `CSTParser.LITERAL` that is of kind `Tokens.STRING`
+or `Tokens.TRIPLE_STRING` is encountered the value repsented
+in the original token will be used instead of the val in the
+`CSTParser` node.
+"""
+struct LitString
+    startline::Int
+    endline::Int
+    val::String
+end
+
 struct Document
     text::String
     ranges::Vector{UnitRange{Int}}
+    #= lit_strings::Vector{LitString} =#
+    #= inline_commments::Vector{LitString} =#
 end
-Document(s::String) = Document(s, line_ranges(s))
+Document(s::String) = Document(s, file_line_ranges(s))
 
 mutable struct State
     doc::Document
-    indent_width::Int
+    indent_size::Int
     indents::Int
     offset::Int
     line_offset::Int
-    max_width::Int
+    max_line_length::Int
 end
 
-@inline nspaces(s::State) = s.indent_width * s.indents
+@inline nspaces(s::State) = s.indent_size * s.indents
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
@@ -63,12 +89,12 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
-function format(text::String; indent_width=4, max_width=80)
+function format(text::String; indent_size=4, max_line_length=80)
     if isempty(text)
         return text
     end
     d = Document(text)
-    s = State(d, indent_width, 0, 1, 0, max_width)
+    s = State(d, indent_size, 0, 1, 0, max_line_length)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
