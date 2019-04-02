@@ -478,19 +478,19 @@ end
            end
        end"""
     @test format("""
-       begin
-       \"""
-           f
+begin
+\"""
+   f
 
-       docstring for f
-       :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
-                                            \$(dict[:kwargs]...))::\$rtype
-       \$(dict[:body])
-       \"""
-       function f()
-       100
-       end
-       end""") == str
+docstring for f
+:(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
+                                    \$(dict[:kwargs]...))::\$rtype
+\$(dict[:body])
+\"""
+function f()
+100
+end
+end""") == str
 end
 
 @testset "strings" begin
@@ -511,23 +511,23 @@ end
     x"""
     @test format("\"\\\\\" x") == str
 
-    #= str = """ =#
-    #= begin =#
-    #=     s = \"\"\"This is a multiline string. =#
-    #=               This is another line. =#
-    #=                   Look another 1 that is indented a bit. =#
-    #=  =#
-    #=                   cool!\"\"\" =#
-    #= end""" =#
-    #=  =#
-    #= @test format(""" =#
-    #= begin =#
-    #= s = \"\"\"This is a multiline string. =#
-    #=           This is another line. =#
-    #=               Look another 1 that is indented a bit. =#
-    #=  =#
-    #=               cool!\"\"\" =#
-    #= end""") == str =#
+    str = """
+    begin
+        s = \"\"\"This is a multiline string.
+                  This is another line.
+                      Look another 1 that is indented a bit.
+
+                      cool!\"\"\"
+    end"""
+
+    @test format("""
+    begin
+    s = \"\"\"This is a multiline string.
+              This is another line.
+                  Look another 1 that is indented a bit.
+
+                  cool!\"\"\"
+    end""") == str
 end
 
 @testset "notcode" begin
