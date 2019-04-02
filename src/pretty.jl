@@ -187,7 +187,12 @@ function pretty(x::CSTParser.PUNCTUATION, s::State)
     PLeaf(x, loc[1], loc[1], text)
 end
 
-function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_doc=false)
+# which_quote is used for multiline strings
+# to determines whether
+# 1. quotes on start and last line are included (default 0)
+# 2. quotes on start line are included (1)
+# 3. quotes on end line are included (2)
+function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true, which_quote=0)
     loc0 = cursor_loc(s)
     s.offset += x.fullspan
     if !CSTParser.is_lit_string(x)
@@ -195,7 +200,7 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
     end
 
     loc1 = cursor_loc(s, s.offset-1)
-    @info "" loc0 loc1 is_doc surround_with_quotes x.val
+    @info "" loc0 loc1 include_quotes which_quote x.val x
     
     # At the moment CSTParser does not return Tokens.TRIPLE_STRING
     # tokens :(
@@ -207,58 +212,39 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
     #
     # So we'll just look at the source directly!
 
-
-    if loc0[1] == loc1[1] && is_doc && surround_with_quotes
-        t = PTree{CSTParser.StringH}(nspaces(s))
-        str = s.doc.text[s.doc.ranges[loc0[1]]]
-        str = chomp(str[loc0[2]:loc1[2]])
-        idx = startswith(str, "\"\"\"") ? 4 : 2
-        str = str[idx:end-idx+1]
-        @info "" loc0[1] str
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc0[1], loc0[1], "\"\"\""))
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc0[1]+1, loc0[1]+1, str))
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc0[1]+2, loc0[1]+2, "\"\"\""))
-        return t
-    elseif loc0[1] == loc1[1] && surround_with_quotes
+    if loc0[1] == loc1[1] && include_quotes
         str = s.doc.text[s.doc.ranges[loc0[1]]]
         str = str[loc0[2]:loc1[2]]
         @info "" loc0[1] str
         return PLeaf{CSTParser.LITERAL}(loc0[1], loc0[1], str)
     elseif loc0[1] == loc1[1]
         str = s.doc.text[s.doc.ranges[loc0[1]]]
-        str = str[loc0[2]:loc1[2]]
+        str = chomp(str[loc0[2]:loc1[2]])
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
         @info "" loc0[1] str
-        return PLeaf{CSTParser.LITERAL}(loc0[1], loc0[1], str)
+        return PLeaf{CSTParser.LITERAL}(loc0[1]+1, loc0[1]+1, str)
     end
-
 
     t = PTree{CSTParser.StringH}(nspaces(s))
     for l in loc0[1]:loc1[1]
         str = s.doc.text[s.doc.ranges[l]]
+        is_nl = str == "\n"
         @info "start" l str 
         if l == loc0[1]
             @info "start line"
             str = chomp(str[loc0[2]:end])
-            #= idx = startswith(str, "\"\"\"") ? 4 : 2 =#
-            idx = startswith(str, "\"\"\"") && !from_stringh ? 4 : 2
-            if is_doc && surround_with_quotes
-                str = str[idx:end]
-                add_node!(t, PLeaf{CSTParser.LITERAL}(l, l, "\"\"\""))
-            end
-            str != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(l, l, str)))
+            idx = include_quotes && which_quote != 2 ? 1 : startswith(str, "\"\"\"") ? 4 : 2
+            str = str[idx:end]
         elseif l == loc1[1]
             @info "end line"
             str = chomp(str[1:loc1[2]])
-            idx = endswith(str, "\"\"\"") ? 4 : 2
-            if is_doc && surround_with_quotes
-                str = str[1:end-idx+1]
-            end
-            str != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(l, l, str)))
-            if is_doc && surround_with_quotes
-                add_node!(t, PLeaf{CSTParser.LITERAL}(l, l, "\"\"\""))
-            end
+            idx = include_quotes && which_quote != 1 ? 1 : endswith(str, "\"\"\"") ? 4 : 2
+            str = str[1:end-idx+1]
         else
             str = chomp(str)
+        end
+        if str != "" || x.val == "\n" || is_nl
             add_node!(t, PLeaf{CSTParser.LITERAL}(l, l, str))
         end
         @info "end" l str
@@ -266,34 +252,23 @@ function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_do
     return t
 end
 
-function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; is_doc=false)
+function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     t = PTree(x, nspaces(s))
-    loc = cursor_loc(s)
-    #= q = is_doc ? "\"\"\"" : "\"" =#
-    #= add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q)) =#
-
     for (i, a) in enumerate(x)
         if a isa CSTParser.LITERAL
-            n = pretty(a, s, surround_with_quotes=false, is_doc=is_doc)
-            #= if n isa CSTParser.EXPR{CSTParser.StringH} =#
-            #=     add_node!(t, n) =#
-            #= else =#
-            #=     add_node!(t, n, join_lines=true) =#
-            #= end =#
+            # first and last index should always be a literal (?)
+            if i == 1
+                n = pretty(a, s, include_quotes=include_quotes, which_quote=1)
+            elseif i == length(x)
+                n = pretty(a, s, include_quotes=include_quotes, which_quote=2)
+            else
+                n = pretty(a, s, include_quotes=true)
+            end
             add_node!(t, n, join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
     end
-
-    #= loc = cursor_loc(s) =#
-    #= n = PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q) =#
-    #= if is_empty_lit(t.nodes[end].nodes[end]) || !is_doc =#
-    #=     add_node!(t, n, join_lines=true) =#
-    #= else =#
-    #=     add_node!(t, n) =#
-    #= end =#
-
     t
 end
 
@@ -301,17 +276,12 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.EXPR{CSTParser.GlobalRefDoc}
         loc = cursor_loc(s)
-        n = pretty(x.args[1], s)
-        n.startline = loc[1]
-        n.endline = loc[1]
-        add_node!(t, n)
-
-        if x.args[2] isa CSTParser.LITERAL
-            add_node!(t, pretty(x.args[2], s, is_doc=true), join_lines=true)
-        else
-            add_node!(t, pretty(x.args[2], s, is_doc=true), join_lines=true)
-        end
-
+        # x.args[1] is empty and fullspan is 0 so we can skip it
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
+        add_node!(t, pretty(x.args[2], s, include_quotes=false))
+        loc = cursor_loc(s)
+        @info "after docstring" loc s.doc.text[s.doc.ranges[loc[1]]]
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
         add_node!(t, pretty(x.args[3], s))
         return t
     end

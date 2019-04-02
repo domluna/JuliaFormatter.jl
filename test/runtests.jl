@@ -515,7 +515,7 @@ end
     begin
         s = \"\"\"This is a multiline string.
                   This is another line.
-                      Look another 1 that is indented a bit.
+                      Look an indented line.
 
                       cool!\"\"\"
     end"""
@@ -524,7 +524,7 @@ end
     begin
     s = \"\"\"This is a multiline string.
               This is another line.
-                  Look another 1 that is indented a bit.
+                  Look an indented line.
 
                   cool!\"\"\"
     end""") == str

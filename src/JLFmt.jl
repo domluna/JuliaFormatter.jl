@@ -7,7 +7,7 @@ export format
 
 function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
-    lit_strings = LitString[]
+    lit_strings = Dict{Int, Tuple{Int,Int,String}}[]
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -23,18 +23,21 @@ function file_line_ranges(text::String)
             push!(ranges, s:t.startbyte)
         elseif (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING) && t.startpos[1] != t.endpos[1]
             offset = t.startbyte
+            lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
+
             nls = findall(x -> x == '\n', t.val)
             for nl in nls
                 s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                 push!(ranges, s:offset+nl)
             end
+
         elseif t.kind == Tokens.COMMENT
             @info "comment token" t
         end
         if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
         end
     end
-    ranges
+    ranges, lit_strings
 end
 
 """
@@ -59,10 +62,10 @@ end
 struct Document
     text::String
     ranges::Vector{UnitRange{Int}}
-    #= lit_strings::Vector{LitString} =#
+    lit_strings::Dict{Int, Tuple{Int, Int, String}}
     #= inline_commments::Vector{LitString} =#
 end
-Document(s::String) = Document(s, file_line_ranges(s))
+Document(s::String) = Document(s, file_line_ranges(s)...)
 
 mutable struct State
     doc::Document
