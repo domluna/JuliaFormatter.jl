@@ -45,14 +45,8 @@ Base.length(x::PLeaf) = length(x.text)
 
 const empty_start = PLeaf{CSTParser.LITERAL}(1, 1, "")
 
-is_punc(_) = false
-is_punc(::PLeaf{CSTParser.PUNCTUATION}) = true
-is_comma(_) = false
-is_comma(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == ","
 is_lbrace(_) = false
 is_lbrace(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{"
-is_lparen(_) = false
-is_lparen(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "("
 is_placeholder(x) = x === placeholder || x === placeholderWS
 is_empty_lit(_) = false
 is_empty_lit(x::PLeaf{CSTParser.LITERAL}) = x.text == ""
@@ -61,24 +55,23 @@ mutable struct PTree{T}
     startline::Int
     endline::Int
     indent::Int
-    plength::Int
+    len::Int
     nodes::Vector{Union{PTree,AbstractPLeaf}}
 end
 PTree(::T, indent::Int) where T = PTree{T}(-1, -1, indent, 0, Union{PTree,PLeaf}[])
 PTree{T}(indent::Int) where T = PTree{T}(-1, -1, indent, 0, Union{PTree,PLeaf}[])
-Base.length(x::PTree) = x.plength
+Base.length(x::PTree) = x.len
 
 function add_node!(t::PTree, node::AbstractPLeaf)
-    t.plength += length(node)
+    t.len += length(node)
     push!(t.nodes, node)
 end
 
 function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
-    #= is_empty(node) && (return) =#
     if length(t.nodes) == 0
         t.startline = node.startline
         t.endline = node.endline
-        t.plength += length(node)
+        t.len += length(node)
         push!(t.nodes, node)
         return
     end
@@ -100,7 +93,7 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     if node.endline > t.endline || t.endline == -1 
         t.endline = node.endline
     end
-    t.plength += length(node)
+    t.len += length(node)
     push!(t.nodes, node)
     nothing
 end
@@ -142,38 +135,38 @@ function pretty(x::CSTParser.KEYWORD, s::State)
     loc = cursor_loc(s)
     text = ""
     text = x.kind == Tokens.ABSTRACT ? "abstract " :
-        x.kind == Tokens.BAREMODULE ? "baremodule " :
-        x.kind == Tokens.BEGIN ? "begin" :
-        x.kind == Tokens.BREAK ? "break" :
-        x.kind == Tokens.CATCH ? "catch" :
-        x.kind == Tokens.CONST ? "const " :
-        x.kind == Tokens.CONTINUE ? "continue" :
-        x.kind == Tokens.DO ? " do " :
-        x.kind == Tokens.IF ? "if " :
-        x.kind == Tokens.ELSEIF ? "elseif" :
-        x.kind == Tokens.ELSE ? "else" :
-        x.kind == Tokens.END ? "end" :
-        x.kind == Tokens.EXPORT ? "export " :
-        x.kind == Tokens.FINALLY ? "finally" :
-        x.kind == Tokens.FOR ? "for " :
-        x.kind == Tokens.FUNCTION ? "function " :
-        x.kind == Tokens.GLOBAL ? "global " :
-        x.kind == Tokens.IMPORT ? "import " :
-        x.kind == Tokens.IMPORTALL ? "importall " :
-        x.kind == Tokens.LET ? "let" :
-        x.kind == Tokens.LOCAL ? "local " :
-        x.kind == Tokens.MACRO ? "macro " :
-        x.kind == Tokens.MODULE ? "module " :
-        x.kind == Tokens.MUTABLE ? "mutable " :
-        x.kind == Tokens.OUTER ? "outer " :
-        x.kind == Tokens.PRIMITIVE ? "primitive " :
-        x.kind == Tokens.QUOTE ? "quote" :
-        x.kind == Tokens.RETURN ? "return" :
-        x.kind == Tokens.STRUCT ? "struct " :
-        x.kind == Tokens.TYPE ? "type " :
-        x.kind == Tokens.TRY ? "try" :
-        x.kind == Tokens.USING ? "using " :
-        x.kind == Tokens.WHILE ? "while " : ""
+           x.kind == Tokens.BAREMODULE ? "baremodule " :
+           x.kind == Tokens.BEGIN ? "begin" :
+           x.kind == Tokens.BREAK ? "break" :
+           x.kind == Tokens.CATCH ? "catch" :
+           x.kind == Tokens.CONST ? "const " :
+           x.kind == Tokens.CONTINUE ? "continue" :
+           x.kind == Tokens.DO ? " do " :
+           x.kind == Tokens.IF ? "if " :
+           x.kind == Tokens.ELSEIF ? "elseif" :
+           x.kind == Tokens.ELSE ? "else" :
+           x.kind == Tokens.END ? "end" :
+           x.kind == Tokens.EXPORT ? "export " :
+           x.kind == Tokens.FINALLY ? "finally" :
+           x.kind == Tokens.FOR ? "for " :
+           x.kind == Tokens.FUNCTION ? "function " :
+           x.kind == Tokens.GLOBAL ? "global " :
+           x.kind == Tokens.IMPORT ? "import " :
+           x.kind == Tokens.IMPORTALL ? "importall " :
+           x.kind == Tokens.LET ? "let" :
+           x.kind == Tokens.LOCAL ? "local " :
+           x.kind == Tokens.MACRO ? "macro " :
+           x.kind == Tokens.MODULE ? "module " :
+           x.kind == Tokens.MUTABLE ? "mutable " :
+           x.kind == Tokens.OUTER ? "outer " :
+           x.kind == Tokens.PRIMITIVE ? "primitive " :
+           x.kind == Tokens.QUOTE ? "quote" :
+           x.kind == Tokens.RETURN ? "return" :
+           x.kind == Tokens.STRUCT ? "struct " :
+           x.kind == Tokens.TYPE ? "type " :
+           x.kind == Tokens.TRY ? "try" :
+           x.kind == Tokens.USING ? "using " :
+           x.kind == Tokens.WHILE ? "while " : ""
     s.offset += x.fullspan
     PLeaf(x, loc[1], loc[1], text)
 end
@@ -194,106 +187,88 @@ function pretty(x::CSTParser.PUNCTUATION, s::State)
     PLeaf(x, loc[1], loc[1], text)
 end
 
-function pretty(x::CSTParser.LITERAL, s::State; surround_with_quotes=true, is_doc=false)
-    loc = cursor_loc(s)
+# which_quote is used for multiline strings
+# to determines whether
+# 1. quotes on start and last line are included (default 0)
+# 2. quotes on start line are included (1)
+# 3. quotes on end line are included (2)
+function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
+    loc0 = cursor_loc(s)
+    if !CSTParser.is_lit_string(x)
+        s.offset += x.fullspan
+        return PLeaf(x, loc0[1], loc0[1], x.val)
+    end
+    
+    # At the moment CSTParser does not return Tokens.TRIPLE_STRING
+    # tokens :(
+    # https://github.com/ZacLN/CSTParser.jl/issues/88
+    #
+    # Also strings are unescaped to by CSTParser
+    # to mimic Meta.parse which makes finding newlines
+    # for indentation problematic.
+    #
+    # So we'll just look at the source directly!
+
+    startline, endline, str = s.doc.lit_strings[s.offset-1]
     s.offset += x.fullspan
+    #= @info "" startline endline include_quotes str =#
 
-    # It's LIT !!!
-    if CSTParser.is_lit_string(x)
-        t = PTree{CSTParser.StringH}(nspaces(s))
-
-        # invoke stringH
-
-        q = x.kind == Tokens.TRIPLE_STRING || is_doc ? "\"\"\"" : "\""
-        ln = loc[1]
-        if surround_with_quotes
-            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, q))
-        end
-
-        lines = split(x.val, "\n")
-        #= @info "" lines x.val =#
-
-        l = escape_string(lines[1], "\$")
-        if is_doc && l != ""
-            ln += 1
-            n = PLeaf{CSTParser.LITERAL}(ln, ln, l)
-            add_node!(t, n)
-        else
-            n = PLeaf{CSTParser.LITERAL}(ln, ln, l)
-            add_node!(t, n, join_lines=true)
-        end
-
-        for (i, l) in enumerate(lines[2:end])
-            l = escape_string(l, "\$")
-            ln += 1
-            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
-        end
-
-        if surround_with_quotes
-            n = PLeaf{CSTParser.LITERAL}(ln, ln, q)
-            # if the last node is an empty literal
-            # there's already a newline
-            if is_empty_lit(t.nodes[end]) || !is_doc
-                add_node!(t, n, join_lines=true)
-            else
-                add_node!(t, n)
-            end
-        end
-
-        #= @info "" t =#
-        return t
+    if !include_quotes
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
+        #= @info "after removing quotes" str =#
+        str = strip(str, ' ')
+        #= @info "after stripping surrounding whitespace" str =#
+        str[1] == '\n' && (str = str[2:end])
+        str[end] == '\n' && (str = str[1:end-1])
+        #= @info "after removing extra newlines" str =#
     end
 
-    PLeaf(x, loc[1], loc[1], x.val)
+    lines = split(str, "\n")
+    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
+    t = PTree{CSTParser.EXPR{CSTParser.StringH}}(ns)
+    for (i, l) in enumerate(lines)
+        ln = startline + i - 1
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
+    end
+    t
 end
 
-function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; is_doc=false)
-    t = PTree(x, nspaces(s))
-    loc = cursor_loc(s)
-    q = is_doc ? "\"\"\"" : "\""
-    add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q))
+function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
+    startline, endline, str = s.doc.lit_strings[s.offset-1]
+    s.offset += x.fullspan
+    #= @info "" startline endline include_quotes str =#
 
-    for (i, a) in enumerate(x)
-        if a isa CSTParser.LITERAL
-            n = pretty(a, s, surround_with_quotes=false, is_doc=is_doc)
-            #= @info "" n =#
-            if i == 1 && is_doc && length(n) != 0
-                add_node!(t, n)
-            else
-                add_node!(t, n, join_lines=true)
-            end
-        else
-            add_node!(t, pretty(a, s), join_lines=true)
-        end
+    if !include_quotes
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
+        #= @info "after removing quotes" str =#
+        str = strip(str, ' ')
+        #= @info "after stripping surrounding whitespace" str =#
+        str[1] == '\n' && (str = str[2:end])
+        str[end] == '\n' && (str = str[1:end-1])
+        #= @info "after removing extra newlines" str =#
     end
 
-    loc = cursor_loc(s)
-    n = PLeaf{CSTParser.LITERAL}(loc[1], loc[1], q)
-    if is_empty_lit(t.nodes[end].nodes[end]) || !is_doc
-        add_node!(t, n, join_lines=true)
-    else
-        add_node!(t, n)
+    lines = split(str, "\n")
+    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
+    t = PTree(x, ns)
+    for (i, l) in enumerate(lines)
+        ln = startline + i - 1
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
-
     t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
-    # Docstring
     t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.EXPR{CSTParser.GlobalRefDoc}
         loc = cursor_loc(s)
-        n = pretty(x.args[1], s)
-        n.startline = loc[1]
-        n.endline = loc[1]
-        add_node!(t, n)
-
-        if x.args[2] isa CSTParser.LITERAL
-            add_node!(t, pretty(x.args[2], s, is_doc=true), join_lines=true)
-        else
-            add_node!(t, pretty(x.args[2], s, is_doc=true), join_lines=true)
-        end
-
+        # x.args[1] is empty and fullspan is 0 so we can skip it
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
+        add_node!(t, pretty(x.args[2], s, include_quotes=false))
+        loc = cursor_loc(s)
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
         add_node!(t, pretty(x.args[3], s))
         return t
     end

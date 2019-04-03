@@ -2,9 +2,9 @@ using JLFmt: format, Document, State, pretty, nest!
 using CSTParser
 using Test
 
-function run_nest(text::String, max_width::Int)
+function run_nest(text::String, max_line_length::Int)
     d = Document(text)
-    s = State(d, 4, 0, 1, 0, max_width)
+    s = State(d, 4, 0, 1, 0, max_line_length)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
@@ -458,48 +458,15 @@ end
     function f()
         20
     end""") == str
-
-    # tests indentation and correctly formatting a docstring with escapes
-    #
-    # NOTE: At the moment indentation is printed after a newline even if the
-    # next line is a newline. I added some indentation so this passes for now.
-    str = """
-       begin
-           \"""
-               f
-
-           docstring for f
-           :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
-                                                \$(dict[:kwargs]...))::\$rtype
-           \$(dict[:body])
-           \"""
-           function f()
-               100
-           end
-       end"""
-    @test format("""
-       begin
-       \"""
-           f
-
-       docstring for f
-       :(function \$(dict[:name]){\$(all_params...)}(\$(dict[:args]...);
-                                            \$(dict[:kwargs]...))::\$rtype
-       \$(dict[:body])
-       \"""
-       function f()
-       100
-       end
-       end""") == str
 end
 
 @testset "strings" begin
-    #= str = """ =#
-    #= \""" =#
-    #= Interpolate using `\\\$` =#
-    #= \""" =#
-    #= """ =#
-    #= @test format(str) == str =#
+    str = """
+    \"""
+    Interpolate using `\\\$`
+    \"""
+    """
+    @test format(str) == str
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str
@@ -511,23 +478,23 @@ end
     x"""
     @test format("\"\\\\\" x") == str
 
-    #= str = """ =#
-    #= begin =#
-    #=     s = \"\"\"This is a multiline string. =#
-    #=               This is another line. =#
-    #=                   Look another 1 that is indented a bit. =#
-    #=  =#
-    #=                   cool!\"\"\" =#
-    #= end""" =#
-    #=  =#
-    #= @test format(""" =#
-    #= begin =#
-    #= s = \"\"\"This is a multiline string. =#
-    #=           This is another line. =#
-    #=               Look another 1 that is indented a bit. =#
-    #=  =#
-    #=               cool!\"\"\" =#
-    #= end""") == str =#
+    str = """
+    begin
+        s = \"\"\"This is a multiline string.
+                  This is another line.
+                      Look another 1 that is indented a bit.
+
+                      cool!\"\"\"
+    end"""
+
+    @test format("""
+    begin
+    s = \"\"\"This is a multiline string.
+              This is another line.
+                  Look another 1 that is indented a bit.
+
+                  cool!\"\"\"
+    end""") == str
 end
 
 @testset "notcode" begin
@@ -776,96 +743,96 @@ end
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_width=1) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_line_length=1) == str
 
     str = """
     a |
     b |
     c |
     d"""
-    @test format("a | b | c | d", max_width=1) == str
+    @test format("a | b | c | d", max_line_length=1) == str
 
 
     str = """
     a, b,
     c, d"""
-    @test format("a, b, c, d", max_width=6) == str
+    @test format("a, b, c, d", max_line_length=6) == str
 
     str = """
     (a, b,
      c, d)"""
-    @test format("(a, b, c, d)", max_width=7) == str
+    @test format("(a, b, c, d)", max_line_length=7) == str
 
     str = """
     [a,
      b,
      c,
      d]"""
-    @test format("[a, b, c, d]", max_width=1) == str
+    @test format("[a, b, c, d]", max_line_length=1) == str
 
     str = """
     cond ?
     e1 :
     e2"""
-    @test format("cond ? e1 : e2", max_width=1) == str
+    @test format("cond ? e1 : e2", max_line_length=1) == str
 
     str = """
     cond ? e1 :
     e2"""
-    @test format("cond ? e1 : e2", max_width=12) == str
+    @test format("cond ? e1 : e2", max_line_length=12) == str
 
     str = """
     cond1 ? e1 :
     cond2 ? e2 :
     cond3 ? e3 :
     e4"""
-    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_width=13) == str
+    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_line_length=13) == str
 
     str = """
     export a,
            b"""
-    @test format("export a,b", max_width=1) == str
+    @test format("export a,b", max_line_length=1) == str
 
     str = """
     using a,
           b"""
-    @test format("using a,b", max_width=1) == str
+    @test format("using a,b", max_line_length=1) == str
 
     str = """
     using M: a,
              b"""
-    @test format("using M:a,b", max_width=1) == str
+    @test format("using M:a,b", max_line_length=1) == str
 
     str = """
     import M1.M2.M3: a,
                      b"""
-    @test format("import M1.M2.M3:a,b", max_width=1) == str
+    @test format("import M1.M2.M3:a,b", max_line_length=1) == str
 
     str = """
     foo() = (one,
              x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))", max_width=30) == str
+    @test format("foo() = (one, x -> (true, false))", max_line_length=30) == str
 
     str = """
     foo() = (one,
              x -> (true,
                    false))"""
-    @test format("foo() = (one, x -> (true, false))", max_width=20) == str
+    @test format("foo() = (one, x -> (true, false))", max_line_length=20) == str
 
     str = """
     @somemacro function (fcall_ |
                          fcall_)
         body_
     end"""
-    @test format("@somemacro function (fcall_ | fcall_) body_ end", max_width=1) == str
+    @test format("@somemacro function (fcall_ | fcall_) body_ end", max_line_length=1) == str
 
     str = "(a; b; c)"
-    @test format("(a;b;c)", max_width=100) == str
-    @test format("(a;b;c)", max_width=1) == str
+    @test format("(a;b;c)", max_line_length=100) == str
+    @test format("(a;b;c)", max_line_length=1) == str
 
     str = "(x for x in 1:10)"
-    @test format("(x   for x  in  1 : 10)", max_width=100) == str
-    @test format("(x   for x  in  1 : 10)", max_width=1) == str
+    @test format("(x   for x  in  1 : 10)", max_line_length=100) == str
+    @test format("(x   for x  in  1 : 10)", max_line_length=1) == str
 
 end
 
@@ -984,57 +951,57 @@ end
     f(a,
       @g(b, c),
       d)"""
-    @test format("f(a, @g(b, c), d)", max_width=11) == str
+    @test format("f(a, @g(b, c), d)", max_line_length=11) == str
 
     str = """
     f(a,
       @g(b,
          c),
       d)"""
-    @test format("f(a, @g(b, c), d)", max_width=10) == str
+    @test format("f(a, @g(b, c), d)", max_line_length=10) == str
 
     str = """
     (a,
      (b,
       c),
      d)"""
-    @test format("(a, (b, c), d)", max_width=7) == str
+    @test format("(a, (b, c), d)", max_line_length=7) == str
 
     str = """
     (a,
      {b,
       c},
      d)"""
-    @test format("(a, {b, c}, d)", max_width=6) == str
+    @test format("(a, {b, c}, d)", max_line_length=6) == str
 
     str = """
     a,
     (b,
      c), d"""
-    @test format("a, (b, c), d", max_width=6) == str
+    @test format("a, (b, c), d", max_line_length=6) == str
 
     str = """
     a,
     (b, c),
     d"""
-    @test format("a, (b, c), d", max_width=7) == str
+    @test format("a, (b, c), d", max_line_length=7) == str
 
     str = """
     (var1,
      var2) &&
     var3"""
-    @test format("(var1,var2) && var3", max_width=14) == str
+    @test format("(var1,var2) && var3", max_line_length=14) == str
 
     str = """
     (var1, var2) &&
     var3"""
-    @test format("(var1,var2) && var3", max_width=15) == str
+    @test format("(var1,var2) && var3", max_line_length=15) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_width=14) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=14) == str
 
     str = """
     (var1,
@@ -1042,29 +1009,29 @@ end
     (var3,
      var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_width=13) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=13) == str
 
     str = """
     (var1, var2) ? (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_width=30) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=30) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_width=29) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=29) == str
 
     str = """
     f(var1::A, var2::B) where {A,
                                B}"""
-    @test format("f(var1::A, var2::B) where {A,B}", max_width=30) == str
+    @test format("f(var1::A, var2::B) where {A,B}", max_line_length=30) == str
 
     str = """
     f(var1::A,
       var2::B) where {A,
                       B}"""
-    @test format("f(var1::A, var2::B) where {A,B}", max_width=28) == str
+    @test format("f(var1::A, var2::B) where {A,B}", max_line_length=28) == str
 
 end
 

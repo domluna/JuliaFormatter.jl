@@ -5,8 +5,9 @@ import CSTParser.Tokenize.Tokens
 
 export format
 
-function line_ranges(text::String)
+function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
+    lit_strings = Dict{Int, Tuple{Int,Int,String}}()
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -27,27 +28,37 @@ function line_ranges(text::String)
                 s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                 push!(ranges, s:offset+nl)
             end
+        elseif t.kind == Tokens.COMMENT
+            #= @info "comment token" t =#
+        end
+
+        if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
+            lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
         end
     end
-    ranges
+    ranges, lit_strings
 end
 
 struct Document
     text::String
     ranges::Vector{UnitRange{Int}}
+    # mapping the offset in the file to the raw literal
+    # string and what lines it starts and ends at.
+    lit_strings::Dict{Int, Tuple{Int, Int, String}}
+    #= inline_commments::Vector{LitString} =#
 end
-Document(s::String) = Document(s, line_ranges(s))
+Document(s::String) = Document(s, file_line_ranges(s)...)
 
 mutable struct State
     doc::Document
-    indent_width::Int
+    indent_size::Int
     indents::Int
     offset::Int
     line_offset::Int
-    max_width::Int
+    max_line_length::Int
 end
 
-@inline nspaces(s::State) = s.indent_width * s.indents
+@inline nspaces(s::State) = s.indent_size * s.indents
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
@@ -63,12 +74,12 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
-function format(text::String; indent_width=4, max_width=80)
+function format(text::String; indent_size=4, max_line_length=80)
     if isempty(text)
         return text
     end
     d = Document(text)
-    s = State(d, indent_width, 0, 1, 0, max_width)
+    s = State(d, indent_size, 0, 1, 0, max_line_length)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)

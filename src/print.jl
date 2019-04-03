@@ -14,6 +14,9 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa NotCode
                 write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.StringH}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif is_empty_lit(x.nodes[i+1])
             else
                 write(io, ws)
             end
@@ -31,17 +34,20 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa NotCode
                 write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.StringH}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
                 v = x.nodes[i+1].text
                 if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
                     write(io, ws)
                 elseif v == "elseif" || v == "else"
                     if ws != ""
-                        write(io, repeat(" ", x.indent - s.indent_width))
+                        write(io, repeat(" ", x.indent - s.indent_size))
                     end
                 else
                     write(io, ws)
                 end
+            elseif is_empty_lit(x.nodes[i+1])
             else
                 write(io, ws)
             end
@@ -51,13 +57,10 @@ end
 
 function print_tree(io::IOBuffer, x::NotCode, s::State)
     r = x.startline:x.endline
-    #= @info "PRINTING NotCode" r x.indent x =#
     ws = repeat(" ", x.indent)
-
     for (i, l) in enumerate(r)
         v = s.doc.text[s.doc.ranges[l]]
-        idx = findfirst(x -> !isspace(x), v)
-        #= @info "" l v idx =#
+        idx = findfirst(c -> !isspace(c), v)
         if idx === nothing
             v == "\n" && (write(io, v); write(io, ws))
         elseif v[idx] == '#'
