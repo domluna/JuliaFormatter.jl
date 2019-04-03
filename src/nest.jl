@@ -370,22 +370,18 @@ function nest!(x::PTree{T}, s::State; addlen=0) where T <: Union{CSTParser.Binar
     # If there's no placeholder the binary call is not nestable
     #= @info "ENTER" typeof(x) s.line_offset x.indent length(x) =#
     idx = findlast(n -> is_placeholder(n), x.nodes) 
-    @info "" idx
     line_length = s.line_offset + length(x) + addlen
     if idx !== nothing && line_length > s.max_line_length
         line_offset = s.line_offset
         # idx op is 1 before the placeholder
         idx -= 1
         lens = remaining_length(x.nodes[1:idx])
-        @info "" lens
 
         x.indent = s.line_offset
         s.line_offset += lens[1]
 
         x.nodes[idx+1] = newline
         s.line_offset = x.indent
-
-        #= @info "" s.line_offset x.indent =#
 
         # arg2
         nest!(x.nodes[end], s)

@@ -209,99 +209,56 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     #
     # So we'll just look at the source directly!
 
-    @info s.doc.lit_strings
     startline, endline, str = s.doc.lit_strings[s.offset-1]
     s.offset += x.fullspan
+    #= @info "" startline endline include_quotes str =#
 
-    @info "" startline endline include_quotes str
-    include_quotes && (return PLeaf{CSTParser.LITERAL}(startline, endline, str))
+    if !include_quotes
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
+        #= @info "after removing quotes" str =#
+        str = strip(str, ' ')
+        #= @info "after stripping surrounding whitespace" str =#
+        str[1] == '\n' && (str = str[2:end])
+        str[end] == '\n' && (str = str[1:end-1])
+        #= @info "after removing extra newlines" str =#
+    end
 
-    idx = startswith(str, "\"\"\"") ? 4 : 2
-    str = str[idx:end-idx+1]
-    @info "after removing quotes" str
-    str = strip(str, ' ')
-    @info "after stripping surrounding whitespace" str
-    str[1] == '\n' && (str = str[2:end])
-    str[end] == '\n' && (str = str[1:end-1])
-    @info "after removing extra newlines" str
-    return PLeaf{CSTParser.LITERAL}(startline, endline, str)
-
-    t = PTree{CSTParser.StringH}(nspaces(s))
+    lines = split(str, "\n")
+    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
+    t = PTree{CSTParser.EXPR{CSTParser.StringH}}(ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        idx = 1
-        if i == 1
-            idx = include_quotes ? 1 : startswith(l, "\"\"\"") ? 4 : 2
-            l = l[idx:end]
-            l != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l)))
-        elseif i == length(lines)
-            idx = include_quotes ? 1 : endswith(l, "\"\"\"") ? 4 : 2
-            l = l[1:end-idx+1]
-            l != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l)))
-        else
-            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
-        end
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
-    return t
+    t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
-    @info s.doc.lit_strings
     startline, endline, str = s.doc.lit_strings[s.offset-1]
     s.offset += x.fullspan
+    #= @info "" startline endline include_quotes str =#
 
-    @info "" startline endline include_quotes str
-    include_quotes && (return PLeaf{CSTParser.LITERAL}(startline, endline, str))
-
-    idx = startswith(str, "\"\"\"") ? 4 : 2
-    str = str[idx:end-idx+1]
-    @info "after removing quotes" str
-    str = strip(str, ' ')
-    @info "after stripping surrounding whitespace" str
-    str[1] == '\n' && (str = str[2:end])
-    str[end] == '\n' && (str = str[1:end-1])
-    @info "after removing extra newlines" str
-    return PLeaf{CSTParser.LITERAL}(startline, endline, str)
+    if !include_quotes
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
+        #= @info "after removing quotes" str =#
+        str = strip(str, ' ')
+        #= @info "after stripping surrounding whitespace" str =#
+        str[1] == '\n' && (str = str[2:end])
+        str[end] == '\n' && (str = str[1:end-1])
+        #= @info "after removing extra newlines" str =#
+    end
 
     lines = split(str, "\n")
-    t = PTree{CSTParser.StringH}(nspaces(s))
+    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
+    t = PTree(x, ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        idx = 1
-        if i == 1
-            idx = include_quotes ? 1 : startswith(l, "\"\"\"") ? 4 : 2
-            l = l[idx:end]
-            l != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l)))
-        elseif i == length(lines)
-            idx = include_quotes ? 1 : endswith(l, "\"\"\"") ? 4 : 2
-            l = l[1:end-idx+1]
-            l != "" && (add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l)))
-        else
-            add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
-        end
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
-    return t
+    t
 end
-
-#= function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true) =#
-#=     t = PTree(x, nspaces(s)) =#
-#=     for (i, a) in enumerate(x) =#
-#=         if a isa CSTParser.LITERAL =#
-#=             # first and last index should always be a literal (?) =#
-#=             if i == 1 =#
-#=                 n = pretty(a, s, include_quotes=include_quotes, which_quote=1) =#
-#=             elseif i == length(x) =#
-#=                 n = pretty(a, s, include_quotes=include_quotes, which_quote=2) =#
-#=             else =#
-#=                 n = pretty(a, s, include_quotes=true) =#
-#=             end =#
-#=             add_node!(t, n, join_lines=true) =#
-#=         else =#
-#=             add_node!(t, pretty(a, s), join_lines=true) =#
-#=         end =#
-#=     end =#
-#=     t =#
-#= end =#
 
 function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     t = PTree(x, nspaces(s))

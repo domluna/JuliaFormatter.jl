@@ -29,7 +29,7 @@ function file_line_ranges(text::String)
                 push!(ranges, s:offset+nl)
             end
         elseif t.kind == Tokens.COMMENT
-            @info "comment token" t
+            #= @info "comment token" t =#
         end
 
         if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
@@ -39,28 +39,11 @@ function file_line_ranges(text::String)
     ranges, lit_strings
 end
 
-"""
-Raw literal string representation along
-with the location in the file.
-
-`CSTParser` unescapes strings to mimic behaviour
-of `Meta.parse`. This is problematic for formatting
-strings. 
-
-When a `CSTParser.LITERAL` that is of kind `Tokens.STRING`
-or `Tokens.TRIPLE_STRING` is encountered the value repsented
-in the original token will be used instead of the val in the
-`CSTParser` node.
-"""
-struct LitString
-    startline::Int
-    endline::Int
-    val::String
-end
-
 struct Document
     text::String
     ranges::Vector{UnitRange{Int}}
+    # mapping the offset in the file to the raw literal
+    # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
     #= inline_commments::Vector{LitString} =#
 end
