@@ -139,17 +139,13 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; addlen=0) where T <: Union
         x.indent = s.line_offset + length(x.nodes[1]) + length(x.nodes[2])
         s.line_offset = x.indent
         lens = length.(x.nodes[3:end])
+        lens = remaining_length(x.nodes[3:end])
 
         for (i, n) in enumerate(x.nodes[3:end])
             if n === newline
                 s.line_offset = x.indent
             elseif is_placeholder(n) 
-                # Check if the additional length of the nodes 
-                # before the next placholder warrant a nest.
-                j = i + 1 == length(lens) ? 1 : 2
-                line_length = s.line_offset + sum(lens[i:i+j])
-                i + 2 == idx && (line_length += addlen)
-                if line_length > s.max_line_length
+                if s.line_offset + lens[i] > s.max_line_length
                     x.nodes[i+2] = newline
                     s.line_offset = x.indent
                 else
@@ -209,10 +205,6 @@ function nest!(x::PTree{CSTParser.EXPR{CSTParser.MacroCall}}, s::State; addlen=0
     end
 end
 
-# A where B
-#
-# nest B prior to nesting A
-# only nest A if the line still exceeds the maximum length
 function nest!(x::PTree{CSTParser.WhereOpCall}, s::State; addlen=0)
     #= @info "ENTER" typeof(x) s.line_offset x =#
     line_length = s.line_offset + length(x) + addlen
@@ -220,37 +212,10 @@ function nest!(x::PTree{CSTParser.WhereOpCall}, s::State; addlen=0)
         line_offset = s.line_offset
         # after "A where "
         idx = findfirst(n -> is_placeholder(n), x.nodes)
-        A_where_len = sum(length.(x.nodes[1:idx-1]))
-        Blens = length.(x.nodes[idx+1:end])
+        #= Blens = length.(x.nodes[idx+1:end]) =#
+        Blens = remaining_length(x.nodes[idx+1:end])
 
-        s.line_offset += A_where_len
-        x.indent = s.line_offset
-        is_lbrace(x.nodes[idx+1]) && (x.indent += 1)
-        ph_offset = 0
-
-        # B
-        for (i, n) in enumerate(x.nodes[idx+1:end])
-            if n === newline
-                s.line_offset = x.indent
-            elseif is_placeholder(n) 
-                ph_offset = max(ph_offset, s.line_offset)
-                j = i + 1 == length(Blens) ? 1 : 2
-                line_length = s.line_offset + sum(Blens[i:i+j])
-                #= line_length = s.line_offset + Blens[i] =#
-                i + 2 == length(Blens) && (line_length += addlen)
-                if line_length > s.max_line_length
-                    x.nodes[i+idx] = newline
-                    s.line_offset = x.indent
-                end
-            else
-                nest!(n, s, addlen=1)
-            end
-        end
-
-        ph_offset = max(ph_offset, s.line_offset)
-        addlen = ph_offset - length(x.nodes[1])
-
-        # A where
+        # A
         s.line_offset = line_offset
         nest!(x.nodes[1], s, addlen=addlen)
         for (i, n) in enumerate(x.nodes[2:idx-1])
@@ -258,39 +223,20 @@ function nest!(x::PTree{CSTParser.WhereOpCall}, s::State; addlen=0)
         end
 
         x.indent = s.line_offset
-        # The difference between the unnested pretty length
-        # of "A where" and the length of the last line, i.e.:
-        #
-        # f(a, b) where B
-        #
-        # vs.
-        #
-        # f(a,
-        #   b) where B
-        #
-        # would be 3. 
-        #
-        # All CSTParser.Curly and CSTParser.Braces nodes
-        # would have to be detented by 3.
-        diff = A_where_len - s.line_offset
-        f = (x, s) -> begin
-            if x isa PTree{CSTParser.EXPR{CSTParser.Curly}}
-                x.indent -= diff + line_offset
-            elseif x isa PTree{CSTParser.EXPR{CSTParser.Braces}}
-                x.indent -= diff + line_offset
-            end
-        end
-
+        is_lbrace(x.nodes[idx+1]) && (x.indent += 1)
+        # where B
         for (i, n) in enumerate(x.nodes[idx+1:end])
-            if is_lbrace(n)
-                x.indent += 1
+            if n === newline
+                s.line_offset = x.indent
+            elseif is_placeholder(n) 
+                if s.line_offset + Blens[i] > s.max_line_length
+                    x.nodes[i+idx] = newline
+                    s.line_offset = x.indent
+                end
             else
-                walk(f, n, s)
+                nest!(n, s, addlen=1)
             end
         end
-
-        s.line_offset = line_offset
-        walk(reset_line_offset, x, s)
     else
         for (i, n) in enumerate(x.nodes)
             if n === newline

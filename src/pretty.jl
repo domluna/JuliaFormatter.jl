@@ -626,7 +626,7 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     add_node!(t, whitespace)
 
     # Used to mark where `B` starts.
-    add_node!(t, placeholder)
+    #= add_node!(t, placeholder) =#
 
     for a in x.args
         add_node!(t, pretty(a, s), join_lines=true)
