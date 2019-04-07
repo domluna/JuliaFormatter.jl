@@ -688,18 +688,22 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, pretty(x.args[2], s), join_lines=true)
-    add_node!(t, placeholder)
 
+    curly = x isa CSTParser.EXPR{CSTParser.Curly}
+    # ID ( arg )
+    no_args = length(x.args) < 4
+
+    !no_args && (add_node!(t, placeholder))
     for (i, a) in enumerate(x.args[3:end])
-        if i + 2 == length(x)
+        if i + 2 == length(x) && !no_args
             add_node!(t, placeholder)
             add_node!(t, pretty(a, s), join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, pretty(a, s), join_lines=true)
-            if x isa CSTParser.EXPR{CSTParser.Call} 
-                add_node!(t, placeholderWS)
-            else
+            if curly
                 add_node!(t, placeholder)
+            else
+                add_node!(t, placeholderWS)
             end
         elseif a isa CSTParser.EXPR{CSTParser.Parameters}
             add_node!(t, semicolon)
@@ -715,12 +719,14 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
     t = PTree(x, nspaces(s))
     braces = CSTParser.is_lbrace(x.args[1])
+    no_args = length(x.args) < 3
+
     for (i, a) in enumerate(x)
         n = pretty(a, s)
-        if is_opener(n)
+        if is_opener(n) && !no_args
             add_node!(t, n, join_lines=true)
             add_node!(t, placeholder)
-        elseif is_closer(n)
+        elseif is_closer(n) && !no_args
             add_node!(t, placeholder)
             add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
@@ -737,7 +743,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
     t
 end
 
-function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.InvisBrackets,CSTParser.Parameters}
+function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Parameters}
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         n = pretty(a, s)

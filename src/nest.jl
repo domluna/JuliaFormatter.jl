@@ -79,8 +79,11 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; addlen=0) where T <: Union
     #= @info "EXIT" typeof(x) s.line_offset x =#
 end
 
-# TODO: InvisBrackets might not need to be nested at all
-function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; addlen=0) where T <: Union{CSTParser.TupleH,CSTParser.Vect,CSTParser.Braces,CSTParser.InvisBrackets,CSTParser.Parameters}
+# TODO: skip nesting anything in InvisBrackets?
+# function nest!(x::PTree{CSTParser.EXPR{CSTParser.InvisBrackets}}, s::State; addlen=0)
+# end
+
+function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; addlen=0) where T <: Union{CSTParser.TupleH,CSTParser.Vect,CSTParser.Braces,CSTParser.Parameters}
     line_length = s.line_offset + length(x) + addlen
     idx = findlast(n -> is_placeholder(n), x.nodes)
     #= @info "ENTER" typeof(x) s.line_offset line_length =#
@@ -123,9 +126,9 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; addlen=0) where T <: Union
             # call name:
             #
             # foo(
-            #      a,
-            #      b,
-            #      c
+            #     a,
+            #     b,
+            #     c
             # )
             if n === newline
                 s.line_offset = x.indent

@@ -29,7 +29,7 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline
-            if i+1 == length(x.nodes)
+            if is_closer(x.nodes[i+1])
                 w = min(s.indent_size, length(x.nodes[1]) + length(x.nodes[2]))
                 write(io, ws[1:end-w])
             elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
@@ -51,7 +51,7 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline
-            if i+1 == length(x.nodes)
+            if is_closer(x.nodes[i+1])
                 write(io, ws[1:end-1])
             elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
                 write(io, repeat(" ", x.nodes[i+1].indent))

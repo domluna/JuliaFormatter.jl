@@ -903,6 +903,14 @@ end
     str = "(x for x in 1:10)"
     @test format("(x   for x  in  1 : 10)", max_line_length=100) == str
     @test format("(x   for x  in  1 : 10)", max_line_length=1) == str
+
+    # indent for TupleH with no parens
+    str = """
+    function foo()
+        arg1,
+        arg2
+    end"""
+    @test format("function foo() arg1, arg2 end", max_line_length=1) == str
 end
 
 @testset "nesting line offset" begin
