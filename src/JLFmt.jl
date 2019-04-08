@@ -74,6 +74,16 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
+"""
+    format(text::String; indent_size=4, print_width=80)
+
+Formats a Julia source file (.jl).
+
+`indent_size` - The number of spaces used for an indentation.
+
+`print_width` - The maximum number of characters of code on a single line. Lines 
+over the width will be nested if possible.
+"""
 function format(text::String; indent_size=4, print_width=80)
     if isempty(text)
         return text
