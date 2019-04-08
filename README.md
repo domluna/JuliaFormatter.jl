@@ -5,9 +5,7 @@
 
 **WARNING.** This an alpha release meant to find bugs. Overwrite files at your peril!
 
-Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
-
-![format example](./jlfmt.png)
+Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 
 ```julia
 ]add https://github.com/domluna/JLFmt.jl
@@ -20,7 +18,7 @@ format(text::String; indent_width=4, max_width=80)
 ```
 
 * `indent_width` - the number of spaces used for an indentation.
-* `max_width` - the maximum number of characters of code on a single line. Lines over
+* `print_width` - the maximum number of characters of code on a single line. Lines over
 the limit will be nested if possible.
 
 ### How It Works

@@ -55,7 +55,7 @@ mutable struct State
     indents::Int
     offset::Int
     line_offset::Int
-    max_line_length::Int
+    print_width::Int
 end
 
 @inline nspaces(s::State) = s.indent_size * s.indents
@@ -74,12 +74,12 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
-function format(text::String; indent_size=4, max_line_length=80)
+function format(text::String; indent_size=4, print_width=80)
     if isempty(text)
         return text
     end
     d = Document(text)
-    s = State(d, indent_size, 0, 1, 0, max_line_length)
+    s = State(d, indent_size, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
