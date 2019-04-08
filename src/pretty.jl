@@ -213,17 +213,13 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
 
     startline, endline, str = s.doc.lit_strings[s.offset-1]
     s.offset += x.fullspan
-    #= @info "" startline endline include_quotes str =#
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
         str = str[idx:end-idx+1]
-        #= @info "after removing quotes" str =#
         str = strip(str, ' ')
-        #= @info "after stripping surrounding whitespace" str =#
         str[1] == '\n' && (str = str[2:end])
         str[end] == '\n' && (str = str[1:end-1])
-        #= @info "after removing extra newlines" str =#
     end
 
     lines = split(str, "\n")
@@ -239,17 +235,13 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
     s.offset += x.fullspan
-    #= @info "" startline endline include_quotes str =#
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
         str = str[idx:end-idx+1]
-        #= @info "after removing quotes" str =#
         str = strip(str, ' ')
-        #= @info "after stripping surrounding whitespace" str =#
         str[1] == '\n' && (str = str[2:end])
         str[end] == '\n' && (str = str[1:end-1])
-        #= @info "after removing extra newlines" str =#
     end
 
     lines = split(str, "\n")
@@ -636,12 +628,13 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     # Used to mark where `B` starts.
     add_node!(t, placeholder)
 
+    multi_arg = length(CSTParser.get_where_params(x)) > 1
     for a in x.args
         n = pretty(a, s)
-        if is_opener(n)
+        if is_opener(n) && multi_arg
             add_node!(t, n, join_lines=true)
             add_node!(t, placeholder)
-        elseif is_closer(n)
+        elseif is_closer(n) && multi_arg
             add_node!(t, placeholder)
             add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a)
@@ -690,11 +683,15 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
     add_node!(t, pretty(x.args[2], s), join_lines=true)
 
     curly = x isa CSTParser.EXPR{CSTParser.Curly}
-    no_args = length(x.args) < 4
+    if curly
+        multi_arg = length(CSTParser.get_curly_params(x)) > 1
+    else
+        multi_arg = length(CSTParser.get_args(x)) > 1
+    end
 
-    !no_args && (add_node!(t, placeholder))
+    multi_arg && (add_node!(t, placeholder))
     for (i, a) in enumerate(x.args[3:end])
-        if i + 2 == length(x) && !no_args
+        if i + 2 == length(x) && multi_arg
             add_node!(t, placeholder)
             add_node!(t, pretty(a, s), join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !(x.args[i+1] isa CSTParser.PUNCTUATION)
@@ -718,14 +715,14 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
     t = PTree(x, nspaces(s))
     braces = CSTParser.is_lbrace(x.args[1])
-    no_args = length(x.args) < 3
+    multi_arg = length(x.args) > 4
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
-        if is_opener(n) && !no_args
+        if is_opener(n) && multi_arg
             add_node!(t, n, join_lines=true)
             add_node!(t, placeholder)
-        elseif is_closer(n) && !no_args
+        elseif is_closer(n) && multi_arg
             add_node!(t, placeholder)
             add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)

@@ -887,10 +887,8 @@ end
     @test format("foo() = (one, x -> (true, false))", print_width=20) == str
 
     str = """
-    @somemacro function (
-                         fcall_ |
-                         fcall_
-                        )
+    @somemacro function (fcall_ |
+                         fcall_)
         body_
     end"""
     @test format("@somemacro function (fcall_ | fcall_) body_ end", print_width=1) == str
@@ -910,6 +908,36 @@ end
         arg2
     end"""
     @test format("function foo() arg1, arg2 end", print_width=1) == str
+
+    str = """
+    function foo()
+        # comment
+        arg
+    end"""
+    @test format(str, print_width=1) == str
+
+    # don't nest < 2 args
+    
+    str = """
+    A where {B}"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    foo(arg1)"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    [arg1]"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    {arg1}"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    (arg1)"""
+    @test format(str, print_width=1) == str
+
 end
 
 @testset "nesting line offset" begin

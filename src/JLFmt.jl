@@ -29,7 +29,7 @@ function file_line_ranges(text::String)
                 push!(ranges, s:offset+nl)
             end
         elseif t.kind == Tokens.COMMENT
-            #= @info "comment token" t =#
+            # @info "comment token" t
         end
 
         if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
@@ -45,7 +45,7 @@ struct Document
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
-    #= inline_commments::Vector{LitString} =#
+    # inline_commments::Vector{LitString}
 end
 Document(s::String) = Document(s, file_line_ranges(s)...)
 
