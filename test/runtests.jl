@@ -2,9 +2,9 @@ using JLFmt: format, Document, State, pretty, nest!
 using CSTParser
 using Test
 
-function run_nest(text::String, max_line_length::Int)
+function run_nest(text::String, print_width::Int)
     d = Document(text)
-    s = State(d, 4, 0, 1, 0, max_line_length)
+    s = State(d, 4, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
@@ -735,104 +735,208 @@ end
 
 @testset "nesting" begin
     str = """
-    function f(arg1::A,
+    function f(
+               arg1::A,
                key1=val1;
-               key2=val2) where {A,
-                                 F{B,
-                                   C}}
+               key2=val2
+             ) where {
+                      A,
+                      F{
+                        B,
+                        C
+                      }
+                     }
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", max_line_length=1) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=1) == str
+
+    str = """
+    function f(
+               arg1::A,
+               key1=val1;
+               key2=val2
+             ) where {
+                      A,
+                      F{B,C}
+                     }
+        10
+        20
+    end"""
+
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=26) == str
+
+    str = """
+    function f(
+               arg1::A,
+               key1=val1;
+               key2=val2
+             ) where {A,F{B,C}}
+        10
+        20
+    end"""
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=27) == str
 
     str = """
     a |
     b |
     c |
     d"""
-    @test format("a | b | c | d", max_line_length=1) == str
+    @test format("a | b | c | d", print_width=1) == str
 
 
     str = """
-    a, b,
-    c, d"""
-    @test format("a, b, c, d", max_line_length=6) == str
+    a, b, c, d"""
+    @test format("a, b, c, d", print_width=10) == str
 
     str = """
-    (a, b,
-     c, d)"""
-    @test format("(a, b, c, d)", max_line_length=7) == str
+    a,
+    b,
+    c,
+    d"""
+    @test format("a, b, c, d", print_width=9) == str
+
+    str = """(a, b, c, d)"""
+    @test format("(a, b, c, d)", print_width=12) == str
 
     str = """
-    [a,
+    (
+     a,
      b,
      c,
-     d]"""
-    @test format("[a, b, c, d]", max_line_length=1) == str
+     d
+    )"""
+    @test format("(a, b, c, d)", print_width=11) == str
+
+    str = """{a,b,c,d}"""
+    @test format("{a, b, c, d}", print_width=9) == str
+
+    str = """
+    {
+     a,
+     b,
+     c,
+     d
+    }"""
+    @test format("{a, b, c, d}", print_width=8) == str
+
+    str = """[a, b, c, d]"""
+    @test format("[a, b, c, d]", print_width=12) == str
+
+    str = """
+    [
+     a,
+     b,
+     c,
+     d
+    ]"""
+    @test format("[a, b, c, d]", print_width=11) == str
 
     str = """
     cond ?
     e1 :
     e2"""
-    @test format("cond ? e1 : e2", max_line_length=1) == str
+    @test format("cond ? e1 : e2", print_width=1) == str
 
     str = """
     cond ? e1 :
     e2"""
-    @test format("cond ? e1 : e2", max_line_length=12) == str
+    @test format("cond ? e1 : e2", print_width=12) == str
 
     str = """
     cond1 ? e1 :
     cond2 ? e2 :
     cond3 ? e3 :
     e4"""
-    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", max_line_length=13) == str
+    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", print_width=13) == str
 
     str = """
     export a,
            b"""
-    @test format("export a,b", max_line_length=1) == str
+    @test format("export a,b", print_width=1) == str
 
     str = """
     using a,
           b"""
-    @test format("using a,b", max_line_length=1) == str
+    @test format("using a,b", print_width=1) == str
 
     str = """
     using M: a,
              b"""
-    @test format("using M:a,b", max_line_length=1) == str
+    @test format("using M:a,b", print_width=1) == str
 
     str = """
     import M1.M2.M3: a,
                      b"""
-    @test format("import M1.M2.M3:a,b", max_line_length=1) == str
+    @test format("import M1.M2.M3:a,b", print_width=1) == str
 
     str = """
-    foo() = (one,
-             x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))", max_line_length=30) == str
+    foo() =
+        (one, x -> (true, false))"""
+    @test format("foo() = (one, x -> (true, false))", print_width=30) == str
 
     str = """
-    foo() = (one,
-             x -> (true,
-                   false))"""
-    @test format("foo() = (one, x -> (true, false))", max_line_length=20) == str
+    foo() =
+        (
+         one,
+         x -> (
+               true,
+               false
+              )
+        )"""
+    @test format("foo() = (one, x -> (true, false))", print_width=20) == str
 
     str = """
     @somemacro function (fcall_ |
                          fcall_)
         body_
     end"""
-    @test format("@somemacro function (fcall_ | fcall_) body_ end", max_line_length=1) == str
+    @test format("@somemacro function (fcall_ | fcall_) body_ end", print_width=1) == str
 
     str = "(a; b; c)"
-    @test format("(a;b;c)", max_line_length=100) == str
-    @test format("(a;b;c)", max_line_length=1) == str
+    @test format("(a;b;c)", print_width=100) == str
+    @test format("(a;b;c)", print_width=1) == str
 
     str = "(x for x in 1:10)"
-    @test format("(x   for x  in  1 : 10)", max_line_length=100) == str
-    @test format("(x   for x  in  1 : 10)", max_line_length=1) == str
+    @test format("(x   for x  in  1 : 10)", print_width=100) == str
+    @test format("(x   for x  in  1 : 10)", print_width=1) == str
+
+    # indent for TupleH with no parens
+    str = """
+    function foo()
+        arg1,
+        arg2
+    end"""
+    @test format("function foo() arg1, arg2 end", print_width=1) == str
+
+    str = """
+    function foo()
+        # comment
+        arg
+    end"""
+    @test format(str, print_width=1) == str
+
+    # don't nest < 2 args
+    
+    str = """
+    A where {B}"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    foo(arg1)"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    [arg1]"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    {arg1}"""
+    @test format(str, print_width=1) == str
+
+    str = """
+    (arg1)"""
+    @test format(str, print_width=1) == str
 
 end
 
@@ -873,55 +977,55 @@ end
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
-    @test s.line_offset == 20
-    s = run_nest(str, 20)
-    @test s.line_offset == 20
-    s = run_nest(str, 19)
-    @test s.line_offset == 14
+    @test s.line_offset == 15
+    s = run_nest(str, 14)
+    @test s.line_offset == 9
     s = run_nest(str, 1)
-    @test s.line_offset == 14
+    @test s.line_offset == 9
 
     str = "f(a, b, c) where Union{A,B,C}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
-    @test s.line_offset == 25
-    s = run_nest(str, 25)
-    @test s.line_offset == 25
-    s = run_nest(str, 24)
-    @test s.line_offset == 19
+    @test s.line_offset == 20
+    s = run_nest(str, 19)
+    @test s.line_offset == 9
     s = run_nest(str, 1)
-    @test s.line_offset == 19
+    @test s.line_offset == 9
 
     str = "f(a, b, c) where A"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
-    @test s.line_offset == 12
+    @test s.line_offset == 9
 
     str = "f(a, b, c) where A <: S"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
-    @test s.line_offset == 17
+    @test s.line_offset == 14
 
     str = "f(a, b, c) where Union{A,B,Union{C,D,E}}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 31
+    s = run_nest(str, 30)
+    @test s.line_offset == 9
     s = run_nest(str, 1)
-    @test s.line_offset == 26
+    @test s.line_offset == 9
 
     str = "f(a, b, c) where {A,{B,C,D},E}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
-    @test s.line_offset == 14
+    @test s.line_offset == 9
 
     str = "(a, b, c, d)"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
-    @test s.line_offset == 3
+    @test s.line_offset == 1
 
     str = """
     splitvar(arg) =
@@ -937,7 +1041,16 @@ end
 
     str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
     s = run_nest(str, 80)
-    @test s.line_offset == 41
+    @test s.line_offset == 17
+
+    str = "foo() = a + b"
+    s = run_nest(str, length(str))
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 9
+    s = run_nest(str, 1)
+    @test s.line_offset == 5
+
 
     str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
     s = run_nest(str, length(str))
@@ -948,90 +1061,119 @@ end
 
 @testset "additional length" begin
     str = """
-    f(a,
+    f(
+      a,
       @g(b, c),
-      d)"""
-    @test format("f(a, @g(b, c), d)", max_line_length=11) == str
+      d
+    )"""
+    @test format("f(a, @g(b, c), d)", print_width=11) == str
 
     str = """
-    f(a,
-      @g(b,
-         c),
-      d)"""
-    @test format("f(a, @g(b, c), d)", max_line_length=10) == str
+    f(
+      a,
+      @g(
+         b,
+         c
+      ),
+      d
+    )"""
+    @test format("f(a, @g(b, c), d)", print_width=10) == str
 
     str = """
-    (a,
-     (b,
-      c),
-     d)"""
-    @test format("(a, (b, c), d)", max_line_length=7) == str
+    (
+     a,
+     (
+      b,
+      c
+     ),
+     d
+    )"""
+    @test format("(a, (b, c), d)", print_width=7) == str
 
     str = """
-    (a,
-     {b,
-      c},
-     d)"""
-    @test format("(a, {b, c}, d)", max_line_length=6) == str
+    (
+     a,
+     {
+      b,
+      c
+     },
+     d
+    )"""
+    @test format("(a, {b, c}, d)", print_width=6) == str
 
     str = """
     a,
-    (b,
-     c), d"""
-    @test format("a, (b, c), d", max_line_length=6) == str
+    (
+     b,
+     c
+    ),
+    d"""
+    @test format("a, (b, c), d", print_width=6) == str
 
     str = """
     a,
     (b, c),
     d"""
-    @test format("a, (b, c), d", max_line_length=7) == str
+    @test format("a, (b, c), d", print_width=7) == str
 
     str = """
-    (var1,
-     var2) &&
+    (
+     var1,
+     var2
+    ) &&
     var3"""
-    @test format("(var1,var2) && var3", max_line_length=14) == str
+    @test format("(var1,var2) && var3", print_width=14) == str
 
     str = """
     (var1, var2) &&
     var3"""
-    @test format("(var1,var2) && var3", max_line_length=15) == str
+    @test format("(var1,var2) && var3", print_width=15) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=14) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", print_width=14) == str
 
     str = """
-    (var1,
-     var2) ?
-    (var3,
-     var4) :
+    (
+     var1,
+     var2
+    ) ?
+    (
+     var3,
+     var4
+    ) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=13) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", print_width=13) == str
 
     str = """
     (var1, var2) ? (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=30) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", print_width=30) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", max_line_length=29) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", print_width=29) == str
 
     str = """
-    f(var1::A, var2::B) where {A,
-                               B}"""
-    @test format("f(var1::A, var2::B) where {A,B}", max_line_length=30) == str
+    f(
+      var1::A,
+      var2::B
+    ) where {A,B}"""
+    @test format("f(var1::A, var2::B) where {A,B}", print_width=30) == str
 
     str = """
-    f(var1::A,
-      var2::B) where {A,
-                      B}"""
-    @test format("f(var1::A, var2::B) where {A,B}", max_line_length=28) == str
+    f(
+      var1::A,
+      var2::B
+    ) where {
+             A,
+             B
+            }"""
+    @test format("f(var1::A, var2::B) where {A,B}", print_width=12) == str
 
 end
 

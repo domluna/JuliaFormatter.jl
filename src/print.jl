@@ -24,6 +24,70 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     end
 end
 
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Call,CSTParser.Curly,CSTParser.MacroCall}
+    ws = repeat(" ", x.indent)
+    for (i, n) in enumerate(x.nodes)
+        print_tree(io, n, s)
+        if n === newline
+            if is_closer(x.nodes[i+1])
+                w = min(s.indent_size, length(x.nodes[1]) + length(x.nodes[2]))
+                write(io, ws[1:end-w])
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa NotCode
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.StringH}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif is_empty_lit(x.nodes[i+1])
+            else
+                write(io, ws)
+            end
+        end
+    end
+end
+
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
+    ws = repeat(" ", x.indent)
+    for (i, n) in enumerate(x.nodes)
+        print_tree(io, n, s)
+        if n === newline
+            if is_closer(x.nodes[i+1])
+                write(io, ws[1:end-1])
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa NotCode
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.StringH}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif is_empty_lit(x.nodes[i+1])
+            else
+                write(io, ws)
+            end
+        end
+    end
+end
+
+function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
+    ws = repeat(" ", x.indent)
+    for (i, n) in enumerate(x.nodes)
+        print_tree(io, n, s)
+        if n === newline
+            if is_closer(x.nodes[i+1])
+                write(io, ws[1:end-1])
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa NotCode
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.StringH}}
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif is_empty_lit(x.nodes[i+1])
+            else
+                write(io, ws)
+            end
+        end
+    end
+end
+
 function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
     ws = repeat(" ", x.indent)
     n1 = x.nodes[1]

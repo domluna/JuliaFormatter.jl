@@ -29,7 +29,7 @@ function file_line_ranges(text::String)
                 push!(ranges, s:offset+nl)
             end
         elseif t.kind == Tokens.COMMENT
-            #= @info "comment token" t =#
+            # @info "comment token" t
         end
 
         if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
@@ -45,7 +45,7 @@ struct Document
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
-    #= inline_commments::Vector{LitString} =#
+    # inline_commments::Vector{LitString}
 end
 Document(s::String) = Document(s, file_line_ranges(s)...)
 
@@ -55,7 +55,7 @@ mutable struct State
     indents::Int
     offset::Int
     line_offset::Int
-    max_line_length::Int
+    print_width::Int
 end
 
 @inline nspaces(s::State) = s.indent_size * s.indents
@@ -74,12 +74,22 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
-function format(text::String; indent_size=4, max_line_length=80)
+"""
+    format(text::String; indent_size=4, print_width=80)
+
+Formats a Julia source file (.jl).
+
+`indent_size` - The number of spaces used for an indentation.
+
+`print_width` - The maximum number of characters of code on a single line. Lines 
+over the width will be nested if possible.
+"""
+function format(text::String; indent_size=4, print_width=80)
     if isempty(text)
         return text
     end
     d = Document(text)
-    s = State(d, indent_size, 0, 1, 0, max_line_length)
+    s = State(d, indent_size, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)

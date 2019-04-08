@@ -5,9 +5,7 @@
 
 **WARNING.** This an alpha release meant to find bugs. Overwrite files at your peril!
 
-Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
-
-![format example](./jlfmt.png)
+Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 
 ```julia
 ]add https://github.com/domluna/JLFmt.jl
@@ -16,18 +14,20 @@ Width-sensitive formatter for Julia code. Inspired by gofmt and refmt projects.
 `JLFmt` exports a singular function:
 
 ```julia
-format(text::String; indent_width=4, max_width=80)
+format(text::String; indent_size=4, print_width=80)
 ```
 
-* `indent_width` - the number of spaces used for an indentation.
-* `max_width` - the maximum number of characters of code on a single line. Lines over
+* `indent_size` - the number of spaces used for an indentation.
+* `print_width` - the maximum number of characters of code on a single line. Lines over
 the limit will be nested if possible.
 
-### How It Works
+## How It Works
 
-`JLFmt` parses the Julia file using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
+`JLFmt` parses the `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
-Next the CST is _prettified_ using `pretty`, creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code. The [`pretty` testset](./test/runtests.jl) displays these transformations.
+### Pass 1: Prettify
+
+The CST is _prettified_ using `pretty`, creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code. The [`pretty` testset](./test/runtests.jl) displays these transformations.
 
 Example 1:
 
@@ -58,12 +58,102 @@ for cond
 end
 ```
 
-Once the `PTree` is created it's then nested using `nest!` to disjoin lines going over the
-maximum width. The `PTree` is modified in-place. All expressions are nested front to back with the exception of binary operations, where operations, and conditionals.
+### Pass 2: Nesting
+
+`PTree` is nested using `nest!` to disjoin lines going over the print width. 
+The `PTree` is modified in-place. All expressions are nested front to back with the exception of binary 
+operations and conditionals.
+
+**Binary Ops**
+
+```julia
+arg1 && arg2
+
+->
+
+arg1 && 
+arg2
+```
+
+```julia
+foo() = body
+
+->
+
+# The indentation of the body is based on `indent_size`
+foo() =
+    body
+```
+
+**Conditionals**
+
+```julia
+cond ? e1 : e2
+
+->
+
+cond ? e1 :
+e2
+
+->
+
+cond ? 
+e1 :
+e2
+```
+
+**Calls** (also applies to {}, (), [], etc)
+
+```julia
+f(arg1, arg2, arg3)
+
+->
+
+f(
+  arg1,
+  arg2,
+  arg3
+)
+```
+
+```julia
+function longfunctionname_that_is_long(lots, of, args, even, more, args)
+    ..code..
+end
+
+->
+
+# The arg is placed `indent_size` spaces after the start of the
+# function name or one space after the opening parenthesis.
+function longfunctionname_that_is_long(
+             lots, 
+             of, 
+             args,
+             even, 
+             more, 
+             args
+         )
+    ..code..
+end
+```
+
+```julia
+S <: Union{Type1,Type2,Type3}
+
+->
+
+S <: Union{
+         Type1,
+         Type2,
+         Type3
+     }
+```
+
+### Part 3: Printing
 
 Finally, the `PTree` to an `IOBuffer` with `print_tree` which is then consumed as a `String`.
 
-### Known Limitations
+### Known Limitation(s)
 
 If a comment is at the end of a line of code it will be removed.
 
