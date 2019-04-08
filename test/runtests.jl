@@ -871,20 +871,19 @@ end
     @test format("import M1.M2.M3:a,b", max_line_length=1) == str
 
     str = """
-    foo() = (
-             one,
-             x -> (true, false)
-            )"""
+    foo() =
+        (one, x -> (true, false))"""
     @test format("foo() = (one, x -> (true, false))", max_line_length=30) == str
 
     str = """
-    foo() = (
-             one,
-             x -> (
-                   true,
-                   false
-                  )
-            )"""
+    foo() =
+        (
+         one,
+         x -> (
+               true,
+               false
+              )
+        )"""
     @test format("foo() = (one, x -> (true, false))", max_line_length=20) == str
 
     str = """
@@ -1014,7 +1013,16 @@ end
 
     str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
     s = run_nest(str, 80)
-    @test s.line_offset == 41
+    @test s.line_offset == 17
+
+    str = "foo() = a + b"
+    s = run_nest(str, length(str))
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 9
+    s = run_nest(str, 1)
+    @test s.line_offset == 5
+
 
     str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
     s = run_nest(str, length(str))

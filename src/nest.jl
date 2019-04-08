@@ -301,15 +301,22 @@ function nest!(x::PTree{T}, s::State; addlen=0) where T <: Union{CSTParser.Binar
     line_length = s.line_offset + length(x) + addlen
     if idx !== nothing && line_length > s.max_line_length
         line_offset = s.line_offset
-        # idx op is 1 before the placeholder
-        idx -= 1
-        lens = remaining_lengths(x.nodes[1:idx])
+        lens = remaining_lengths(x.nodes[1:idx-1])
 
         x.indent = s.line_offset
         s.line_offset += lens[1]
 
-        x.nodes[idx+1] = newline
-        s.line_offset = x.indent
+        x.nodes[idx] = newline
+        # this will only be true if it's a function definition
+        if x.nodes[idx-1].text == "="
+            s.line_offset = x.indent + s.indent_size
+            # insert additional whitespace nodes
+            for _ in 1:s.indent_size
+                insert!(x.nodes, idx+1, whitespace)
+            end
+        else
+            s.line_offset = x.indent
+        end
 
         # arg2
         nest!(x.nodes[end], s)
@@ -317,11 +324,10 @@ function nest!(x::PTree{T}, s::State; addlen=0) where T <: Union{CSTParser.Binar
         # arg1 op
         s.line_offset = line_offset
         nest!(x.nodes[1], s, addlen=lens[2])
-        for n in x.nodes[2:idx]
+        for n in x.nodes[2:idx-1]
             nest!(n, s)
         end
 
-        s.line_offset = line_offset
         walk(reset_line_offset, x, s)
     else
         for (i, n) in enumerate(x.nodes)

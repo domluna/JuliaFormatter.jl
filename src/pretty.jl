@@ -591,6 +591,9 @@ end
 
 nestable(_) = false
 function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
+    if x.op.kind == Tokens.EQ && CSTParser.defines_function(x)
+        return true
+    end
     x.op.kind == Tokens.ANON_FUNC && (return false)
     x.op.kind == Tokens.PAIR_ARROW && (return false)
     CSTParser.precedence(x.op) in (1, 6) && (return false)
@@ -603,7 +606,6 @@ function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{C
     x.op.kind == Tokens.COLON && (nospaces = true)
     arg1 = x.arg1 isa T ? pretty(x.arg1, s, nospaces=nospaces, nonest=nonest) : pretty(x.arg1, s)
     add_node!(t, arg1)
-
     if (CSTParser.precedence(x.op) in (8, 13, 14, 16) && x.op.kind != Tokens.ANON_FUNC) || nospaces
         add_node!(t, pretty(x.op, s), join_lines=true)
     elseif x.op.kind == Tokens.EX_OR
@@ -618,10 +620,8 @@ function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{C
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, whitespace)
     end
-
     arg2 = x.arg2 isa T ? pretty(x.arg2, s, nospaces=nospaces, nonest=nonest) : pretty(x.arg2, s)
     add_node!(t, arg2, join_lines=true)
-
     t
 end
 
@@ -690,7 +690,6 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
     add_node!(t, pretty(x.args[2], s), join_lines=true)
 
     curly = x isa CSTParser.EXPR{CSTParser.Curly}
-    # ID ( arg )
     no_args = length(x.args) < 4
 
     !no_args && (add_node!(t, placeholder))
