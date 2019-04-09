@@ -127,22 +127,21 @@ function format_file(filename::String, indent_size, print_width; overwrite=false
     if ext != ".jl"
         throw(ArgumentError("$filename must be a Julia (.jl) source file"))
     end
-    str = read(filename)
+    str = read(filename) |> String
     try
-        fmtstr = format(str, indent_size=indent_size, print_width=print_width)
-    catch
-        ErrorException("""
-                       An error occured formatting $filename. :-(
+        str = format(str, indent_size=indent_size, print_width=print_width)
+    catch e
+        throw(ErrorException("""
+                             An error occured formatting $filename. :-(
 
-                       Please file an issue at https://github.com/domluna/JLFmt.jl/issues
-                       with a link to a gist containing the contents of the file. A gist 
-                       can be created at https://gist.github.com/.
-                       """)
+                             Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                             with a link to a gist containing the contents of the file. A gist 
+                             can be created at https://gist.github.com/."""))
     end
 
     if overwrite
-        write(filename, fmtstr)
+        write(filename, str)
     else
-        write(path * "_fmt" * ext, fmtstr)
+        write(path * "_fmt" * ext, str)
     end
 end
