@@ -3,7 +3,7 @@ module JLFmt
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
-export format
+export format, format_file
 
 function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
@@ -109,4 +109,40 @@ function format(text::String; indent_size=4, print_width=80)
     String(take!(io))
 end
 
-end # module
+end
+
+"""
+    format_file(filename, indent_size, print_width; overwrite=false)
+
+Formats the contents of `filename` assuming it's a Julia source file.
+
+If `overwrite` is `false` the formatted output will be written to the a file with
+a "fmt" suffix. For example, if the `filename` is "foo.jl", the output will
+be written to "foo_fmt.jl".
+
+If `overwrite` is `true` the file will be overwritten with the formatted output.
+"""
+function format_file(filename::String, indent_size, print_width; overwrite=false)
+    path, ext = splitext(filename)
+    if ext != ".jl"
+        throw(ArgumentError("$filename must be a Julia (.jl) source file"))
+    end
+    str = read(filename)
+    try
+        fmtstr = format(str, indent_size=indent_size, print_width=print_width)
+    catch
+        ErrorException("""
+                       An error occured formatting $filename. :-(
+
+                       Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                       with a link to a gist containing the contents of the file. A gist 
+                       can be created at https://gist.github.com/.
+                       """)
+    end
+
+    if overwrite
+        write(filename, fmtstr)
+    else
+        write(path * "_fmt" * ext, fmtstr)
+    end
+end
