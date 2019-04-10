@@ -84,7 +84,7 @@ Formats a Julia source file (.jl).
 `print_width` - The maximum number of characters of code on a single line. Lines 
 over the width will be nested if possible.
 """
-function format(text::String; indent_size=4, print_width=80)
+function format(text::String, indent_size, print_width)
     if isempty(text)
         return text
     end
@@ -109,8 +109,6 @@ function format(text::String; indent_size=4, print_width=80)
     String(take!(io))
 end
 
-end
-
 """
     format_file(filename, indent_size, print_width; overwrite=false)
 
@@ -129,10 +127,9 @@ function format_file(filename::String, indent_size, print_width; overwrite=false
     end
     str = read(filename) |> String
     try
-        str = format(str, indent_size=indent_size, print_width=print_width)
+        str = format(str, indent_size, print_width)
     catch e
-        throw(ErrorException("""
-                             An error occured formatting $filename. :-(
+        throw(ErrorException("""An error occured formatting $filename. :-(
 
                              Please file an issue at https://github.com/domluna/JLFmt.jl/issues
                              with a link to a gist containing the contents of the file. A gist 
@@ -144,4 +141,6 @@ function format_file(filename::String, indent_size, print_width; overwrite=false
     else
         write(path * "_fmt" * ext, str)
     end
+end
+
 end

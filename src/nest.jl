@@ -48,6 +48,30 @@ function nest!(x::PTree, s::State; extra_width=0)
     end
 end
 
+function nest!(x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State; extra_width=0)
+    n1 = x.nodes[1]
+    for (i, n) in enumerate(x.nodes)
+        if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            s.line_offset = x.nodes[i+1].indent
+        elseif n === newline && x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
+            v = x.nodes[i+1].text
+            if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
+                s.line_offset = x.indent
+            elseif v == "elseif" || v == "else"
+                s.line_offset = x.indent - s.indent_size
+            else
+                s.line_offset = x.indent
+            end
+        elseif n === newline
+            s.line_offset = x.indent
+        elseif n isa NotCode && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            s.line_offset = x.nodes[i+1].indent
+        else
+            nest!(n, s, extra_width=extra_width)
+        end
+    end
+end
+
 function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0) where T <: Union{CSTParser.Import,CSTParser.Using,CSTParser.Export}
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> is_placeholder(n), x.nodes)

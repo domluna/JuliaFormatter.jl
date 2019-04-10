@@ -83,7 +83,11 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
         notcode_endline = node.startline-1
         if notcode_startline <= notcode_endline && node isa PTree
             add_node!(t, newline)
-            push!(t.nodes, NotCode(notcode_startline, notcode_endline, node.indent))
+            if node isa PTree
+                push!(t.nodes, NotCode(notcode_startline, notcode_endline, node.indent))
+            else
+                # push!(t.nodes, NotCode(notcode_startline, notcode_endline, t.indent+s.indent_size))
+            end
         else
             add_node!(t, newline)
         end
@@ -245,8 +249,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=t
     end
 
     lines = split(str, "\n")
-    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
-    t = PTree(x, ns)
+    t = PTree(x, 0)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
@@ -519,7 +522,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.IF
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
-        add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
+        if x.args[3].fullspan != 0
+            add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
+        end
         s.indents -= 1
         add_node!(t, pretty(x.args[4], s))
         if length(x.args) > 4
@@ -528,14 +533,18 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
                 add_node!(t, whitespace)
                 add_node!(t, pretty(x.args[5], s), join_lines=true)
             else
-                add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
+                if x.args[5].fullspan != 0
+                    add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
+                end
             end
             s.indents -= 1
             # END KEYWORD
             add_node!(t, pretty(x.args[6], s))
         end
     else
-        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
+        if x.args[2].fullspan != 0
+            add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
+        end
         if length(x.args) > 2
             s.indents -= 1
             add_node!(t, pretty(x.args[3], s))
@@ -546,7 +555,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
                 add_node!(t, whitespace)
                 add_node!(t, pretty(x.args[4], s), join_lines=true)
             else
-                add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
+                if x.args[4].fullspan != 0
+                    add_node!(t, pretty(x.args[4], s, ignore_single_line=true))
+                end
             end
         end
     end
@@ -624,6 +635,7 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     add_node!(t, whitespace)
     add_node!(t, pretty(x.op, s), join_lines=true)
     add_node!(t, whitespace)
+    # add_node!(t, placeholderWS)
 
     # Used to mark where `B` starts.
     add_node!(t, placeholder)

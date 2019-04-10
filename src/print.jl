@@ -126,10 +126,10 @@ function print_tree(io::IOBuffer, x::NotCode, s::State)
         v = s.doc.text[s.doc.ranges[l]]
         idx = findfirst(c -> !isspace(c), v)
         if idx === nothing
-            v == "\n" && (write(io, v); write(io, ws))
+            v == "\n" && (write(io, v))
         elseif v[idx] == '#'
             write(io, v[idx:end])
-            write(io, ws)
         end
+        i != length(r) && (write(io, ws))
     end
 end
