@@ -130,6 +130,7 @@ function print_tree(io::IOBuffer, x::NotCode, s::State)
         elseif v[idx] == '#'
             write(io, v[idx:end])
         end
-        i != length(r) && (write(io, ws))
+        # i != length(r) && (write(io, ws))
+        write(io, ws)
     end
 end

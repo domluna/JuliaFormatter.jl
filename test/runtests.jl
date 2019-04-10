@@ -496,7 +496,7 @@ end
     str = """
     begin
         begin
-            throw(ErrorException(\"""An error occured formatting filename. :-(
+            throw(ErrorException(\"""An error occured formatting \$filename. :-(
 
                                  Please file an issue at https://github.com/domluna/JLFmt.jl/issues
                                  with a link to a gist containing the contents of the file. A gist
@@ -507,12 +507,12 @@ end
     str_ = """
     begin
     begin
-    throw(ErrorException(\"""An error occured formatting filename. :-(
+       throw(ErrorException(\"""An error occured formatting \$filename. :-(
 
-                         Please file an issue at https://github.com/domluna/JLFmt.jl/issues
-                         with a link to a gist containing the contents of the file. A gist
-                         can be created at https://gist.github.com/.\"""))
-    end
+                            Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                            with a link to a gist containing the contents of the file. A gist
+                            can be created at https://gist.github.com/.\"""))
+       end
     end"""
     @test format(str_) == str
 
@@ -751,6 +751,25 @@ end
     str = """
     module Foo end"""
     @test format("module Foo\n    end") == str
+
+    str = """
+    if cond1
+    elseif cond2
+    elseif cond3
+    elseif cond4
+    elseif cond5
+    elseif cond6
+    elseif cond7
+    else
+    end"""
+    @test format(str) == str
+
+    str = """
+    try
+    catch
+    finally
+    end"""
+    @test format(str) == str
 
 end
 

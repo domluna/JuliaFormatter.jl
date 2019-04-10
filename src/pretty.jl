@@ -216,7 +216,15 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     # So we'll just look at the source directly!
 
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-    s.offset += x.fullspan
+
+    # Since a line of a multiline string can already
+    # have it's own indentation we check if it needs
+    # additional indentation by comparing the number
+    # of spaces before a character of the line to
+    # the ground truth indentation.
+    line = s.doc.text[s.doc.ranges[startline]]
+    fc = findfirst(c -> !isspace(c), line)-1
+    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -227,18 +235,21 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     end
 
     lines = split(str, "\n")
-    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
     t = PTree{CSTParser.EXPR{CSTParser.StringH}}(ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
+    s.offset += x.fullspan
     t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-    s.offset += x.fullspan
+    
+    line = s.doc.text[s.doc.ranges[startline]]
+    fc = findfirst(c -> !isspace(c), line)-1
+    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -249,11 +260,12 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=t
     end
 
     lines = split(str, "\n")
-    t = PTree(x, 0)
+    t = PTree(x, ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
+    s.offset += x.fullspan
     t
 end
 
@@ -415,7 +427,9 @@ function pretty(x::CSTParser.EXPR{CSTParser.Try}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     s.indents += 1
-    add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
+    if x.args[2].fullspan != 0
+        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
+    end
     s.indents -= 1
     add_node!(t, pretty(x.args[3], s))
 
@@ -425,13 +439,17 @@ function pretty(x::CSTParser.EXPR{CSTParser.Try}, s::State)
     end
 
     s.indents += 1
-    add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
+    if x.args[5].fullspan != 0
+        add_node!(t, pretty(x.args[5], s, ignore_single_line=true))
+    end
     s.indents -= 1
     add_node!(t, pretty(x.args[6], s))
 
     if length(x.args) > 6
         s.indents += 1
-        add_node!(t, pretty(x.args[7], s, ignore_single_line=true))
+        if x.args[7].fullspan != 0
+            add_node!(t, pretty(x.args[7], s, ignore_single_line=true))
+        end
         s.indents -= 1
         add_node!(t, pretty(x.args[8], s))
     end
