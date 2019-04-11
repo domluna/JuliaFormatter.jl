@@ -8,6 +8,7 @@ export format, format_file
 function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
     lit_strings = Dict{Int, Tuple{Int,Int,String}}()
+    comments = Dict{Int,String}()
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -29,14 +30,15 @@ function file_line_ranges(text::String)
                 push!(ranges, s:offset+nl)
             end
         elseif t.kind == Tokens.COMMENT
-            # @info "comment token" t
+            comments[t.startpos[1]] = t.val
         end
 
         if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
             lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
         end
     end
-    ranges, lit_strings
+    @info "" comments
+    ranges, lit_strings, comments
 end
 
 struct Document
@@ -45,7 +47,7 @@ struct Document
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
-    # inline_commments::Vector{LitString}
+    comments::Dict{Int, String}
 end
 Document(s::String) = Document(s, file_line_ranges(s)...)
 
@@ -98,12 +100,14 @@ function format(text::String, indent_size, print_width)
     # Print comments and whitespace before any code.
     if t.startline > 1
         print_tree(io, NotCode(1, t.startline-1, 0), s)
+        # print_comments(io, 1, t.startline-1, 0, s)
     end
     print_tree(io, t, s)
     # Print comments and whitespace after any code.
     if t.endline < length(s.doc.ranges)
         print_tree(io, newline, s)
         print_tree(io, NotCode(t.endline+1, length(s.doc.ranges), 0), s)
+        # print_comments(io, t.endline+1, length(s.doc.ranges), 0, s)
     end
 
     String(take!(io))

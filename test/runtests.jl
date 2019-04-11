@@ -521,30 +521,39 @@ end
 @testset "notcode" begin
     str = """
     module Foo
+    # comment 0
     # comment 1
     begin
         # comment 2
         # comment 3
         begin
+
             # comment 4
             # comment 5
-            a = 10
         end
+
     end
+
     end"""
-    @test format("""
+
+    str_ = """
     module Foo
+    # comment 0
     # comment 1
     begin
     # comment 2
     # comment 3
     begin
+
     # comment 4
     # comment 5
     a = 10
     end
+
     end
-    end""") == str
+
+    end"""
+    @test format(_str) == str
 
     str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
     @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str

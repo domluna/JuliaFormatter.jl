@@ -120,17 +120,16 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::Sta
 end
 
 function print_tree(io::IOBuffer, x::NotCode, s::State)
-    r = x.startline:x.endline
     ws = repeat(" ", x.indent)
-    for (i, l) in enumerate(r)
-        v = s.doc.text[s.doc.ranges[l]]
-        idx = findfirst(c -> !isspace(c), v)
-        if idx === nothing
-            v == "\n" && (write(io, v))
-        elseif v[idx] == '#'
-            write(io, v[idx:end])
+    for l in x.startline:x.endline
+        v = get(s.doc.comments, l, "\n")
+        if v == "\n"
+            write(io, v)
+        else
+            write(io, v)
+            print_tree(io, newline, s)
+            write(io, ws)
         end
-        # i != length(r) && (write(io, ws))
-        write(io, ws)
     end
 end
+
