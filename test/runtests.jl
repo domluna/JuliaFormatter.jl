@@ -1,6 +1,8 @@
-using JLFmt: format, Document, State, pretty, nest!
+import JLFmt: format, Document, State, pretty, nest!
 using CSTParser
 using Test
+
+format(s) = format(s, 4, 80)
 
 function run_nest(text::String, print_width::Int)
     d = Document(text)
@@ -9,13 +11,6 @@ function run_nest(text::String, print_width::Int)
     t = pretty(x, s)
     nest!(t, s)
     s
-end
-
-function run_pretty(text::String)
-    d = JLFmt.Document(text)
-    s = JLFmt.State(d, 4, 0, 1, 0, 1000)
-    x = CSTParser.parse(text, true)
-    JLFmt.pretty(x, s)
 end
 
 @testset "All" begin
@@ -481,52 +476,96 @@ end
     str = """
     begin
         s = \"\"\"This is a multiline string.
-                  This is another line.
+                This is another line.
                       Look another 1 that is indented a bit.
 
                       cool!\"\"\"
     end"""
 
-    @test format("""
+    str_ = """
     begin
     s = \"\"\"This is a multiline string.
-              This is another line.
+            This is another line.
                   Look another 1 that is indented a bit.
 
                   cool!\"\"\"
-    end""") == str
+    end"""
+    @test format(str_) == str
+
+
+    str = """
+    begin
+        begin
+            throw(ErrorException(\"""An error occured formatting \$filename. :-(
+
+                                 Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                                 with a link to a gist containing the contents of the file. A gist
+                                 can be created at https://gist.github.com/.\"""))
+        end
+    end"""
+
+    str_ = """
+    begin
+    begin
+       throw(ErrorException(\"""An error occured formatting \$filename. :-(
+
+                            Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                            with a link to a gist containing the contents of the file. A gist
+                            can be created at https://gist.github.com/.\"""))
+       end
+    end"""
+    @test format(str_) == str
+
 end
 
 @testset "notcode" begin
     str = """
     module Foo
+    # comment 0
     # comment 1
     begin
+
         # comment 2
         # comment 3
+
         begin
+
+
+
             # comment 4
             # comment 5
             a = 10
         end
+
     end
+
     end"""
-    @test format("""
+
+    str_ = """
     module Foo
+    # comment 0
     # comment 1
     begin
+
     # comment 2
     # comment 3
+
     begin
+
+
+
     # comment 4
     # comment 5
     a = 10
     end
+
     end
-    end""") == str
+
+    end"""
+    @test format(str_) == str
 
     str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
-    @test format("# comment 0\n\n\n\n\na=1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc=3\n\n# comment 2\n\n") == str
+    @test format(str) == str
 end
 
 @testset "pretty" begin
@@ -731,6 +770,25 @@ end
     module Foo end"""
     @test format("module Foo\n    end") == str
 
+    str = """
+    if cond1
+    elseif cond2
+    elseif cond3
+    elseif cond4
+    elseif cond5
+    elseif cond6
+    elseif cond7
+    else
+    end"""
+    @test format(str) == str
+
+    str = """
+    try
+    catch
+    finally
+    end"""
+    @test format(str) == str
+
 end
 
 @testset "nesting" begin
@@ -749,7 +807,7 @@ end
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=1) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 1) == str
 
     str = """
     function f(
@@ -764,7 +822,7 @@ end
         20
     end"""
 
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=26) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 26) == str
 
     str = """
     function f(
@@ -775,29 +833,29 @@ end
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", print_width=27) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 27) == str
 
     str = """
     a |
     b |
     c |
     d"""
-    @test format("a | b | c | d", print_width=1) == str
+    @test format("a | b | c | d", 4, 1) == str
 
 
     str = """
     a, b, c, d"""
-    @test format("a, b, c, d", print_width=10) == str
+    @test format("a, b, c, d", 4, 10) == str
 
     str = """
     a,
     b,
     c,
     d"""
-    @test format("a, b, c, d", print_width=9) == str
+    @test format("a, b, c, d", 4, 9) == str
 
     str = """(a, b, c, d)"""
-    @test format("(a, b, c, d)", print_width=12) == str
+    @test format("(a, b, c, d)", 4, 12) == str
 
     str = """
     (
@@ -806,10 +864,10 @@ end
      c,
      d
     )"""
-    @test format("(a, b, c, d)", print_width=11) == str
+    @test format("(a, b, c, d)", 4, 11) == str
 
     str = """{a,b,c,d}"""
-    @test format("{a, b, c, d}", print_width=9) == str
+    @test format("{a, b, c, d}", 4, 9) == str
 
     str = """
     {
@@ -818,10 +876,10 @@ end
      c,
      d
     }"""
-    @test format("{a, b, c, d}", print_width=8) == str
+    @test format("{a, b, c, d}", 4, 8) == str
 
     str = """[a, b, c, d]"""
-    @test format("[a, b, c, d]", print_width=12) == str
+    @test format("[a, b, c, d]", 4, 12) == str
 
     str = """
     [
@@ -830,50 +888,50 @@ end
      c,
      d
     ]"""
-    @test format("[a, b, c, d]", print_width=11) == str
+    @test format("[a, b, c, d]", 4, 11) == str
 
     str = """
     cond ?
     e1 :
     e2"""
-    @test format("cond ? e1 : e2", print_width=1) == str
+    @test format("cond ? e1 : e2", 4, 1) == str
 
     str = """
     cond ? e1 :
     e2"""
-    @test format("cond ? e1 : e2", print_width=12) == str
+    @test format("cond ? e1 : e2", 4, 12) == str
 
     str = """
     cond1 ? e1 :
     cond2 ? e2 :
     cond3 ? e3 :
     e4"""
-    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", print_width=13) == str
+    @test format("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", 4, 13) == str
 
     str = """
     export a,
            b"""
-    @test format("export a,b", print_width=1) == str
+    @test format("export a,b", 4, 1) == str
 
     str = """
     using a,
           b"""
-    @test format("using a,b", print_width=1) == str
+    @test format("using a,b", 4, 1) == str
 
     str = """
     using M: a,
              b"""
-    @test format("using M:a,b", print_width=1) == str
+    @test format("using M:a,b", 4, 1) == str
 
     str = """
     import M1.M2.M3: a,
                      b"""
-    @test format("import M1.M2.M3:a,b", print_width=1) == str
+    @test format("import M1.M2.M3:a,b", 4, 1) == str
 
     str = """
     foo() =
         (one, x -> (true, false))"""
-    @test format("foo() = (one, x -> (true, false))", print_width=30) == str
+    @test format("foo() = (one, x -> (true, false))", 4, 30) == str
 
     str = """
     foo() =
@@ -884,22 +942,22 @@ end
                false
               )
         )"""
-    @test format("foo() = (one, x -> (true, false))", print_width=20) == str
+    @test format("foo() = (one, x -> (true, false))", 4, 20) == str
 
     str = """
     @somemacro function (fcall_ |
                          fcall_)
         body_
     end"""
-    @test format("@somemacro function (fcall_ | fcall_) body_ end", print_width=1) == str
+    @test format("@somemacro function (fcall_ | fcall_) body_ end", 4, 1) == str
 
     str = "(a; b; c)"
-    @test format("(a;b;c)", print_width=100) == str
-    @test format("(a;b;c)", print_width=1) == str
+    @test format("(a;b;c)", 4, 100) == str
+    @test format("(a;b;c)", 4, 1) == str
 
     str = "(x for x in 1:10)"
-    @test format("(x   for x  in  1 : 10)", print_width=100) == str
-    @test format("(x   for x  in  1 : 10)", print_width=1) == str
+    @test format("(x   for x  in  1 : 10)", 4, 100) == str
+    @test format("(x   for x  in  1 : 10)", 4, 1) == str
 
     # indent for TupleH with no parens
     str = """
@@ -907,37 +965,80 @@ end
         arg1,
         arg2
     end"""
-    @test format("function foo() arg1, arg2 end", print_width=1) == str
+    @test format("function foo() arg1, arg2 end", 4, 1) == str
 
     str = """
     function foo()
         # comment
         arg
     end"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
     # don't nest < 2 args
     
     str = """
     A where {B}"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
     str = """
     foo(arg1)"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
     str = """
     [arg1]"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
     str = """
     {arg1}"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
     str = """
     (arg1)"""
-    @test format(str, print_width=1) == str
+    @test format(str, 4, 1) == str
 
+
+    str = """
+    begin
+        if foo
+        elseif baz
+        elseif (a || b) &&
+               c
+        elseif bar
+        else
+        end
+    end"""
+
+    str_ = """
+    begin
+    if foo
+    elseif baz
+    elseif (a || b) && c
+    elseif bar
+    else
+    end
+    end"""
+    @test format(str_, 4, 23) == str
+
+    str = """
+    begin
+        if foo
+        elseif baz
+        elseif (a || b) && c
+        elseif bar
+        else
+        end
+    end"""
+
+    str_ = """
+    begin
+    if foo
+    elseif baz
+    elseif (a || b) && c
+    elseif bar
+    else
+    end
+    end"""
+    @test format(str_, 4, 24) == str
 end
 
 @testset "nesting line offset" begin
@@ -1066,7 +1167,7 @@ end
       @g(b, c),
       d
     )"""
-    @test format("f(a, @g(b, c), d)", print_width=11) == str
+    @test format("f(a, @g(b, c), d)", 4, 11) == str
 
     str = """
     f(
@@ -1077,7 +1178,7 @@ end
       ),
       d
     )"""
-    @test format("f(a, @g(b, c), d)", print_width=10) == str
+    @test format("f(a, @g(b, c), d)", 4, 10) == str
 
     str = """
     (
@@ -1088,7 +1189,7 @@ end
      ),
      d
     )"""
-    @test format("(a, (b, c), d)", print_width=7) == str
+    @test format("(a, (b, c), d)", 4, 7) == str
 
     str = """
     (
@@ -1099,7 +1200,7 @@ end
      },
      d
     )"""
-    @test format("(a, {b, c}, d)", print_width=6) == str
+    @test format("(a, {b, c}, d)", 4, 6) == str
 
     str = """
     a,
@@ -1108,13 +1209,13 @@ end
      c
     ),
     d"""
-    @test format("a, (b, c), d", print_width=6) == str
+    @test format("a, (b, c), d", 4, 6) == str
 
     str = """
     a,
     (b, c),
     d"""
-    @test format("a, (b, c), d", print_width=7) == str
+    @test format("a, (b, c), d", 4, 7) == str
 
     str = """
     (
@@ -1122,18 +1223,18 @@ end
      var2
     ) &&
     var3"""
-    @test format("(var1,var2) && var3", print_width=14) == str
+    @test format("(var1,var2) && var3", 4, 14) == str
 
     str = """
     (var1, var2) &&
     var3"""
-    @test format("(var1,var2) && var3", print_width=15) == str
+    @test format("(var1,var2) && var3", 4, 15) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", print_width=14) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 14) == str
 
     str = """
     (
@@ -1145,25 +1246,25 @@ end
      var4
     ) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", print_width=13) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 13) == str
 
     str = """
     (var1, var2) ? (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", print_width=30) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 30) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", print_width=29) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 29) == str
 
     str = """
     f(
       var1::A,
       var2::B
     ) where {A,B}"""
-    @test format("f(var1::A, var2::B) where {A,B}", print_width=30) == str
+    @test format("f(var1::A, var2::B) where {A,B}", 4, 30) == str
 
     str = """
     f(
@@ -1173,7 +1274,7 @@ end
              A,
              B
             }"""
-    @test format("f(var1::A, var2::B) where {A,B}", print_width=12) == str
+    @test format("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
 end
 

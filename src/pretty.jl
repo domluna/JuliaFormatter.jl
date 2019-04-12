@@ -45,14 +45,6 @@ Base.length(x::PLeaf) = length(x.text)
 
 const empty_start = PLeaf{CSTParser.LITERAL}(1, 1, "")
 
-is_placeholder(x) = x === placeholder || x === placeholderWS
-is_empty_lit(_) = false
-is_empty_lit(x::PLeaf{CSTParser.LITERAL}) = x.text == ""
-is_closer(_) = false
-is_closer(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "}" || x.text == ")" || x.text == "]"
-is_opener(_) = false
-is_opener(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{" || x.text == "(" || x.text == "["
-
 mutable struct PTree{T}
     startline::Int
     endline::Int
@@ -70,6 +62,10 @@ function add_node!(t::PTree, node::AbstractPLeaf)
 end
 
 function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
+    if node isa PTree{CSTParser.EXPR{CSTParser.Block}} && length(node) == 0 
+        return
+    end
+
     if length(t.nodes) == 0
         t.startline = node.startline
         t.endline = node.endline
@@ -78,15 +74,18 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
         return
     end
 
-    if t.nodes[end] !== newline && !join_lines
+    if !is_prev_newline(t.nodes[end]) && !join_lines
         notcode_startline = t.nodes[end].endline+1 
         notcode_endline = node.startline-1
-        if notcode_startline <= notcode_endline && node isa PTree
+        if notcode_startline <= notcode_endline && !(node isa PLeaf{CSTParser.LITERAL})
             add_node!(t, newline)
-            push!(t.nodes, NotCode(notcode_startline, notcode_endline, node.indent))
-        else
-            add_node!(t, newline)
+            if node isa PTree
+                push!(t.nodes, NotCode(notcode_startline, notcode_endline, node.indent))
+            else
+                push!(t.nodes, NotCode(notcode_startline, notcode_endline, t.indent))
+            end
         end
+        add_node!(t, newline)
     end
 
     if node.startline < t.startline || t.startline == -1 
@@ -99,6 +98,16 @@ function add_node!(t::PTree, node::Union{PTree,PLeaf}; join_lines=false)
     push!(t.nodes, node)
     nothing
 end
+
+is_prev_newline(_) = false
+is_prev_newline(::Newline) = true
+is_prev_newline(x::PTree) = length(x.nodes) == 0 ? false : is_prev_newline(x.nodes[end])
+
+is_placeholder(x) = x === placeholder || x === placeholderWS
+is_closer(_) = false
+is_closer(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "}" || x.text == ")" || x.text == "]"
+is_opener(_) = false
+is_opener(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{" || x.text == "(" || x.text == "["
 
 function pretty(x::T, s::State) where T <: Union{AbstractVector,CSTParser.AbstractEXPR}
     t = PTree(x, nspaces(s))
@@ -212,7 +221,15 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     # So we'll just look at the source directly!
 
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-    s.offset += x.fullspan
+
+    # Since a line of a multiline string can already
+    # have it's own indentation we check if it needs
+    # additional indentation by comparing the number
+    # of spaces before a character of the line to
+    # the ground truth indentation.
+    line = s.doc.text[s.doc.ranges[startline]]
+    fc = findfirst(c -> !isspace(c), line)-1
+    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -223,18 +240,21 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     end
 
     lines = split(str, "\n")
-    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
     t = PTree{CSTParser.EXPR{CSTParser.StringH}}(ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
+    s.offset += x.fullspan
     t
 end
 
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-    s.offset += x.fullspan
+    
+    line = s.doc.text[s.doc.ranges[startline]]
+    fc = findfirst(c -> !isspace(c), line)-1
+    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -245,12 +265,12 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=t
     end
 
     lines = split(str, "\n")
-    ns = !include_quotes ? max(0, nspaces(s)-s.indent_size) : nspaces(s)
     t = PTree(x, ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
     end
+    s.offset += x.fullspan
     t
 end
 
@@ -535,7 +555,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
             add_node!(t, pretty(x.args[6], s))
         end
     else
-        add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
+            add_node!(t, pretty(x.args[2], s, ignore_single_line=true))
         if length(x.args) > 2
             s.indents -= 1
             add_node!(t, pretty(x.args[3], s))
@@ -624,6 +644,7 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     add_node!(t, whitespace)
     add_node!(t, pretty(x.op, s), join_lines=true)
     add_node!(t, whitespace)
+    # add_node!(t, placeholderWS)
 
     # Used to mark where `B` starts.
     add_node!(t, placeholder)

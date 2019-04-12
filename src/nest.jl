@@ -48,6 +48,30 @@ function nest!(x::PTree, s::State; extra_width=0)
     end
 end
 
+function nest!(x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State; extra_width=0)
+    n1 = x.nodes[1]
+    for (i, n) in enumerate(x.nodes)
+        if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            s.line_offset = x.nodes[i+1].indent
+        elseif n === newline && x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
+            v = x.nodes[i+1].text
+            if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
+                s.line_offset = x.indent
+            elseif v == "elseif" || v == "else"
+                s.line_offset = x.indent - s.indent_size
+            else
+                s.line_offset = x.indent
+            end
+        elseif n === newline
+            s.line_offset = x.indent
+        elseif n isa NotCode && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
+            s.line_offset = x.nodes[i+1].indent
+        else
+            nest!(n, s, extra_width=extra_width)
+        end
+    end
+end
+
 function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0) where T <: Union{CSTParser.Import,CSTParser.Using,CSTParser.Export}
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> is_placeholder(n), x.nodes)
@@ -111,13 +135,17 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0) where T <: 
     end
 end
 
-function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0) where T <: Union{CSTParser.Curly,CSTParser.Call}
+function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0, align_start=-1) where T <: Union{CSTParser.Curly,CSTParser.Call}
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> is_placeholder(n), x.nodes)
     if idx !== nothing && line_width > s.print_width
         line_offset = s.line_offset
         name_width = length(x.nodes[1]) + length(x.nodes[2])
-        x.indent = s.line_offset + min(name_width, s.indent_size)
+        if align_start != -1
+            x.indent = align_start + s.indent_size
+        else
+            x.indent = line_offset + min(name_width, s.indent_size)
+        end
 
         for (i, n) in enumerate(x.nodes)
             if n === newline
@@ -272,6 +300,9 @@ function nest!(x::PTree{CSTParser.ConditionalOpCall}, s::State; extra_width=0)
     end
 end
 
+# Alignable = PTree{CSTParser.EXPR{T}} where T <: Union{CSTParser.Call,CSTParser.MacroCall,CSTParser.Curly,CSTParser.TupleH,CSTParser.Vect,CSTParser.Braces}
+
+
 # arg1 op arg2
 #
 # nest in order of
@@ -290,7 +321,7 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
         s.line_offset += lens[1]
 
         x.nodes[idx] = newline
-        # this will only be true if it's a function definition
+        # Only true if CSTParser.defines_function was true
         if x.nodes[idx-1].text == "="
             s.line_offset = x.indent + s.indent_size
             # insert additional whitespace nodes
@@ -313,9 +344,12 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
 
         walk(reset_line_offset, x, s)
     else
+        line_offset = s.line_offset
         for (i, n) in enumerate(x.nodes)
             if n === newline
                 s.line_offset = x.indent
+            # elseif false
+            #     nest!(n, s, align_start=line_offset)
             else
                 nest!(n, s)
             end

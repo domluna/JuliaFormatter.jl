@@ -11,15 +11,18 @@ Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 ]add https://github.com/domluna/JLFmt.jl
 ```
 
-`JLFmt` exports a singular function:
+`JLFmt` exports `format` and `format_file`:
 
 ```julia
-format(text::String; indent_size=4, print_width=80)
+format(text::String, indent_size, print_width)
+format_file(text::String, indent_size, print_width; overwrite=false)
 ```
 
 * `indent_size` - the number of spaces used for an indentation.
 * `print_width` - the maximum number of characters of code on a single line. Lines over
 the limit will be nested if possible.
+* `overwrite` - if the file should be overwritten by the formatted output. Currently
+the ouput is written to a separate file.
 
 ## How It Works
 

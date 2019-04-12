@@ -3,11 +3,12 @@ module JLFmt
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
-export format
+export format, format_file
 
 function file_line_ranges(text::String)
     ranges = UnitRange{Int}[]
     lit_strings = Dict{Int, Tuple{Int,Int,String}}()
+    comments = Dict{Int,String}()
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -21,22 +22,22 @@ function file_line_ranges(text::String)
         elseif t.kind == Tokens.ENDMARKER
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
             push!(ranges, s:t.startbyte)
-        elseif (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING) && t.startpos[1] != t.endpos[1]
-            offset = t.startbyte
-            nls = findall(x -> x == '\n', t.val)
-            for nl in nls
-                s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                push!(ranges, s:offset+nl)
+        # elseif (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING) && t.startpos[1] != t.endpos[1]
+        elseif t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING 
+            lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
+            if t.startpos[1] != t.endpos[1]
+                offset = t.startbyte
+                nls = findall(x -> x == '\n', t.val)
+                for nl in nls
+                    s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
+                    push!(ranges, s:offset+nl)
+                end
             end
         elseif t.kind == Tokens.COMMENT
-            # @info "comment token" t
-        end
-
-        if (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING)
-            lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
+            comments[t.startpos[1]] = t.val
         end
     end
-    ranges, lit_strings
+    ranges, lit_strings, comments
 end
 
 struct Document
@@ -45,7 +46,7 @@ struct Document
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
-    # inline_commments::Vector{LitString}
+    comments::Dict{Int, String}
 end
 Document(s::String) = Document(s, file_line_ranges(s)...)
 
@@ -84,7 +85,7 @@ Formats a Julia source file (.jl).
 `print_width` - The maximum number of characters of code on a single line. Lines 
 over the width will be nested if possible.
 """
-function format(text::String; indent_size=4, print_width=80)
+function format(text::String, indent_size, print_width)
     if isempty(text)
         return text
     end
@@ -95,12 +96,13 @@ function format(text::String; indent_size=4, print_width=80)
     nest!(t, s)
 
     io = IOBuffer()
-    # Print comments and whitespace before any code.
+    # Print comments and whitespace before code.
     if t.startline > 1
         print_tree(io, NotCode(1, t.startline-1, 0), s)
+        print_tree(io, newline, s)
     end
     print_tree(io, t, s)
-    # Print comments and whitespace after any code.
+    # Print comments and whitespace after code.
     if t.endline < length(s.doc.ranges)
         print_tree(io, newline, s)
         print_tree(io, NotCode(t.endline+1, length(s.doc.ranges), 0), s)
@@ -109,4 +111,38 @@ function format(text::String; indent_size=4, print_width=80)
     String(take!(io))
 end
 
-end # module
+"""
+    format_file(filename, indent_size, print_width; overwrite=false)
+
+Formats the contents of `filename` assuming it's a Julia source file.
+
+If `overwrite` is `false` the formatted output will be written to the a file with
+a "fmt" suffix. For example, if the `filename` is "foo.jl", the output will
+be written to "foo_fmt.jl".
+
+If `overwrite` is `true` the file will be overwritten with the formatted output.
+"""
+function format_file(filename::String, indent_size, print_width; overwrite=false)
+    path, ext = splitext(filename)
+    if ext != ".jl"
+        throw(ArgumentError("$filename must be a Julia (.jl) source file"))
+    end
+    str = read(filename) |> String
+    try
+        str = format(str, indent_size, print_width)
+    catch e
+        throw(ErrorException("""An error occured formatting $filename. :-(
+
+                             Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                             with a link to a gist containing the contents of the file. A gist 
+                             can be created at https://gist.github.com/."""))
+    end
+
+    if overwrite
+        write(filename, str)
+    else
+        write(path * "_fmt" * ext, str)
+    end
+end
+
+end
