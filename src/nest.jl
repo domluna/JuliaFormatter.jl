@@ -372,12 +372,14 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
                 s.line_offset = x.indent
             elseif n isa PLeaf{CSTParser.OPERATOR}
                 assign_op = is_assignment(n)
+                nest!(n, s)
             else
                 nest!(n, s)
             end
         end
 
         if is_alignable(x.nodes[end]) && assign_op
+            # nest!(x.nodes[end], s)
             nest!(x.nodes[end], s, align_start=line_offset)
         else
             nest!(x.nodes[end], s)

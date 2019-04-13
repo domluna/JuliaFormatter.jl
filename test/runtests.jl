@@ -1039,6 +1039,35 @@ end
     end
     end"""
     @test format(str_, 4, 24) == str
+
+    # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+    str = """
+    this_is_a_long_variable_name = Dict{Symbol,Any}(
+        :numberofpointattributes => NAttributes,
+        :numberofpointmtrs => NMTr,
+        :numberofcorners => NSimplex,
+        :firstnumber => Cint(1),
+        :mesh_dim => Cint(3),
+    )"""
+
+    str_ = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    @test format(str_, 4, 80) == str
+
+    str = """
+    this_is_a_long_variable_name = (
+        :numberofpointattributes => NAttributes,
+        :numberofpointmtrs => NMTr,
+        :numberofcorners => NSimplex,
+        :firstnumber => Cint(1),
+        :mesh_dim => Cint(3),
+    )"""
+
+    str_ = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    @test format(str_, 4, 80) == str
 end
 
 @testset "nesting line offset" begin
@@ -1158,6 +1187,19 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 12
+
+    # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+    str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    s = run_nest(str, 80)
+    @test s.line_offset == 1
+
+    str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    s = run_nest(str, 80)
+    @test s.line_offset == 1
 end
 
 @testset "additional length" begin
