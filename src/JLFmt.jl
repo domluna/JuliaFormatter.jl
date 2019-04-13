@@ -5,7 +5,7 @@ import CSTParser.Tokenize.Tokens
 
 export format, format_file
 
-function file_line_ranges(text::String)
+function file_line_ranges(text::AbstractString)
     ranges = UnitRange{Int}[]
     lit_strings = Dict{Int, Tuple{Int,Int,String}}()
     comments = Dict{Int,String}()
@@ -37,18 +37,19 @@ function file_line_ranges(text::String)
             comments[t.startpos[1]] = t.val
         end
     end
+    # @info "" lit_strings
     ranges, lit_strings, comments
 end
 
 struct Document
-    text::String
+    text::AbstractString
     ranges::Vector{UnitRange{Int}}
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int, Tuple{Int, Int, String}}
     comments::Dict{Int, String}
 end
-Document(s::String) = Document(s, file_line_ranges(s)...)
+Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 
 mutable struct State
     doc::Document
@@ -76,7 +77,7 @@ include("nest.jl")
 include("print.jl")
 
 """
-    format(text::String; indent_size=4, print_width=80)
+    format(text::AbstractString; indent_size=4, print_width=80)
 
 Formats a Julia source file (.jl).
 
@@ -85,7 +86,7 @@ Formats a Julia source file (.jl).
 `print_width` - The maximum number of characters of code on a single line. Lines 
 over the width will be nested if possible.
 """
-function format(text::String, indent_size, print_width)
+function format(text::AbstractString, indent_size, print_width)
     if isempty(text)
         return text
     end
@@ -122,7 +123,7 @@ be written to "foo_fmt.jl".
 
 If `overwrite` is `true` the file will be overwritten with the formatted output.
 """
-function format_file(filename::String, indent_size, print_width; overwrite=false)
+function format_file(filename::AbstractString, indent_size, print_width; overwrite=false)
     path, ext = splitext(filename)
     if ext != ".jl"
         throw(ArgumentError("$filename must be a Julia (.jl) source file"))
@@ -131,6 +132,7 @@ function format_file(filename::String, indent_size, print_width; overwrite=false
     try
         str = format(str, indent_size, print_width)
     catch e
+        @info "" e
         throw(ErrorException("""An error occured formatting $filename. :-(
 
                              Please file an issue at https://github.com/domluna/JLFmt.jl/issues

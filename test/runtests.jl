@@ -281,6 +281,22 @@ end
     y,back = let
       body
     end""") == str
+
+    # TODO: This should probably be aligned to match up with a
+    str = """
+    let x = a,
+    # comment
+    b,
+    c
+        body
+    end"""
+    @test format("""
+    let x = a,
+        # comment
+           b,
+          c
+       body
+       end""") == str
 end
 
 @testset "struct" begin
@@ -334,18 +350,21 @@ end
     catch
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch
     arg
     end""") == str
+
     @test format("""
     try
             arg
         catch
             arg
         end""") == str
+
     str = """
     try
         arg
@@ -358,12 +377,14 @@ end
     catch
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch
     arg
     end""") == str
+
     @test format("""
     try
             arg
@@ -377,18 +398,21 @@ end
     catch err
         arg
     end"""
+
     @test format("""
     try
         arg
     catch err
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch err
     arg
     end""") == str
+
     @test format("""
     try
             arg
@@ -465,6 +489,14 @@ end
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str
+
+    str = """
+    func(
+        a,
+        "hello",
+        c
+    )"""
+    @test format("func(a,\"hello\",c)", 4, 1) == str
 
     str = """
     \"""
@@ -573,6 +605,11 @@ end
     str = """function foo end"""
     @test format("""
         function  foo
+        end""") == str
+
+    str = """function foo() end"""
+    @test format("""
+                 function  foo()
         end""") == str
 
     str = """function foo
@@ -744,6 +781,9 @@ end
 
     str = """macro foo() end"""
     @test format("macro foo()\n      end") == str
+
+    str = """macro foo end"""
+    @test format("macro foo\n      end") == str
 
     str = """
     macro foo()
