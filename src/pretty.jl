@@ -614,7 +614,6 @@ end
 
 function pretty(x::T, s::State; nospaces=false, nonest=false) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
     t = PTree(x, nspaces(s))
-
     x.op.kind == Tokens.COLON && (nospaces = true)
     arg1 = x.arg1 isa T ? pretty(x.arg1, s, nospaces=nospaces, nonest=nonest) : pretty(x.arg1, s)
     add_node!(t, arg1)

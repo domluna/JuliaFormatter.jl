@@ -78,6 +78,29 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
     end
 end
 
+# function print_tree(io::IOBuffer, x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
+#     ws = repeat(" ", x.indent)
+#     assign_op = false
+#     for (i, n) in enumerate(x.nodes[1:end-1])
+#         print_tree(io, n, s)
+#         if n === newline && i < length(x.nodes)
+#             if is_block(x.nodes[i+1])
+#                 write(io, repeat(" ", x.nodes[i+1].indent))
+#             elseif !skip_indent(x.nodes[i+1])
+#                 write(io, ws)
+#             end
+#         elseif n isa PLeaf{CSTParser.OPERATOR}
+#             assign_op = is_assignment(n)
+#         end
+#     end
+#
+#     if is_alignable(x.nodes[end]) && assign_op
+#         print_tree(io, x.nodes[end], s, closer_indent=x.indent)
+#     else
+#         print_tree(io, x.nodes[end], s)
+#     end
+# end
+
 function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
     ws = repeat(" ", x.indent)
     n1 = x.nodes[1]
@@ -106,7 +129,6 @@ end
 
 
 function print_tree(io::IOBuffer, x::NotCode, s::State)
-    @info "PRINTING NOTCODE" x
     ws = repeat(" ", x.indent)
     # `NotCode` nodes always follow a `Newline` node.
     prev_nl = true
