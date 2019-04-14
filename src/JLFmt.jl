@@ -5,6 +5,8 @@ import CSTParser.Tokenize.Tokens
 
 export format, format_file
 
+is_str_or_cmd(x::Tokens.Kind) = x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
+
 function file_line_ranges(text::AbstractString)
     ranges = UnitRange{Int}[]
     lit_strings = Dict{Int, Tuple{Int,Int,String}}()
@@ -22,8 +24,7 @@ function file_line_ranges(text::AbstractString)
         elseif t.kind == Tokens.ENDMARKER
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
             push!(ranges, s:t.startbyte)
-        # elseif (t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING) && t.startpos[1] != t.endpos[1]
-        elseif t.kind == Tokens.TRIPLE_STRING || t.kind == Tokens.STRING 
+        elseif is_str_or_cmd(t.kind)
             lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
                 offset = t.startbyte

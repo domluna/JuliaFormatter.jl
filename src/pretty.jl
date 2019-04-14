@@ -129,6 +129,14 @@ function pretty(x::CSTParser.EXPR{CSTParser.FileH}, s::State)
     t
 end
 
+# function pretty(x::CSTParser.EXPR{T}, s::State) where T<: Union{CSTParser.x_Str,CSTParser.x_Cmd}
+#     t = PTree(x, nspaces(s))
+#     for a in x
+#         add_node!(t, pretty(a, s), join_lines=true)
+#     end
+#     t
+# end
+
 function pretty(x::CSTParser.IDENTIFIER, s::State)
     loc = cursor_loc(s)
     s.offset += x.fullspan
@@ -199,6 +207,7 @@ function pretty(x::CSTParser.PUNCTUATION, s::State)
     PLeaf(x, loc[1], loc[1], text)
 end
 
+
 # which_quote is used for multiline strings
 # to determines whether
 # 1. quotes on start and last line are included (default 0)
@@ -206,7 +215,7 @@ end
 # 3. quotes on end line are included (2)
 function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     loc0 = cursor_loc(s)
-    if !CSTParser.is_lit_string(x)
+    if !is_str_or_cmd(x.kind)
         s.offset += x.fullspan
         return PLeaf(x, loc0[1], loc0[1], x.val)
     end
@@ -220,6 +229,7 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     # for indentation problematic.
     #
     # So we'll just look at the source directly!
+    #
 
     startline, endline, str = s.doc.lit_strings[s.offset-1]
 
@@ -257,8 +267,10 @@ end
 
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
+
     
     line = s.doc.text[s.doc.ranges[startline]]
+
     fc = findfirst(c -> !isspace(c), line)-1
     ns = max(0, nspaces(s) - fc)
 
@@ -468,7 +480,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Try}, s::State)
     t
 end
 
-function pretty(x::CSTParser.EXPR{CSTParser.ModuleH}, s::State)
+function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.ModuleH,CSTParser.BareModule}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, pretty(x.args[2], s), join_lines=true)
