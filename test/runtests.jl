@@ -281,6 +281,22 @@ end
     y,back = let
       body
     end""") == str
+
+    # TODO: This should probably be aligned to match up with a
+    str = """
+    let x = a,
+    # comment
+    b,
+    c
+        body
+    end"""
+    @test format("""
+    let x = a,
+        # comment
+           b,
+          c
+       body
+       end""") == str
 end
 
 @testset "struct" begin
@@ -334,18 +350,21 @@ end
     catch
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch
     arg
     end""") == str
+
     @test format("""
     try
             arg
         catch
             arg
         end""") == str
+
     str = """
     try
         arg
@@ -358,12 +377,14 @@ end
     catch
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch
     arg
     end""") == str
+
     @test format("""
     try
             arg
@@ -377,18 +398,21 @@ end
     catch err
         arg
     end"""
+
     @test format("""
     try
         arg
     catch err
         arg
     end""") == str
+
     @test format("""
     try
     arg
     catch err
     arg
     end""") == str
+
     @test format("""
     try
             arg
@@ -465,6 +489,14 @@ end
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str
+
+    str = """
+    func(
+        a,
+        "hello",
+        c
+    )"""
+    @test format("func(a,\"hello\",c)", 4, 1) == str
 
     str = """
     \"""
@@ -573,6 +605,11 @@ end
     str = """function foo end"""
     @test format("""
         function  foo
+        end""") == str
+
+    str = """function foo() end"""
+    @test format("""
+                 function  foo()
         end""") == str
 
     str = """function foo
@@ -744,6 +781,9 @@ end
 
     str = """macro foo() end"""
     @test format("macro foo()\n      end") == str
+
+    str = """macro foo end"""
+    @test format("macro foo\n      end") == str
 
     str = """
     macro foo()
@@ -1039,6 +1079,35 @@ end
     end
     end"""
     @test format(str_, 4, 24) == str
+
+    # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+    str = """
+    this_is_a_long_variable_name = Dict{Symbol,Any}(
+        :numberofpointattributes => NAttributes,
+        :numberofpointmtrs => NMTr,
+        :numberofcorners => NSimplex,
+        :firstnumber => Cint(1),
+        :mesh_dim => Cint(3),
+    )"""
+
+    str_ = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    @test format(str_, 4, 80) == str
+
+    str = """
+    this_is_a_long_variable_name = (
+        :numberofpointattributes => NAttributes,
+        :numberofpointmtrs => NMTr,
+        :numberofcorners => NSimplex,
+        :firstnumber => Cint(1),
+        :mesh_dim => Cint(3),
+    )"""
+
+    str_ = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    @test format(str_, 4, 80) == str
 end
 
 @testset "nesting line offset" begin
@@ -1158,6 +1227,19 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 12
+
+    # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+    str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    s = run_nest(str, 80)
+    @test s.line_offset == 1
+
+    str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
+           :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+           :mesh_dim => Cint(3),)"""
+    s = run_nest(str, 80)
+    @test s.line_offset == 1
 end
 
 @testset "additional length" begin
