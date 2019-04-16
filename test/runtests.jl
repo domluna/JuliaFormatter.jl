@@ -1360,4 +1360,27 @@ end
 
 end
 
+# TODO:
+#
+# throw_overflowerr_binaryop(op, x, y) = (@_noinline_meta;	throw_overflowerr_binaryop(op, x, y) =
+#     throw(OverflowError(Base.invokelatest(string, x, " ", op, " ", y, " overflowed for type ", typeof(x)))))
+#
+# push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
+#
+# src[a+=1] -> src[a += 1]
+#
+# T <: A -> T<:A
+#
+# function foo(a)::R where {A,B}
+# end
+# 
+# strings
+#
+# propagate indent to front of the line
+#
+# don't nest shortcut binary ops &&, ||
+#
+# Val(x) = (@_pure_meta ; Val{x}())	-> Val(x) = (@_pure_meta; Val{x}())	
+# primitive type WindowsRawSocket sizeof(Ptr) * 8 end
+
 end

@@ -154,39 +154,39 @@ function pretty(x::CSTParser.KEYWORD, s::State)
     loc = cursor_loc(s)
     # @info "" loc x
     text = ""
-    text = x.kind == Tokens.ABSTRACT ? "abstract " :
-           x.kind == Tokens.BAREMODULE ? "baremodule " :
+    text = x.kind == Tokens.ABSTRACT ? "abstract" :
+           x.kind == Tokens.BAREMODULE ? "baremodule" :
            x.kind == Tokens.BEGIN ? "begin" :
            x.kind == Tokens.BREAK ? "break" :
            x.kind == Tokens.CATCH ? "catch" :
-           x.kind == Tokens.CONST ? "const " :
+           x.kind == Tokens.CONST ? "const" :
            x.kind == Tokens.CONTINUE ? "continue" :
-           x.kind == Tokens.DO ? " do " :
-           x.kind == Tokens.IF ? "if " :
+           x.kind == Tokens.DO ? "do" :
+           x.kind == Tokens.IF ? "if" :
            x.kind == Tokens.ELSEIF ? "elseif" :
            x.kind == Tokens.ELSE ? "else" :
            x.kind == Tokens.END ? "end" :
-           x.kind == Tokens.EXPORT ? "export " :
+           x.kind == Tokens.EXPORT ? "export" :
            x.kind == Tokens.FINALLY ? "finally" :
-           x.kind == Tokens.FOR ? "for " :
-           x.kind == Tokens.FUNCTION ? "function " :
-           x.kind == Tokens.GLOBAL ? "global " :
-           x.kind == Tokens.IMPORT ? "import " :
-           x.kind == Tokens.IMPORTALL ? "importall " :
+           x.kind == Tokens.FOR ? "for" :
+           x.kind == Tokens.FUNCTION ? "function" :
+           x.kind == Tokens.GLOBAL ? "global" :
+           x.kind == Tokens.IMPORT ? "import" :
+           x.kind == Tokens.IMPORTALL ? "importall" :
            x.kind == Tokens.LET ? "let" :
-           x.kind == Tokens.LOCAL ? "local " :
-           x.kind == Tokens.MACRO ? "macro " :
-           x.kind == Tokens.MODULE ? "module " :
-           x.kind == Tokens.MUTABLE ? "mutable " :
+           x.kind == Tokens.LOCAL ? "local" :
+           x.kind == Tokens.MACRO ? "macro" :
+           x.kind == Tokens.MODULE ? "module" :
+           x.kind == Tokens.MUTABLE ? "mutable" :
            x.kind == Tokens.OUTER ? "outer " :
-           x.kind == Tokens.PRIMITIVE ? "primitive " :
+           x.kind == Tokens.PRIMITIVE ? "primitive" :
            x.kind == Tokens.QUOTE ? "quote" :
            x.kind == Tokens.RETURN ? "return" :
-           x.kind == Tokens.STRUCT ? "struct " :
-           x.kind == Tokens.TYPE ? "type " :
+           x.kind == Tokens.STRUCT ? "struct" :
+           x.kind == Tokens.TYPE ? "type" :
            x.kind == Tokens.TRY ? "try" :
-           x.kind == Tokens.USING ? "using " :
-           x.kind == Tokens.WHILE ? "while " : ""
+           x.kind == Tokens.USING ? "using" :
+           x.kind == Tokens.WHILE ? "while" : ""
     s.offset += x.fullspan
     PLeaf(x, loc[1], loc[1], text)
 end
@@ -268,7 +268,6 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=true)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
 
-    
     line = s.doc.text[s.doc.ranges[startline]]
 
     fc = findfirst(c -> !isspace(c), line)-1
@@ -314,7 +313,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if a isa CSTParser.EXPR{CSTParser.MacroName}
-            if a.fullspan - a.span > 0
+            if a.fullspan - a.span > 0 && length(x) > 1
                 add_node!(t, n, join_lines=true)
                 add_node!(t, whitespace)
             else
@@ -340,11 +339,17 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     t
 end
 
+is_lazy_call(_) = false
+is_lazy_call(x::CSTParser.BinaryOpCall) =
+    x.op.kind == Tokens.LAZY_AND || x.op.kind == Tokens.LAZY_OR
+is_lazy_call(x::CSTParser.SyntaxBinaryOpCall) =
+    x.op.kind == Tokens.LAZY_AND || x.op.kind == Tokens.LAZY_OR
+
 function pretty(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line=false)
     t = PTree(x, nspaces(s))
     single_line = ignore_single_line ? false : cursor_loc(s)[1] == cursor_loc(s, s.offset+x.span-1)[1] 
     for (i, a) in enumerate(x)
-        n = pretty(a, s)
+        n = is_lazy_call(a) ? pretty(a, s, nospaces=true) : pretty(a, s)
         if single_line
             if i == 1 || CSTParser.is_comma(a)
                 add_node!(t, n, join_lines=true)
@@ -372,16 +377,33 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Abstract}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[3], s), join_lines=true)
     add_node!(t, whitespace)
     add_node!(t, pretty(x.args[4], s), join_lines=true)
     t
 end
 
+function pretty(x::CSTParser.EXPR{CSTParser.Primitive}, s::State)
+    t = PTree(x, nspaces(s))
+    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
+    add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, whitespace)
+    add_node!(t, pretty(x.args[3], s), join_lines=true)
+    add_node!(t, whitespace)
+    add_node!(t, pretty(x.args[4], s), join_lines=true)
+    add_node!(t, whitespace)
+    add_node!(t, pretty(x.args[5], s), join_lines=true)
+    t
+end
+
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.FunctionDef,CSTParser.Macro}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if length(x) > 3
         if x.args[3].fullspan == 0
@@ -405,6 +427,7 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Struct}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan == 0
         add_node!(t, whitespace)
@@ -421,7 +444,9 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Mutable}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[3], s), join_lines=true)
     if x.args[4].fullspan == 0
         add_node!(t, whitespace)
@@ -438,6 +463,7 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.For,CSTParser.While}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     s.indents += 1
     add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
@@ -449,8 +475,10 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Do}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan != 0
+        add_node!(t, whitespace)
         add_node!(t, pretty(x.args[3], s), join_lines=true)
     end
     if x.args[4] isa CSTParser.EXPR{CSTParser.Block}
@@ -483,6 +511,7 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.ModuleH,CSTParser.BareModule}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan == 0
         add_node!(t, whitespace)
@@ -494,7 +523,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Modul
     t
 end
 
-function pretty(x::CSTParser.EXPR{CSTParser.Return}, s::State)
+function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Const,CSTParser.Return,CSTParser.Local,CSTParser.Global}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if x.args[2].fullspan != 0
@@ -525,6 +554,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Quote}, s::State)
     t = PTree(x, nspaces(s))
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.QUOTE
         add_node!(t, pretty(x.args[1], s))
+        add_node!(t, whitespace)
         if x.args[2].fullspan == 0
             add_node!(t, whitespace)
             add_node!(t, pretty(x.args[3], s), join_lines=true)
@@ -562,6 +592,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.IF
+        # add_node(t, whitespace)
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indents += 1
         add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
@@ -668,7 +699,6 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     add_node!(t, whitespace)
     add_node!(t, pretty(x.op, s), join_lines=true)
     add_node!(t, whitespace)
-    # add_node!(t, placeholderWS)
 
     # Used to mark where `B` starts.
     add_node!(t, placeholder)
@@ -798,9 +828,10 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Param
     t
 end
 
-function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Export,CSTParser.Import,CSTParser.Using}
+function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Export,CSTParser.Import,CSTParser.Using,CSTParser.ImportAll}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
+    add_node!(t, whitespace)
     for (i, a) in enumerate(x.args[2:end])
         if CSTParser.is_comma(a)
             add_node!(t, pretty(a, s), join_lines=true)
@@ -818,8 +849,11 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Ref}, s::State)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
-        if a isa Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-            add_node!(t, pretty(a, s, nospaces=true), join_lines=true)
+        if CSTParser.is_comma(a)
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, whitespace)
+        elseif a isa Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
+            add_node!(t, pretty(a, s, nospaces=false), join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -894,7 +928,6 @@ function pretty(x::CSTParser.EXPR{CSTParser.Row}, s::State)
     t
 end
 
-# Expr KEYWORD Expr
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Generator,CSTParser.Filter}
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)

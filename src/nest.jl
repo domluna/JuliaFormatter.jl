@@ -111,13 +111,16 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0, align_start
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> is_placeholder(n), x.nodes)
     if idx !== nothing && line_width > s.print_width
-        line_offset = s.line_offset
-        if align_start != -1
-            line_offset = align_start
-            x.indent = line_offset + s.indent_size
-        else
-            x.indent = is_opener(x.nodes[1]) ? line_offset + 1 : line_offset
-        end
+        # line_offset = s.line_offset
+        # if align_start != -1
+        #     line_offset = align_start
+        #     x.indent = line_offset + s.indent_size
+        # else
+        #     x.indent = is_opener(x.nodes[1]) ? line_offset + 1 : line_offset
+        # end
+
+        line_offset = x.indent
+        x.indent += s.indent_size
 
         for (i, n) in enumerate(x.nodes)
             if n === newline
@@ -146,14 +149,17 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0, align_start
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> is_placeholder(n), x.nodes)
     if idx !== nothing && line_width > s.print_width
-        line_offset = s.line_offset
         name_width = length(x.nodes[1]) + length(x.nodes[2])
-        if align_start != -1
-            line_offset = align_start
-            x.indent = line_offset + s.indent_size
-        else
-            x.indent = line_offset + min(name_width, s.indent_size)
-        end
+        # line_offset = s.line_offset
+        # if align_start != -1
+        #     line_offset = align_start
+        #     x.indent = line_offset + s.indent_size
+        # else
+        #     x.indent = line_offset + min(name_width, s.indent_size)
+        # end
+
+        line_offset = x.indent
+        x.indent += s.indent_size
 
         for (i, n) in enumerate(x.nodes)
             if n === newline
