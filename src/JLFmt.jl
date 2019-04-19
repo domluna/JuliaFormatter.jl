@@ -59,6 +59,9 @@ mutable struct State
     offset::Int
     line_offset::Int
     print_width::Int
+
+    # whether to nest &&, ||
+    # nest_lazy::Bool
 end
 
 @inline nspaces(s::State) = s.indent_size * s.indents

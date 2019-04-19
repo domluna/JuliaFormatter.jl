@@ -105,33 +105,6 @@ function print_tree(io::IOBuffer, x::PTree{T}, s::State) where T <: Union{CSTPar
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
-    ws = repeat(" ", x.indent)
-    n1 = x.nodes[1]
-    for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
-                v = x.nodes[i+1].text
-                if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
-                    write(io, ws)
-                elseif v == "elseif" || v == "else"
-                    if ws != ""
-                        write(io, repeat(" ", x.indent - s.indent_size))
-                    end
-                else
-                    write(io, ws)
-                end
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        end
-    end
-end
-
-
 function print_tree(io::IOBuffer, x::NotCode, s::State)
     ws = repeat(" ", x.indent)
     # `NotCode` nodes always follow a `Newline` node.

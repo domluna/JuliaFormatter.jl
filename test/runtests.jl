@@ -1108,6 +1108,14 @@ end
            :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
+
+    # don't nest lazy calls unless they are part of an if statement
+    str = """
+    begin
+        a && b
+        a || b
+    end"""
+    @test format(str) == str
 end
 
 @testset "nesting line offset" begin
