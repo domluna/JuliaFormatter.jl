@@ -30,15 +30,13 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
 end
 
 function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Call,CSTParser.Curly,CSTParser.MacroCall}
-    @info "" x.indent x.nodes[1]
+    # @info "" x.indent x.nodes[1]
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline && i < length(x.nodes)
             if is_closer(x.nodes[i+1])
-                w = min(s.indent_size, length(x.nodes[1]) + length(x.nodes[2]))
-                # w = s.indent_size - x.indent % s.indent_size
-                write(io, ws[1:end-w])
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
@@ -48,13 +46,14 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect,CSTParser.InvisBrackets,CSTParser.Parameters}
+    # @info "" x.indent x.nodes[1]
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline && i < length(x.nodes)
             if is_closer(x.nodes[i+1])
-                write(io, ws[1:end-1])
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
@@ -70,7 +69,7 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
         print_tree(io, n, s)
         if n === newline && i < length(x.nodes)
             if is_closer(x.nodes[i+1])
-                write(io, ws[1:end-1])
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])

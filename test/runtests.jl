@@ -834,16 +834,16 @@ end
 @testset "nesting" begin
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {
-                      A,
-                      F{
-                        B,
-                        C
-                      }
-                     }
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {
+        A,
+        F{
+          B,
+          C
+        }
+    }
         10
         20
     end"""
@@ -851,25 +851,24 @@ end
 
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {
-                      A,
-                      F{B,C}
-                     }
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {
+        A,
+        F{B,C}
+    }
         10
         20
     end"""
-
     @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 26) == str
 
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {A,F{B,C}}
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {A,F{B,C}}
         10
         20
     end"""
@@ -978,9 +977,9 @@ end
         (
          one,
          x -> (
-               true,
-               false
-              )
+             true,
+             false
+         )
         )"""
     @test format("foo() = (one, x -> (true, false))", 4, 20) == str
 
@@ -990,6 +989,9 @@ end
         body_
     end"""
     @test format("@somemacro function (fcall_ | fcall_) body_ end", 4, 1) == str
+    
+    str = "Val(x) = (@_pure_meta; Val{x}())"
+    @test format("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
     str = "(a; b; c)"
     @test format("(a;b;c)", 4, 100) == str
@@ -1016,26 +1018,20 @@ end
 
     # don't nest < 2 args
     
-    str = """
-    A where {B}"""
+    str = "A where {B}"
     @test format(str, 4, 1) == str
 
-    str = """
-    foo(arg1)"""
+    str = "foo(arg1)"
     @test format(str, 4, 1) == str
 
-    str = """
-    [arg1]"""
+    str = "[arg1]"
     @test format(str, 4, 1) == str
 
-    str = """
-    {arg1}"""
+    str = "{arg1}"
     @test format(str, 4, 1) == str
 
-    str = """
-    (arg1)"""
+    str = "(arg1)"
     @test format(str, 4, 1) == str
-
 
     str = """
     begin
@@ -1115,7 +1111,7 @@ end
         a && b
         a || b
     end"""
-    @test format(str) == str
+    @test_broken format(str) == str
 end
 
 @testset "nesting line offset" begin
@@ -1157,9 +1153,9 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 15
     s = run_nest(str, 14)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where Union{A,B,C}"
     s = run_nest(str, 100)
@@ -1167,9 +1163,9 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 20
     s = run_nest(str, 19)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where A"
     s = run_nest(str, 100)
@@ -1189,15 +1185,15 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 31
     s = run_nest(str, 30)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where {A,{B,C,D},E}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "(a, b, c, d)"
     s = run_nest(str, 100)
@@ -1361,21 +1357,16 @@ end
       var1::A,
       var2::B
     ) where {
-             A,
-             B
-            }"""
+        A,
+        B
+    }"""
     @test format("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
 end
 
 # TODO:
 #
-# throw_overflowerr_binaryop(op, x, y) = (@_noinline_meta;	throw_overflowerr_binaryop(op, x, y) =
-#     throw(OverflowError(Base.invokelatest(string, x, " ", op, " ", y, " overflowed for type ", typeof(x)))))
-#
 # push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
-#
-# src[a+=1] -> src[a += 1]
 #
 # T <: A -> T<:A
 #
@@ -1384,11 +1375,5 @@ end
 # 
 # strings
 #
-# propagate indent to front of the line
-#
-# don't nest shortcut binary ops &&, ||
-#
-# Val(x) = (@_pure_meta ; Val{x}())	-> Val(x) = (@_pure_meta; Val{x}())	
-# primitive type WindowsRawSocket sizeof(Ptr) * 8 end
 
 end

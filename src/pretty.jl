@@ -40,16 +40,17 @@ const whitespace = Whitespace()
 const placeholder = Placeholder()
 const placeholderWS = PlaceholderWS()
 
-struct PLeaf{T} <: AbstractPLeaf
+mutable struct PLeaf{T} <: AbstractPLeaf
     startline::Int
     endline::Int
     text::AbstractString
-    # indent::Int
+    indent::Int
 end
-PLeaf(::T, startline::Int, endline::Int, text::AbstractString) where T = PLeaf{T}(startline, endline, text)
+PLeaf(::T, startline::Int, endline::Int, text::AbstractString) where T = 
+    PLeaf{T}(startline, endline, text, 0)
 Base.length(x::PLeaf) = length(x.text)
 
-const empty_start = PLeaf{CSTParser.LITERAL}(1, 1, "")
+const empty_start = PLeaf{CSTParser.LITERAL}(1, 1, "", 0)
 
 mutable struct PTree{T}
     startline::Int
@@ -110,10 +111,12 @@ is_prev_newline(::Newline) = true
 is_prev_newline(x::PTree) = length(x.nodes) == 0 ? false : is_prev_newline(x.nodes[end])
 
 is_placeholder(x) = x === placeholder || x === placeholderWS
-is_closer(_) = false
+
+is_closer(x) = CSTParser.is_rparen(x) || CSTParser.is_rbrace(x) || CSTParser.is_rsquare(x)
 is_closer(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "}" || x.text == ")" || x.text == "]"
-is_opener(_) = false
+
 is_opener(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "{" || x.text == "(" || x.text == "["
+is_opener(x) = CSTParser.is_lparen(x) || CSTParser.is_lbrace(x) || CSTParser.is_lsquare(x)
 
 function pretty(x::T, s::State) where T <: Union{AbstractVector,CSTParser.AbstractEXPR}
     t = PTree(x, nspaces(s))
@@ -266,7 +269,7 @@ function pretty(x::CSTParser.LITERAL, s::State; include_quotes=true)
     t = PTree{CSTParser.EXPR{CSTParser.StringH}}(ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l, nspaces(s)))
     end
     t
 end
@@ -297,7 +300,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.StringH}, s::State; include_quotes=t
     t = PTree(x, ns)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l))
+        add_node!(t, PLeaf{CSTParser.LITERAL}(ln, ln, l, nspaces(s)))
     end
     t
 end
@@ -307,10 +310,10 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
     if x.args[1] isa CSTParser.EXPR{CSTParser.GlobalRefDoc}
         loc = cursor_loc(s)
         # x.args[1] is empty and fullspan is 0 so we can skip it
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\"", nspaces(s)))
         add_node!(t, pretty(x.args[2], s, include_quotes=false))
         loc = cursor_loc(s)
-        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\""))
+        add_node!(t, PLeaf{CSTParser.LITERAL}(loc[1], loc[1], "\"\"\"", nspaces(s)))
         add_node!(t, pretty(x.args[3], s))
         return t
     end
@@ -663,9 +666,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Kw}, s::State)
 end
 
 function nestable(x::T) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    if x.op.kind == Tokens.EQ && CSTParser.defines_function(x)
-        return true
-    end
+    CSTParser.defines_function(x) && (return true)
     x.op.kind == Tokens.ANON_FUNC && (return false)
     x.op.kind == Tokens.PAIR_ARROW && (return false)
     CSTParser.precedence(x.op) in (1, 6) && (return false)
@@ -692,6 +693,9 @@ function pretty(x::T, s::State; nonest=false) where T <: Union{CSTParser.BinaryO
         add_node!(t, whitespace)
         add_node!(t, pretty(x.op, s), join_lines=true)
         add_node!(t, whitespace)
+    end
+    
+    if CSTParser.defines_function(x)
     end
 
     arg2 = x.arg2 isa T ? pretty(x.arg2, s, nonest=nonest) : pretty(x.arg2, s)
@@ -801,7 +805,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
     t
 end
 
-function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
+function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect,CSTParser.InvisBrackets}
     t = PTree(x, nspaces(s))
     braces = CSTParser.is_lbrace(x.args[1])
 
@@ -812,13 +816,14 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
         multi_arg = true
     end
 
+    @info "" multi_arg typeof(x)
+
     multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if is_opener(n) && multi_arg
             add_node!(t, n, join_lines=true)
             add_node!(t, placeholder)
-            s.indent -= s.indent_size
         elseif is_closer(n) && multi_arg
             add_node!(t, placeholder)
             add_node!(t, n, join_lines=true)
@@ -833,6 +838,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
             add_node!(t, n, join_lines=true)
         end
     end
+    multi_arg && (s.indent -= s.indent_size)
     t
 end
 
