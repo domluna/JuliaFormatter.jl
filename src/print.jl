@@ -1,4 +1,3 @@
-
 is_block(_) = false
 is_block(::PTree{CSTParser.EXPR{CSTParser.Block}}) = true
 is_block(::PTree{CSTParser.EXPR{CSTParser.StringH}}) = true
@@ -14,6 +13,7 @@ print_tree(io::IOBuffer, ::Semicolon, ::State) = write(io, ";")
 print_tree(io::IOBuffer, ::Whitespace, ::State) = write(io, " ")
 print_tree(io::IOBuffer, ::Placeholder, ::State) = write(io, "")
 print_tree(io::IOBuffer, ::PlaceholderWS, ::State) = write(io, " ")
+print_tree(io::IOBuffer, x::TrailingComment, ::State) = write(io, x.text)
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
     ws = repeat(" ", x.indent)
@@ -29,15 +29,15 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State; closer_indent=-1) where T <: Union{CSTParser.Call,CSTParser.Curly,CSTParser.MacroCall}
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.Call,CSTParser.Curly,CSTParser.MacroCall}
+    @info "" x.indent x.nodes[1]
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline && i < length(x.nodes)
-            if is_closer(x.nodes[i+1]) && closer_indent != -1
-                write(io, ws[1:closer_indent])
-            elseif is_closer(x.nodes[i+1])
+            if is_closer(x.nodes[i+1])
                 w = min(s.indent_size, length(x.nodes[1]) + length(x.nodes[2]))
+                # w = s.indent_size - x.indent % s.indent_size
                 write(io, ws[1:end-w])
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
@@ -48,14 +48,12 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State; closer_
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State; closer_indent=-1) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
+function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
         print_tree(io, n, s)
         if n === newline && i < length(x.nodes)
-            if is_closer(x.nodes[i+1]) && closer_indent != -1
-                write(io, ws[1:closer_indent])
-            elseif is_closer(x.nodes[i+1])
+            if is_closer(x.nodes[i+1])
                 write(io, ws[1:end-1])
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
@@ -79,29 +77,6 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
                 write(io, ws)
             end
         end
-    end
-end
-
-function print_tree(io::IOBuffer, x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
-    ws = repeat(" ", x.indent)
-    assign_op = false
-    for (i, n) in enumerate(x.nodes[1:end-1])
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        elseif n isa PLeaf{CSTParser.OPERATOR}
-            assign_op = is_assignment(n)
-        end
-    end
-
-    if is_alignable(x.nodes[end]) && assign_op
-        print_tree(io, x.nodes[end], s, closer_indent=x.indent)
-    else
-        print_tree(io, x.nodes[end], s)
     end
 end
 

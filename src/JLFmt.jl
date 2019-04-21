@@ -55,16 +55,13 @@ Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 mutable struct State
     doc::Document
     indent_size::Int
-    indents::Int
+    indent::Int
     offset::Int
     line_offset::Int
     print_width::Int
-
-    # whether to nest &&, ||
-    # nest_lazy::Bool
 end
 
-@inline nspaces(s::State) = s.indent_size * s.indents
+@inline nspaces(s::State) = s.indent
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
