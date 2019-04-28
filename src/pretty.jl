@@ -695,10 +695,9 @@ function pretty(x::T, s::State; nonest=false) where T <: Union{CSTParser.BinaryO
         add_node!(t, whitespace)
     end
     
-    if CSTParser.defines_function(x)
-    end
-
+    CSTParser.defines_function(x) && (s.indent += s.indent_size)
     arg2 = x.arg2 isa T ? pretty(x.arg2, s, nonest=nonest) : pretty(x.arg2, s)
+    CSTParser.defines_function(x) && (s.indent -= s.indent_size)
     add_node!(t, arg2, join_lines=true)
     t
 end
@@ -816,7 +815,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
         multi_arg = true
     end
 
-    @info "" multi_arg typeof(x)
+    # @info "" multi_arg typeof(x)
 
     multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)

@@ -861,7 +861,7 @@ end
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 26) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 17) == str
 
     str = """
     function f(
@@ -872,7 +872,7 @@ end
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 27) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 18) == str
 
     str = """
     a |
@@ -1105,13 +1105,14 @@ end
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
 
+    # TODO: revisit
     # don't nest lazy calls unless they are part of an if statement
-    str = """
-    begin
-        a && b
-        a || b
-    end"""
-    @test_broken format(str) == str
+    # str = """
+    # begin
+    #     a && b
+    #     a || b
+    # end"""
+    # @test_broken format(str) == str
 end
 
 @testset "nesting line offset" begin
@@ -1209,9 +1210,9 @@ end
             x_ => (x, :Any)
         end"""
     s = run_nest(str, 96)
-    @test s.line_offset == 3
+    @test s.line_offset == 7
     s = run_nest(str, 1)
-    @test s.line_offset == 3
+    @test s.line_offset == 7
 
     str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
     s = run_nest(str, 80)

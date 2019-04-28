@@ -94,6 +94,8 @@ function nest!(x::PTree{CSTParser.EXPR{T}}, s::State; extra_width=0) where T <: 
         line_offset = s.line_offset
         x.indent += s.indent_size
 
+        @info "" x.indent s.line_offset
+
         for (i, n) in enumerate(x.nodes)
             if n === newline
                 s.line_offset = x.indent
@@ -298,20 +300,12 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
     if idx !== nothing && line_width > s.print_width
         line_offset = s.line_offset
         lens = remaining_lengths(x.nodes[1:idx-1])
-
-        x.indent = s.line_offset
-        s.line_offset += lens[1]
-
         x.nodes[idx] = newline
-        # Only true if CSTParser.defines_function was true
+
         if x.nodes[idx-1].text == "="
             s.line_offset = x.indent + s.indent_size
-            # insert additional whitespace nodes
-            for _ in 1:s.indent_size
-                insert!(x.nodes, idx+1, whitespace)
-            end
         else
-            s.line_offset = x.indent
+            x.indent = s.line_offset
         end
 
         # arg2
