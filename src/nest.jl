@@ -31,8 +31,8 @@ end
 # Used to correctly reset the State's line_offset. 
 reset_line_offset(_, _) = nothing
 reset_line_offset(x::AbstractPLeaf, s::State) = (s.line_offset += length(x); nothing)
-nest!(x::AbstractPLeaf, s::State; extra_width=0) = (s.line_offset += length(x); nothing)
 
+nest!(x::AbstractPLeaf, s::State; extra_width=0) = (s.line_offset += length(x); nothing)
 function nest!(x::PTree, s::State; extra_width=0)
     for (i, n) in enumerate(x.nodes)
         if n === newline && x.nodes[i+1] isa PTree{CSTParser.EXPR{CSTParser.Block}}
@@ -298,6 +298,7 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
     idx = findlast(n -> is_placeholder(n), x.nodes) 
     line_width = s.line_offset + length(x) + extra_width
     if idx !== nothing && line_width > s.print_width
+        @info "START" s.line_offset
         line_offset = s.line_offset
         lens = remaining_lengths(x.nodes[1:idx-1])
         x.nodes[idx] = newline
@@ -318,7 +319,9 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
             nest!(n, s)
         end
 
+        @info "" s.line_offset
         walk(reset_line_offset, x, s)
+        @info "" s.line_offset
     else
         for (i, n) in enumerate(x.nodes)
             if n === newline

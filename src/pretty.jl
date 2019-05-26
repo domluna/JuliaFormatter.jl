@@ -50,7 +50,9 @@ PLeaf(::T, startline::Int, endline::Int, text::AbstractString) where T =
     PLeaf{T}(startline, endline, text, 0)
 Base.length(x::PLeaf) = length(x.text)
 
-const empty_start = PLeaf{CSTParser.LITERAL}(1, 1, "", 0)
+is_empty_start(_) = false
+is_empty_start(x::PLeaf{CSTParser.LITERAL}) =
+    x.startline == 1 && x.endline == 1 && x.text == ""
 
 mutable struct PTree{T}
     startline::Int
@@ -122,7 +124,7 @@ function pretty(x::T, s::State) where T <: Union{AbstractVector,CSTParser.Abstra
     t = PTree(x, nspaces(s))
     for a in x
         n = pretty(a, s)
-        n === empty_start && (continue)
+        is_empty_start(n) && (continue)
         add_node!(t, n, join_lines=true)
     end
     t
@@ -132,7 +134,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.FileH}, s::State)
     t = PTree(x, nspaces(s))
     for a in x
         n = pretty(a, s)
-        n === empty_start && (continue)
+        is_empty_start(n) && (continue)
         add_node!(t, n)
     end
     t
