@@ -301,10 +301,11 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
         @info "START" s.line_offset
         line_offset = s.line_offset
         lens = remaining_lengths(x.nodes[1:idx-1])
-        x.nodes[idx] = newline
+        x.nodes[idx-1] = newline
 
-        if x.nodes[idx-1].text == "="
+        if x.nodes[idx-2].text == "="
             s.line_offset = x.indent + s.indent_size
+            x.nodes[idx] = Whitespace(s.indent_size)
         else
             x.indent = s.line_offset
         end
@@ -314,7 +315,11 @@ function nest!(x::PTree{T}, s::State; extra_width=0) where T <: Union{CSTParser.
 
         # arg1 op
         s.line_offset = line_offset
-        nest!(x.nodes[1], s, extra_width=lens[2])
+        @info "" s.line_offset lens[2] x.nodes[idx] x.nodes[2:3]
+        # nest!(x.nodes[1], s, extra_width=lens[2])
+        # extra_width for the op
+        extra_width = length(x.nodes[2]) + length(x.nodes[3])
+        nest!(x.nodes[1], s, extra_width=extra_width)
         for n in x.nodes[2:idx-1]
             nest!(n, s)
         end

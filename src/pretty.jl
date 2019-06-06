@@ -4,23 +4,25 @@ abstract type AbstractPLeaf end
 
 struct Newline <: AbstractPLeaf
 end
-Base.length(::Newline) = 1
+Base.length(::Newline) = 0
 
 struct Semicolon <: AbstractPLeaf
 end
 Base.length(::Semicolon) = 1
 
 struct Whitespace <: AbstractPLeaf
+    n::Int
 end
-Base.length(::Whitespace) = 1
+Base.length(x::Whitespace) = x.n
+
+struct PlaceholderWS <: AbstractPLeaf
+    n::Int
+end
+Base.length(x::PlaceholderWS) = x.n
 
 struct Placeholder <: AbstractPLeaf
 end
 Base.length(::Placeholder) = 0
-
-struct PlaceholderWS <: AbstractPLeaf
-end
-Base.length(::PlaceholderWS) = 1
 
 struct NotCode <: AbstractPLeaf
     startline::Int
@@ -36,9 +38,11 @@ Base.length(::TrailingComment) = 0
 
 const newline = Newline()
 const semicolon = Semicolon()
-const whitespace = Whitespace()
+const ws1 = Whitespace(1)
+const phws1 = PlaceholderWS(1)
 const placeholder = Placeholder()
-const placeholderWS = PlaceholderWS()
+# const placeholderWS = PlaceholderWS()
+# const whitespace = Whitespace()
 
 mutable struct PLeaf{T} <: AbstractPLeaf
     startline::Int
@@ -112,7 +116,7 @@ is_prev_newline(_) = false
 is_prev_newline(::Newline) = true
 is_prev_newline(x::PTree) = length(x.nodes) == 0 ? false : is_prev_newline(x.nodes[end])
 
-is_placeholder(x) = x === placeholder || x === placeholderWS
+is_placeholder(x) = x === placeholder || x isa PlaceholderWS
 
 is_closer(x) = CSTParser.is_rparen(x) || CSTParser.is_rbrace(x) || CSTParser.is_rsquare(x)
 is_closer(x::PLeaf{CSTParser.PUNCTUATION}) = x.text == "}" || x.text == ")" || x.text == "]"
@@ -328,7 +332,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
         if a isa CSTParser.EXPR{CSTParser.MacroName}
             if a.fullspan - a.span > 0 && length(x) > 1
                 add_node!(t, n, join_lines=true)
-                add_node!(t, whitespace)
+                add_node!(t, ws1)
             else
                 # assumes the next argument is a brace of some sort
                 add_node!(t, n, join_lines=true)
@@ -343,10 +347,10 @@ function pretty(x::CSTParser.EXPR{CSTParser.MacroCall}, s::State)
             s.indent -= s.indent_size
         elseif CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, n, join_lines=true)
-            add_node!(t, placeholderWS)
+            add_node!(t, phws1)
         elseif a.fullspan - a.span > 0 && i < length(x)
             add_node!(t, n, join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, n, join_lines=true)
         end
@@ -363,11 +367,11 @@ function pretty(x::CSTParser.EXPR{CSTParser.Block}, s::State; ignore_single_line
             if i == 1 || CSTParser.is_comma(a)
                 add_node!(t, n, join_lines=true)
             elseif CSTParser.is_comma(x.args[i-1])
-                add_node!(t, whitespace)
+                add_node!(t, ws1)
                 add_node!(t, n, join_lines=true)
             else
                 add_node!(t, semicolon)
-                add_node!(t, whitespace)
+                add_node!(t, ws1)
                 add_node!(t, n, join_lines=true)
             end
         else
@@ -386,11 +390,11 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Abstract}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[3], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[4], s), join_lines=true)
     t
 end
@@ -398,13 +402,13 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Primitive}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[3], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[4], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[5], s), join_lines=true)
     t
 end
@@ -412,11 +416,11 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.FunctionDef,CSTParser.Macro}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if length(x) > 3
         if x.args[3].fullspan == 0
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, pretty(x.args[4], s), join_lines=true)
         else
             s.indent += s.indent_size
@@ -427,7 +431,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Funct
     else
         # function stub, i.e. "function foo end"
         # this should be on one line
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[3], s), join_lines=true)
     end
     t
@@ -436,10 +440,10 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Struct}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan == 0
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[4], s), join_lines=true)
     else
         s.indent += s.indent_size
@@ -453,12 +457,12 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Mutable}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[3], s), join_lines=true)
     if x.args[4].fullspan == 0
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[5], s), join_lines=true)
     else
         s.indent += s.indent_size
@@ -472,7 +476,7 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.For,CSTParser.While}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     s.indent += s.indent_size
     add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
@@ -484,10 +488,10 @@ end
 function pretty(x::CSTParser.EXPR{CSTParser.Do}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan != 0
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[3], s), join_lines=true)
     end
     if x.args[4] isa CSTParser.EXPR{CSTParser.Block}
@@ -510,7 +514,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Try}, s::State)
             add_node!(t, pretty(a, s, ignore_single_line=true))
             s.indent -= s.indent_size
         else
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, pretty(a, s), join_lines=true)
         end
     end
@@ -520,10 +524,10 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.ModuleH,CSTParser.BareModule}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.args[2], s), join_lines=true)
     if x.args[3].fullspan == 0
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[4], s), join_lines=true)
     else
         add_node!(t, pretty(x.args[3], s))
@@ -537,7 +541,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Const
     add_node!(t, pretty(x.args[1], s))
     if x.args[2].fullspan != 0
         for a in x.args[2:end]
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, pretty(a, s), join_lines=true)
         end
     end
@@ -548,7 +552,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Begin}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if x.args[2].fullspan == 0
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[3], s), join_lines=true)
     else
         s.indent += s.indent_size
@@ -564,7 +568,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Quote}, s::State)
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.QUOTE
         add_node!(t, pretty(x.args[1], s))
         if x.args[2].fullspan == 0
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, pretty(x.args[3], s), join_lines=true)
         else
             s.indent += s.indent_size
@@ -582,7 +586,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Let}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if length(x.args) > 3
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indent += s.indent_size
         add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
@@ -600,7 +604,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     if x.args[1] isa CSTParser.KEYWORD && x.args[1].kind == Tokens.IF
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.args[2], s), join_lines=true)
         s.indent += s.indent_size
         add_node!(t, pretty(x.args[3], s, ignore_single_line=true))
@@ -608,7 +612,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
         add_node!(t, pretty(x.args[4], s))
         if length(x.args) > 4
             if x.args[4].kind == Tokens.ELSEIF
-                add_node!(t, whitespace)
+                add_node!(t, ws1)
                 add_node!(t, pretty(x.args[5], s), join_lines=true)
             else
                 s.indent += s.indent_size
@@ -627,7 +631,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.If}, s::State)
 
             # this either else or elseif
             if x.args[3].kind == Tokens.ELSEIF
-                add_node!(t, whitespace)
+                add_node!(t, ws1)
                 add_node!(t, pretty(x.args[4], s), join_lines=true)
             else
                 s.indent += s.indent_size
@@ -644,14 +648,14 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Compa
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if a isa CSTParser.OPERATOR
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, n, join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         elseif i == length(x) - 1 && a isa CSTParser.PUNCTUATION && x.args[i+1] isa CSTParser.PUNCTUATION
             add_node!(t, n, join_lines=true)
         elseif a isa CSTParser.PUNCTUATION && a.kind == Tokens.COMMA && i != length(x)
             add_node!(t, n, join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, n, join_lines=true)
         end
@@ -685,16 +689,18 @@ function pretty(x::T, s::State; nonest=false) where T <: Union{CSTParser.BinaryO
     if (CSTParser.precedence(x.op) in (8, 13, 14, 16) && x.op.kind != Tokens.ANON_FUNC) || x.op.kind == Tokens.COLON
         add_node!(t, pretty(x.op, s), join_lines=true)
     elseif x.op.kind == Tokens.EX_OR
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.op, s), join_lines=true)
     elseif nestable(x) && !nonest
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.op, s), join_lines=true)
-        add_node!(t, placeholderWS)
+        # for newline
+        add_node!(t, phws1)
+        add_node!(t, placeholder)
     else
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
         add_node!(t, pretty(x.op, s), join_lines=true)
-        add_node!(t, whitespace)
+        add_node!(t, ws1)
     end
     
     CSTParser.defines_function(x) && (s.indent += s.indent_size)
@@ -708,9 +714,9 @@ function pretty(x::CSTParser.WhereOpCall, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.arg1, s))
 
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.op, s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
 
     # Used to mark where `B` starts.
     add_node!(t, placeholder)
@@ -739,14 +745,14 @@ end
 function pretty(x::CSTParser.ConditionalOpCall, s::State)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.cond, s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.op1, s), join_lines=true)
-    add_node!(t, placeholderWS)
+    add_node!(t, phws1)
 
     add_node!(t, pretty(x.arg1, s), join_lines=true)
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     add_node!(t, pretty(x.op2, s), join_lines=true)
-    add_node!(t, placeholderWS)
+    add_node!(t, phws1)
 
     add_node!(t, pretty(x.arg2, s), join_lines=true)
     t
@@ -793,11 +799,11 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Curly
             if curly
                 add_node!(t, placeholder)
             else
-                add_node!(t, placeholderWS)
+                add_node!(t, phws1)
             end
         elseif a isa CSTParser.EXPR{CSTParser.Parameters}
             add_node!(t, semicolon)
-            add_node!(t, placeholderWS)
+            add_node!(t, phws1)
             add_node!(t, pretty(a, s), join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
@@ -833,7 +839,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Tuple
             if braces
                 add_node!(t, placeholder)
             else
-                add_node!(t, placeholderWS)
+                add_node!(t, phws1)
             end
         else
             add_node!(t, n, join_lines=true)
@@ -849,7 +855,7 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Param
         n = pretty(a, s)
         if CSTParser.is_comma(a) && i < length(x) && !(x.args[i+1] isa CSTParser.PUNCTUATION)
             add_node!(t, n, join_lines=true)
-            add_node!(t, placeholderWS)
+            add_node!(t, phws1)
         else
             add_node!(t, n, join_lines=true)
         end
@@ -860,14 +866,14 @@ end
 function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Export,CSTParser.Import,CSTParser.Using,CSTParser.ImportAll}
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
-    add_node!(t, whitespace)
+    add_node!(t, ws1)
     for (i, a) in enumerate(x.args[2:end])
         if CSTParser.is_comma(a)
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, placeholderWS)
+            add_node!(t, phws1)
         elseif CSTParser.is_colon(a)
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -880,7 +886,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Ref}, s::State)
     for (i, a) in enumerate(x)
         if CSTParser.is_comma(a)
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -894,7 +900,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Vcat}, s::State)
         if i > 1 && i < length(x) - 1
             add_node!(t, pretty(a, s), join_lines=true)
             add_node!(t, semicolon)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -908,7 +914,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.TypedVcat}, s::State)
         if i > 2 && i < length(x) - 1
             add_node!(t, pretty(a, s), join_lines=true)
             add_node!(t, semicolon)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -921,7 +927,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Hcat}, s::State)
     for (i, a) in enumerate(x)
         if i > 1 && i < length(x) - 1
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -934,7 +940,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.TypedHcat}, s::State)
     for (i, a) in enumerate(x)
         if i > 2 && i < length(x) - 1
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -947,7 +953,7 @@ function pretty(x::CSTParser.EXPR{CSTParser.Row}, s::State)
     for (i, a) in enumerate(x)
         if i < length(x)
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
@@ -959,9 +965,9 @@ function pretty(x::CSTParser.EXPR{T}, s::State) where T <: Union{CSTParser.Gener
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a isa CSTParser.KEYWORD
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
             add_node!(t, pretty(a, s), join_lines=true)
-            add_node!(t, whitespace)
+            add_node!(t, ws1)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end

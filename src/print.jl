@@ -10,9 +10,9 @@ skip_indent(::NotCode) = true
 print_tree(io::IOBuffer, x::PLeaf, ::State) = write(io, x.text)
 print_tree(io::IOBuffer, ::Newline, ::State) = write(io, "\n")
 print_tree(io::IOBuffer, ::Semicolon, ::State) = write(io, ";")
-print_tree(io::IOBuffer, ::Whitespace, ::State) = write(io, " ")
+print_tree(io::IOBuffer, x::Whitespace, ::State) = write(io, repeat(" ", x.n))
+print_tree(io::IOBuffer, x::PlaceholderWS, ::State) = write(io, repeat(" ", x.n))
 print_tree(io::IOBuffer, ::Placeholder, ::State) = write(io, "")
-print_tree(io::IOBuffer, ::PlaceholderWS, ::State) = write(io, " ")
 print_tree(io::IOBuffer, x::TrailingComment, ::State) = write(io, x.text)
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
