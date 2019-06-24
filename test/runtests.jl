@@ -84,15 +84,6 @@ end
     @test format("(a;)") == "(a)"
 end
 
-@testset "colon op" begin
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-end
-
 @testset "func call" begin
     @test format("func(a, b, c)") == "func(a, b, c)"
     @test format("func(a,b,c)") == "func(a, b, c)"
@@ -184,7 +175,6 @@ end
       y = 20
                         return x * y
         end""") == str
-
 end
 
 @testset "for" begin
@@ -484,19 +474,20 @@ end
     \"""
     Interpolate using `\\\$`
     \"""
-    """
+    a"""
     @test format(str) == str
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str
 
-    str = """
-    func(
-        a,
-        "hello",
-        c
-    )"""
-    @test format("func(a,\"hello\",c)", 4, 1) == str
+    # nesting
+    # str = """
+    # func(
+    #     a,
+    #     "hello",
+    #     c
+    # )"""
+    # @test format("func(a,\"hello\",c)", 4, 1) == str
 
     str = """
     \"""
@@ -601,7 +592,6 @@ end
 end
 
 @testset "pretty" begin
-
     str = """function foo end"""
     @test format("""
         function  foo
@@ -1373,8 +1363,15 @@ end
 #
 # function foo(a)::R where {A,B}
 # end
+#
+# need to add a check in p_binarycall
+# foo(a::A, b::B)::R where {A,B}
 # 
 # strings
 #
+# @propagate_inbounds function Base.iterate(v::T, i::Union{Int,Nothing}=v.dict.idxfloor) where T <: Union{KeySet{<:Any, <:Dict}, ValueIterator{<:Dict}}	
+#
+# Base.@propagate_inbounds function _broadcast_getindex(bc::Broadcasted{<:Any,<:Any,<:Any,<:Tuple{Ref{Type{T}},Ref{Type{S}},Vararg{Any}}}, I) where {T,S}
+# end
 
 end
