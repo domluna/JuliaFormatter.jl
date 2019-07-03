@@ -42,6 +42,26 @@ end
     @test format("X{a, b}") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
+
+    str = """
+    mutable struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+        a::A
+    end"""
+    @test format(str) == str
+
+    str = """
+    struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+        a::A
+    end"""
+    @test format(str) == str
+end
+
+@testset "where op" begin
+    str = "Atomic{T}(value) where {T<:AtomicTypes} = new(value)"
+    @test format(str) == str
+
+    str = "Atomic{T}(value) where T <: AtomicTypes = new(value)"
+    @test format(str) == str
 end
 
 @testset "unary ops" begin
@@ -69,6 +89,9 @@ end
     @test format("a:b:c ") == "a:b:c"
     @test format("a::b:: c") == "a::b::c"
     @test format("a :: b::c") == "a::b::c"
+
+    str = "!(typ <: ArithmeticTypes)"
+    @test format(str) == str
 end
 
 @testset "op chain" begin
@@ -161,6 +184,31 @@ end
     quote
             arg
         end""") == str
+
+    str = """:(a = 10; b = 20; c = a * b)"""
+    @test format(":(a = 10; b = 20; c = a * b)") == str
+
+    str = """
+    :(endidx = ndigits;
+    while endidx > 1 && digits[endidx] == UInt8('0')
+        endidx -= 1
+    end;
+    if endidx > 1
+        print(out, '.')
+        unsafe_write(out, pointer(digits) + 1, endidx - 1)
+    end)"""
+
+    str_ = """
+:(endidx = ndigits;
+            while endidx > 1 && digits[endidx] == UInt8('0')
+                endidx -= 1
+            end;
+            if endidx > 1
+                print(out, '.')
+                unsafe_write(out, pointer(digits) + 1, endidx - 1)
+            end)"""
+    @test format(str_) == str
+    @test format(str) == str
 end
 
 @testset "do" begin
@@ -289,7 +337,7 @@ end
        end""") == str
 end
 
-@testset "struct" begin
+@testset "structs" begin
     str = """
     struct name
         arg
@@ -306,9 +354,8 @@ end
     struct name
             arg
         end""") == str
-end
 
-@testset "mutable struct" begin
+
     str = """
     mutable struct name
         arg
@@ -327,7 +374,7 @@ end
         end""") == str
 end
 
-@testset "try-catch" begin
+@testset "try" begin
     str = """
     try
         arg
@@ -481,13 +528,6 @@ end
     @test format(str) == str
 
     # nesting
-    # str = """
-    # func(
-    #     a,
-    #     "hello",
-    #     c
-    # )"""
-    # @test format("func(a,\"hello\",c)", 4, 1) == str
 
     str = """
     \"""
@@ -586,6 +626,7 @@ end
 
     end"""
     @test format(str_) == str
+    @test format(str) == str
 
     str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
     @test format(str) == str
@@ -818,7 +859,6 @@ end
     finally
     end"""
     @test format(str) == str
-
 end
 
 @testset "nesting" begin
@@ -1097,12 +1137,20 @@ end
 
     # TODO: revisit
     # don't nest lazy calls unless they are part of an if statement
+    str = """
+    begin
+        a && b
+        a || b
+    end"""
+    @test_broken format(str) == str
+    
     # str = """
-    # begin
-    #     a && b
-    #     a || b
-    # end"""
-    # @test_broken format(str) == str
+    # func(
+    #     a,
+    #     "hello",
+    #     c
+    # )"""
+    # @test format("func(a,\"hello\",c)", 4, 1) == str
 end
 
 @testset "nesting line offset" begin
@@ -1359,19 +1407,17 @@ end
 #
 # push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
 #
-# T <: A -> T<:A
-#
 # function foo(a)::R where {A,B}
+#     10
 # end
 #
 # need to add a check in p_binarycall
-# foo(a::A, b::B)::R where {A,B}
+# foo(a)::R where {A,B} = 10
 # 
-# strings
+# StringH should nest
 #
-# @propagate_inbounds function Base.iterate(v::T, i::Union{Int,Nothing}=v.dict.idxfloor) where T <: Union{KeySet{<:Any, <:Dict}, ValueIterator{<:Dict}}	
+# @propagate_inbounds function Base.iterate(v::T, i::Union{Int,Nothing}=v.dict.idxfloor) where T <: Union{KeySet{<:Any, <:Dict}, ValueIterator{<:Dict}}	end
 #
-# Base.@propagate_inbounds function _broadcast_getindex(bc::Broadcasted{<:Any,<:Any,<:Any,<:Tuple{Ref{Type{T}},Ref{Type{S}},Vararg{Any}}}, I) where {T,S}
-# end
+# Base.@propagate_inbounds function _broadcast_getindex(bc::Broadcasted{<:Any,<:Any,<:Any,<:Tuple{Ref{Type{T}},Ref{Type{S}},Vararg{Any}}}, I) where {T,S} end
 
 end

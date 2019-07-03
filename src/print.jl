@@ -9,22 +9,26 @@ function skip_indent(x)
     false
 end
 
+function print_leaf(io, x, s)
+    if x.typ === NOTCODE
+        print_notcode(io, x, s)
+    elseif x.typ === INLINECOMMENT
+        print_inlinecomment(io, x, s)
+    else
+        write(io, x.val)
+    end
+end
+
 function print_tree(io::IOBuffer, x::PTree, s::State)
     if is_leaf(x)
-        if x.typ === NOTCODE
-            print_notcode(io, x, s)
-        else
-            write(io, x.val)
-        end
+        print_leaf(io, x, s)
         return
     end
 
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
-        if n.typ === NOTCODE
-            print_notcode(io, n, s)
-        elseif is_leaf(n)
-            write(io, n.val)
+        if is_leaf(n)
+            print_leaf(io, n, s)
         else
             print_tree(io, n, s)
         end
@@ -40,26 +44,6 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         end
     end
 end
-
-# TupleH/Vect/InvisBrackets/Parameters/Braces
-# Call/Curly/MacroCall
-# WhereOpCall
-# function print_tree(io, x, s)
-#     # @info "" x.indent x.nodes[1]
-#     ws = repeat(" ", x.indent)
-#     for (i, n) in enumerate(x.nodes)
-#         print_tree(io, n, s)
-#         if n === NEWLINE && i < length(x.nodes)
-#             if is_closer(x.nodes[i+1])
-#                 write(io, repeat(" ", x.nodes[i+1].indent))
-#             elseif is_block(x.nodes[i+1])
-#                 write(io, repeat(" ", x.nodes[i+1].indent))
-#             elseif !skip_indent(x.nodes[i+1])
-#                 write(io, ws)
-#             end
-#         end
-#     end
-# end
 
 function print_notcode(io, x, s)
     ws = repeat(" ", x.indent)
@@ -80,10 +64,17 @@ function print_notcode(io, x, s)
         else
             write(io, ws)
             write(io, v)
-            print_tree(io, newline, s)
+            write(io, "\n")
             prev_nl = false
         end
     end
+end
+
+function print_inlinecomment(io, x, s)
+    v = get(s.doc.comments, x.startline, "")
+    v == "" && (return)
+    write(io, " ")
+    write(io, v)
 end
 
 

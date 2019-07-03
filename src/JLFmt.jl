@@ -38,7 +38,7 @@ function file_line_ranges(text::AbstractString)
             comments[t.startpos[1]] = t.val
         end
     end
-    # @info "" lit_strings
+    # @info "" lit_strings comments
     ranges, lit_strings, comments
 end
 
@@ -74,7 +74,7 @@ end
 @inline cursor_loc(s::State) = cursor_loc(s, s.offset)
 
 include("pretty.jl")
-# include("nest.jl")
+include("nest.jl")
 include("print.jl")
 
 """
@@ -95,22 +95,24 @@ function format(text::AbstractString, indent_size, print_width)
     s = State(d, indent_size, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
     t = pretty(x, s)
-    # nest!(t, s)
-    #
+    nest!(t, s)
+
     # @info "" t
 
     io = IOBuffer()
     # Print comments and whitespace before code.
-    # if t.startline > 1
-    #     print_tree(io, Notcode(1, t.startline-1, 0), s)
-    #     print_tree(io, Newline(), s)
-    # end
+    if t.startline > 1
+        print_tree(io, Notcode(1, t.startline-1, 0), s)
+        print_tree(io, Newline(), s)
+    end
+
     print_tree(io, t, s)
+
     # Print comments and whitespace after code.
-    # if t.endline < length(s.doc.ranges)
-    #     print_tree(io, Newline(), s)
-    #     print_tree(io, Notcode(t.endline+1, length(s.doc.ranges), 0), s)
-    # end
+    if t.endline < length(s.doc.ranges)
+        print_tree(io, Newline(), s)
+        print_tree(io, Notcode(t.endline+1, length(s.doc.ranges), 0), s)
+    end
 
     String(take!(io))
 end
