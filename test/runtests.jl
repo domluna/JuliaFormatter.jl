@@ -1,15 +1,16 @@
-import JLFmt: format, Document, State, pretty, nest!
+import JLFmt: format
+import JLFmt
 using CSTParser
 using Test
 
 format(s) = format(s, 4, 80)
 
 function run_nest(text::String, print_width::Int)
-    d = Document(text)
-    s = State(d, 4, 0, 1, 0, print_width)
+    d = JLFmt.Document(text)
+    s = JLFmt.State(d, 4, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
-    t = pretty(x, s)
-    nest!(t, s)
+    t = JLFmt.pretty(x, s)
+    JLFmt.nest!(t, s)
     s
 end
 
@@ -916,11 +917,7 @@ end
     a, b, c, d"""
     @test format("a, b, c, d", 4, 10) == str
 
-    str = """
-    a,
-    b,
-    c,
-    d"""
+    str = """a,\nb,\nc,\nd"""
     @test format("a, b, c, d", 4, 9) == str
 
     str = """(a, b, c, d)"""
@@ -1067,6 +1064,29 @@ end
     begin
         if foo
         elseif baz
+        elseif (a ||
+                b) &&
+               c
+        elseif bar
+        else
+        end
+    end"""
+
+    str_ = """
+    begin
+    if foo
+    elseif baz
+    elseif (a || b) && c
+    elseif bar
+    else
+    end
+    end"""
+    @test format(str_, 4, 20) == str
+
+    str = """
+    begin
+        if foo
+        elseif baz
         elseif (a || b) &&
                c
         elseif bar
@@ -1121,6 +1141,18 @@ end
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
 
+    str = """this_is_a_long_variable_name = Dict{
+         Symbol,
+         Any
+    }(
+         :numberofpointattributes => NAttributes,
+         :numberofpointmtrs => NMTr,
+         :numberofcorners => NSimplex,
+         :firstnumber => Cint(1),
+         :mesh_dim => Cint(3),
+    )"""
+    @test format(str_, 5, 1) == str
+
     str = """
     this_is_a_long_variable_name = (
         :numberofpointattributes => NAttributes,
@@ -1135,22 +1167,22 @@ end
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
 
-    # TODO: revisit
-    # don't nest lazy calls unless they are part of an if statement
+    # TODO: only nest lazy calls if the parent is another binary call or an if statement
+    
     str = """
     begin
         a && b
         a || b
     end"""
-    @test_broken format(str) == str
+    @test format(str, 4, 1) == str
     
-    # str = """
-    # func(
-    #     a,
-    #     "hello",
-    #     c
-    # )"""
-    # @test format("func(a,\"hello\",c)", 4, 1) == str
+    str = """
+    func(
+        a,
+        "hello",
+        c
+    )"""
+    @test format("func(a,\"hello\",c)", 4, 1) == str
 end
 
 @testset "nesting line offset" begin
@@ -1239,6 +1271,12 @@ end
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 1
+
+    str = "a, b, c, d"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 0
 
     str = """
     splitvar(arg) =
@@ -1346,13 +1384,11 @@ end
     (
      var1,
      var2
-    ) &&
-    var3"""
-    @test format("(var1,var2) && var3", 4, 14) == str
+    ) && var3"""
+    @test format("(var1,var2) && var3", 4, 10) == str
 
     str = """
-    (var1, var2) &&
-    var3"""
+    (var1, var2) && var3"""
     @test format("(var1,var2) && var3", 4, 15) == str
 
     str = """

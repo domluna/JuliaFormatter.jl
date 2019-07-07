@@ -192,23 +192,55 @@ function n_call!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && line_width > s.print_width
-        line_offset = s.line_offset
-        x.nodes[end].indent = x.indent
-        x.indent += s.indent_size
+        # line_offset = s.line_offset
+        # x.nodes[end].indent = x.indent
+        # x.indent += s.indent_size
+        #
+        # for (i, n) in enumerate(x.nodes)
+        #     if n.typ === NEWLINE
+        #         s.line_offset = x.indent
+        #     elseif is_opener(n)
+        #         if x.indent - s.line_offset > 1
+        #             x.indent = s.line_offset + 1
+        #             x.nodes[end].indent = line_offset
+        #         end
+        #         nest!(n, s)
+        #     elseif n.typ === PLACEHOLDER
+        #         x.nodes[i] = Newline()
+        #         s.line_offset = x.indent
+        #     else
+        #         nest!(n, s, extra_width=1)
+        #     end
+        # end
+        #
+        # s.line_offset = x.nodes[end].indent + 1
 
+        # NEW CODE
+        
+        x.nodes[end].indent = x.indent
+        line_offset = s.line_offset
+
+        caller_len = length(x.nodes[1])
+
+        x.indent += s.indent_size
+        # @info "ENTERING" x.indent s.line_offset x.typ
+        if x.indent - s.line_offset > caller_len + 1
+            x.indent = s.line_offset + caller_len + 1
+            x.nodes[end].indent = s.line_offset
+        end
+
+        # @info "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
-            elseif is_opener(n)
-                if x.indent - s.line_offset > 1
-                    x.indent = s.line_offset + 1
-                    x.nodes[end].indent = line_offset
-                end
-                nest!(n, s)
             elseif n.typ === PLACEHOLDER
                 x.nodes[i] = Newline()
                 s.line_offset = x.indent
+            elseif i == 1 || i == length(x.nodes)
+                nest!(n, s, extra_width=1)
             else
+                diff = x.indent - x.nodes[i].indent
+                add_indent!(n, s, diff)
                 nest!(n, s, extra_width=1)
             end
         end
@@ -245,16 +277,16 @@ function n_wherecall!(x, s; extra_width=0)
         # where B
         over = s.line_offset + Blens[1] > s.print_width
 
-        has_brace = false
+        has_braces = false
         if is_closer(x.nodes[end]) 
             x.nodes[end].indent = x.indent
-            has_brace = true
+            has_braces = true
         end
 
         line_offset = s.line_offset
         x.indent += s.indent_size
 
-        @info "" s.line_offset Blens[1] x.indent
+        # @info "" s.line_offset Blens[1] x.indent
         for (i, n) in enumerate(x.nodes[idx+1:end])
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -267,7 +299,7 @@ function n_wherecall!(x, s; extra_width=0)
             elseif n.typ === PLACEHOLDER && over
                 x.nodes[i+idx] = Newline()
                 s.line_offset = x.indent
-            elseif has_brace
+            elseif has_braces
                 nest!(n, s, extra_width=1)
             else
                 nest!(n, s, extra_width=0)
@@ -277,8 +309,6 @@ function n_wherecall!(x, s; extra_width=0)
         if over && is_closer(x.nodes[end])
             s.line_offset = x.nodes[end].indent + 1
         end
-
-        @info "" s.line_offset
     else
         nest!(x.nodes, s, x.indent)
     end
@@ -346,7 +376,7 @@ function n_binarycall!(x, s; extra_width=0)
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes) 
     line_width = s.line_offset + length(x) + extra_width
     if idx !== nothing && line_width > s.print_width
-        @info "START" s.line_offset
+        # @info "ENTERING" x.indent s.line_offset x.typ
         line_offset = s.line_offset
         lens = remaining_lengths(x.nodes[1:idx-1])
         x.nodes[idx-1] = Newline()
@@ -363,7 +393,7 @@ function n_binarycall!(x, s; extra_width=0)
 
         # arg1 op
         s.line_offset = line_offset
-        @info "" s.line_offset lens[2] x.nodes[idx] x.nodes[2:3]
+        # @info "" s.line_offset lens[2] x.nodes[idx] x.nodes[2:3]
         # nest!(x.nodes[1], s, extra_width=lens[2])
         # extra_width for the op
         extra_width = length(x.nodes[2]) + length(x.nodes[3])
@@ -372,9 +402,9 @@ function n_binarycall!(x, s; extra_width=0)
             nest!(n, s)
         end
 
-        @info "before reset" s.line_offset
+        # @info "BEFORE RESET" x.indent s.line_offset x.typ
         walk(reset_line_offset!, x, s)
-        @info "after reset" s.line_offset
+        # @info "AFTER RESET" x.indent s.line_offset x.typ
     else
         nest!(x.nodes, s, x.indent)
     end

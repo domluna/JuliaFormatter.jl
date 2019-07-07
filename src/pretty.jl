@@ -324,7 +324,7 @@ function p_literal(x, s; include_quotes=true)
     # So we'll just look at the source directly!
     startline, endline, str = s.doc.lit_strings[s.offset-1]
 
-    @info "" str
+    # @info "" str
 
     # Since a line of a multiline string can already
     # have it's own indentation we check if it needs
@@ -792,9 +792,21 @@ end
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && (return true)
-    x.args[2].kind === Tokens.ANON_FUNC && (return false)
-    x.args[2].kind === Tokens.PAIR_ARROW && (return false)
-    CSTParser.precedence(x.args[2]) in (1, 6) && (return false)
+    op = x.args[2]
+    op.kind === Tokens.ANON_FUNC && (return false)
+    op.kind === Tokens.PAIR_ARROW && (return false)
+    CSTParser.precedence(op) in (1, 6) && (return false)
+    if op.kind == Tokens.LAZY_AND || op.kind == Tokens.LAZY_OR
+        p = x.parent
+        p === nothing && (return false)
+        p.typ === CSTParser.If && (return true)
+
+        while p.typ === CSTParser.BinaryOpCall || p.typ === CSTParser.InvisBrackets
+            p = p.parent
+            p === nothing && (return false)
+        end
+        return p.typ === CSTParser.If
+    end
     true
 end
 
@@ -862,7 +874,7 @@ function p_wherecall(x, s)
     multi_arg = length(CSTParser.get_where_params(x)) > 1
     in_braces = CSTParser.is_lbrace(x.args[3])
 
-    @info "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
+    # @info "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
 
     for a in x.args[3:end]
         if is_opener(a) && multi_arg
