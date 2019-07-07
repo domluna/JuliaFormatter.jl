@@ -324,6 +324,8 @@ function p_literal(x, s; include_quotes=true)
     # So we'll just look at the source directly!
     startline, endline, str = s.doc.lit_strings[s.offset-1]
 
+    @info "" str
+
     # Since a line of a multiline string can already
     # have it's own indentation we check if it needs
     # additional indentation by comparing the number
@@ -971,7 +973,7 @@ function p_invisbrackets(x, s)
     t = PTree(x, nspaces(s))
     multi_arg = length(x) > 4
 
-    multi_arg && (s.indent += s.indent_size)
+    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         # @info "" a.typ === CSTParser.Block
         n = a.typ === CSTParser.Block ? p_block(a, s, from_quote=true) : pretty(a, s)
@@ -988,7 +990,7 @@ function p_invisbrackets(x, s)
             add_node!(t, n, join_lines=true)
         end
     end
-    multi_arg && (s.indent -= s.indent_size)
+    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1002,7 +1004,7 @@ function p_tuple(x, s)
         multi_arg = true
     end
 
-    multi_arg && (s.indent += s.indent_size)
+    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if is_opener(n) && multi_arg
@@ -1018,7 +1020,7 @@ function p_tuple(x, s)
             add_node!(t, n, join_lines=true)
         end
     end
-    multi_arg && (s.indent -= s.indent_size)
+    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1029,7 +1031,7 @@ function p_braces(x, s)
     multi_arg = length(x) > 4
     # @info "" multi_arg typeof(x)
 
-    multi_arg && (s.indent += s.indent_size)
+    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
@@ -1045,7 +1047,7 @@ function p_braces(x, s)
             add_node!(t, n, join_lines=true)
         end
     end
-    multi_arg && (s.indent -= s.indent_size)
+    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1055,7 +1057,7 @@ function p_vect(x, s)
     # [a,b]
     multi_arg = length(x) > 4
 
-    multi_arg && (s.indent += s.indent_size)
+    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
@@ -1071,7 +1073,7 @@ function p_vect(x, s)
             add_node!(t, n, join_lines=true)
         end
     end
-    multi_arg && (s.indent -= s.indent_size)
+    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 

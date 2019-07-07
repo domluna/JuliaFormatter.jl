@@ -28,9 +28,29 @@ function walk(f, x::PTree, s::State)
     end
 end
 
+
 function reset_line_offset!(x::PTree, s::State)
     !is_leaf(x) && (return)
     s.line_offset += length(x)
+end
+
+
+function add_indent!(x, s, indent)
+    indent == 0 && (return)
+    lo = s.line_offset
+    f = (x::PTree, s::State) -> x.indent += indent
+    walk(f, x, s)
+    s.line_offset = lo
+end
+
+function nest!(nodes::Vector{PTree}, s::State, indent; extra_width=0)
+    for n in nodes
+        if n.typ === NEWLINE
+            s.line_offset = indent
+        else
+            nest!(n, s)
+        end
+    end
 end
 
 function nest!(x::PTree, s::State; extra_width=0)
@@ -105,13 +125,7 @@ function n_import!(x, s; extra_width=0)
             end
         end
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 
@@ -119,47 +133,42 @@ function n_tuple!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && line_width > s.print_width
-        @info "" x.indent length(x.nodes) typeof(x)
-        if is_closer(x.nodes[end])
+        # @info "ENTERING" x.indent s.line_offset x.typ
+        has_parens = is_opener(x.nodes[1])
+        if has_parens
             x.nodes[end].indent = x.indent
         end
         line_offset = s.line_offset
+
         x.indent += s.indent_size
+        if x.indent - s.line_offset > 1
+            x.indent = s.line_offset
+            if has_parens
+                x.indent += 1
+                x.nodes[end].indent = s.line_offset
+            end
+        end
 
-        @info "" x.indent s.line_offset
-
+        # @info "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
-            elseif i == 1 && is_opener(n)
-                if x.indent - s.line_offset > 1
-                    x.indent = s.line_offset + 1
-                    x.nodes[end].indent = s.line_offset
-                end
-                nest!(n, s)
-            elseif i == 1
-                if x.indent - s.line_offset > 1
-                    x.indent = s.line_offset
-                end
-                nest!(n, s)
             elseif n.typ === PLACEHOLDER
                 x.nodes[i] = Newline()
                 s.line_offset = x.indent
+            elseif has_parens && (i == 1 || i == length(x.nodes))
+                nest!(n, s, extra_width=1)
             else
+                diff = x.indent - x.nodes[i].indent
+                add_indent!(n, s, diff)
                 nest!(n, s, extra_width=1)
             end
         end
 
         s.line_offset = x.nodes[end].indent
-        is_closer(x.nodes[end]) && (s.line_offset += 1)
+        has_parens && (s.line_offset += 1)
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 
@@ -206,13 +215,7 @@ function n_call!(x, s; extra_width=0)
 
         s.line_offset = x.nodes[end].indent + 1
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 
@@ -277,13 +280,7 @@ function n_wherecall!(x, s; extra_width=0)
 
         @info "" s.line_offset
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 
@@ -334,13 +331,7 @@ function n_condcall!(x, s; extra_width=0)
         s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 
@@ -385,13 +376,7 @@ function n_binarycall!(x, s; extra_width=0)
         walk(reset_line_offset!, x, s)
         @info "after reset" s.line_offset
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = x.indent
-            else
-                nest!(n, s)
-            end
-        end
+        nest!(x.nodes, s, x.indent)
     end
 end
 

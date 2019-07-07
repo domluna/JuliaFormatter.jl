@@ -38,7 +38,7 @@ function file_line_ranges(text::AbstractString)
             comments[t.startpos[1]] = t.val
         end
     end
-    # @info "" lit_strings comments
+    @info "" lit_strings comments
     ranges, lit_strings, comments
 end
 
