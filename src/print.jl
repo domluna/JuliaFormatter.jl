@@ -1,78 +1,41 @@
+is_block(x) = x.typ === CSTParser.Block || x.typ === CSTParser.StringH
 
-is_block(_) = false
-is_block(::PTree{CSTParser.EXPR{CSTParser.Block}}) = true
-is_block(::PTree{CSTParser.EXPR{CSTParser.StringH}}) = true
+function skip_indent(x)
+    if x.typ === CSTParser.LITERAL && x.val == ""
+        return true
+    elseif x.typ === NEWLINE || x.typ === NOTCODE
+        return true
+    end
+    false
+end
 
-skip_indent(_) = false
-skip_indent(x::PLeaf{CSTParser.LITERAL}) = x.text == ""
-skip_indent(::Newline) = true
-skip_indent(::NotCode) = true
-
-print_tree(io::IOBuffer, x::PLeaf, ::State) = write(io, x.text)
-print_tree(io::IOBuffer, ::Newline, ::State) = write(io, "\n")
-print_tree(io::IOBuffer, ::Semicolon, ::State) = write(io, ";")
-print_tree(io::IOBuffer, ::Whitespace, ::State) = write(io, " ")
-print_tree(io::IOBuffer, ::Placeholder, ::State) = write(io, "")
-print_tree(io::IOBuffer, ::PlaceholderWS, ::State) = write(io, " ")
+function print_leaf(io, x, s)
+    if x.typ === NOTCODE
+        print_notcode(io, x, s)
+    elseif x.typ === INLINECOMMENT
+        print_inlinecomment(io, x, s)
+    else
+        write(io, x.val)
+    end
+end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
-    ws = repeat(" ", x.indent)
-    for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        end
+    if is_leaf(x)
+        print_leaf(io, x, s)
+        return
     end
-end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State; closer_indent=-1) where T <: Union{CSTParser.Call,CSTParser.Curly,CSTParser.MacroCall}
     ws = repeat(" ", x.indent)
     for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_closer(x.nodes[i+1]) && closer_indent != -1
-                write(io, ws[1:closer_indent])
-            elseif is_closer(x.nodes[i+1])
-                w = min(s.indent_size, length(x.nodes[1]) + length(x.nodes[2]))
-                write(io, ws[1:end-w])
-            elseif is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
+        if is_leaf(n)
+            print_leaf(io, n, s)
+        else
+            print_tree(io, n, s)
         end
-    end
-end
 
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{T}}, s::State; closer_indent=-1) where T <: Union{CSTParser.TupleH,CSTParser.Braces,CSTParser.Vect}
-    ws = repeat(" ", x.indent)
-    for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_closer(x.nodes[i+1]) && closer_indent != -1
-                write(io, ws[1:closer_indent])
-            elseif is_closer(x.nodes[i+1])
-                write(io, ws[1:end-1])
-            elseif is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        end
-    end
-end
-
-function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
-    ws = repeat(" ", x.indent)
-    for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
+        if n.typ === NEWLINE && i < length(x.nodes)
             if is_closer(x.nodes[i+1])
-                write(io, ws[1:end-1])
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif is_block(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
@@ -82,59 +45,9 @@ function print_tree(io::IOBuffer, x::PTree{CSTParser.WhereOpCall}, s::State)
     end
 end
 
-function print_tree(io::IOBuffer, x::PTree{T}, s::State) where T <: Union{CSTParser.BinaryOpCall,CSTParser.BinarySyntaxOpCall}
+function print_notcode(io, x, s)
     ws = repeat(" ", x.indent)
-    assign_op = false
-    for (i, n) in enumerate(x.nodes[1:end-1])
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        elseif n isa PLeaf{CSTParser.OPERATOR}
-            assign_op = is_assignment(n)
-        end
-    end
-
-    if is_alignable(x.nodes[end]) && assign_op
-        print_tree(io, x.nodes[end], s, closer_indent=x.indent)
-    else
-        print_tree(io, x.nodes[end], s)
-    end
-end
-
-function print_tree(io::IOBuffer, x::PTree{CSTParser.EXPR{CSTParser.If}}, s::State)
-    ws = repeat(" ", x.indent)
-    n1 = x.nodes[1]
-    for (i, n) in enumerate(x.nodes)
-        print_tree(io, n, s)
-        if n === newline && i < length(x.nodes)
-            if is_block(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1] isa PLeaf{CSTParser.KEYWORD}
-                v = x.nodes[i+1].text
-                if n1 isa PLeaf{CSTParser.KEYWORD} && n1.text == "if " 
-                    write(io, ws)
-                elseif v == "elseif" || v == "else"
-                    if ws != ""
-                        write(io, repeat(" ", x.indent - s.indent_size))
-                    end
-                else
-                    write(io, ws)
-                end
-            elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
-            end
-        end
-    end
-end
-
-
-function print_tree(io::IOBuffer, x::NotCode, s::State)
-    ws = repeat(" ", x.indent)
-    # `NotCode` nodes always follow a `Newline` node.
+    # `NOTCODE` nodes always follow a `NEWLINE` node.
     prev_nl = true
     for l in x.startline:x.endline
         v = get(s.doc.comments, l, "\n")
@@ -151,10 +64,17 @@ function print_tree(io::IOBuffer, x::NotCode, s::State)
         else
             write(io, ws)
             write(io, v)
-            print_tree(io, newline, s)
+            write(io, "\n")
             prev_nl = false
         end
     end
+end
+
+function print_inlinecomment(io, x, s)
+    v = get(s.doc.comments, x.startline, "")
+    v == "" && (return)
+    write(io, " ")
+    write(io, v)
 end
 
 

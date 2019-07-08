@@ -1,15 +1,16 @@
-import JLFmt: format, Document, State, pretty, nest!
+import JLFmt: format
+import JLFmt
 using CSTParser
 using Test
 
 format(s) = format(s, 4, 80)
 
 function run_nest(text::String, print_width::Int)
-    d = Document(text)
-    s = State(d, 4, 0, 1, 0, print_width)
+    d = JLFmt.Document(text)
+    s = JLFmt.State(d, 4, 0, 1, 0, print_width)
     x = CSTParser.parse(text, true)
-    t = pretty(x, s)
-    nest!(t, s)
+    t = JLFmt.pretty(x, s)
+    JLFmt.nest!(t, s)
     s
 end
 
@@ -42,6 +43,26 @@ end
     @test format("X{a, b}") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
     @test format("X{a,b }") == "X{a,b}"
+
+    str = """
+    mutable struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+        a::A
+    end"""
+    @test format(str) == str
+
+    str = """
+    struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+        a::A
+    end"""
+    @test format(str) == str
+end
+
+@testset "where op" begin
+    str = "Atomic{T}(value) where {T<:AtomicTypes} = new(value)"
+    @test format(str) == str
+
+    str = "Atomic{T}(value) where T <: AtomicTypes = new(value)"
+    @test format(str) == str
 end
 
 @testset "unary ops" begin
@@ -69,6 +90,9 @@ end
     @test format("a:b:c ") == "a:b:c"
     @test format("a::b:: c") == "a::b::c"
     @test format("a :: b::c") == "a::b::c"
+
+    str = "!(typ <: ArithmeticTypes)"
+    @test format(str) == str
 end
 
 @testset "op chain" begin
@@ -82,15 +106,6 @@ end
 @testset "single line block" begin
     @test format("(a;b;c)") == "(a; b; c)"
     @test format("(a;)") == "(a)"
-end
-
-@testset "colon op" begin
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
-    @test format("a:b:c") == "a:b:c"
 end
 
 @testset "func call" begin
@@ -170,6 +185,31 @@ end
     quote
             arg
         end""") == str
+
+    str = """:(a = 10; b = 20; c = a * b)"""
+    @test format(":(a = 10; b = 20; c = a * b)") == str
+
+    str = """
+    :(endidx = ndigits;
+    while endidx > 1 && digits[endidx] == UInt8('0')
+        endidx -= 1
+    end;
+    if endidx > 1
+        print(out, '.')
+        unsafe_write(out, pointer(digits) + 1, endidx - 1)
+    end)"""
+
+    str_ = """
+:(endidx = ndigits;
+            while endidx > 1 && digits[endidx] == UInt8('0')
+                endidx -= 1
+            end;
+            if endidx > 1
+                print(out, '.')
+                unsafe_write(out, pointer(digits) + 1, endidx - 1)
+            end)"""
+    @test format(str_) == str
+    @test format(str) == str
 end
 
 @testset "do" begin
@@ -184,7 +224,6 @@ end
       y = 20
                         return x * y
         end""") == str
-
 end
 
 @testset "for" begin
@@ -282,7 +321,7 @@ end
       body
     end""") == str
 
-    # TODO: This should probably be aligned to match up with a
+    # TODO: This should probably be aligned to match up with a ?
     str = """
     let x = a,
     # comment
@@ -299,7 +338,7 @@ end
        end""") == str
 end
 
-@testset "struct" begin
+@testset "structs" begin
     str = """
     struct name
         arg
@@ -316,9 +355,8 @@ end
     struct name
             arg
         end""") == str
-end
 
-@testset "mutable struct" begin
+
     str = """
     mutable struct name
         arg
@@ -337,7 +375,7 @@ end
         end""") == str
 end
 
-@testset "try-catch" begin
+@testset "try" begin
     str = """
     try
         arg
@@ -484,19 +522,13 @@ end
     \"""
     Interpolate using `\\\$`
     \"""
-    """
+    a"""
     @test format(str) == str
 
     str = """error("foo\\n\\nbar")"""
     @test format(str) == str
 
-    str = """
-    func(
-        a,
-        "hello",
-        c
-    )"""
-    @test format("func(a,\"hello\",c)", 4, 1) == str
+    # nesting
 
     str = """
     \"""
@@ -595,13 +627,13 @@ end
 
     end"""
     @test format(str_) == str
+    @test format(str) == str
 
     str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
     @test format(str) == str
 end
 
 @testset "pretty" begin
-
     str = """function foo end"""
     @test format("""
         function  foo
@@ -828,22 +860,21 @@ end
     finally
     end"""
     @test format(str) == str
-
 end
 
 @testset "nesting" begin
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {
-                      A,
-                      F{
-                        B,
-                        C
-                      }
-                     }
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {
+        A,
+        F{
+          B,
+          C
+        }
+    }
         10
         20
     end"""
@@ -851,29 +882,28 @@ end
 
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {
-                      A,
-                      F{B,C}
-                     }
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {
+        A,
+        F{B,C}
+    }
         10
         20
     end"""
-
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 26) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 17) == str
 
     str = """
     function f(
-               arg1::A,
-               key1=val1;
-               key2=val2
-             ) where {A,F{B,C}}
+        arg1::A,
+        key1=val1;
+        key2=val2
+    ) where {A,F{B,C}}
         10
         20
     end"""
-    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 27) == str
+    @test format("function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end", 4, 18) == str
 
     str = """
     a |
@@ -887,11 +917,7 @@ end
     a, b, c, d"""
     @test format("a, b, c, d", 4, 10) == str
 
-    str = """
-    a,
-    b,
-    c,
-    d"""
+    str = """a,\nb,\nc,\nd"""
     @test format("a, b, c, d", 4, 9) == str
 
     str = """(a, b, c, d)"""
@@ -978,9 +1004,9 @@ end
         (
          one,
          x -> (
-               true,
-               false
-              )
+             true,
+             false
+         )
         )"""
     @test format("foo() = (one, x -> (true, false))", 4, 20) == str
 
@@ -990,6 +1016,9 @@ end
         body_
     end"""
     @test format("@somemacro function (fcall_ | fcall_) body_ end", 4, 1) == str
+    
+    str = "Val(x) = (@_pure_meta; Val{x}())"
+    @test format("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
     str = "(a; b; c)"
     @test format("(a;b;c)", 4, 100) == str
@@ -1016,26 +1045,56 @@ end
 
     # don't nest < 2 args
     
-    str = """
-    A where {B}"""
+    str = "A where {B}"
     @test format(str, 4, 1) == str
 
-    str = """
-    foo(arg1)"""
+    str = "foo(arg1)"
     @test format(str, 4, 1) == str
 
-    str = """
-    [arg1]"""
+    str = "[arg1]"
     @test format(str, 4, 1) == str
 
-    str = """
-    {arg1}"""
+    str = "{arg1}"
     @test format(str, 4, 1) == str
 
-    str = """
-    (arg1)"""
+    str = "(arg1)"
     @test format(str, 4, 1) == str
 
+    str_ = """
+    begin
+    if foo
+    elseif baz
+    elseif (a || b) && c
+    elseif bar
+    else
+    end
+    end"""
+
+    str = """
+    begin
+        if foo
+        elseif baz
+        elseif (a ||
+                b) && c
+        elseif bar
+        else
+        end
+    end"""
+    @test format(str_, 4, 21) == str
+    @test format(str_, 4, 19) == str
+
+    str = """
+    begin
+        if foo
+        elseif baz
+        elseif (a ||
+                b) &&
+               c
+        elseif bar
+        else
+        end
+    end"""
+    @test format(str_, 4, 18) == str
 
     str = """
     begin
@@ -1047,17 +1106,8 @@ end
         else
         end
     end"""
-
-    str_ = """
-    begin
-    if foo
-    elseif baz
-    elseif (a || b) && c
-    elseif bar
-    else
-    end
-    end"""
     @test format(str_, 4, 23) == str
+    @test format(str_, 4, 22) == str
 
     str = """
     begin
@@ -1067,16 +1117,6 @@ end
         elseif bar
         else
         end
-    end"""
-
-    str_ = """
-    begin
-    if foo
-    elseif baz
-    elseif (a || b) && c
-    elseif bar
-    else
-    end
     end"""
     @test format(str_, 4, 24) == str
 
@@ -1095,6 +1135,18 @@ end
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
 
+    str = """this_is_a_long_variable_name = Dict{
+         Symbol,
+         Any
+    }(
+         :numberofpointattributes => NAttributes,
+         :numberofpointmtrs => NMTr,
+         :numberofcorners => NSimplex,
+         :firstnumber => Cint(1),
+         :mesh_dim => Cint(3),
+    )"""
+    @test format(str_, 5, 1) == str
+
     str = """
     this_is_a_long_variable_name = (
         :numberofpointattributes => NAttributes,
@@ -1108,6 +1160,37 @@ end
            :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
+
+    str = """
+    begin
+        a && b
+        a || b
+    end"""
+    @test format(str, 4, 1) == str
+
+    # str = """
+    # func(a, \"""this
+    # is another
+    # multi-line
+    # string.
+    # Longest line
+    # \""", foo(b, c))"""
+    # @test format(str, 4, 33) == str
+    
+    str = """
+    func(
+        a,
+        \"""this
+        is another
+        multi-line
+        string.
+        Longest line
+        \""",
+        foo(b, c)
+    )"""
+    @test_broken format(str, 4, 31) == str
+
+
 end
 
 @testset "nesting line offset" begin
@@ -1149,9 +1232,9 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 15
     s = run_nest(str, 14)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where Union{A,B,C}"
     s = run_nest(str, 100)
@@ -1159,9 +1242,9 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 20
     s = run_nest(str, 19)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where A"
     s = run_nest(str, 100)
@@ -1181,21 +1264,27 @@ end
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 31
     s = run_nest(str, 30)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "f(a, b, c) where {A,{B,C,D},E}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
-    @test s.line_offset == 9
+    @test s.line_offset == 1
 
     str = "(a, b, c, d)"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, length(str)-1)
     @test s.line_offset == 1
+
+    str = "a, b, c, d"
+    s = run_nest(str, 100)
+    @test s.line_offset == length(str)
+    s = run_nest(str, length(str)-1)
+    @test s.line_offset == 0
 
     str = """
     splitvar(arg) =
@@ -1205,9 +1294,9 @@ end
             x_ => (x, :Any)
         end"""
     s = run_nest(str, 96)
-    @test s.line_offset == 3
+    @test s.line_offset == 7
     s = run_nest(str, 1)
-    @test s.line_offset == 3
+    @test s.line_offset == 7
 
     str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
     s = run_nest(str, 80)
@@ -1303,13 +1392,11 @@ end
     (
      var1,
      var2
-    ) &&
-    var3"""
-    @test format("(var1,var2) && var3", 4, 14) == str
+    ) && var3"""
+    @test format("(var1,var2) && var3", 4, 10) == str
 
     str = """
-    (var1, var2) &&
-    var3"""
+    (var1, var2) && var3"""
     @test format("(var1,var2) && var3", 4, 15) == str
 
     str = """
@@ -1353,11 +1440,47 @@ end
       var1::A,
       var2::B
     ) where {
-             A,
-             B
-            }"""
+        A,
+        B
+    }"""
     @test format("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
+    str = "foo(a, b, c)::Rtype where {A,B} = 10"
+    @test format(str, 4, length(str)) == str
+
+    str_ = """
+    foo(a, b, c)::Rtype where {A,B} =
+        10"""
+    @test format(str, 4, 35) == str_
+    @test format(str, 4, 33) == str_
+
+    str_ = """
+    foo(a, b, c)::Rtype where {
+        A,
+        B
+    } = 10"""
+    @test format(str, 4, 32) == str_
+    @test format(str, 4, 19) == str_
+
+    str_ = """
+    foo(
+        a,
+        b,
+        c
+    )::Rtype where {
+        A,
+        B
+    } = 10"""
+    @test format(str, 4, 18) == str_
+
+
 end
+
+#
+# TODO: not sure how this should be formatted, revisit at some point
+# push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
+#
+# add another check in binary function defs to see if lifting
+# the nested line back up again is possible
 
 end

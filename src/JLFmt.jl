@@ -38,7 +38,7 @@ function file_line_ranges(text::AbstractString)
             comments[t.startpos[1]] = t.val
         end
     end
-    # @info "" lit_strings
+    # @info "" lit_strings comments
     ranges, lit_strings, comments
 end
 
@@ -55,13 +55,13 @@ Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 mutable struct State
     doc::Document
     indent_size::Int
-    indents::Int
+    indent::Int
     offset::Int
     line_offset::Int
     print_width::Int
 end
 
-@inline nspaces(s::State) = s.indent_size * s.indents
+@inline nspaces(s::State) = s.indent
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
@@ -97,17 +97,21 @@ function format(text::AbstractString, indent_size, print_width)
     t = pretty(x, s)
     nest!(t, s)
 
+    # @info "" t
+
     io = IOBuffer()
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, NotCode(1, t.startline-1, 0), s)
-        print_tree(io, newline, s)
+        print_tree(io, Notcode(1, t.startline-1, 0), s)
+        print_tree(io, Newline(), s)
     end
+
     print_tree(io, t, s)
+
     # Print comments and whitespace after code.
     if t.endline < length(s.doc.ranges)
-        print_tree(io, newline, s)
-        print_tree(io, NotCode(t.endline+1, length(s.doc.ranges), 0), s)
+        print_tree(io, Newline(), s)
+        print_tree(io, Notcode(t.endline+1, length(s.doc.ranges), 0), s)
     end
 
     String(take!(io))
