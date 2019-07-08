@@ -1060,6 +1060,29 @@ end
     str = "(arg1)"
     @test format(str, 4, 1) == str
 
+    str_ = """
+    begin
+    if foo
+    elseif baz
+    elseif (a || b) && c
+    elseif bar
+    else
+    end
+    end"""
+
+    str = """
+    begin
+        if foo
+        elseif baz
+        elseif (a ||
+                b) && c
+        elseif bar
+        else
+        end
+    end"""
+    @test format(str_, 4, 21) == str
+    @test format(str_, 4, 19) == str
+
     str = """
     begin
         if foo
@@ -1071,17 +1094,7 @@ end
         else
         end
     end"""
-
-    str_ = """
-    begin
-    if foo
-    elseif baz
-    elseif (a || b) && c
-    elseif bar
-    else
-    end
-    end"""
-    @test format(str_, 4, 20) == str
+    @test format(str_, 4, 18) == str
 
     str = """
     begin
@@ -1093,17 +1106,8 @@ end
         else
         end
     end"""
-
-    str_ = """
-    begin
-    if foo
-    elseif baz
-    elseif (a || b) && c
-    elseif bar
-    else
-    end
-    end"""
     @test format(str_, 4, 23) == str
+    @test format(str_, 4, 22) == str
 
     str = """
     begin
@@ -1113,16 +1117,6 @@ end
         elseif bar
         else
         end
-    end"""
-
-    str_ = """
-    begin
-    if foo
-    elseif baz
-    elseif (a || b) && c
-    elseif bar
-    else
-    end
     end"""
     @test format(str_, 4, 24) == str
 
@@ -1194,7 +1188,7 @@ end
         \""",
         foo(b, c)
     )"""
-    @test format(str, 4, 31) == str
+    @test_broken format(str, 4, 31) == str
 
 
 end
@@ -1464,8 +1458,7 @@ end
     foo(a, b, c)::Rtype where {
         A,
         B
-    } =
-        10"""
+    } = 10"""
     @test format(str, 4, 32) == str_
     @test format(str, 4, 19) == str_
 
@@ -1477,8 +1470,7 @@ end
     )::Rtype where {
         A,
         B
-    } =
-        10"""
+    } = 10"""
     @test format(str, 4, 18) == str_
 
 
@@ -1490,8 +1482,5 @@ end
 #
 # add another check in binary function defs to see if lifting
 # the nested line back up again is possible
-# 
-# TODO: StringH should nest
-# TODO: 
 
 end

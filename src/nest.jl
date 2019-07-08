@@ -87,6 +87,8 @@ function nest!(x::PTree, s::State; extra_width=0)
         n_params!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Braces
         n_braces!(x, s, extra_width=extra_width)
+    elseif x.typ === CSTParser.InvisBrackets
+        n_invisbrackets!(x, s, extra_width=extra_width)
     else
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
@@ -100,6 +102,24 @@ function nest!(x::PTree, s::State; extra_width=0)
             else
                 nest!(n, s, extra_width=extra_width)
             end
+        end
+    end
+end
+
+function n_invisbrackets!(x, s; extra_width=0)
+    for (i, n) in enumerate(x.nodes)
+        if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
+            s.line_offset = x.nodes[i+1].indent
+        elseif n.typ === NEWLINE
+            s.line_offset = x.indent
+        elseif n.typ === NOTCODE && x.nodes[i+1].typ === CSTParser.Block
+            s.line_offset = x.nodes[i+1].indent
+        elseif is_leaf(n)
+            s.line_offset += length(n)
+        elseif i == length(x.nodes) - 1
+            nest!(n, s, extra_width=extra_width+1)
+        else
+            nest!(n, s, extra_width=extra_width)
         end
     end
 end
@@ -184,39 +204,10 @@ function n_params!(x, s; extra_width=0)
     n_tuple!(x, s, extra_width=extra_width)
 end
 
-# TODO: skip nesting anything in InvisBrackets?
-# function n_invisbrackets!(x, s; extra_width=0)
-# end
-
 function n_call!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && line_width > s.print_width
-        # line_offset = s.line_offset
-        # x.nodes[end].indent = x.indent
-        # x.indent += s.indent_size
-        #
-        # for (i, n) in enumerate(x.nodes)
-        #     if n.typ === NEWLINE
-        #         s.line_offset = x.indent
-        #     elseif is_opener(n)
-        #         if x.indent - s.line_offset > 1
-        #             x.indent = s.line_offset + 1
-        #             x.nodes[end].indent = line_offset
-        #         end
-        #         nest!(n, s)
-        #     elseif n.typ === PLACEHOLDER
-        #         x.nodes[i] = Newline()
-        #         s.line_offset = x.indent
-        #     else
-        #         nest!(n, s, extra_width=1)
-        #     end
-        # end
-        #
-        # s.line_offset = x.nodes[end].indent + 1
-
-        # NEW CODE
-        
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
 
@@ -379,7 +370,9 @@ function n_binarycall!(x, s; extra_width=0)
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
-        if x.nodes[idx-2].val == "="
+        is_fdef = x.nodes[idx-2].val == "="
+
+        if is_fdef
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
         else
@@ -392,14 +385,21 @@ function n_binarycall!(x, s; extra_width=0)
         # arg1 op
         s.line_offset = line_offset
         # extra_width for " op"
-        extra_width = length(x.nodes[2]) + length(x.nodes[3])
-        # @info "DURING" extra_width s.line_offset x.typ
-        nest!(x.nodes[1], s, extra_width=extra_width)
+        inner_extra_width = length(x.nodes[2]) + length(x.nodes[3])
+        # @info "DURING" inner_extra_width s.line_offset x.typ
+        nest!(x.nodes[1], s, extra_width=inner_extra_width)
         for n in x.nodes[2:idx-1]
             nest!(n, s)
         end
 
-        # @info "BEFORE RESET" x.indent s.line_offset x.typ
+        # @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
+        # Undo nest if possible
+        line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
+        if line_width <= s.print_width
+            x.nodes[idx-1] = Whitespace(1)
+            x.nodes[idx] = Placeholder(0)
+        end
+
         walk(reset_line_offset!, x, s)
         # @info "AFTER RESET" x.indent s.line_offset x.typ
     else
