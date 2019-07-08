@@ -321,7 +321,7 @@ end
       body
     end""") == str
 
-    # TODO: This should probably be aligned to match up with a
+    # TODO: This should probably be aligned to match up with a ?
     str = """
     let x = a,
     # comment
@@ -1167,22 +1167,36 @@ end
            :mesh_dim => Cint(3),)"""
     @test format(str_, 4, 80) == str
 
-    # TODO: only nest lazy calls if the parent is another binary call or an if statement
-    
     str = """
     begin
         a && b
         a || b
     end"""
     @test format(str, 4, 1) == str
+
+    # str = """
+    # func(a, \"""this
+    # is another
+    # multi-line
+    # string.
+    # Longest line
+    # \""", foo(b, c))"""
+    # @test format(str, 4, 33) == str
     
     str = """
     func(
         a,
-        "hello",
-        c
+        \"""this
+        is another
+        multi-line
+        string.
+        Longest line
+        \""",
+        foo(b, c)
     )"""
-    @test format("func(a,\"hello\",c)", 4, 1) == str
+    @test format(str, 4, 31) == str
+
+
 end
 
 @testset "nesting line offset" begin
@@ -1437,23 +1451,47 @@ end
     }"""
     @test format("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
+    str = "foo(a, b, c)::Rtype where {A,B} = 10"
+    @test format(str, 4, length(str)) == str
+
+    str_ = """
+    foo(a, b, c)::Rtype where {A,B} =
+        10"""
+    @test format(str, 4, 35) == str_
+    @test format(str, 4, 33) == str_
+
+    str_ = """
+    foo(a, b, c)::Rtype where {
+        A,
+        B
+    } =
+        10"""
+    @test format(str, 4, 32) == str_
+    @test format(str, 4, 19) == str_
+
+    str_ = """
+    foo(
+        a,
+        b,
+        c
+    )::Rtype where {
+        A,
+        B
+    } =
+        10"""
+    @test format(str, 4, 18) == str_
+
+
 end
 
-# TODO:
 #
+# TODO: not sure how this should be formatted, revisit at some point
 # push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
 #
-# function foo(a)::R where {A,B}
-#     10
-# end
-#
-# need to add a check in p_binarycall
-# foo(a)::R where {A,B} = 10
+# add another check in binary function defs to see if lifting
+# the nested line back up again is possible
 # 
-# StringH should nest
-#
-# @propagate_inbounds function Base.iterate(v::T, i::Union{Int,Nothing}=v.dict.idxfloor) where T <: Union{KeySet{<:Any, <:Dict}, ValueIterator{<:Dict}}	end
-#
-# Base.@propagate_inbounds function _broadcast_getindex(bc::Broadcasted{<:Any,<:Any,<:Any,<:Tuple{Ref{Type{T}},Ref{Type{S}},Vararg{Any}}}, I) where {T,S} end
+# TODO: StringH should nest
+# TODO: 
 
 end

@@ -334,6 +334,7 @@ function p_literal(x, s; include_quotes=true)
     line = s.doc.text[s.doc.ranges[startline]]
     fc = findfirst(c -> !isspace(c), line)-1
     ns = max(0, nspaces(s) - fc)
+    @info "" loc0[2]
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -352,10 +353,15 @@ function p_literal(x, s; include_quotes=true)
 
     t = PTree(CSTParser.StringH, -1, -1, ns, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
+        @info "line" l
         ln = startline + i - 1
         tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
+    # The length of this node is the length of
+    # the longest string
+    t.len = maximum(length.(lines))
+    @info "" t
     t
 end
 
@@ -391,6 +397,9 @@ function p_stringh(x, s; include_quotes=true)
         tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
+    # The length of this node is the length of
+    # the longest string
+    t.len = maximum(length.(lines))
     t
 end
 
