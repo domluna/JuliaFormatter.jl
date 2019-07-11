@@ -789,7 +789,13 @@ end
 function p_kw(x, s)
     t = PTree(x, nspaces(s))
     for a in x
-        add_node!(t, pretty(a, s), join_lines=true)
+        if a.kind === Tokens.EQ
+            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), join_lines=true)
+            add_node!(t, Whitespace(1))
+        else
+            add_node!(t, pretty(a, s), join_lines=true)
+        end
     end
     t
 end
