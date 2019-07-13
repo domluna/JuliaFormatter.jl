@@ -21,12 +21,14 @@ end
     @test format("") == ""
 end
 
+@testset "nofmt" begin
+    str = "# nofmt\n module Foo a \n end"
+    @test format(str) == str
+end
+
 @testset "tuples" begin
     @test format("a,b") == "a, b"
     @test format("a ,b") == "a, b"
-    @test format("a ,b,") == "a, b,"
-    @test format("a ,b ,") == "a, b,"
-    @test format("a , b ,") == "a, b,"
     @test format("(a,b)") == "(a, b)"
     @test format("(a ,b)") == "(a, b)"
     @test format("( a, b)") == "(a, b)"
@@ -105,7 +107,7 @@ end
 
 @testset "single line block" begin
     @test format("(a;b;c)") == "(a; b; c)"
-    @test format("(a;)") == "(a)"
+    # @test format("(a;)") == "(a)"
 end
 
 @testset "func call" begin
@@ -118,7 +120,7 @@ end
     @test format("func(a, b; c)") == "func(a, b; c)"
     @test format("func(  a, b; c)") == "func(a, b; c)"
     @test format("func(a  ,b; c)") == "func(a, b; c)"
-    @test format("func(a = 1,b; c = 1)") == "func(a=1, b; c=1)"
+    @test format("func(a=1,b; c=1)") == "func(a = 1, b; c = 1)"
 end
 
 @testset "begin" begin
@@ -515,6 +517,12 @@ end
     function f()
         20
     end""") == str
+
+    str = """\"""
+             doc for Foo
+             \"""
+             Foo"""
+    @test format("\"\"\"doc for Foo\"\"\"\nFoo") == str
 end
 
 @testset "strings" begin
@@ -644,31 +652,30 @@ end
                  function  foo()
         end""") == str
 
-    str = """function foo
+    str = """function foo()
                  10
                  20
              end"""
-    @test format("""function foo 10;  20 end""") == str
+     @test format("""function foo() 10;  20 end""") == str
 
     str = """abstract type AbstractFoo end"""
-    @test format("""abstract
-            type
+    @test format("""abstract type
                  AbstractFoo
             end""") == str
 
-    str = """for cond
+    str = """for i = 1:10
                  1
                  2
                  3
              end"""
-    @test format("""for cond 1; 2; 3 end""") == str
+    @test format("""for i=1:10 1; 2; 3 end""") == str
 
-    str = """while cond
+    str = """while true
                  1
                  2
                  3
              end"""
-    @test format("""while cond 1; 2; 3 end""") == str
+    @test format("""while true 1; 2; 3 end""") == str
 
     str = """try
                  a
@@ -700,7 +707,7 @@ end
                  e2
                  e3
              end"""
-    @test format("""let a=b,c=d e1; e2; e3 end""") == str
+    @test format("""let a=b,c=d\ne1; e2; e3 end""") == str
 
     str = """let a, b
                  e
@@ -772,12 +779,6 @@ end
                  e4
              end"""
     @test format("if cond1 e1;e2 elseif cond2 e3; e4 end") == str
-
-    str = """\"""
-             doc for Foo
-             \"""
-             Foo"""
-    @test format("\"\"\"doc for Foo\"\"\"\nFoo") == str
 
     str = """
     [a b c]"""
@@ -866,8 +867,8 @@ end
     str = """
     function f(
         arg1::A,
-        key1=val1;
-        key2=val2
+        key1 = val1;
+        key2 = val2
     ) where {
         A,
         F{
@@ -883,8 +884,8 @@ end
     str = """
     function f(
         arg1::A,
-        key1=val1;
-        key2=val2
+        key1 = val1;
+        key2 = val2
     ) where {
         A,
         F{B,C}
@@ -897,8 +898,8 @@ end
     str = """
     function f(
         arg1::A,
-        key1=val1;
-        key2=val2
+        key1 = val1;
+        key2 = val2
     ) where {A,F{B,C}}
         10
         20
@@ -1168,7 +1169,16 @@ end
     end"""
     @test format(str, 4, 1) == str
 
-    # str = """
+    str = """
+    begin
+        a &&
+        b ||
+        c &&
+        d
+    end"""
+    @test format("begin\n a && b || c && d\nend", 4, 1) == str
+
+    # str = """
     # func(a, \"""this
     # is another
     # multi-line
@@ -1480,7 +1490,4 @@ end
 # TODO: not sure how this should be formatted, revisit at some point
 # push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
 #
-# add another check in binary function defs to see if lifting
-# the nested line back up again is possible
-
 end

@@ -91,9 +91,15 @@ function format(text::AbstractString, indent_size, print_width)
     if isempty(text)
         return text
     end
+
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input $text")
+
     d = Document(text)
+    # If "nofmt" occurs in a comment on line 1 do not format
+    occursin("nofmt", get(d.comments, 1, "")) && (return text)
+
     s = State(d, indent_size, 0, 1, 0, print_width)
-    x = CSTParser.parse(text, true)
     t = pretty(x, s)
     nest!(t, s)
 
@@ -114,7 +120,8 @@ function format(text::AbstractString, indent_size, print_width)
         print_tree(io, Notcode(t.endline+1, length(s.doc.ranges), 0), s)
     end
 
-    String(take!(io))
+    text = String(take!(io))
+    text
 end
 
 """
@@ -131,25 +138,11 @@ If `overwrite` is `true` the file will be overwritten with the formatted output.
 function format_file(filename::AbstractString, indent_size, print_width; overwrite=false)
     path, ext = splitext(filename)
     if ext != ".jl"
-        throw(ArgumentError("$filename must be a Julia (.jl) source file"))
+        error("$filename must be a Julia (.jl) source file")
     end
     str = read(filename) |> String
-    try
-        str = format(str, indent_size, print_width)
-    catch e
-        @info "" e
-        throw(ErrorException("""An error occured formatting $filename. :-(
-
-                             Please file an issue at https://github.com/domluna/JLFmt.jl/issues
-                             with a link to a gist containing the contents of the file. A gist 
-                             can be created at https://gist.github.com/."""))
-    end
-
-    if overwrite
-        write(filename, str)
-    else
-        write(path * "_fmt" * ext, str)
-    end
+    str = format(str, indent_size, print_width)
+    overwrite ?  write(filename, str) : write(path * "_fmt" * ext, str)
 end
 
 end
