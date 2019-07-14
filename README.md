@@ -3,8 +3,6 @@
 [![Build Status](https://travis-ci.org/domluna/JLFmt.jl.svg?branch=master)](https://travis-ci.org/domluna/JLFmt.jl)
 <!-- [![Coverage Status](https://coveralls.io/repos/github/domluna/JLFmt.jl/badge.svg?branch=master)](https://coveralls.io/github/domluna/JLFmt.jl?branch=master) -->
 
-**WARNING.** This an alpha release meant to find bugs. Overwrite files at your peril!
-
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 
 ```julia
@@ -24,57 +22,40 @@ the limit will be nested if possible.
 * `overwrite` - if the file should be overwritten by the formatted output. Currently
 the ouput is written to a separate file.
 
+
 ## How It Works
 
 `JLFmt` parses the `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
 ### Pass 1: Prettify
 
-The CST is _prettified_ using `pretty`, creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code. The [`pretty` testset](./test/runtests.jl) displays these transformations.
+The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code. The [`pretty` testset](./test/runtests.jl) displays these transformations.
 
-Example 1:
+Example:
 
 ```julia
 function  foo
 end
-```
 
-becomes
+->
 
-```julia
 function foo end
-```
-
-Example 2:
-
-```julia
-for cond 1; 2; 3 end
-```
-
-becomes
-
-```julia
-for cond
-    1
-    2
-    3
-end
 ```
 
 ### Pass 2: Nesting
 
-`PTree` is nested using `nest!` to disjoin lines going over the print width. 
-The `PTree` is modified in-place. All expressions are nested front to back with the exception of binary 
-operations and conditionals.
+In the nesting phase lines going over the print width are split into multiple lines such that they fit within
+the allowed width. All expressions are nested front to back with the exception of binary operations and conditionals.
 
-**Binary Ops**
+Examples:
+
 
 ```julia
-arg1 && arg2
+arg1 + arg2
 
 ->
 
-arg1 && 
+arg1 + 
 arg2
 ```
 
@@ -121,22 +102,20 @@ f(
 
 ```julia
 function longfunctionname_that_is_long(lots, of, args, even, more, args)
-    ..code..
+    body
 end
 
 ->
 
-# The arg is placed `indent_size` spaces after the start of the
-# function name or one space after the opening parenthesis.
 function longfunctionname_that_is_long(
-             lots, 
-             of, 
-             args,
-             even, 
-             more, 
-             args
-         )
-    ..code..
+    lots, 
+    of, 
+    args,
+    even, 
+    more, 
+    args
+)
+    body
 end
 ```
 
@@ -146,28 +125,56 @@ S <: Union{Type1,Type2,Type3}
 ->
 
 S <: Union{
-         Type1,
-         Type2,
-         Type3
-     }
+   Type1,
+   Type2,
+   Type3
+}
 ```
 
 ### Part 3: Printing
 
-Finally, the `PTree` to an `IOBuffer` with `print_tree` which is then consumed as a `String`.
+Finally, the `PTree` is printed to an `IOBuffer` and returned as a `String`. This is done
 
-### Known Limitation(s)
+## Skipping Files
 
-If a comment is at the end of a line of code it will be removed.
-
-```julia
-var x = 10 # comment about x
-```
-
-Formatting will produce:
+If you wish to not format a file this can be done by writing "nofmt" in a comment on the first line
+of the file. Suppose this is the content of `foo.jl`:
 
 ```julia
-var x = 10
+# nofmt
+
+module Foo
+...
+end
 ```
 
-To get around with this write comments on separate lines.
+`JLFmt` will see the comment on the first line, notice it contains "nofmt", and return the original text.
+
+## Present Limitation(s)
+
+Inline comments inside of a nestable types are removed.
+
+Example:
+
+```julia
+function foo(
+    a, # a does ...
+    b, # b does ...
+    c
+)
+    body
+end
+```
+
+When formatted will produce:
+
+```julia
+function foo(
+    a,
+    b,
+    c
+)
+    body
+end
+```
+
