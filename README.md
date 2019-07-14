@@ -133,7 +133,8 @@ S <: Union{
 
 ### Part 3: Printing
 
-Finally, the `PTree` is printed to an `IOBuffer` and returned as a `String`. This is done
+Finally, the `PTree` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
+check is performed.
 
 ## Skipping Files
 
