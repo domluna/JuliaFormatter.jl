@@ -125,7 +125,10 @@ function format(text::AbstractString, indent_size, print_width)
     end
 
     text = String(take!(io))
-    text
+    _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for formatted $text")
+
+    return text
 end
 
 """
