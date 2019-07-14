@@ -47,6 +47,9 @@ function add_node!(t::PTree, n; join_lines=false)
 
     if n.typ === CSTParser.Block && length(n) == 0 
         return
+    elseif n.typ === CSTParser.Parameters
+        add_node!(t, Semicolon())
+        add_node!(t, Placeholder(1))
     end
 
     if length(t.nodes) == 0
@@ -227,7 +230,7 @@ function pretty(x::CSTParser.EXPR, s::State)
     t = PTree(x, nspaces(s))
     join_lines = x.typ !== CSTParser.FileH
     for a in x
-        if a.typ === CSTParser.LITERAL && a.kind === Tokens.NOTHING
+        if a.kind === Tokens.NOTHING
             s.offset += a.fullspan
             continue
         end
@@ -259,7 +262,7 @@ function p_keyword(x, s)
           x.kind === Tokens.CATCH ? "catch" :
           x.kind === Tokens.CONST ? "const" :
           x.kind === Tokens.CONTINUE ? "continue" :
-          # x.kind === Tokens.NEW ? "new" :
+          x.kind === Tokens.NEW ? "new" :
           x.kind === Tokens.DO ? "do" :
           x.kind === Tokens.IF ? "if" :
           x.kind === Tokens.ELSEIF ? "elseif" :
@@ -306,17 +309,11 @@ function p_punctuation(x, s)
     PTree(x, loc[1], loc[1], val)
 end
 
-
-# which_quote is used for multiline strings
-# to determines whether
-# 1. quotes on start and last line are included (default 0)
-# 2. quotes on start line are included (1)
-# 3. quotes on end line are included (2)
 function p_literal(x, s; include_quotes=true)
-    loc0 = cursor_loc(s)
+    loc = cursor_loc(s)
     if !is_str_or_cmd(x.kind)
         s.offset += x.fullspan
-        return PTree(x, loc0[1], loc0[1], x.val)
+        return PTree(x, loc[1], loc[1], x.val)
     end
     
     # At the moment CSTParser does not return Tokens.TRIPLE_STRING
@@ -329,6 +326,7 @@ function p_literal(x, s; include_quotes=true)
     #
     # So we'll just look at the source directly!
     startline, endline, str = s.doc.lit_strings[s.offset-1]
+    # @info "" loc startline endline str
 
     # Since a line of a multiline string can already
     # have it's own indentation we check if it needs
@@ -351,7 +349,7 @@ function p_literal(x, s; include_quotes=true)
     lines = split(str, "\n")
 
     if length(lines) == 1 
-        return PTree(x, loc0[1], loc0[1], lines[1])
+        return PTree(x, loc[1], loc[1], lines[1])
     end
 
     t = PTree(CSTParser.StringH, -1, -1, ns, 0, nothing, PTree[], Ref(x))
@@ -994,10 +992,6 @@ function p_call(x, s)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
             add_node!(t, pretty(a, s), join_lines=true)
             add_node!(t, Placeholder(1))
-        elseif a.typ === CSTParser.Parameters
-            add_node!(t, Semicolon())
-            add_node!(t, Placeholder(1))
-            add_node!(t, pretty(a, s), join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end

@@ -640,6 +640,14 @@ end
 
     str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
     @test format(str) == str
+
+    str = """
+    #=
+    hello
+    world
+    =#
+    const a = \"hi there\""""
+    @test format(str) == str
 end
 
 @testset "pretty" begin
@@ -860,6 +868,12 @@ end
     try
     catch
     finally
+    end"""
+    @test format(str) == str
+
+    str = """
+    (args...; kwargs) -> begin
+        body
     end"""
     @test format(str) == str
 end

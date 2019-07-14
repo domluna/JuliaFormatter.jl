@@ -35,10 +35,28 @@ function file_line_ranges(text::AbstractString)
                 end
             end
         elseif t.kind == Tokens.COMMENT
-            comments[t.startpos[1]] = t.val
+            if t.startpos[1] == t.endpos[1]
+                comments[t.startpos[1]] = t.val
+            else
+                sl = t.startpos[1]
+                offset = t.startbyte
+                comment_offset = 1
+                for (i, c) in enumerate(t.val)
+                    if c == '\n'
+                        s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
+                        push!(ranges, s:offset+1)
+                        comments[sl] = t.val[comment_offset:i-1]
+                        sl += 1
+                        comment_offset = i+1
+                    end
+                    offset += 1
+                end
+                # last comment
+                comments[sl] = t.val[comment_offset:end]
+            end
         end
     end
-    # @info "" lit_strings comments
+    # @info "" ranges lit_strings comments
     ranges, lit_strings, comments
 end
 
@@ -127,7 +145,6 @@ function format(text::AbstractString, indent_size, print_width)
     text = String(take!(io))
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for formatted $text")
-
     return text
 end
 
