@@ -2,7 +2,7 @@
 #
 # If the line exceeds the print width it will be nested.
 # 
-# This is done by replacing `Placeholder` nodes with `Newline` 
+# This is done by replacing `PLACEHOLDER` nodes with `NEWLINE` 
 # nodes and updating the PTree's indent.
 #
 # `extra_width` provides additional width to consider from
@@ -13,8 +13,8 @@
 # arg1 op arg2
 #
 # the length of " op" will be considered when nesting arg1
-
-remaining_lengths(x::AbstractVector) = reverse(cumsum(reverse(length.(x))))
+#
+# TODO: How to best format undoing a nest?
 
 function walk(f, x::PTree, s::State)
     f(x, s)
@@ -28,12 +28,10 @@ function walk(f, x::PTree, s::State)
     end
 end
 
-
 function reset_line_offset!(x::PTree, s::State)
     !is_leaf(x) && (return)
     s.line_offset += length(x)
 end
-
 
 function add_indent!(x, s, indent)
     indent == 0 && (return)
@@ -70,7 +68,8 @@ function nest!(x::PTree, s::State; extra_width=0)
     elseif x.typ === CSTParser.WhereOpCall
         n_wherecall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.ConditionalOpCall
-        n_condcall!(x, s, extra_width=extra_width)
+        # n_condcall!(x, s, extra_width=extra_width)
+        n_chainopcall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.BinaryOpCall
         n_binarycall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Curly
@@ -79,6 +78,10 @@ function nest!(x::PTree, s::State; extra_width=0)
         n_call!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.MacroCall
         n_macrocall!(x, s, extra_width=extra_width)
+    elseif x.typ === CSTParser.ChainOpCall
+        n_chainopcall!(x, s, extra_width=extra_width)
+    elseif x.typ === CSTParser.Comparison
+        n_comparison!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.TupleH
         n_tuple!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Vect
@@ -192,22 +195,15 @@ function n_tuple!(x, s; extra_width=0)
     end
 end
 
-function n_braces!(x, s; extra_width=0)
-    n_tuple!(x, s, extra_width=extra_width)
-end
-
-function n_vect!(x, s; extra_width=0)
-    n_tuple!(x, s, extra_width=extra_width)
-end
-
-function n_params!(x, s; extra_width=0)
-    n_tuple!(x, s, extra_width=extra_width)
-end
+n_braces!(x, s; extra_width=0) = n_tuple!(x, s, extra_width=extra_width)
+n_vect!(x, s; extra_width=0) = n_tuple!(x, s, extra_width=extra_width)
+n_params!(x, s; extra_width=0) = n_tuple!(x, s, extra_width=extra_width)
 
 function n_call!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && line_width > s.print_width
+        
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
 
@@ -242,13 +238,8 @@ function n_call!(x, s; extra_width=0)
     end
 end
 
-function n_curly!(x, s; extra_width=0)
-    n_call!(x, s, extra_width=extra_width)
-end
-
-function n_macrocall!(x, s; extra_width=0)
-    n_call!(x, s, extra_width=extra_width)
-end
+n_curly!(x, s; extra_width=0) = n_call!(x, s, extra_width=extra_width)
+n_macrocall!(x, s; extra_width=0) = n_call!(x, s, extra_width=extra_width)
 
 function n_wherecall!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
@@ -257,17 +248,17 @@ function n_wherecall!(x, s; extra_width=0)
         line_offset = s.line_offset
         # after "A where "
         idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
-        Blens = remaining_lengths(x.nodes[idx+1:end])
+        Blen = sum(length.(x.nodes[idx+1:end]))
 
         # A, +7 is the length of " where "
-        nest!(x.nodes[1], s, extra_width=Blens[1] + 7)
+        nest!(x.nodes[1], s, extra_width=Blen + 7)
 
         for (i, n) in enumerate(x.nodes[2:idx-1])
             nest!(n, s)
         end
         
         # where B
-        over = s.line_offset + Blens[1] + extra_width > s.print_width
+        over = s.line_offset + Blen + extra_width > s.print_width
 
         has_braces = is_closer(x.nodes[end])
         if has_braces
@@ -304,56 +295,46 @@ function n_wherecall!(x, s; extra_width=0)
     end
 end
 
-# C ? E1 : E2
-#
-# nest in order of
-#
-# C ? E1 :
-# E2
-#
-# C ?
-# E1 :
-# E2
-function n_condcall!(x, s; extra_width=0)
+function n_chainopcall!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     if line_width > s.print_width
-        idx1 = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
-        idx2 = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-        Clens = remaining_lengths(x.nodes[1:idx1])
-        E1lens = remaining_lengths(x.nodes[idx1+1:idx2])
-
         line_offset = s.line_offset
         x.indent = s.line_offset
-
-        x.nodes[idx2] = Newline()
-        nest!(x.nodes[end], s)
-
-        # E1
-        s.line_offset = line_offset + Clens[1]
-        if s.line_offset + E1lens[1] > s.print_width
-            x.nodes[idx1] = Newline()
-            s.line_offset = x.indent
-        end
-        nest!(x.nodes[idx1+1], s, extra_width=2)
-
-        for n in x.nodes[idx1+2:idx2-1]
-            nest!(n, s)
+        phs = reverse(findall(n -> n.typ === PLACEHOLDER, x.nodes))
+        for (i, idx) in enumerate(phs)
+            if i == 1
+                x.nodes[idx] = Newline()
+            else
+                nidx = phs[i-1]
+                l1 = sum(length.(x.nodes[1:idx-1]))
+                l2 = sum(length.(x.nodes[idx:nidx-1]))
+                if line_offset + l1 + l2 > s.print_width
+                    x.nodes[idx] = Newline()
+                end
+            end
         end
 
-        # C
-        s.line_offset = line_offset
-        nest!(x.nodes[1], s, extra_width=2)
-        for n in x.nodes[2:idx1-1]
-            nest!(n, s)
+        for (i, n) in enumerate(x.nodes)
+            if i == length(x.nodes)
+                nest!(n, s, extra_width=extra_width)
+            elseif x.nodes[i+1].typ === WHITESPACE
+                ew = length(x.nodes[i+1]) + length(x.nodes[i+2])
+                nest!(n, s, extra_width=ew)
+            elseif n.typ === NEWLINE
+                s.line_offset = x.indent
+            else
+                nest!(n, s)
+            end
         end
 
-        # reset line_offset
         s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
         nest!(x.nodes, s, x.indent)
     end
 end
+
+n_comparison!(x, s; extra_width=0) = n_chainopcall!(x, s, extra_width=extra_width)
 
 # arg1 op arg2
 #
@@ -372,7 +353,8 @@ function n_binarycall!(x, s; extra_width=0)
 
         is_fdef = x.nodes[idx-2].val == "="
 
-        if is_fdef
+        # if is_fdef
+        if CSTParser.defines_function(x.ref[])
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
         else

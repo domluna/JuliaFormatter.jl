@@ -59,7 +59,11 @@ mutable struct State
     offset::Int
     line_offset::Int
     print_width::Int
+    nonest::Bool
+    nospaces::Bool
 end
+
+State(doc, indent_size, print_width) = State(doc, indent_size, 0, 1, 0, print_width, false, false) 
 
 @inline nspaces(s::State) = s.indent
 
@@ -99,7 +103,7 @@ function format(text::AbstractString, indent_size, print_width)
     # If "nofmt" occurs in a comment on line 1 do not format
     occursin("nofmt", get(d.comments, 1, "")) && (return text)
 
-    s = State(d, indent_size, 0, 1, 0, print_width)
+    s = State(d, indent_size, print_width)
     t = pretty(x, s)
     nest!(t, s)
 

@@ -7,7 +7,7 @@ format(s) = format(s, 4, 80)
 
 function run_nest(text::String, print_width::Int)
     d = JLFmt.Document(text)
-    s = JLFmt.State(d, 4, 0, 1, 0, print_width)
+    s = JLFmt.State(d, 4, print_width)
     x = CSTParser.parse(text, true)
     t = JLFmt.pretty(x, s)
     JLFmt.nest!(t, s)
@@ -1201,6 +1201,39 @@ end
     @test_broken format(str, 4, 31) == str
 
 
+    # Ref
+    str = "a[1+2]"
+    @test format("a[1 + 2]", 4, 1) == str
+
+    str_ = "(a + b + c + d)"
+    @test format(str_, 4, 15) == str_
+
+    str = "(a + b + c +\n d)"
+    @test format(str_, 4, 14) == str
+    @test format(str_, 4, 12) == str
+
+    str = "(a + b +\n c +\n d)"
+    @test format(str_, 4, 11) == str
+    @test format(str_, 4, 8) == str
+
+    str = "(a +\n b +\n c +\n d)"
+    @test format(str_, 4, 7) == str
+    @test format(str_, 4, 1) == str
+
+    str_ = "(a < b < c < d)"
+    @test format(str_, 4, 15) == str_
+
+    str = "(a < b < c <\n d)"
+    @test format(str_, 4, 14) == str
+    @test format(str_, 4, 12) == str
+
+    str = "(a < b <\n c <\n d)"
+    @test format(str_, 4, 11) == str
+    @test format(str_, 4, 8) == str
+
+    str = "(a <\n b <\n c <\n d)"
+    @test format(str_, 4, 7) == str
+    @test format(str_, 4, 1) == str
 end
 
 @testset "nesting line offset" begin
@@ -1430,13 +1463,13 @@ end
     str = """
     (var1, var2) ? (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", 4, 30) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 29) == str
 
     str = """
     (var1, var2) ?
     (var3, var4) :
     var5"""
-    @test format("(var1,var2) ? (var3,var4) : var5", 4, 29) == str
+    @test format("(var1,var2) ? (var3,var4) : var5", 4, 28) == str
 
     str = """
     f(

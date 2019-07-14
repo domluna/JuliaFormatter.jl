@@ -1,9 +1,9 @@
 # Creates a _prettified_ version of a CST.
 
-@enum(PHead, NEWLINE, SEMICOLON, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT)
+@enum(PLeaf, NEWLINE, SEMICOLON, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT)
 
 mutable struct PTree
-    typ::Union{CSTParser.Head, PHead}
+    typ::Union{CSTParser.Head, PLeaf}
     startline::Int
     endline::Int
     indent::Int
@@ -34,7 +34,7 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 
 function add_node!(t::PTree, n; join_lines=false)
-    if n.typ isa PHead
+    if n.typ isa PLeaf
         push!(t.nodes, n)
         t.len += length(n)
         # Don't want to alter the startline/endline of these types
@@ -772,7 +772,7 @@ function p_chaincall(x, s)
         if a.typ === CSTParser.OPERATOR
             add_node!(t, Whitespace(1))
             add_node!(t, n, join_lines=true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, Placeholder(1))
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
             add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a) && i != length(x)
@@ -841,7 +841,7 @@ end
 function p_binarycall(x, s; nonest=false, nospaces=false)
     t = PTree(x, nspaces(s))
     op = x.args[2]
-    nonest = op.kind === Tokens.COLON || nonest
+    nonest = nonest || op.kind === Tokens.COLON
     if x.parent.typ === CSTParser.Curly && op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE)
         nospaces = true
     elseif op.kind === Tokens.COLON
@@ -1156,6 +1156,8 @@ function p_ref(x, s)
         if CSTParser.is_comma(a)
             add_node!(t, pretty(a, s), join_lines=true)
             add_node!(t, Whitespace(1))
+        elseif a.typ === CSTParser.BinaryOpCall
+            add_node!(t, p_binarycall(a, s, nonest=true, nospaces=true), join_lines=true)
         else
             add_node!(t, pretty(a, s), join_lines=true)
         end
