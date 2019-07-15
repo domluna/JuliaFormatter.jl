@@ -242,7 +242,7 @@ n_macrocall!(x, s; extra_width=0) = n_call!(x, s, extra_width=extra_width)
 
 function n_wherecall!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "" s.line_offset x.typ line_width extra_width
+    @info "" s.line_offset x.typ line_width extra_width length(x)
     if line_width > s.print_width
         line_offset = s.line_offset
         # after "A where "
@@ -289,6 +289,11 @@ function n_wherecall!(x, s; extra_width=0)
         if over && has_braces
             s.line_offset = x.nodes[end].indent + 1
         end
+
+        @info "" s.line_offset
+
+        # s.line_offset = line_offset
+        # walk(reset_line_offset!, x, s)
     else
         nest!(x.nodes, s, x.indent)
     end
@@ -366,7 +371,7 @@ function n_binarycall!(x, s; extra_width=0)
     # If there's no placeholder the binary call is not nestable
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes) 
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
+    @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
     if idx !== nothing && line_width > s.print_width
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
@@ -391,13 +396,13 @@ function n_binarycall!(x, s; extra_width=0)
             nest!(n, s)
         end
 
-        # @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
+        @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
         # Undo nest if possible
-        line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
-        if line_width <= s.print_width
-            x.nodes[idx-1] = Whitespace(1)
-            x.nodes[idx] = Placeholder(0)
-        end
+        # line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
+        # if line_width <= s.print_width
+        #     x.nodes[idx-1] = Whitespace(1)
+        #     x.nodes[idx] = Placeholder(0)
+        # end
 
         walk(reset_line_offset!, x, s)
         # @info "AFTER RESET" x.indent s.line_offset x.typ
@@ -426,7 +431,10 @@ function n_binarycall!(x, s; extra_width=0)
         #
         # The result being extra width is trickier to deal with.
         idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, x.nodes) 
-        return_width = idx === nothing ? 0 : length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
+        return_width = 0
+        if idx !== nothing && idx > 1
+            return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
+        end
 
         # @info "" x.nodes[2] return_width
         for (i, n) in enumerate(x.nodes)

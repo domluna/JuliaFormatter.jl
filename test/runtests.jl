@@ -1220,6 +1220,9 @@ end
     str = "a[1+2]"
     @test format("a[1 + 2]", 4, 1) == str
 
+    str = "a[(1+2)]"
+    @test format("a[(1 + 2)]", 4, 1) == str
+
     str_ = "(a + b + c + d)"
     @test format(str_, 4, 15) == str_
 
@@ -1536,6 +1539,8 @@ end
     } = 10"""
     @test format(str, 4, 18) == str_
 
+    str = "keytype(::Type{<:AbstractDict{K,V}}) where {K,V} = K"
+    @test format(str, 4, 52) == str
 
 end
 
@@ -1543,4 +1548,16 @@ end
 # TODO: not sure how this should be formatted, revisit at some point
 # push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
 #
+# lazy binary op 
+# a && (b || c)
+#
+# strings
+# foo() = llvmcall("""
+#                  llvm1
+#                  llvm2
+#                  """)
+#
+# space/nest in Ref
+#
+# "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
 end
