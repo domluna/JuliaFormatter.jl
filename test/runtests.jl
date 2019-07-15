@@ -1227,26 +1227,32 @@ end
     @test format(str_, 4, 14) == str
     @test format(str_, 4, 12) == str
 
-    str = "(a + b +\n c +\n d)"
+    str = "(a + b +\n c + d)"
     @test format(str_, 4, 11) == str
     @test format(str_, 4, 8) == str
+
+    str = "(a +\n b +\n c + d)"
+    @test format(str_, 4, 7) == str
 
     str = "(a +\n b +\n c +\n d)"
-    @test format(str_, 4, 7) == str
     @test format(str_, 4, 1) == str
 
-    str_ = "(a < b < c < d)"
-    @test format(str_, 4, 15) == str_
+    str_ = "(a <= b <= c <= d)"
+    @test format(str_, 4, 18) == str_
 
-    str = "(a < b < c <\n d)"
+    str = "(a <= b <= c <=\n d)"
+    @test format(str_, 4, 17) == str
+    @test format(str_, 4, 15) == str
+
+    str = "(a <= b <=\n c <= d)"
     @test format(str_, 4, 14) == str
-    @test format(str_, 4, 12) == str
+    @test format(str_, 4, 10) == str
 
-    str = "(a < b <\n c <\n d)"
-    @test format(str_, 4, 11) == str
+    str = "(a <=\n b <=\n c <= d)"
+    @test format(str_, 4, 9) == str
     @test format(str_, 4, 8) == str
 
-    str = "(a <\n b <\n c <\n d)"
+    str = "(a <=\n b <=\n c <=\n d)"
     @test format(str_, 4, 7) == str
     @test format(str_, 4, 1) == str
 end
@@ -1482,8 +1488,7 @@ end
 
     str = """
     (var1, var2) ?
-    (var3, var4) :
-    var5"""
+    (var3, var4) : var5"""
     @test format("(var1,var2) ? (var3,var4) : var5", 4, 28) == str
 
     str = """

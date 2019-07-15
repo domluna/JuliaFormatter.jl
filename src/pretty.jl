@@ -325,7 +325,17 @@ function p_literal(x, s; include_quotes=true)
     # for indentation problematic.
     #
     # So we'll just look at the source directly!
-    startline, endline, str = s.doc.lit_strings[s.offset-1]
+    str_info = get(s.doc.lit_strings, s.offset-1, nothing)
+
+    # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an 
+    # IDENTIFIER where as CSTParser parses it as a LITERAL.
+    # An IDENTIFIER won't show up in the string literal lookup table.
+    if str_info === nothing && x.parent.typ === CSTParser.x_Str
+        s.offset += x.fullspan
+        return PTree(x, loc[1], loc[1], x.val)
+    end
+
+    startline, endline, str = str_info
     # @info "" loc startline endline str
 
     # Since a line of a multiline string can already

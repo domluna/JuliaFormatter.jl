@@ -68,8 +68,7 @@ function nest!(x::PTree, s::State; extra_width=0)
     elseif x.typ === CSTParser.WhereOpCall
         n_wherecall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.ConditionalOpCall
-        # n_condcall!(x, s, extra_width=extra_width)
-        n_chainopcall!(x, s, extra_width=extra_width)
+        n_condcall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.BinaryOpCall
         n_binarycall!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Curly
@@ -328,6 +327,26 @@ function n_chainopcall!(x, s; extra_width=0)
         end
 
         s.line_offset = line_offset
+        for (i, n) in enumerate(x.nodes)
+            if n.typ === NEWLINE
+                # +1 for newline to whitespace conversion
+                l = 1
+                if i == length(x.nodes) - 1
+                    l += sum(length.(x.nodes[i+1:end])) + extra_width
+                else
+                    l += sum(length.(x.nodes[i+1:i+3]))
+                end
+                # @info "" s.line_offset l  s.print_width
+                if s.line_offset + l <= s.print_width
+                    x.nodes[i] = Whitespace(1)
+                else
+                    s.line_offset = x.indent
+                end
+            end
+            s.line_offset += length(x.nodes[i])
+        end
+
+        s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
         nest!(x.nodes, s, x.indent)
@@ -335,6 +354,7 @@ function n_chainopcall!(x, s; extra_width=0)
 end
 
 n_comparison!(x, s; extra_width=0) = n_chainopcall!(x, s, extra_width=extra_width)
+n_condcall!(x, s; extra_width=0) = n_chainopcall!(x, s, extra_width=extra_width)
 
 # arg1 op arg2
 #
@@ -351,9 +371,6 @@ function n_binarycall!(x, s; extra_width=0)
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
-        is_fdef = x.nodes[idx-2].val == "="
-
-        # if is_fdef
         if CSTParser.defines_function(x.ref[])
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
@@ -362,14 +379,14 @@ function n_binarycall!(x, s; extra_width=0)
         end
 
         # arg2
-        nest!(x.nodes[end], s)
+        nest!(x.nodes[end], s, extra_width=extra_width)
 
         # arg1 op
         s.line_offset = line_offset
         # extra_width for " op"
-        inner_extra_width = length(x.nodes[2]) + length(x.nodes[3])
-        # @info "DURING" inner_extra_width s.line_offset x.typ
-        nest!(x.nodes[1], s, extra_width=inner_extra_width)
+        ew = length(x.nodes[2]) + length(x.nodes[3])
+        # @info "DURING" ew s.line_offset x.typ
+        nest!(x.nodes[1], s, extra_width=ew)
         for n in x.nodes[2:idx-1]
             nest!(n, s)
         end
