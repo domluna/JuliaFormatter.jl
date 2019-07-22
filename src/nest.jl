@@ -46,7 +46,7 @@ function nest!(nodes::Vector{PTree}, s::State, indent; extra_width=0)
         if n.typ === NEWLINE
             s.line_offset = indent
         else
-            nest!(n, s)
+            nest!(n, s, extra_width=extra_width)
         end
     end
 end
@@ -147,7 +147,7 @@ function n_import!(x, s; extra_width=0)
             end
         end
     else
-        nest!(x.nodes, s, x.indent)
+        nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
 end
 
@@ -190,7 +190,7 @@ function n_tuple!(x, s; extra_width=0)
         s.line_offset = x.nodes[end].indent
         has_parens && (s.line_offset += 1)
     else
-        nest!(x.nodes, s, x.indent)
+        nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
 end
 
@@ -201,6 +201,7 @@ n_params!(x, s; extra_width=0) = n_tuple!(x, s, extra_width=extra_width)
 function n_call!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
+    # @info "ENTERING" s.line_offset x.typ length(x) extra_width
     if idx !== nothing && line_width > s.print_width
         
         x.nodes[end].indent = x.indent
@@ -233,16 +234,17 @@ function n_call!(x, s; extra_width=0)
 
         s.line_offset = x.nodes[end].indent + 1
     else
-        nest!(x.nodes, s, x.indent)
+        nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
 end
 
 n_curly!(x, s; extra_width=0) = n_call!(x, s, extra_width=extra_width)
 n_macrocall!(x, s; extra_width=0) = n_call!(x, s, extra_width=extra_width)
 
+# "A where B"
 function n_wherecall!(x, s; extra_width=0)
     line_width = s.line_offset + length(x) + extra_width
-    @info "" s.line_offset x.typ line_width extra_width length(x)
+    # @info "" s.line_offset x.typ line_width extra_width length(x)
     if line_width > s.print_width
         line_offset = s.line_offset
         # after "A where "
@@ -250,21 +252,22 @@ function n_wherecall!(x, s; extra_width=0)
         Blen = sum(length.(x.nodes[idx+1:end]))
 
         # A, +7 is the length of " where "
-        nest!(x.nodes[1], s, extra_width=Blen + 7)
+        ew = Blen + 7 + extra_width
+        nest!(x.nodes[1], s, extra_width=ew)
 
         for (i, n) in enumerate(x.nodes[2:idx-1])
             nest!(n, s)
         end
         
-        # where B
-        over = s.line_offset + Blen + extra_width > s.print_width
+        # "B"
 
         has_braces = is_closer(x.nodes[end])
         if has_braces
             x.nodes[end].indent = x.indent
         end
-        line_offset = s.line_offset
 
+        over = s.line_offset + Blen + extra_width > s.print_width
+        # line_offset = s.line_offset
         x.indent += s.indent_size
         
         for (i, n) in enumerate(x.nodes[idx+1:end])
@@ -280,22 +283,20 @@ function n_wherecall!(x, s; extra_width=0)
                 x.nodes[i+idx] = Newline()
                 s.line_offset = x.indent
             elseif has_braces
-                nest!(n, s, extra_width=1)
+                nest!(n, s, extra_width=1+extra_width)
             else
-                nest!(n, s, extra_width=0)
+                nest!(n, s, extra_width=extra_width)
             end
         end
 
-        if over && has_braces
+        # Properly reset line offset in the case the last
+        # argument is an IDENTIFIER.
+        if over && has_braces && x.nodes[end-2].typ === CSTParser.IDENTIFIER
             s.line_offset = x.nodes[end].indent + 1
         end
-
-        @info "" s.line_offset
-
-        # s.line_offset = line_offset
-        # walk(reset_line_offset!, x, s)
+        # @info "" s.line_offset x.typ extra_width
     else
-        nest!(x.nodes, s, x.indent)
+        nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
 end
 
@@ -354,7 +355,7 @@ function n_chainopcall!(x, s; extra_width=0)
         s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
-        nest!(x.nodes, s, x.indent)
+        nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
 end
 
@@ -371,7 +372,7 @@ function n_binarycall!(x, s; extra_width=0)
     # If there's no placeholder the binary call is not nestable
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes) 
     line_width = s.line_offset + length(x) + extra_width
-    @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
+    # @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
     if idx !== nothing && line_width > s.print_width
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
@@ -396,13 +397,13 @@ function n_binarycall!(x, s; extra_width=0)
             nest!(n, s)
         end
 
-        @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
-        # Undo nest if possible
-        # line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
-        # if line_width <= s.print_width
-        #     x.nodes[idx-1] = Whitespace(1)
-        #     x.nodes[idx] = Placeholder(0)
-        # end
+        # @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
+        # Undo nest if possible, +1 for whitespace
+        line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
+        if line_width <= s.print_width
+            x.nodes[idx-1] = Whitespace(1)
+            x.nodes[idx] = Placeholder(0)
+        end
 
         walk(reset_line_offset!, x, s)
         # @info "AFTER RESET" x.indent s.line_offset x.typ
@@ -445,7 +446,7 @@ function n_binarycall!(x, s; extra_width=0)
             elseif i == idx
                 nest!(n, s, extra_width=extra_width)
             else
-                nest!(n, s)
+                nest!(n, s, extra_width=extra_width)
             end
         end
     end

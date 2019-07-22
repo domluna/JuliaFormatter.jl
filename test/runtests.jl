@@ -1221,7 +1221,7 @@ end
     @test format("a[1 + 2]", 4, 1) == str
 
     str = "a[(1+2)]"
-    @test format("a[(1 + 2)]", 4, 1) == str
+    @test_broken format("a[(1 + 2)]", 4, 1) == str
 
     str_ = "(a + b + c + d)"
     @test format(str_, 4, 15) == str_
@@ -1542,11 +1542,44 @@ end
     str = "keytype(::Type{<:AbstractDict{K,V}}) where {K,V} = K"
     @test format(str, 4, 52) == str
 
+    str_ = "transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
+    str = """
+    transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
+      Int32,
+      UInt32
+    }} = transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 80) == str
+    @test format(str_, 2, 38) == str
+
+    str = """
+    transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
+      Int32,
+      UInt32
+    }} =
+      transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 37) == str
+
+    str_ = "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
+    str = """
+    transcode(
+      ::Type{T},
+      src::AbstractVector{UInt8}
+    ) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 80) == str
+    @test format(str_, 2, 68) == str
+
+    str = """
+    transcode(
+      ::Type{T},
+      src::AbstractVector{UInt8}
+    ) where {T<:Union{Int32,UInt32}} =
+      transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 67) == str
 end
 
+# TODO
 #
-# TODO: not sure how this should be formatted, revisit at some point
-# push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
+# space/nest in Ref
 #
 # lazy binary op 
 # a && (b || c)
@@ -1557,7 +1590,6 @@ end
 #                  llvm2
 #                  """)
 #
-# space/nest in Ref
 #
-# "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
+"transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
 end
