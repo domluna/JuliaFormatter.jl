@@ -948,8 +948,8 @@ end
     )"""
     @test format("(a, b, c, d)", 4, 11) == str
 
-    str = """{a,b,c,d}"""
-    @test format("{a, b, c, d}", 4, 9) == str
+    str = """{a, b, c, d}"""
+    @test format("{a, b, c, d}", 4, 12) == str
 
     str = """
     {
@@ -958,7 +958,7 @@ end
      c,
      d
     }"""
-    @test format("{a, b, c, d}", 4, 8) == str
+    @test format("{a, b, c, d}", 4, 11) == str
 
     str = """[a, b, c, d]"""
     @test format("[a, b, c, d]", 4, 12) == str
@@ -1220,6 +1220,9 @@ end
     str = "a[1+2]"
     @test format("a[1 + 2]", 4, 1) == str
 
+    str = "a[(1+2)]"
+    @test_broken format("a[(1 + 2)]", 4, 1) == str
+
     str_ = "(a + b + c + d)"
     @test format(str_, 4, 15) == str_
 
@@ -1332,7 +1335,7 @@ end
     s = run_nest(str, 1)
     @test s.line_offset == 1
 
-    str = "f(a, b, c) where {A,{B,C,D},E}"
+    str = "f(a, b, c) where {A,{B, C, D},E}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
@@ -1536,11 +1539,57 @@ end
     } = 10"""
     @test format(str, 4, 18) == str_
 
+    str = "keytype(::Type{<:AbstractDict{K,V}}) where {K,V} = K"
+    @test format(str, 4, 52) == str
 
+    str_ = "transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
+    str = """
+    transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
+      Int32,
+      UInt32
+    }} = transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 80) == str
+    @test format(str_, 2, 38) == str
+
+    str = """
+    transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
+      Int32,
+      UInt32
+    }} =
+      transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 37) == str
+
+    str_ = "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
+    str = """
+    transcode(
+      ::Type{T},
+      src::AbstractVector{UInt8}
+    ) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 80) == str
+    @test format(str_, 2, 68) == str
+
+    str = """
+    transcode(
+      ::Type{T},
+      src::AbstractVector{UInt8}
+    ) where {T<:Union{Int32,UInt32}} =
+      transcode(T, String(Vector(src)))"""
+    @test format(str_, 2, 67) == str
 end
 
+# TODO
 #
-# TODO: not sure how this should be formatted, revisit at some point
-# push!(s::BitSet, ns::Integer...) = (for n in ns; push!(s, n); end; s)
+# space/nest in Ref
 #
+# lazy binary op 
+# a && (b || c)
+#
+# strings
+# foo() = llvmcall("""
+#                  llvm1
+#                  llvm2
+#                  """)
+#
+#
+"transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
 end

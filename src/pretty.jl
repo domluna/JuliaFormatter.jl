@@ -893,6 +893,7 @@ function p_binarycall(x, s; nonest=false, nospaces=false)
 end
 
 # WhereOpCall
+# A where B
 function p_wherecall(x, s)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
@@ -1083,7 +1084,7 @@ function p_braces(x, s)
             add_node!(t, n, join_lines=true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, n, join_lines=true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, Placeholder(1))
         else
             add_node!(t, n, join_lines=true)
         end
