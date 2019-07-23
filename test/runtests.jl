@@ -948,8 +948,8 @@ end
     )"""
     @test format("(a, b, c, d)", 4, 11) == str
 
-    str = """{a,b,c,d}"""
-    @test format("{a, b, c, d}", 4, 9) == str
+    str = """{a, b, c, d}"""
+    @test format("{a, b, c, d}", 4, 12) == str
 
     str = """
     {
@@ -958,7 +958,7 @@ end
      c,
      d
     }"""
-    @test format("{a, b, c, d}", 4, 8) == str
+    @test format("{a, b, c, d}", 4, 11) == str
 
     str = """[a, b, c, d]"""
     @test format("[a, b, c, d]", 4, 12) == str
@@ -1335,7 +1335,7 @@ end
     s = run_nest(str, 1)
     @test s.line_offset == 1
 
-    str = "f(a, b, c) where {A,{B,C,D},E}"
+    str = "f(a, b, c) where {A,{B, C, D},E}"
     s = run_nest(str, 100)
     @test s.line_offset == length(str)
     s = run_nest(str, 1)
