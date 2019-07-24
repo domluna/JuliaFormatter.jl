@@ -56,7 +56,7 @@ function file_line_ranges(text::AbstractString)
             end
         end
     end
-    # @info "" ranges lit_strings comments
+    @info "" lit_strings comments
     ranges, lit_strings, comments
 end
 

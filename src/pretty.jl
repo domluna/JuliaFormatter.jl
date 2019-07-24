@@ -345,18 +345,14 @@ function p_literal(x, s; include_quotes=true)
     # the ground truth indentation.
     line = s.doc.text[s.doc.ranges[startline]]
     fc = findfirst(c -> !isspace(c), line)-1
-    ns = max(0, nspaces(s) - fc)
-
-    if !include_quotes
-        idx = startswith(str, "\"\"\"") ? 4 : 2
-        str = str[idx:end-idx+1]
-        str = strip(str, ' ')
-        str[1] == '\n' && (str = str[2:end])
-        str[end] == '\n' && (str = str[1:end-1])
-    end
+    # ns = max(0, nspaces(s) - fc)
+    # ns = nspaces(s)
+    ns = 0
     s.offset += x.fullspan
 
     lines = split(str, "\n")
+
+    @info "" ns lines x.val
 
     if length(lines) == 1 
         return PTree(x, loc[1], loc[1], lines[1])
@@ -365,7 +361,7 @@ function p_literal(x, s; include_quotes=true)
     t = PTree(CSTParser.StringH, -1, -1, ns, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
+        tt = PTree(CSTParser.LITERAL, ln, ln, ns, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t

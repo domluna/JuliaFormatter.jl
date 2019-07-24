@@ -1585,10 +1585,10 @@ end
 # a && (b || c)
 #
 # strings
-# foo() = llvmcall("""
-#                  llvm1
-#                  llvm2
-#                  """)
+foo() = llvmcall("""
+                 llvm1
+                 llvm2
+                 """)
 #
 #
 "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
