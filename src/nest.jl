@@ -85,6 +85,8 @@ function nest!(x::PTree, s::State; extra_width=0)
         n_tuple!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Vect
         n_vect!(x, s, extra_width=extra_width)
+    elseif x.typ === CSTParser.StringH
+        n_stringh!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Parameters
         n_params!(x, s, extra_width=extra_width)
     elseif x.typ === CSTParser.Braces
@@ -192,6 +194,12 @@ function n_tuple!(x, s; extra_width=0)
     else
         nest!(x.nodes, s, x.indent, extra_width=extra_width)
     end
+end
+
+
+function n_stringh!(x, s; extra_width=0)
+    x.indent = s.line_offset
+    nest!(x.nodes, s, x.indent, extra_width=extra_width)
 end
 
 n_braces!(x, s; extra_width=0) = n_tuple!(x, s, extra_width=extra_width)

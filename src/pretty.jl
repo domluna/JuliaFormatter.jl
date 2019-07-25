@@ -316,14 +316,9 @@ function p_literal(x, s; include_quotes=true)
         return PTree(x, loc[1], loc[1], x.val)
     end
     
-    # At the moment CSTParser does not return Tokens.TRIPLE_STRING
-    # tokens :(
-    # https://github.com/ZacLN/CSTParser.jl/issues/88
-    #
-    # Also strings are unescaped to by CSTParser
-    # to mimic Meta.parse which makes finding newlines
-    # for indentation problematic.
-    #
+    # Strings are unescaped to by CSTParser
+    # to mimic Meta.parse which makes reproducing
+    # the correct output from the LITERAL value problematic.
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset-1, nothing)
 
@@ -337,15 +332,6 @@ function p_literal(x, s; include_quotes=true)
 
     startline, endline, str = str_info
     # @info "" loc startline endline str
-
-    # Since a line of a multiline string can already
-    # have it's own indentation we check if it needs
-    # additional indentation by comparing the number
-    # of spaces before a character of the line to
-    # the ground truth indentation.
-    line = s.doc.text[s.doc.ranges[startline]]
-    fc = findfirst(c -> !isspace(c), line)-1
-    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -362,10 +348,21 @@ function p_literal(x, s; include_quotes=true)
         return PTree(x, loc[1], loc[1], lines[1])
     end
 
-    t = PTree(CSTParser.StringH, -1, -1, ns, 0, nothing, PTree[], Ref(x))
+    # @info "" include_quotes lines x.val loc
+
+    t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
+        sidx = loc[2]
+
+        # remove all the whitespace prior to the start of the string
+        fc = findfirst(c -> !isspace(c), l)
+        if fc !== nothing
+            sidx = min(sidx, fc)
+        end
+
+        l = l[sidx:end]
+        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
@@ -373,12 +370,8 @@ end
 
 # StringH
 function p_stringh(x, s; include_quotes=true)
+    loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-
-    line = s.doc.text[s.doc.ranges[startline]]
-
-    fc = findfirst(c -> !isspace(c), line)-1
-    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -397,10 +390,19 @@ function p_stringh(x, s; include_quotes=true)
         return t
     end
 
-    t = PTree(x, ns)
+    t = PTree(x, 0)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
+        sidx = loc[2]
+
+        # remove all the whitespace prior to the start of the string
+        fc = findfirst(c -> !isspace(c), l)
+        if fc !== nothing
+            sidx = min(sidx, fc)
+        end
+
+        l = l[sidx:end]
+        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
