@@ -105,10 +105,10 @@ function is_prev_newline(x::PTree)
     is_prev_newline(x.nodes[end])
 end
 
-is_closer(x::PTree) = x.val == "}" || x.val == ")" || x.val == "]"
+is_closer(x::PTree) = x.typ === CSTParser.PUNCTUATION && (x.val == "}" || x.val == ")" || x.val == "]")
 is_closer(x::CSTParser.EXPR) = x.kind === Tokens.RBRACE || x.kind === Tokens.RPAREN || x.kind === Tokens.RSQUARE 
 
-is_opener(x::PTree) = x.val == "{" || x.val == "(" || x.val == "["
+is_opener(x::PTree) = x.typ === CSTParser.PUNCTUATION && (x.val == "{" || x.val == "(" || x.val == "[")
 is_opener(x::CSTParser.EXPR) = x.kind === Tokens.LBRACE || x.kind === Tokens.LPAREN || x.kind === Tokens.LSQUARE 
 
 function pretty(x::CSTParser.EXPR, s::State)
@@ -356,7 +356,7 @@ function p_literal(x, s; include_quotes=true)
         end
     end
 
-    @info "" include_quotes lines x.val loc loc[2] sidx
+    # @info "" include_quotes lines x.val loc loc[2] sidx
 
     t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)

@@ -603,6 +603,20 @@ end
                \""")"""
     @test format(str, 2, 10) == str_
 
+    str_ = """
+    str = \"""
+    begin
+        arg
+    end\"""
+    """
+
+    str = """
+    str = \"""
+          begin
+              arg
+          end\"""
+    """
+    @test format(str_) == str
 end
 
 @testset "notcode" begin
