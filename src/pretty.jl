@@ -398,7 +398,7 @@ function p_stringh(x, s; include_quotes=true)
         end
     end
 
-    @info "" include_quotes lines x.val loc loc[2] sidx
+    # @info "" include_quotes lines x.val loc loc[2] sidx
 
     t = PTree(x, 0)
     for (i, l) in enumerate(lines)

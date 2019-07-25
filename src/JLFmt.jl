@@ -167,6 +167,7 @@ function format_file(filename::AbstractString, indent_size, print_width; overwri
     str = read(filename) |> String
     str = format(str, indent_size, print_width)
     overwrite ?  write(filename, str) : write(path * "_fmt" * ext, str)
+    nothing
 end
 
 end
