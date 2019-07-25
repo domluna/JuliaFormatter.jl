@@ -1622,6 +1622,12 @@ end
     @test format(str_, 2, 67) == str
 end
 
+# @testset "meta-fmt" begin
+#     str = String(read("./runtests.jl"))
+#     str = format(str)
+#
+# end
+
 end
 
 # TODO
