@@ -348,20 +348,20 @@ function p_literal(x, s; include_quotes=true)
         return PTree(x, loc[1], loc[1], lines[1])
     end
 
-    # @info "" include_quotes lines x.val loc
-
-    t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
-    for (i, l) in enumerate(lines)
-        ln = startline + i - 1
-        sidx = loc[2]
-
-        # remove all the whitespace prior to the start of the string
+    sidx = loc[2]
+    for l in lines[2:end]
         fc = findfirst(c -> !isspace(c), l)
         if fc !== nothing
             sidx = min(sidx, fc)
         end
+    end
 
-        l = l[sidx:end]
+    @info "" include_quotes lines x.val loc loc[2] sidx
+
+    t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
+    for (i, l) in enumerate(lines)
+        ln = startline + i - 1
+        l = i == 1 ? l : l[sidx:end]
         tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
@@ -390,18 +390,20 @@ function p_stringh(x, s; include_quotes=true)
         return t
     end
 
-    t = PTree(x, 0)
-    for (i, l) in enumerate(lines)
-        ln = startline + i - 1
-        sidx = loc[2]
-
-        # remove all the whitespace prior to the start of the string
+    sidx = loc[2]
+    for l in lines[2:end]
         fc = findfirst(c -> !isspace(c), l)
         if fc !== nothing
             sidx = min(sidx, fc)
         end
+    end
 
-        l = l[sidx:end]
+    @info "" include_quotes lines x.val loc loc[2] sidx
+
+    t = PTree(x, 0)
+    for (i, l) in enumerate(lines)
+        ln = startline + i - 1
+        l = i == 1 ? l : l[sidx:end]
         tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end

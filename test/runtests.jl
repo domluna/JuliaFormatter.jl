@@ -1,4 +1,4 @@
-# nofmt
+# fmt
 import JLFmt: format
 import JLFmt
 using CSTParser
@@ -1608,6 +1608,8 @@ end
     @test format(str_, 2, 67) == str
 end
 
+end
+
 # TODO
 #
 # space/nest in Ref
@@ -1615,12 +1617,3 @@ end
 # lazy binary op 
 # a && (b || c)
 #
-# strings
-foo() = llvmcall("""
-                 llvm1
-                 llvm2
-                 """)
-#
-#
-"transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
-end
