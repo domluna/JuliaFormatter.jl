@@ -5,11 +5,12 @@ import CSTParser.Tokenize.Tokens
 
 export format, format_file
 
-is_str_or_cmd(x::Tokens.Kind) = x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
+is_str_or_cmd(x::Tokens.Kind) =
+    x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
 
 function file_line_ranges(text::AbstractString)
     ranges = UnitRange{Int}[]
-    lit_strings = Dict{Int, Tuple{Int,Int,String}}()
+    lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,String}()
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
@@ -47,7 +48,7 @@ function file_line_ranges(text::AbstractString)
                         push!(ranges, s:offset+1)
                         comments[sl] = t.val[comment_offset:i-1]
                         sl += 1
-                        comment_offset = i+1
+                        comment_offset = i + 1
                     end
                     offset += 1
                 end
@@ -65,8 +66,8 @@ struct Document
     ranges::Vector{UnitRange{Int}}
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
-    lit_strings::Dict{Int, Tuple{Int, Int, String}}
-    comments::Dict{Int, String}
+    lit_strings::Dict{Int,Tuple{Int,Int,String}}
+    comments::Dict{Int,String}
 end
 Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 
@@ -81,7 +82,8 @@ mutable struct State
     nospaces::Bool
 end
 
-State(doc, indent_size, print_width) = State(doc, indent_size, 0, 1, 0, print_width, false, false) 
+State(doc, indent_size, print_width) =
+    State(doc, indent_size, 0, 1, 0, print_width, false, false)
 
 @inline nspaces(s::State) = s.indent
 
@@ -130,7 +132,7 @@ function format(text::AbstractString, indent_size, print_width)
     io = IOBuffer()
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, Notcode(1, t.startline-1, 0), s)
+        print_tree(io, Notcode(1, t.startline - 1, 0), s)
         print_tree(io, Newline(), s)
     end
 
@@ -139,7 +141,7 @@ function format(text::AbstractString, indent_size, print_width)
     # Print comments and whitespace after code.
     if t.endline < length(s.doc.ranges)
         print_tree(io, Newline(), s)
-        print_tree(io, Notcode(t.endline+1, length(s.doc.ranges), 0), s)
+        print_tree(io, Notcode(t.endline + 1, length(s.doc.ranges), 0), s)
     end
 
     text = String(take!(io))
@@ -159,14 +161,19 @@ be written to "foo_fmt.jl".
 
 If `overwrite` is `true` the file will be overwritten with the formatted output.
 """
-function format_file(filename::AbstractString, indent_size, print_width; overwrite=false)
+function format_file(
+    filename::AbstractString,
+    indent_size,
+    print_width;
+    overwrite = false
+)
     path, ext = splitext(filename)
     if ext != ".jl"
         error("$filename must be a Julia (.jl) source file")
     end
     str = read(filename) |> String
     str = format(str, indent_size, print_width)
-    overwrite ?  write(filename, str) : write(path * "_fmt" * ext, str)
+    overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
 end
 
