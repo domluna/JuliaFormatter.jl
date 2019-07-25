@@ -1266,7 +1266,7 @@ end
     @test format("a[1 + 2]", 4, 1) == str
 
     str = "a[(1+2)]"
-    @test_broken format("a[(1 + 2)]", 4, 1) == str
+    @test format("a[(1 + 2)]", 4, 1) == str
 
     str_ = "(a + b + c + d)"
     @test format(str_, 4, 15) == str_

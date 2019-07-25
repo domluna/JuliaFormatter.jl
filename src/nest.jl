@@ -414,7 +414,6 @@ function n_binarycall!(x, s; extra_width = 0)
         end
 
         walk(reset_line_offset!, x, s)
-    # @info "AFTER RESET" x.indent s.line_offset x.typ
     else
         # Handles the case of a function def defined
         # as "foo(a)::R where {A,B} = body".

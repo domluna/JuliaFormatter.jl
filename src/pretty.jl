@@ -880,25 +880,25 @@ end
 
 
 # BinaryOpCall
-function p_binarycall(x, s; nonest = false, nospaces = false)
+function p_binarycall(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     op = x.args[2]
     nonest = nonest || op.kind === Tokens.COLON
     if x.parent.typ === CSTParser.Curly &&
        op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE)
-        nospaces = true
+        nospace = true
     elseif op.kind === Tokens.COLON
-        nospaces = true
+        nospace = true
     end
 
     if x.args[1].typ === CSTParser.BinaryOpCall
-        add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospaces = nospaces))
+        add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace))
     else
         add_node!(t, pretty(x.args[1], s))
     end
 
     if (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
-       nospaces
+       nospace
         add_node!(t, pretty(op, s), join_lines = true)
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1))
@@ -919,7 +919,7 @@ function p_binarycall(x, s; nonest = false, nospaces = false)
 
     CSTParser.defines_function(x) && (s.indent += s.indent_size)
     if x.args[3].typ === CSTParser.BinaryOpCall
-        n = p_binarycall(x.args[3], s, nonest = nonest, nospaces = nospaces)
+        n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
     else
         n = pretty(x.args[3], s)
     end
@@ -959,7 +959,7 @@ function p_wherecall(x, s)
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(0))
         elseif in_braces && a.typ === CSTParser.BinaryOpCall
-            add_node!(t, p_binarycall(a, s, nospaces = true), join_lines = true)
+            add_node!(t, p_binarycall(a, s, nospace = true), join_lines = true)
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end
@@ -1047,25 +1047,29 @@ function p_call(x, s)
 end
 
 # InvisBrackets
-function p_invisbrackets(x, s)
+function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     multi_arg = length(x) > 4
 
     # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
-        # @info "" a.typ === CSTParser.Block
-        n = a.typ === CSTParser.Block ? p_block(a, s, from_quote = true) : pretty(a, s)
-        if is_opener(n) && multi_arg
-            add_node!(t, n, join_lines = true)
+        if a.typ === CSTParser.Block
+            add_node!(t, p_block(a, s, from_quote = true), join_lines = true)
+        elseif a.typ === CSTParser.BinaryOpCall
+            add_node!(t, p_binarycall(a, s, nonest = nonest, nospace = nospace), join_lines = true)
+        elseif a.typ === CSTParser.InvisBrackets
+            add_node(t, p_invisbrackets(a, s, nonest = nonest, nospace = nospace), join_lines = true)
+        elseif is_opener(a) && multi_arg
+            add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(0))
-        elseif is_closer(n) && multi_arg
+        elseif is_closer(a) && multi_arg
             add_node!(t, Placeholder(0))
-            add_node!(t, n, join_lines = true)
+            add_node!(t, pretty(a, s), join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
+            add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(1))
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, pretty(a, s), join_lines = true)
         end
     end
     # multi_arg && (s.indent -= s.indent_size)
@@ -1200,7 +1204,13 @@ function p_ref(x, s)
         elseif a.typ === CSTParser.BinaryOpCall
             add_node!(
                 t,
-                p_binarycall(a, s, nonest = true, nospaces = true),
+                p_binarycall(a, s, nonest = true, nospace = true),
+                join_lines = true
+            )
+        elseif a.typ === CSTParser.InvisBrackets
+            add_node!(
+                t,
+                p_invisbrackets(a, s, nonest = true, nospace = true),
                 join_lines = true
             )
         else
