@@ -198,7 +198,6 @@ end
 
 
 function n_stringh!(x, s; extra_width=0)
-    @info "" s.line_offset
     x.indent = s.line_offset
     nest!(x.nodes, s, x.indent, extra_width=extra_width)
 end

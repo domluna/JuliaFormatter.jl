@@ -554,7 +554,6 @@ end
 
                       cool!\"\"\"
     end"""
-
     str_ = """
     begin
     s = \"\"\"This is a multiline string.
@@ -576,7 +575,6 @@ end
                                  can be created at https://gist.github.com/.\"""))
         end
     end"""
-
     str_ = """
     begin
     begin
@@ -588,6 +586,22 @@ end
        end
     end"""
     @test format(str_) == str
+
+
+    str = """
+    foo() = llvmcall(\"""
+                     llvm1
+                     llvm2
+                     \""")"""
+    @test format(str) == str
+
+    str_ = """
+    foo() =
+      llvmcall(\"""
+               llvm1
+               llvm2
+               \""")"""
+    @test format(str, 2, 10) == str_
 
 end
 
@@ -648,6 +662,7 @@ end
     =#
     const a = \"hi there\""""
     @test format(str) == str
+
 end
 
 @testset "pretty" begin
@@ -1193,14 +1208,30 @@ end
     end"""
     @test format("begin\n a && b || c && d\nend", 4, 1) == str
 
-    # str = """
-    # func(a, \"""this
-    # is another
-    # multi-line
-    # string.
-    # Longest line
-    # \""", foo(b, c))"""
-    # @test format(str, 4, 33) == str
+    str = """
+    func(a, \"""this
+            is another
+            multi-line
+            string.
+            Longest line
+            \""", foo(b, c))"""
+    @test format(str, 4, 100) == str
+
+    str_ = """
+    func(
+        a,
+        \"""this
+        is another
+        multi-line
+        string.
+        Longest line
+        \""",
+        foo(
+            b,
+            c
+        )
+    )"""
+    @test format(str, 4, 1) == str_
     
     str = """
     func(
@@ -1213,7 +1244,7 @@ end
         \""",
         foo(b, c)
     )"""
-    @test_broken format(str, 4, 31) == str
+    @test format(str, 4, 31) == str
 
 
     # Ref

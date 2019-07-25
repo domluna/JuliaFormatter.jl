@@ -343,25 +343,37 @@ function p_literal(x, s; include_quotes=true)
     # additional indentation by comparing the number
     # of spaces before a character of the line to
     # the ground truth indentation.
-    line = s.doc.text[s.doc.ranges[startline]]
-    fc = findfirst(c -> !isspace(c), line)-1
-    # ns = max(0, nspaces(s) - fc)
-    # ns = nspaces(s)
-    ns = 0
+
+    if !include_quotes
+        idx = startswith(str, "\"\"\"") ? 4 : 2
+        str = str[idx:end-idx+1]
+        str = strip(str, ' ')
+        str[1] == '\n' && (str = str[2:end])
+        str[end] == '\n' && (str = str[1:end-1])
+    end
     s.offset += x.fullspan
 
     lines = split(str, "\n")
-
-    @info "" ns lines x.val
 
     if length(lines) == 1 
         return PTree(x, loc[1], loc[1], lines[1])
     end
 
-    t = PTree(CSTParser.StringH, -1, -1, ns, 0, nothing, PTree[], Ref(x))
+    # @info "" include_quotes lines x.val loc
+
+    t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        tt = PTree(CSTParser.LITERAL, ln, ln, ns, length(l), l, nothing, nothing)
+        sidx = loc[2]
+
+        # remove all the whitespace prior to the start of the string
+        fc = findfirst(c -> !isspace(c), l)
+        if fc !== nothing
+            sidx = min(sidx, fc)
+        end
+
+        l = l[sidx:end]
+        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
@@ -369,12 +381,8 @@ end
 
 # StringH
 function p_stringh(x, s; include_quotes=true)
+    loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-
-    line = s.doc.text[s.doc.ranges[startline]]
-
-    fc = findfirst(c -> !isspace(c), line)-1
-    ns = max(0, nspaces(s) - fc)
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -393,10 +401,19 @@ function p_stringh(x, s; include_quotes=true)
         return t
     end
 
-    t = PTree(x, ns)
+    t = PTree(x, 0)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
-        tt = PTree(CSTParser.LITERAL, ln, ln, nspaces(s), length(l), l, nothing, nothing)
+        sidx = loc[2]
+
+        # remove all the whitespace prior to the start of the string
+        fc = findfirst(c -> !isspace(c), l)
+        if fc !== nothing
+            sidx = min(sidx, fc)
+        end
+
+        l = l[sidx:end]
+        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
