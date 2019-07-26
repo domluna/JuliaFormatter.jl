@@ -8,10 +8,23 @@ export format, format_file, format_dir
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
 
-function file_line_ranges(text::AbstractString)
+struct Document
+    text::AbstractString
+
+    ranges::Vector{UnitRange{Int}}
+    line_to_range::Dict{Int, UnitRange{Int}}
+
+    # mapping the offset in the file to the raw literal
+    # string and what lines it starts and ends at.
+    lit_strings::Dict{Int,Tuple{Int,Int,String}}
+    comments::Dict{Int,String}
+end
+function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
+    line_to_range = Dict{Int,UnitRange{Int}}()
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,String}()
+
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -57,19 +70,12 @@ function file_line_ranges(text::AbstractString)
             end
         end
     end
+    for (l, r) in enumerate(ranges)
+        line_to_range[l] = r
+    end
     # @debug "" lit_strings comments
-    ranges, lit_strings, comments
+    Document(text, ranges, line_to_range, lit_strings, comments)
 end
-
-struct Document
-    text::AbstractString
-    ranges::Vector{UnitRange{Int}}
-    # mapping the offset in the file to the raw literal
-    # string and what lines it starts and ends at.
-    lit_strings::Dict{Int,Tuple{Int,Int,String}}
-    comments::Dict{Int,String}
-end
-Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 
 mutable struct State
     doc::Document
@@ -79,17 +85,10 @@ mutable struct State
     line_offset::Int
     margin::Int
 end
-
 State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
-
-@inline function getline(d::Document, line::Int)
-    for (l, r) in enumerate(d.ranges)
-        l == line && return d.text[r]
-    end
-    error("$(line) not found in file")
-end
+@inline getline(d::Document, line::Int) = d.text[d.line_to_range[line]]
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
