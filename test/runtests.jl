@@ -905,6 +905,8 @@ end
         body
     end"""
     @test format(str) == str
+
+    @test format("ref[a: (b + c)]") == "ref[a:(b+c)]"
 end
 
 @testset "nesting" begin

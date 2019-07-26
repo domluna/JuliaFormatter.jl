@@ -902,6 +902,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
 
     if x.args[1].typ === CSTParser.BinaryOpCall
         add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace))
+    elseif x.args[1].typ === CSTParser.InvisBrackets
+        add_node!(t, p_invisbrackets(x.args[1], s, nonest = nonest, nospace = nospace))
     else
         add_node!(t, pretty(x.args[1], s))
     end
@@ -929,6 +931,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     CSTParser.defines_function(x) && (s.indent += s.indent_size)
     if x.args[3].typ === CSTParser.BinaryOpCall
         n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
+    elseif x.args[3].typ === CSTParser.InvisBrackets
+        n = p_invisbrackets(x.args[3], s, nonest = nonest, nospace = nospace)
     else
         n = pretty(x.args[3], s)
     end
