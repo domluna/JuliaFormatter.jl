@@ -12,7 +12,7 @@ struct Document
     text::AbstractString
 
     ranges::Vector{UnitRange{Int}}
-    line_to_range::Dict{Int, UnitRange{Int}}
+    line_to_range::Dict{Int,UnitRange{Int}}
 
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.

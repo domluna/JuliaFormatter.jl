@@ -452,8 +452,8 @@ function p_macrocall(x, s)
             t,
             PTree(
                 CSTParser.LITERAL,
-                loc[1]-1,
-                loc[1]-1,
+                loc[1] - 1,
+                loc[1] - 1,
                 nspaces(s),
                 3,
                 "\"\"\"",
