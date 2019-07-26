@@ -35,6 +35,20 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 
 is_punc(x) = CSTParser.ispunctuation(x)
 
+function parent_is(x, typs...)
+    p = x.parent
+    p === nothing && return false
+    while p !== nothing && p.typ === CSTParser.InvisBrackets
+        p = p.parent
+    end
+
+    for typ in typs
+        p.typ === typ && return true
+    end
+
+    false
+end
+
 function add_node!(t::PTree, n; join_lines = false)
     if n.typ isa PLeaf
         push!(t.nodes, n)
@@ -866,14 +880,9 @@ function nestable(x::CSTParser.EXPR)
             (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && (return true)
         end
 
-        p = x.parent
-        p === nothing && (return false)
-        while p !== nothing && p.typ === CSTParser.InvisBrackets
-            p = p.parent
-        end
-        return p.typ === CSTParser.If ||
-               p.typ === CSTParser.BinaryOpCall || p.typ === CSTParser.While
+        return parent_is(x, CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While)
     end
+
     true
 end
 
