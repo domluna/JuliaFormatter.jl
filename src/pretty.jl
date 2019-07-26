@@ -132,7 +132,7 @@ is_opener(x::CSTParser.EXPR) =
     x.kind === Tokens.LBRACE || x.kind === Tokens.LPAREN || x.kind === Tokens.LSQUARE
 
 function pretty(x::CSTParser.EXPR, s::State)
-    # @info "" x.typ x.args
+    # @debug "" x.typ x.args
     if x.typ === CSTParser.IDENTIFIER
         return p_identifier(x, s)
     elseif x.typ === CSTParser.OPERATOR
@@ -254,7 +254,7 @@ function pretty(x::CSTParser.EXPR, s::State)
             s.offset += a.fullspan
             continue
         end
-        # @info "" a a.typ
+        # @debug "" a a.typ
         add_node!(t, pretty(a, s), join_lines = join_lines)
     end
     t
@@ -349,7 +349,7 @@ function p_literal(x, s; include_quotes = true)
     end
 
     startline, endline, str = str_info
-    # @info "" loc startline endline str
+    # @debug "" loc startline endline str
 
     if !include_quotes
         idx = startswith(str, "\"\"\"") ? 4 : 2
@@ -374,7 +374,7 @@ function p_literal(x, s; include_quotes = true)
         end
     end
 
-    # @info "" include_quotes lines x.val loc loc[2] sidx
+    # @debug "" include_quotes lines x.val loc loc[2] sidx
 
     t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
@@ -416,7 +416,7 @@ function p_stringh(x, s; include_quotes = true)
         end
     end
 
-    # @info "" include_quotes lines x.val loc loc[2] sidx
+    # @debug "" include_quotes lines x.val loc loc[2] sidx
 
     t = PTree(x, 0)
     for (i, l) in enumerate(lines)
@@ -510,7 +510,7 @@ function p_block(x, s; ignore_single_line = false, from_quote = false)
     t = PTree(x, nspaces(s))
     single_line = ignore_single_line ? false :
                   cursor_loc(s)[1] == cursor_loc(s, s.offset + x.span - 1)[1]
-    # @info "" from_quote single_line ignore_single_line
+    # @debug "" from_quote single_line ignore_single_line
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if from_quote && !single_line
@@ -953,7 +953,7 @@ function p_wherecall(x, s)
     multi_arg = length(CSTParser.get_where_params(x)) > 1
     in_braces = CSTParser.is_lbrace(x.args[3])
 
-    # @info "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
+    # @debug "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
 
     for a in x.args[3:end]
         if is_opener(a) && multi_arg
@@ -1120,7 +1120,7 @@ function p_braces(x, s)
     t = PTree(x, nspaces(s))
     # {a,b}
     multi_arg = length(x) > 4
-    # @info "" multi_arg typeof(x)
+    # @debug "" multi_arg typeof(x)
 
         # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)

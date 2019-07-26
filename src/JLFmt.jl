@@ -57,7 +57,7 @@ function file_line_ranges(text::AbstractString)
             end
         end
     end
-    # @info "" lit_strings comments
+    # @debug "" lit_strings comments
     ranges, lit_strings, comments
 end
 
@@ -127,7 +127,7 @@ function format(text::AbstractString, indent_size, print_width)
     t = pretty(x, s)
     nest!(t, s)
 
-    # @info "" t
+    # @debug "" t
 
     io = IOBuffer()
     # Print comments and whitespace before code.

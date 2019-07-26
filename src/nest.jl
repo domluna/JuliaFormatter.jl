@@ -157,7 +157,7 @@ function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && line_width > s.print_width
-        # @info "ENTERING" x.indent s.line_offset x.typ
+        # @debug "ENTERING" x.indent s.line_offset x.typ
         has_parens = is_opener(x.nodes[1])
         if has_parens
             x.nodes[end].indent = x.indent
@@ -173,7 +173,7 @@ function n_tuple!(x, s; extra_width = 0)
             end
         end
 
-        # @info "DURING" x.indent s.line_offset x.typ
+        # @debug "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -209,7 +209,7 @@ n_params!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
 function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    # @info "ENTERING" s.line_offset x.typ length(x) extra_width
+    # @debug "ENTERING" s.line_offset x.typ length(x) extra_width
     if idx !== nothing && line_width > s.print_width
 
         x.nodes[end].indent = x.indent
@@ -218,13 +218,13 @@ function n_call!(x, s; extra_width = 0)
         caller_len = length(x.nodes[1])
 
         x.indent += s.indent_size
-        # @info "ENTERING" x.indent s.line_offset x.typ
+        # @debug "ENTERING" x.indent s.line_offset x.typ
         if x.indent - s.line_offset > caller_len + 1
             x.indent = s.line_offset + caller_len + 1
             x.nodes[end].indent = s.line_offset
         end
 
-        # @info "DURING" x.indent s.line_offset x.typ
+        # @debug "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -252,7 +252,7 @@ n_macrocall!(x, s; extra_width = 0) = n_call!(x, s, extra_width = extra_width)
 # "A where B"
 function n_wherecall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "" s.line_offset x.typ line_width extra_width length(x)
+    # @debug "" s.line_offset x.typ line_width extra_width length(x)
     if line_width > s.print_width
         line_offset = s.line_offset
         # after "A where "
@@ -302,7 +302,7 @@ function n_wherecall!(x, s; extra_width = 0)
         if over && has_braces && x.nodes[end-2].typ === CSTParser.IDENTIFIER
             s.line_offset = x.nodes[end].indent + 1
         end
-    # @info "" s.line_offset x.typ extra_width
+    # @debug "" s.line_offset x.typ extra_width
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
@@ -350,7 +350,7 @@ function n_chainopcall!(x, s; extra_width = 0)
                 else
                     l += sum(length.(x.nodes[i+1:i+3]))
                 end
-                # @info "" s.line_offset l  s.print_width
+                # @debug "" s.line_offset l  s.print_width
                 if s.line_offset + l <= s.print_width
                     x.nodes[i] = Whitespace(1)
                 else
@@ -380,7 +380,7 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
+    # @debug "ENTERING" extra_width s.line_offset x.typ length(x) idx
     if idx !== nothing && line_width > s.print_width
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
@@ -399,13 +399,13 @@ function n_binarycall!(x, s; extra_width = 0)
         s.line_offset = line_offset
         # extra_width for " op"
         ew = length(x.nodes[2]) + length(x.nodes[3])
-        # @info "DURING" ew s.line_offset x.typ
+        # @debug "DURING" ew s.line_offset x.typ
         nest!(x.nodes[1], s, extra_width = ew)
         for n in x.nodes[2:idx-1]
             nest!(n, s)
         end
 
-        # @info "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
+        # @debug "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
         # Undo nest if possible, +1 for whitespace
         line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
         if line_width <= s.print_width
@@ -446,9 +446,9 @@ function n_binarycall!(x, s; extra_width = 0)
             return_width = sum(length.(x.nodes[2:end]))
         end
 
-        # @info "" s.line_offset return_width length(x.nodes[1])
+        # @debug "" s.line_offset return_width length(x.nodes[1])
 
-        # @info "" x.nodes[2] return_width
+        # @debug "" x.nodes[2] return_width
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
