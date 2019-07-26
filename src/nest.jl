@@ -132,7 +132,7 @@ end
 function n_import!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
-    if idx !== nothing && line_width > s.print_width
+    if idx !== nothing && line_width > s.margin
         # -3 due to the placeholder being ahead of a comma
         # and another node
         x.indent = s.line_offset + sum(length.(x.nodes[1:idx-3]))
@@ -156,7 +156,7 @@ end
 function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    if idx !== nothing && line_width > s.print_width
+    if idx !== nothing && line_width > s.margin
         # @debug "ENTERING" x.indent s.line_offset x.typ
         has_parens = is_opener(x.nodes[1])
         if has_parens
@@ -218,7 +218,7 @@ function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @debug "ENTERING" s.line_offset x.typ length(x) extra_width
-    if idx !== nothing && line_width > s.print_width
+    if idx !== nothing && line_width > s.margin
 
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
@@ -261,7 +261,7 @@ n_macrocall!(x, s; extra_width = 0) = n_call!(x, s, extra_width = extra_width)
 function n_wherecall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     # @debug "" s.line_offset x.typ line_width extra_width length(x)
-    if line_width > s.print_width
+    if line_width > s.margin
         line_offset = s.line_offset
         # after "A where "
         idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
@@ -282,7 +282,7 @@ function n_wherecall!(x, s; extra_width = 0)
             x.nodes[end].indent = x.indent
         end
 
-        over = s.line_offset + Blen + extra_width > s.print_width
+        over = s.line_offset + Blen + extra_width > s.margin
         # line_offset = s.line_offset
         x.indent += s.indent_size
 
@@ -318,7 +318,7 @@ end
 
 function n_chainopcall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
-    if line_width > s.print_width
+    if line_width > s.margin
         line_offset = s.line_offset
         x.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, x.nodes))
@@ -329,7 +329,7 @@ function n_chainopcall!(x, s; extra_width = 0)
                 nidx = phs[i-1]
                 l1 = sum(length.(x.nodes[1:idx-1]))
                 l2 = sum(length.(x.nodes[idx:nidx-1]))
-                if line_offset + l1 + l2 > s.print_width
+                if line_offset + l1 + l2 > s.margin
                     x.nodes[idx] = Newline()
                 end
             end
@@ -358,8 +358,8 @@ function n_chainopcall!(x, s; extra_width = 0)
                 else
                     l += sum(length.(x.nodes[i+1:i+3]))
                 end
-                # @debug "" s.line_offset l  s.print_width
-                if s.line_offset + l <= s.print_width
+                # @debug "" s.line_offset l  s.margin
+                if s.line_offset + l <= s.margin
                     x.nodes[i] = Whitespace(1)
                 else
                     s.line_offset = x.indent
@@ -389,7 +389,7 @@ function n_binarycall!(x, s; extra_width = 0)
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
     # @debug "ENTERING" extra_width s.line_offset x.typ length(x) idx
-    if idx !== nothing && line_width > s.print_width
+    if idx !== nothing && line_width > s.margin
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
@@ -416,7 +416,7 @@ function n_binarycall!(x, s; extra_width = 0)
         # @debug "BEFORE RESET" x.indent s.line_offset x.typ extra_width x.nodes[idx-2] length(x.nodes[idx+1])
         # Undo nest if possible, +1 for whitespace
         line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
-        if line_width <= s.print_width
+        if line_width <= s.margin
             x.nodes[idx-1] = Whitespace(1)
             x.nodes[idx] = Placeholder(0)
         end

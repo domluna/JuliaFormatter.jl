@@ -9,18 +9,25 @@ Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 ]add https://github.com/domluna/JLFmt.jl
 ```
 
-`JLFmt` exports `format` and `format_file`:
+`JLFmt` exports `format_text`, `format_file` and `format`:
 
 ```julia
-format(text::String, indent_size, print_width)
-format_file(text::String, indent_size, print_width; overwrite=false)
+format_text(text::AbstractString; indent = 4, margin = 92)
+format_file(file::AbstractString; indent = 4, margin = 92, overwrite = true)
+format(paths...; indent = 4, margin = 92, overwrite = true)
 ```
 
-* `indent_size` - the number of spaces used for an indentation.
-* `print_width` - the maximum number of characters of code on a single line. Lines over
-the limit will be nested if possible.
-* `overwrite` - if the file should be overwritten by the formatted output. Currently
-the ouput is written to a separate file.
+The `text` argument to `format_text` is a string containing the code to be formatted; the formatted code is retuned as a new string. The `file` argument to `format_file` is the path of a file to be formatted. The `format` function is either called with a singe string to format if it is a `.jl` file or to recuse into looking for `.jl` files if it is a directory. It can also be called with a collection of such paths to iterate over.
+
+*Options:*
+
+* `indent` - the number of spaces used for an indentation.
+* `margin` - the maximum number of characters of code on a single line. Lines over
+the limit will be wrapped if possible. There are cases where lines cannot be wrapped
+and they will still end up wider than the requested margin.
+* `overwrite` - if the file should be overwritten by the formatted output. If set to false, the formatted version of file named `foo.jl` will be written to `foo_fmt.jl`.
+
+There is also a command-line tool `bin/format.jl` which can be invoked with `-i`/`--indent` and `-m`/`--margin` and with paths which will be passed to `format`.
 
 
 ## How It Works
