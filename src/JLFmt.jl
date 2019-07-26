@@ -84,6 +84,13 @@ State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
 
+@inline function getline(d::Document, line::Int)
+    for (l, r) in enumerate(d.ranges)
+        l == line && return d.text[r]
+    end
+    error("$(line) not found in file")
+end
+
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
         if offset in r
@@ -137,7 +144,7 @@ function format_text(
     io = IOBuffer()
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, Notcode(1, t.startline - 1, 0), s)
+        print_tree(io, Notcode(1, t.startline - 1), s)
         print_tree(io, Newline(), s)
     end
 
@@ -146,7 +153,7 @@ function format_text(
     # Print comments and whitespace after code.
     if t.endline < length(s.doc.ranges)
         print_tree(io, Newline(), s)
-        print_tree(io, Notcode(t.endline + 1, length(s.doc.ranges), 0), s)
+        print_tree(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
     end
 
     text = String(take!(io))
