@@ -78,12 +78,10 @@ mutable struct State
     offset::Int
     line_offset::Int
     print_width::Int
-    nonest::Bool
-    nospaces::Bool
 end
 
 State(doc, indent_size, print_width) =
-    State(doc, indent_size, 0, 1, 0, print_width, false, false)
+    State(doc, indent_size, 0, 1, 0, print_width)
 
 @inline nspaces(s::State) = s.indent
 
