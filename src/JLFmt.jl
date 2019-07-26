@@ -80,8 +80,7 @@ mutable struct State
     print_width::Int
 end
 
-State(doc, indent_size, print_width) =
-    State(doc, indent_size, 0, 1, 0, print_width)
+State(doc, indent_size, print_width) = State(doc, indent_size, 0, 1, 0, print_width)
 
 @inline nspaces(s::State) = s.indent
 
@@ -159,12 +158,7 @@ be written to "foo_fmt.jl".
 
 If `overwrite` is `true` the file will be overwritten with the formatted output.
 """
-function format_file(
-    filename::AbstractString,
-    indent_size,
-    print_width;
-    overwrite = false
-)
+function format_file(filename::AbstractString, indent_size, print_width; overwrite = false)
     path, ext = splitext(filename)
     if ext != ".jl"
         error("$filename must be a Julia (.jl) source file")
@@ -172,6 +166,26 @@ function format_file(
     str = read(filename) |> String
     str = format(str, indent_size, print_width)
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
+    nothing
+end
+
+"""
+    format_dir(dirname, indent_size, print_width)
+
+Recursively formats Julia (.jl) files in directory `dirname`.
+
+**NOTE: This overwrites the file contents**
+"""
+function format_dir(dirname::AbstractString, indent_size, print_width)
+    for (root, dirs, files) in walkdir(dirname)
+        for file in files
+            _, ext = splitext(file)
+            if ext == ".jl"
+                full_path = joinpath(root, file)
+                format_file(full_path, indent_size, print_width, overwrite = true)
+            end
+        end
+    end
     nothing
 end
 
