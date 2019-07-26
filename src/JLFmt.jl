@@ -77,10 +77,10 @@ mutable struct State
     indent::Int
     offset::Int
     line_offset::Int
-    print_width::Int
+    margin::Int
 end
 
-State(doc, indent_size, print_width) = State(doc, indent_size, 0, 1, 0, print_width)
+State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
 
@@ -99,16 +99,24 @@ include("nest.jl")
 include("print.jl")
 
 """
-    format(text::AbstractString; indent_size=4, print_width=80)
+    format_text(
+        text::AbstractString;
+        indent::Integer = 4,
+        margin::Integer = 92,
+    ) :: String
 
-Formats a Julia source file (.jl).
+Formats a Julia source passed in as a string, returning the formatted
+code as another string. The formatting options are:
 
-`indent_size` - The number of spaces used for an indentation.
+- `indent` which defaults to 4 spaces
+- `margin` which defaults to 92 columns
 
-`print_width` - The maximum number of characters of code on a single line. Lines 
-over the width will be nested if possible.
 """
-function format(text::AbstractString, indent_size, print_width)
+function format_text(
+    text::AbstractString;
+    indent::Integer = 4,
+    margin::Integer = 92,
+)
     if isempty(text)
         return text
     end
@@ -120,7 +128,7 @@ function format(text::AbstractString, indent_size, print_width)
     # If "nofmt" occurs in a comment on line 1 do not format
     occursin("nofmt", get(d.comments, 1, "")) && (return text)
 
-    s = State(d, indent_size, print_width)
+    s = State(d, indent, margin)
     t = pretty(x, s)
     nest!(t, s)
 
@@ -148,45 +156,69 @@ function format(text::AbstractString, indent_size, print_width)
 end
 
 """
-    format_file(filename, indent_size, print_width; overwrite=false)
+    format_file(
+        filename::AbstractString;
+        indent::Integer = 4,
+        margin::Integer = 92,
+        overwrite::Bool = true,
+    )
 
 Formats the contents of `filename` assuming it's a Julia source file.
 
-If `overwrite` is `false` the formatted output will be written to the a file with
-a "fmt" suffix. For example, if the `filename` is "foo.jl", the output will
-be written to "foo_fmt.jl".
+The formatting options are:
 
-If `overwrite` is `true` the file will be overwritten with the formatted output.
+- `indent` which defaults to 4 spaces
+- `margin` which defaults to 92 columns
+
+If `overwrite` is `true` the file will be reformatted in place, overwriting
+the existing file; if it is `false`, the formatted version of `foo.jl` will
+be written to `foo_fmt.jl` instead.
 """
-function format_file(filename::AbstractString, indent_size, print_width; overwrite = false)
+function format_file(
+    filename::AbstractString;
+    indent::Integer = 4,
+    margin::Integer = 92,
+    overwrite::Bool = true,
+)
     path, ext = splitext(filename)
     if ext != ".jl"
         error("$filename must be a Julia (.jl) source file")
     end
     str = read(filename) |> String
-    str = format(str, indent_size, print_width)
+    str = format_text(str, indent = indent, margin = margin)
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
 end
 
 """
-    format_dir(dirname, indent_size, print_width)
+    format(
+        paths; # a path or collection of paths
+        indent::Integer = 4,
+        margin::Integer = 92,
+        overwrite::Bool = true,
+    )
 
-Recursively formats Julia (.jl) files in directory `dirname`.
-
-**NOTE: This overwrites the file contents**
+Recursively descend into files and directories, formatting and `.jl`
+files by calling `format_file` on them.
 """
-function format_dir(dirname::AbstractString, indent_size, print_width)
-    for (root, dirs, files) in walkdir(dirname)
-        for file in files
-            _, ext = splitext(file)
-            if ext == ".jl"
-                full_path = joinpath(root, file)
-                format_file(full_path, indent_size, print_width, overwrite = true)
+function format(paths; options...)
+    for path in paths
+        if isfile(path)
+            format_file(path; options...)
+        else
+            for (root, dirs, files) in walkdir(path)
+                for file in files
+                    _, ext = splitext(file)
+                    ext == ".jl" || continue
+                    full_path = joinpath(root, file)
+                    ".git" in splitpath(full_path) && continue
+                    format_file(full_path, options...)
+                end
             end
         end
     end
     nothing
 end
+format(path::AbstractString; options...) = format((path,); options...)
 
-end
+end # module
