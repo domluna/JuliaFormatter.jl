@@ -1633,10 +1633,3 @@ end
 
 end
 
-# TODO
-#
-# space/nest in Ref
-#
-# lazy binary op 
-# a && (b || c)
-#
