@@ -136,9 +136,8 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
     add_node!(t, InlineComment(t.endline))
     nest!(t, s)
 
-    # @debug "" t
-
     io = IOBuffer()
+
     # Print comments and whitespace before code.
     if t.startline > 1
         print_tree(io, Notcode(1, t.startline - 1), s)
@@ -149,6 +148,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
         add_node!(t, Newline())
         add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)))
     end
+
     print_tree(io, t, s)
 
     text = String(take!(io))

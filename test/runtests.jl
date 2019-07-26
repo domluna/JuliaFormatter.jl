@@ -521,6 +521,15 @@ end
                  \"""
                  Foo"""
         @test fmt("\"\"\"doc for Foo\"\"\"\nFoo") == str
+
+        str = """
+        \"""
+        doc
+        \"""
+        function f()    #  comment
+            20
+        end"""
+        @test fmt(str) == str
     end
 
     @testset "strings" begin
