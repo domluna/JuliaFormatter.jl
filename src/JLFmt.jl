@@ -212,7 +212,7 @@ function format(paths; options...)
                     ext == ".jl" || continue
                     full_path = joinpath(root, file)
                     ".git" in splitpath(full_path) && continue
-                    format_file(full_path, options...)
+                    format_file(full_path; options...)
                 end
             end
         end
