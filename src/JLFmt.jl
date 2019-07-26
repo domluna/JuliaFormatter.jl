@@ -119,11 +119,7 @@ code as another string. The formatting options are:
 - `margin` which defaults to 92 columns
 
 """
-function format_text(
-    text::AbstractString;
-    indent::Integer = 4,
-    margin::Integer = 92,
-)
+function format_text(text::AbstractString; indent::Integer = 4, margin::Integer = 92,)
     if isempty(text)
         return text
     end
@@ -183,9 +179,7 @@ be written to `foo_fmt.jl` instead.
 """
 function format_file(
     filename::AbstractString;
-    indent::Integer = 4,
-    margin::Integer = 92,
-    overwrite::Bool = true,
+    indent::Integer = 4, margin::Integer = 92, overwrite::Bool = true,
 )
     path, ext = splitext(filename)
     if ext != ".jl"
@@ -228,4 +222,4 @@ function format(paths; options...)
 end
 format(path::AbstractString; options...) = format((path,); options...)
 
-end # module
+end

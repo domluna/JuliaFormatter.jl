@@ -24,8 +24,7 @@ Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing)
-Notcode(startline, endline) =
-    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing)
+Notcode(startline, endline) = PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing)
 InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing)
 
 Base.length(x::PTree) = x.len
