@@ -198,7 +198,15 @@ end
 
 
 function n_stringh!(x, s; extra_width = 0)
-    x.indent = s.line_offset
+    # The indent of StringH is set to the the offset
+    # of when the quote is first encountered in the source file.
+
+    # This difference notes if there is a change due to nesting.
+    diff = x.indent - s.line_offset
+
+    # The new indent for the string is index of when a character in
+    # the multiline string is FIRST encountered in the source file - the above difference
+    x.indent = max(x.nodes[1].indent - diff, 0)
     nest!(x.nodes, s, x.indent, extra_width = extra_width)
 end
 
@@ -448,7 +456,7 @@ function n_binarycall!(x, s; extra_width = 0)
 
         # @debug "" s.line_offset return_width length(x.nodes[1])
 
-        # @debug "" x.nodes[2] return_width
+                # @debug "" x.nodes[2] return_width
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent

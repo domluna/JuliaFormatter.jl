@@ -45,7 +45,6 @@ function parent_is(x, typs...)
     for typ in typs
         p.typ === typ && return true
     end
-
     false
 end
 
@@ -376,11 +375,11 @@ function p_literal(x, s; include_quotes = true)
 
     # @debug "" include_quotes lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, 0, 0, nothing, PTree[], Ref(x))
+    t = PTree(CSTParser.StringH, -1, -1, loc[2], 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
+        tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
@@ -418,11 +417,11 @@ function p_stringh(x, s; include_quotes = true)
 
     # @debug "" include_quotes lines x.val loc loc[2] sidx
 
-    t = PTree(x, 0)
+    t = PTree(x, loc[2])
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, 0, length(l), l, nothing, nothing)
+        tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing)
         add_node!(t, tt)
     end
     t
@@ -882,7 +881,6 @@ function nestable(x::CSTParser.EXPR)
 
         return parent_is(x, CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While)
     end
-
     true
 end
 
@@ -893,8 +891,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     op = x.args[2]
     nonest = nonest || op.kind === Tokens.COLON
-    if x.parent.typ === CSTParser.Curly &&
-       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE)
+    if x.parent.typ === CSTParser.Curly && op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE)
         nospace = true
     elseif op.kind === Tokens.COLON
         nospace = true
@@ -1069,9 +1066,17 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
         if a.typ === CSTParser.Block
             add_node!(t, p_block(a, s, from_quote = true), join_lines = true)
         elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(t, p_binarycall(a, s, nonest = nonest, nospace = nospace), join_lines = true)
+            add_node!(
+                t,
+                p_binarycall(a, s, nonest = nonest, nospace = nospace),
+                join_lines = true
+            )
         elseif a.typ === CSTParser.InvisBrackets
-            add_node(t, p_invisbrackets(a, s, nonest = nonest, nospace = nospace), join_lines = true)
+            add_node(
+                t,
+                p_invisbrackets(a, s, nonest = nonest, nospace = nospace),
+                join_lines = true
+            )
         elseif is_opener(a) && multi_arg
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(0))
@@ -1241,7 +1246,7 @@ function p_vcat(x, s)
         if i > st && i < length(x) - 1
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Semicolon())
-            add_node!(t, Whitespace(1))
+            add_node!(t, Placeholder(1))
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end

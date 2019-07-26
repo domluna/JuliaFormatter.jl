@@ -603,12 +603,13 @@ end
                \""")"""
     @test format(str, 2, 10) == str_
 
-    str_ = """
+    str = """
     str = \"""
     begin
         arg
     end\"""
     """
+    @test format(str) == str
 
     str = """
     str = \"""
@@ -616,7 +617,7 @@ end
               arg
           end\"""
     """
-    @test format(str_) == str
+    @test format(str) == str
 end
 
 @testset "notcode" begin
@@ -677,6 +678,17 @@ end
     const a = \"hi there\""""
     @test format(str) == str
 
+    # This currently aligns
+    # "comment below var" with else
+    str = """
+    if a
+        # comment above var
+        var = 10
+        # comment below var
+    else
+        something_else()
+    end"""
+    @test_broken format(str) == str
 end
 
 @testset "pretty" begin
