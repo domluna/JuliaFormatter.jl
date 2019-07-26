@@ -442,7 +442,11 @@ function n_binarycall!(x, s; extra_width = 0)
         return_width = 0
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
+        elseif idx === nothing
+            return_width = sum(length.(x.nodes[2:end]))
         end
+
+        # @info "" s.line_offset return_width length(x.nodes[1])
 
         # @info "" x.nodes[2] return_width
         for (i, n) in enumerate(x.nodes)

@@ -1508,8 +1508,11 @@ end
     @test format("(var1,var2) && var3", 4, 10) == str
 
     str = """
-    (var1, var2) && var3"""
-    @test format("(var1,var2) && var3", 4, 15) == str
+    (
+     var1,
+     var2
+    ) && var3"""
+    @test format("(var1,var2) && var3", 4, 19) == str
 
     str = """
     (var1, var2) ?
