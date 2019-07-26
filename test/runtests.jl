@@ -18,6 +18,7 @@ end
 
     @testset "basic" begin
         @test fmt("a") == "a"
+        @test fmt("a  #foo") == "a  #foo"
         @test fmt("") == ""
     end
 
