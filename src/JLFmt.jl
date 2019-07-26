@@ -133,6 +133,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     s = State(d, indent, margin)
     t = pretty(x, s)
+    add_node!(t, InlineComment(t.endline))
     nest!(t, s)
 
     # @debug "" t
@@ -144,13 +145,11 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
         print_tree(io, Newline(), s)
     end
 
-    print_tree(io, t, s)
-
-    # Print comments and whitespace after code.
     if t.endline < length(s.doc.ranges)
-        print_tree(io, Newline(), s)
-        print_tree(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+        add_node!(t, Newline())
+        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)))
     end
+    print_tree(io, t, s)
 
     text = String(take!(io))
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)

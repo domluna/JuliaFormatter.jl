@@ -66,7 +66,7 @@ end
     idx = findlast(c -> c == '#', v)
     idx === nothing && return
     idx = findlast(c -> !isspace(c), v[1:idx-1])
-    v = v[idx+1:end-1]
+    v = v[end] == '\n' ? v[idx+1:end-1] : v[idx+1:end]
     write(io, v)
 end
 

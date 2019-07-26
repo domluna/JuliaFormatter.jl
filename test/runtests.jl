@@ -711,12 +711,12 @@ end
         begin
             a = 10 # foo
             b = 20           # foo
-        end"""
+        end    # trailing comment"""
         str_ = """
         begin
         a = 10 # foo
         b = 20           # foo
-        end"""
+        end    # trailing comment"""
         @test fmt(str_) == str
     end
 
