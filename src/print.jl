@@ -45,35 +45,28 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     end
 end
 
-function print_notcode(io, x, s)
-    ws = repeat(" ", x.indent)
-    # `NOTCODE` nodes always follow a `NEWLINE` node.
+@inline function print_notcode(io, x, s)
     prev_nl = true
     for l in x.startline:x.endline
-        v = get(s.doc.comments, l, "\n")
-        # if l == x.startline && v != "\n"
-        #     write(io, ws)
-        if l == x.endline && v != "\n"
-            write(io, ws)
-            write(io, v[1:end])
-        elseif l == x.endline && v == "\n"
-        elseif v == "\n"
-            write(io, v)
-            !prev_nl && (write(io, ws))
-            prev_nl = true
-        else
-            write(io, ws)
-            write(io, v)
-            write(io, "\n")
-            prev_nl = false
+        v = getline(s.doc, l)
+        v == "" && continue
+        # @info "comment line" l v
+        if l == x.endline && v[end] == '\n'
+            v = v[1:end-1]
         end
+        write(io, v)
+        prev_nl = v == "\n" ? true : false
     end
 end
 
-function print_inlinecomment(io, x, s)
+@inline function print_inlinecomment(io, x, s)
     v = get(s.doc.comments, x.startline, "")
-    v == "" && (return)
-    write(io, " ")
+    v == "" && return
+    v = getline(s.doc, x.startline)
+    idx = findlast(c -> c == '#', v)
+    idx === nothing && return
+    idx = findlast(c -> !isspace(c), v[1:idx-1])
+    v = v[end] == '\n' ? v[idx+1:end-1] : v[idx+1:end]
     write(io, v)
 end
 

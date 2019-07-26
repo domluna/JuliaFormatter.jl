@@ -8,10 +8,23 @@ export format, format_file, format_dir
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
 
-function file_line_ranges(text::AbstractString)
+struct Document
+    text::AbstractString
+
+    ranges::Vector{UnitRange{Int}}
+    line_to_range::Dict{Int,UnitRange{Int}}
+
+    # mapping the offset in the file to the raw literal
+    # string and what lines it starts and ends at.
+    lit_strings::Dict{Int,Tuple{Int,Int,String}}
+    comments::Dict{Int,String}
+end
+function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
+    line_to_range = Dict{Int,UnitRange{Int}}()
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,String}()
+
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind == Tokens.WHITESPACE
             offset = t.startbyte
@@ -57,19 +70,12 @@ function file_line_ranges(text::AbstractString)
             end
         end
     end
+    for (l, r) in enumerate(ranges)
+        line_to_range[l] = r
+    end
     # @debug "" lit_strings comments
-    ranges, lit_strings, comments
+    Document(text, ranges, line_to_range, lit_strings, comments)
 end
-
-struct Document
-    text::AbstractString
-    ranges::Vector{UnitRange{Int}}
-    # mapping the offset in the file to the raw literal
-    # string and what lines it starts and ends at.
-    lit_strings::Dict{Int,Tuple{Int,Int,String}}
-    comments::Dict{Int,String}
-end
-Document(s::AbstractString) = Document(s, file_line_ranges(s)...)
 
 mutable struct State
     doc::Document
@@ -79,10 +85,10 @@ mutable struct State
     line_offset::Int
     margin::Int
 end
-
 State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
+@inline getline(d::Document, line::Int) = d.text[d.line_to_range[line]]
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
@@ -112,11 +118,7 @@ code as another string. The formatting options are:
 - `margin` which defaults to 92 columns
 
 """
-function format_text(
-    text::AbstractString;
-    indent::Integer = 4,
-    margin::Integer = 92,
-)
+function format_text(text::AbstractString; indent::Integer = 4, margin::Integer = 92,)
     if isempty(text)
         return text
     end
@@ -130,24 +132,23 @@ function format_text(
 
     s = State(d, indent, margin)
     t = pretty(x, s)
+    add_node!(t, InlineComment(t.endline))
     nest!(t, s)
 
-    # @debug "" t
-
     io = IOBuffer()
+
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, Notcode(1, t.startline - 1, 0), s)
+        print_tree(io, Notcode(1, t.startline - 1), s)
         print_tree(io, Newline(), s)
+    end
+
+    if t.endline < length(s.doc.ranges)
+        add_node!(t, Newline())
+        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)))
     end
 
     print_tree(io, t, s)
-
-    # Print comments and whitespace after code.
-    if t.endline < length(s.doc.ranges)
-        print_tree(io, Newline(), s)
-        print_tree(io, Notcode(t.endline + 1, length(s.doc.ranges), 0), s)
-    end
 
     text = String(take!(io))
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
@@ -176,9 +177,7 @@ be written to `foo_fmt.jl` instead.
 """
 function format_file(
     filename::AbstractString;
-    indent::Integer = 4,
-    margin::Integer = 92,
-    overwrite::Bool = true,
+    indent::Integer = 4, margin::Integer = 92, overwrite::Bool = true,
 )
     path, ext = splitext(filename)
     if ext != ".jl"
@@ -221,4 +220,4 @@ function format(paths; options...)
 end
 format(path::AbstractString; options...) = format((path,); options...)
 
-end # module
+end

@@ -24,8 +24,7 @@ Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing)
-Notcode(startline, endline, indent) =
-    PTree(NOTCODE, startline, endline, indent, 0, "", nothing, nothing)
+Notcode(startline, endline) = PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing)
 InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing)
 
 Base.length(x::PTree) = x.len
@@ -84,11 +83,7 @@ function add_node!(t::PTree, n; join_lines = false)
 
         if notcode_startline <= notcode_endline && n.typ !== CSTParser.LITERAL
             add_node!(t, Newline())
-            if !is_leaf(n)
-                add_node!(t, Notcode(notcode_startline, notcode_endline, n.indent))
-            else
-                add_node!(t, Notcode(notcode_startline, notcode_endline, t.indent))
-            end
+            add_node!(t, Notcode(notcode_startline, notcode_endline))
         end
 
         add_node!(t, Newline())
@@ -333,7 +328,7 @@ function p_literal(x, s; include_quotes = true)
         return PTree(x, loc[1], loc[1], x.val)
     end
 
-    # Strings are unescaped to by CSTParser
+    # Strings are unescaped by CSTParser
     # to mimic Meta.parse which makes reproducing
     # the correct output from the LITERAL value problematic.
     # So we'll just look at the source directly!
@@ -457,8 +452,8 @@ function p_macrocall(x, s)
             t,
             PTree(
                 CSTParser.LITERAL,
-                loc[1],
-                loc[1],
+                loc[1] - 1,
+                loc[1] - 1,
                 nspaces(s),
                 3,
                 "\"\"\"",

@@ -107,7 +107,6 @@ end
 
     @testset "single line block" begin
         @test fmt("(a;b;c)") == "(a; b; c)"
-    # @test fmt("(a;)") == "(a)"
     end
 
     @testset "func call" begin
@@ -326,7 +325,7 @@ end
         # TODO: This should probably be aligned to match up with `a` ?
         str = """
         let x = a,
-        # comment
+            # comment
         b,
         c
             body
@@ -511,7 +510,6 @@ end
         end""") == str
 
         # test aligning to function identation
-        #
         @test fmt("""
             "doc"
         function f()
@@ -523,6 +521,15 @@ end
                  \"""
                  Foo"""
         @test fmt("\"\"\"doc for Foo\"\"\"\nFoo") == str
+
+        str = """
+        \"""
+        doc
+        \"""
+        function f()    #  comment
+            20
+        end"""
+        @test fmt(str) == str
     end
 
     @testset "strings" begin
@@ -641,6 +648,7 @@ end
         end
 
         end"""
+        @test fmt(str) == str
 
         str_ = """
         module Foo
@@ -663,8 +671,29 @@ end
         end
 
         end"""
+        str = """
+        module Foo
+        # comment 0
+        # comment 1
+        begin
+
+        # comment 2
+        # comment 3
+
+            begin
+
+
+
+        # comment 4
+        # comment 5
+                a = 10
+            end
+
+        end
+
+        end"""
+
         @test fmt(str_) == str
-        @test fmt(str) == str
 
         str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
         @test fmt(str) == str
@@ -677,8 +706,6 @@ end
         const a = \"hi there\""""
         @test fmt(str) == str
 
-        # This currently aligns
-        # "comment below var" with else
         str = """
         if a
             # comment above var
@@ -687,7 +714,19 @@ end
         else
             something_else()
         end"""
-        @test_broken fmt(str) == str
+        @test fmt(str) == str
+
+        str = """
+        begin
+            a = 10 # foo
+            b = 20           # foo
+        end    # trailing comment"""
+        str_ = """
+        begin
+        a = 10 # foo
+        b = 20           # foo
+        end    # trailing comment"""
+        @test fmt(str_) == str
     end
 
     @testset "pretty" begin
