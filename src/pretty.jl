@@ -900,7 +900,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, pretty(x.args[1], s))
     end
 
-    if (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
+    if op.fullspan == 0
+    elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
        nospace
         add_node!(t, pretty(op, s), join_lines = true)
     elseif op.kind === Tokens.EX_OR

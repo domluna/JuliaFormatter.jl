@@ -93,6 +93,7 @@ end
         @test fmt("a:b:c ") == "a:b:c"
         @test fmt("a::b:: c") == "a::b::c"
         @test fmt("a :: b::c") == "a::b::c"
+        @test fmt("2n") == "2n"
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
