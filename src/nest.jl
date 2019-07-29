@@ -219,7 +219,6 @@ function n_call!(x, s; extra_width = 0)
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @debug "ENTERING" s.line_offset x.typ length(x) extra_width
     if idx !== nothing && line_width > s.margin
-
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
 
@@ -396,9 +395,11 @@ function n_binarycall!(x, s; extra_width = 0)
         if CSTParser.defines_function(x.ref[])
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
+            add_indent!(x.nodes[end], s, s.indent_size)
         else
             x.indent = s.line_offset
         end
+
 
         # arg2
         nest!(x.nodes[end], s, extra_width = extra_width)
@@ -419,6 +420,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if line_width <= s.margin
             x.nodes[idx-1] = Whitespace(1)
             x.nodes[idx] = Placeholder(0)
+            add_indent!(x.nodes[end], s, -s.indent_size)
         end
 
         walk(reset_line_offset!, x, s)

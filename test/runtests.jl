@@ -1472,7 +1472,7 @@ end
                 x_ => (x, :Any)
             end"""
         s = run_nest(str, 96)
-        @test s.line_offset == 7
+        @test s.line_offset == 3
         s = run_nest(str, 1)
         @test s.line_offset == 7
 
@@ -1487,6 +1487,38 @@ end
         @test s.line_offset == 9
         s = run_nest(str, 1)
         @test s.line_offset == 5
+
+        str_ = """
+        @Expr(:scope_block, begin
+                    body1
+                    @Expr :break loop_cont
+                    body2
+                    @Expr :break loop_exit2
+                    body3
+                end)"""
+
+        str = """
+        @Expr(:scope_block, begin
+            body1
+            @Expr :break loop_cont
+            body2
+            @Expr :break loop_exit2
+            body3
+        end)"""
+        @test fmt(str_, 4, 100) == str
+
+        str = """
+        @Expr(
+            :scope_block,
+            begin
+                body1
+                @Expr :break loop_cont
+                body2
+                @Expr :break loop_exit2
+                body3
+            end
+        )"""
+        @test fmt(str_, 4, 50) == str
 
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
