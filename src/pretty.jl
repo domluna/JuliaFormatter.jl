@@ -481,11 +481,9 @@ function p_macrocall(x, s)
         elseif is_opener(n)
             add_node!(t, n, join_lines = true)
             add_node!(t, Placeholder(0))
-            s.indent += s.indent_size
         elseif is_closer(n)
             add_node!(t, Placeholder(0))
             add_node!(t, n, join_lines = true)
-            s.indent -= s.indent_size
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, n, join_lines = true)
             add_node!(t, Placeholder(1))
@@ -921,7 +919,6 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     end
 
 
-    CSTParser.defines_function(x) && (s.indent += s.indent_size)
     if x.args[3].typ === CSTParser.BinaryOpCall
         n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
     elseif x.args[3].typ === CSTParser.InvisBrackets
@@ -929,7 +926,6 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     else
         n = pretty(x.args[3], s)
     end
-    CSTParser.defines_function(x) && (s.indent -= s.indent_size)
     add_node!(t, n, join_lines = true)
     t
 end
@@ -1007,14 +1003,12 @@ function p_curly(x, s)
 
     if multi_arg
         add_node!(t, Placeholder(0))
-        s.indent += s.indent_size
     end
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
             add_node!(t, Placeholder(0))
             add_node!(t, pretty(a, s), join_lines = true)
-            s.indent -= s.indent_size
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(0))
@@ -1034,14 +1028,12 @@ function p_call(x, s)
 
     if multi_arg
         add_node!(t, Placeholder(0))
-        s.indent += s.indent_size
     end
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
             add_node!(t, Placeholder(0))
             add_node!(t, pretty(a, s), join_lines = true)
-            s.indent -= s.indent_size
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Placeholder(1))
@@ -1057,7 +1049,6 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     multi_arg = length(x) > 4
 
-    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.Block
             add_node!(t, p_block(a, s, from_quote = true), join_lines = true)
@@ -1086,7 +1077,6 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
             add_node!(t, pretty(a, s), join_lines = true)
         end
     end
-    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1100,7 +1090,6 @@ function p_tuple(x, s)
         multi_arg = true
     end
 
-    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if is_opener(n) && multi_arg
@@ -1116,7 +1105,6 @@ function p_tuple(x, s)
             add_node!(t, n, join_lines = true)
         end
     end
-    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1127,7 +1115,6 @@ function p_braces(x, s)
     multi_arg = length(x) > 4
     # @debug "" multi_arg typeof(x)
 
-        # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
@@ -1143,7 +1130,6 @@ function p_braces(x, s)
             add_node!(t, n, join_lines = true)
         end
     end
-    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 
@@ -1153,7 +1139,6 @@ function p_vect(x, s)
     # [a,b]
     multi_arg = length(x) > 4
 
-    # multi_arg && (s.indent += s.indent_size)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
@@ -1169,7 +1154,6 @@ function p_vect(x, s)
             add_node!(t, n, join_lines = true)
         end
     end
-    # multi_arg && (s.indent -= s.indent_size)
     t
 end
 

@@ -1,4 +1,4 @@
-is_block(x) = x.typ === CSTParser.Block #|| x.typ === CSTParser.StringH
+is_block(x) = x.typ === CSTParser.Block
 
 function skip_indent(x)
     if x.typ === CSTParser.LITERAL && x.val == ""
