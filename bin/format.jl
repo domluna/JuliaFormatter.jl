@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-using JLFmt
+using JuliaFormatter
 
 function parse_opts!(args::Vector{String})
     i = 1

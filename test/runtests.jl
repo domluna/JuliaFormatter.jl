@@ -1,16 +1,16 @@
 # fmt
-import JLFmt
+import JuliaFormatter
 using CSTParser
 using Test
 
-fmt(s, i = 4, m = 80) = JLFmt.format_text(s, indent = i, margin = m)
+fmt(s, i = 4, m = 80) = JuliaFormatter.format_text(s, indent = i, margin = m)
 
 function run_nest(text::String, print_width::Int)
-    d = JLFmt.Document(text)
-    s = JLFmt.State(d, 4, print_width)
+    d = JuliaFormatter.Document(text)
+    s = JuliaFormatter.State(d, 4, print_width)
     x = CSTParser.parse(text, true)
-    t = JLFmt.pretty(x, s)
-    JLFmt.nest!(t, s)
+    t = JuliaFormatter.pretty(x, s)
+    JuliaFormatter.nest!(t, s)
     s
 end
 
@@ -578,7 +578,7 @@ end
             begin
                 throw(ErrorException(\"""An error occured formatting \$filename. :-(
 
-                                     Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                                     Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
                                      with a link to a gist containing the contents of the file. A gist
                                      can be created at https://gist.github.com/.\"""))
             end
@@ -588,7 +588,7 @@ end
         begin
            throw(ErrorException(\"""An error occured formatting \$filename. :-(
 
-                                Please file an issue at https://github.com/domluna/JLFmt.jl/issues
+                                Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
                                 with a link to a gist containing the contents of the file. A gist
                                 can be created at https://gist.github.com/.\"""))
            end
@@ -1231,7 +1231,7 @@ end
         end"""
         @test fmt(str_, 4, 24) == str
 
-        # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+        # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """
         this_is_a_long_variable_name = Dict{Symbol,Any}(
             :numberofpointattributes => NAttributes,
@@ -1527,7 +1527,7 @@ end
         s = run_nest(str, length(str) - 1)
         @test s.line_offset == 12
 
-        # https://github.com/domluna/JLFmt.jl/issues/9#issuecomment-481607068
+        # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
                :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
                :mesh_dim => Cint(3),)"""

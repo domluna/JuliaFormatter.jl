@@ -1,4 +1,4 @@
-module JLFmt
+module JuliaFormatter
 
 using CSTParser
 import CSTParser.Tokenize.Tokens
