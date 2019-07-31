@@ -1,4 +1,4 @@
-# JuliaFormatter
+# JuliaFormatter.jl
 
 [![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
 <!-- [![Coverage Status](https://coveralls.io/repos/github/domluna/JuliaFormatter.jl/badge.svg?branch=master)](https://coveralls.io/github/domluna/JuliaFormatter.jl?branch=master) -->
