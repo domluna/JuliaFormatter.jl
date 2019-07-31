@@ -1,15 +1,15 @@
-# JLFmt
+# JuliaFormatter
 
-[![Build Status](https://travis-ci.org/domluna/JLFmt.jl.svg?branch=master)](https://travis-ci.org/domluna/JLFmt.jl)
-<!-- [![Coverage Status](https://coveralls.io/repos/github/domluna/JLFmt.jl/badge.svg?branch=master)](https://coveralls.io/github/domluna/JLFmt.jl?branch=master) -->
+[![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
+<!-- [![Coverage Status](https://coveralls.io/repos/github/domluna/JuliaFormatter.jl/badge.svg?branch=master)](https://coveralls.io/github/domluna/JuliaFormatter.jl?branch=master) -->
 
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 
 ```julia
-]add https://github.com/domluna/JLFmt.jl
+]add https://github.com/domluna/JuliaFormatter.jl
 ```
 
-`JLFmt` exports `format_text`, `format_file` and `format`:
+`JuliaFormatter` exports `format_text`, `format_file` and `format`:
 
 ```julia
 format_text(text::AbstractString; indent = 4, margin = 92)
@@ -32,7 +32,7 @@ There is also a command-line tool `bin/format.jl` which can be invoked with `-i`
 
 ## How It Works
 
-`JLFmt` parses the `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
+`JuliaFormatter` parses the `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
 ### Pass 1: Prettify
 
@@ -156,7 +156,7 @@ module Foo
 end
 ```
 
-`JLFmt` will see the comment on the first line, notice it contains "nofmt", and return the original text.
+`JuliaFormatter` will see the comment on the first line, notice it contains "nofmt", and return the original text.
 
 ## Present Limitation(s)
 
