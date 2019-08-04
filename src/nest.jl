@@ -392,7 +392,7 @@ function n_binarycall!(x, s; extra_width = 0)
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
-        if CSTParser.defines_function(x.ref[])
+        if CSTParser.defines_function(x.ref[]) || nest_assignment(x.ref[])
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
             add_indent!(x.nodes[end], s, s.indent_size)
