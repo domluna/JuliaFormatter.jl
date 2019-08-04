@@ -36,6 +36,8 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif x.nodes[i+1].typ === CSTParser.Block
                 write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1].typ === CSTParser.Begin
+                write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
                 write(io, ws)
             end

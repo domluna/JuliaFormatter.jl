@@ -847,14 +847,20 @@ function p_kw(x, s)
     t
 end
 
-_nest_arg2(arg2::CSTParser.EXPR) = arg2.typ === CSTParser.If || arg2.typ === CSTParser.Do || arg2.typ === CSTParser.Begin || 
- arg2.typ === CSTParser.Quote || arg2.typ === CSTParser.Try || arg2.typ === CSTParser.For || arg2.typ === CSTParser.While || arg2.typ === CSTParser.Let
+_nest_arg2(arg2::CSTParser.EXPR) =
+    arg2.typ === CSTParser.If ||
+    arg2.typ === CSTParser.Do ||
+    arg2.typ === CSTParser.Begin ||
+    arg2.typ === CSTParser.Quote ||
+    arg2.typ === CSTParser.Try ||
+    arg2.typ === CSTParser.For || arg2.typ === CSTParser.While || arg2.typ === CSTParser.Let
 
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && _nest_arg2(x.args[3])
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && (return true)
     CSTParser.is_assignment(x) && (return _nest_arg2(x.args[3]))
+
     op = x.args[2]
     op.kind === Tokens.ANON_FUNC && (return false)
     op.kind === Tokens.PAIR_ARROW && (return false)
@@ -913,7 +919,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     end
 
     narg2 = nest_arg2(x)
-    @info "" narg2 nestable(x)
+    # @info "" narg2 nestable(x)
 
     if op.fullspan == 0
         # do nothing
