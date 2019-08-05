@@ -47,6 +47,8 @@ function parent_is(x, typs...)
     false
 end
 
+
+
 function add_node!(t::PTree, n; join_lines = false)
     if n.typ isa PLeaf
         push!(t.nodes, n)
@@ -113,6 +115,25 @@ function is_prev_newline(x::PTree)
         return false
     end
     is_prev_newline(x.nodes[end])
+end
+
+"""
+`length_to_newline` returns the length to the next NEWLINE or PLACEHOLDER node
+
+based off the `start` index.
+"""
+function length_to_newline(x::PTree, start = 1)
+    x.typ === NEWLINE && (return 0, true)
+    x.typ === PLACEHOLDER && (return 0, true)
+    is_leaf(x) && (return length(x), false)
+    len = 0
+    for i = start:length(x.nodes)
+        n = x.nodes[i]
+        ln, nl = length_to_newline(n)
+        len += ln
+        nl && (return len, nl)
+    end
+    return len, false
 end
 
 is_closer(x::PTree) =
@@ -847,8 +868,20 @@ function p_kw(x, s)
     t
 end
 
+_nest_arg2(arg2::CSTParser.EXPR) =
+    arg2.typ === CSTParser.If ||
+    arg2.typ === CSTParser.Do ||
+    arg2.typ === CSTParser.Begin ||
+    arg2.typ === CSTParser.Quote ||
+    arg2.typ === CSTParser.Try ||
+    arg2.typ === CSTParser.For || arg2.typ === CSTParser.While || arg2.typ === CSTParser.Let
+
+nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && _nest_arg2(x.args[3])
+
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && (return true)
+    CSTParser.is_assignment(x) && (return _nest_arg2(x.args[3]))
+
     op = x.args[2]
     op.kind === Tokens.ANON_FUNC && (return false)
     op.kind === Tokens.PAIR_ARROW && (return false)
@@ -878,6 +911,14 @@ function nestable(x::CSTParser.EXPR)
 end
 
 
+function nest_arg2(x::CSTParser.EXPR)
+    if CSTParser.defines_function(x)
+        arg2 = x.args[3]
+        arg2.typ === CSTParser.Block && (arg2 = arg2.args[1])
+        return _nest_arg2(arg2)
+    end
+    false
+end
 
 # BinaryOpCall
 function p_binarycall(x, s; nonest = false, nospace = false)
@@ -898,11 +939,15 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, pretty(x.args[1], s))
     end
 
+    narg2 = nest_arg2(x)
+    # @info "" narg2 nestable(x)
+
     if op.fullspan == 0
+        # do nothing
     elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
            nospace
         add_node!(t, pretty(op, s), join_lines = true)
-    elseif op.kind === Tokens.EX_OR
+    elseif op.kind === Tokens.EX_OR || narg2
         add_node!(t, Whitespace(1))
         add_node!(t, pretty(op, s), join_lines = true)
     elseif nestable(x) && !nonest
@@ -923,10 +968,14 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
     elseif x.args[3].typ === CSTParser.InvisBrackets
         n = p_invisbrackets(x.args[3], s, nonest = nonest, nospace = nospace)
+    elseif narg2
+        s.indent += s.indent_size
+        n = pretty(x.args[3], s)
+        s.indent -= s.indent_size
     else
         n = pretty(x.args[3], s)
     end
-    add_node!(t, n, join_lines = true)
+    add_node!(t, n, join_lines = narg2 ? false : true)
     t
 end
 

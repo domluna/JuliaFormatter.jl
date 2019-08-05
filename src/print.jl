@@ -1,5 +1,3 @@
-is_block(x) = x.typ === CSTParser.Block
-
 function skip_indent(x)
     if x.typ === CSTParser.LITERAL && x.val == ""
         return true
@@ -36,7 +34,9 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         if n.typ === NEWLINE && i < length(x.nodes)
             if is_closer(x.nodes[i+1])
                 write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif is_block(x.nodes[i+1])
+            elseif x.nodes[i+1].typ === CSTParser.Block
+                write(io, repeat(" ", x.nodes[i+1].indent))
+            elseif x.nodes[i+1].typ === CSTParser.Begin
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
                 write(io, ws)

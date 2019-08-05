@@ -97,6 +97,149 @@ end
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
+        
+        # Function def
+
+        str_ = """foo() = if cond a else b end"""
+        str = """
+        foo() =
+            if cond
+                a
+            else
+                b
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = begin body end"""
+        str = """
+        foo() =
+            begin
+                body
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = quote body end"""
+        str = """
+        foo() =
+            quote
+                body
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = for i=1:10 body end"""
+        str = """
+        foo() =
+            for i = 1:10
+                body
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = while cond body end"""
+        str = """
+        foo() =
+            while cond
+                body
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = try body1 catch e body2 finally body3 end"""
+        str = """
+        foo() =
+            try
+                body1
+            catch e
+                body2
+            finally
+                body3
+            end"""
+        @test fmt(str_) == str
+
+        str_ = """foo() = let var1=value1,var2,var3=value3 body end"""
+        str = """
+        foo() =
+            let var1 = value1, var2, var3 = value3
+                body
+            end"""
+        @test fmt(str_) == str
+
+        # Assignment op
+
+        str_ = """foo = if cond a else b end"""
+        str = """
+        foo =
+          if cond
+            a
+          else
+            b
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = begin body end"""
+        str = """
+        foo =
+          begin
+            body
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = quote body end"""
+        str = """
+        foo =
+          quote
+            body
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = for i=1:10 body end"""
+        str = """
+        foo =
+          for i = 1:10
+            body
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = while cond body end"""
+        str = """
+        foo =
+          while cond
+            body
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = try body1 catch e body2 finally body3 end"""
+        str = """
+        foo =
+          try
+            body1
+          catch e
+            body2
+          finally
+            body3
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """foo = let var1=value1,var2,var3=value3 body end"""
+        str = """
+        foo =
+          let var1 = value1, var2, var3 = value3
+            body
+          end"""
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """a, b = cond ? e1 : e2"""
+        str = """
+        a, b = cond ?
+               e1 :
+               e2"""
+        @test fmt(str_, 4, 13) == str
+
+        # This test is semi-broken. It's broken since `e1` will not align
+        # correctly with `cond`. It's correct in the sense that `a, b` folds.
+        str = """
+        a,
+        b = cond ?
+            e1 : e2"""
+        @test_broken fmt(str_, 4, 12) == str
     end
 
     @testset "op chain" begin
