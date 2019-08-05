@@ -453,12 +453,12 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width = sum(length.(x.nodes[2:end]))
+            return_width, _ = length_to_newline(x, 2)
         end
 
+        # @info "" return_width
         # @debug "" s.line_offset return_width length(x.nodes[1])
 
-                # @debug "" x.nodes[2] return_width
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent

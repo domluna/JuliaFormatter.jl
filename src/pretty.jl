@@ -47,6 +47,8 @@ function parent_is(x, typs...)
     false
 end
 
+
+
 function add_node!(t::PTree, n; join_lines = false)
     if n.typ isa PLeaf
         push!(t.nodes, n)
@@ -113,6 +115,25 @@ function is_prev_newline(x::PTree)
         return false
     end
     is_prev_newline(x.nodes[end])
+end
+
+"""
+`length_to_newline` returns the length to the next NEWLINE or PLACEHOLDER node
+
+based off the `start` index.
+"""
+function length_to_newline(x::PTree, start = 1)
+    x.typ === NEWLINE && (return 0, true)
+    x.typ === PLACEHOLDER && (return 0, true)
+    is_leaf(x) && (return length(x), false)
+    len = 0
+    for i = start:length(x.nodes)
+        n = x.nodes[i]
+        ln, nl = length_to_newline(n)
+        len += ln
+        nl && (return len, nl)
+    end
+    return len, false
 end
 
 is_closer(x::PTree) =
