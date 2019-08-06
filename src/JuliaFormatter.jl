@@ -132,6 +132,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     s = State(d, indent, margin)
     t = pretty(x, s)
+    @info "" length(t)
     add_node!(t, InlineComment(t.endline))
     nest!(t, s)
 

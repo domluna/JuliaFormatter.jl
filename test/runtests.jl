@@ -1661,7 +1661,7 @@ end
                 body3
             end
         )"""
-        @test fmt(str_, 4, 50) == str
+        @test fmt(str_, 4, 20) == str
 
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
