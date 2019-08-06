@@ -816,37 +816,52 @@ end
 # If
 function p_if(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
     if x.args[1].typ === CSTParser.KEYWORD && x.args[1].kind === Tokens.IF
+        add_node!(t, pretty(x.args[1], s))
         add_node!(t, Whitespace(1))
         add_node!(t, pretty(x.args[2], s), join_lines = true)
         s.indent += s.indent_size
         add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding= s.indent_size)
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[4], s))
+
+        len = length(t)
         if length(x.args) > 4
+            add_node!(t, pretty(x.args[4], s), max_padding = 0)
             if x.args[4].kind === Tokens.ELSEIF
                 add_node!(t, Whitespace(1))
-                add_node!(t, pretty(x.args[5], s), join_lines = true)
+                n = pretty(x.args[5], s)
+                add_node!(t, n, join_lines = true)
+                # "elseif n"
+                t.len = max(len, length(n))
             else
+                # ELSE KEYWORD
                 s.indent += s.indent_size
                 add_node!(t, p_block(x.args[5], s, ignore_single_line = true), max_padding = s.indent_size)
                 s.indent -= s.indent_size
             end
-            # END KEYWORD
-            add_node!(t, pretty(x.args[6], s))
         end
+        # END KEYWORD
+        add_node!(t, pretty(x.args[end], s))
     else
+        # "cond" part of "elseif cond"
+        t.len += 7
+        add_node!(t, pretty(x.args[1], s))
+
         s.indent += s.indent_size
         add_node!(t, p_block(x.args[2], s, ignore_single_line = true), max_padding = s.indent_size)
         s.indent -= s.indent_size
-        if length(x.args) > 2
-            add_node!(t, pretty(x.args[3], s))
 
-            # this either else or elseif
+        len = length(t)
+        if length(x.args) > 2
+            # this either else or elseif keyword
+            add_node!(t, pretty(x.args[3], s), max_padding = 0)
+
             if x.args[3].kind === Tokens.ELSEIF
                 add_node!(t, Whitespace(1))
-                add_node!(t, pretty(x.args[4], s), join_lines = true)
+                n = pretty(x.args[4], s)
+                add_node!(t, n, join_lines = true)
+                # "elseif n"
+                t.len = max(len, length(n))
             else
                 s.indent += s.indent_size
                 add_node!(t, p_block(x.args[4], s, ignore_single_line = true), max_padding = s.indent_size)
