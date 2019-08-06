@@ -152,6 +152,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
     print_tree(io, t, s)
 
     text = String(take!(io))
+
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for formatted $text")
     return text

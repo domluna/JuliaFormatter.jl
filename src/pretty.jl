@@ -50,7 +50,7 @@ end
 
 
 
-function add_node!(t::PTree, n::PTree; join_lines = false, max_padding=-1)
+function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
     if n.typ isa PLeaf
         t.len += length(n)
         # Don't want to alter the startline/endline of these types
@@ -101,7 +101,7 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding=-1)
 
     if !join_lines && is_end(n)
         # end keyword isn't useful w.r.t margin lengths
-    elseif t.typ === CSTParser.StringH 
+    elseif t.typ === CSTParser.StringH
         # The length of this node is the length of
         # the longest string
         t.len = max(t.len, length(n))
@@ -697,7 +697,11 @@ function p_begin(x, s)
         add_node!(t, pretty(x.args[3], s), join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[2], s, ignore_single_line = true), max_padding= s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[2], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[3], s))
     end
@@ -715,7 +719,11 @@ function p_quote(x, s)
             add_node!(t, pretty(x.args[3], s), join_lines = true)
         else
             s.indent += s.indent_size
-            add_node!(t, p_block(x.args[2], s, ignore_single_line = true), max_padding = s.indent_size)
+            add_node!(
+                t,
+                p_block(x.args[2], s, ignore_single_line = true),
+                max_padding = s.indent_size
+            )
             s.indent -= s.indent_size
             add_node!(t, pretty(x.args[3], s))
         end
@@ -746,7 +754,11 @@ function p_let(x, s)
         add_node!(t, Whitespace(1))
         add_node!(t, pretty(x.args[2], s), join_lines = true)
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding= s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[3], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[end], s))
     else
@@ -765,7 +777,11 @@ function p_loop(x, s)
     add_node!(t, Whitespace(1))
     add_node!(t, pretty(x.args[2], s), join_lines = true)
     s.indent += s.indent_size
-    add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding = s.indent_size)
+    add_node!(
+        t,
+        p_block(x.args[3], s, ignore_single_line = true),
+        max_padding = s.indent_size
+    )
     s.indent -= s.indent_size
     add_node!(t, pretty(x.args[4], s))
     t
@@ -783,7 +799,11 @@ function p_do(x, s)
     end
     if x.args[4].typ === CSTParser.Block
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[4], s, ignore_single_line = true), max_padding= s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[4], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
     end
     add_node!(t, pretty(x.args[end], s))
@@ -799,7 +819,11 @@ function p_try(x, s)
             add_node!(t, pretty(a, s), max_padding = 0)
         elseif a.typ === CSTParser.Block
             s.indent += s.indent_size
-            add_node!(t, p_block(a, s, ignore_single_line = true), max_padding = s.indent_size)
+            add_node!(
+                t,
+                p_block(a, s, ignore_single_line = true),
+                max_padding = s.indent_size
+            )
             s.indent -= s.indent_size
         else
             len = length(t)
@@ -821,7 +845,11 @@ function p_if(x, s)
         add_node!(t, Whitespace(1))
         add_node!(t, pretty(x.args[2], s), join_lines = true)
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding= s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[3], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
 
         len = length(t)
@@ -836,7 +864,11 @@ function p_if(x, s)
             else
                 # ELSE KEYWORD
                 s.indent += s.indent_size
-                add_node!(t, p_block(x.args[5], s, ignore_single_line = true), max_padding = s.indent_size)
+                add_node!(
+                    t,
+                    p_block(x.args[5], s, ignore_single_line = true),
+                    max_padding = s.indent_size
+                )
                 s.indent -= s.indent_size
             end
         end
@@ -848,7 +880,11 @@ function p_if(x, s)
         add_node!(t, pretty(x.args[1], s))
 
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[2], s, ignore_single_line = true), max_padding = s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[2], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
 
         len = length(t)
@@ -864,7 +900,11 @@ function p_if(x, s)
                 t.len = max(len, length(n))
             else
                 s.indent += s.indent_size
-                add_node!(t, p_block(x.args[4], s, ignore_single_line = true), max_padding = s.indent_size)
+                add_node!(
+                    t,
+                    p_block(x.args[4], s, ignore_single_line = true),
+                    max_padding = s.indent_size
+                )
                 s.indent -= s.indent_size
             end
         end
@@ -1366,3 +1406,4 @@ function p_comprehension(x, s)
     end
     t
 end
+
