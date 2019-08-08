@@ -5,6 +5,14 @@ using Test
 
 fmt(s, i = 4, m = 80) = JuliaFormatter.format_text(s, indent = i, margin = m)
 
+function run_pretty(text::String, print_width::Int)
+    d = JuliaFormatter.Document(text)
+    s = JuliaFormatter.State(d, 4, print_width)
+    x = CSTParser.parse(text, true)
+    t = JuliaFormatter.pretty(x, s)
+    t
+end
+
 function run_nest(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width)
@@ -312,6 +320,18 @@ end
                     arg
                             end
                     end""") == str
+
+        str = """
+        begin
+            s = foo(aaa, bbbb, cccc)
+            s = foo(
+                aaaa,
+                bbbb,
+                cccc
+            )
+        end"""
+        @test fmt(str, 4, 28) == str
+
     end
 
     @testset "quote" begin
@@ -356,6 +376,18 @@ end
                 end)"""
         @test fmt(str_) == str
         @test fmt(str) == str
+
+        str = """
+        quote
+            s = foo(aaa, bbbb, cccc)
+            s = foo(
+                aaaa,
+                bbbb,
+                cccc
+            )
+        end"""
+        @test fmt(str, 4, 28) == str
+
     end
 
     @testset "do" begin
@@ -370,6 +402,24 @@ end
           y = 20
                             return x * y
             end""") == str
+
+        str = """
+        map(1:10, 11:20) do x, y
+            x + y
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 24
+
+        str = """
+        map(1:10, 11:20) do x, y
+            x + y + foo + bar + ba
+            x + y + foo + bar +
+            baz
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 27
+        @test fmt(str, 4, 26) == str
+
     end
 
     @testset "for" begin
@@ -406,6 +456,21 @@ end
         for iter in I, iter2 in I2
                 arg
             end""") == str
+
+        str = """
+        for i = 1:10
+            body
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 12
+
+        str = """
+        for i = 1:10
+            bodybodybodybody
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 20
+
     end
 
     @testset "while" begin
@@ -425,6 +490,25 @@ end
         while cond
                 arg
             end""") == str
+
+        # This will be a FileH header
+        # with no blocks
+        str = """
+        a = 1
+        while a < 100
+            a += 1
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 13
+
+        str = """
+        a = 1
+        while a < 100
+            a += 1
+            thisisalongnameforabody
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 27
     end
 
     @testset "let" begin
@@ -482,6 +566,20 @@ end
               c
            body
            end""") == str
+
+        str = """
+        let x = X, y = Y
+            body
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 16
+
+        str = """
+        let x = X, y = Y
+        letthebodieshitthefloor
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 27
     end
 
     @testset "structs" begin
@@ -603,6 +701,73 @@ end
             catch err
                 arg
             end""") == str
+
+
+        str = """
+        try
+            a111111
+            a2
+        catch error123
+            b1
+            b2
+        finally
+            c1
+            c2
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 14
+
+        str = """
+        try
+            a111111
+            a2
+        catch erro
+            b1
+            b2
+        finally
+            c1
+            c2
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 11
+    
+    end
+
+    @testset "if" begin
+        str = """
+        if cond1
+            e1
+            e2
+        elseif cond2
+            e3
+            e4
+        elseif cond33
+            e5
+            e6
+        else
+            e7
+            e88888
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 13
+
+        str = """
+        if cond1
+            e1
+            e2
+        elseif cond2
+            e3
+            e4
+        elseif cond33
+            e5
+            e6
+        else
+            e7
+            e888888888
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 14
+
     end
 
     @testset "docs" begin
