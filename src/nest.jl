@@ -156,10 +156,10 @@ end
 function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
+    opener = is_opener(x.nodes[1])
     if idx !== nothing && line_width > s.margin
         # @debug "ENTERING" x.indent s.line_offset x.typ
-        has_parens = is_opener(x.nodes[1])
-        if has_parens
+        if opener
             x.nodes[end].indent = x.indent
         end
         line_offset = s.line_offset
@@ -167,7 +167,7 @@ function n_tuple!(x, s; extra_width = 0)
         x.indent += s.indent_size
         if x.indent - s.line_offset > 1
             x.indent = s.line_offset
-            if has_parens
+            if opener
                 x.indent += 1
                 x.nodes[end].indent = s.line_offset
             end
@@ -180,8 +180,8 @@ function n_tuple!(x, s; extra_width = 0)
             elseif n.typ === PLACEHOLDER
                 x.nodes[i] = Newline()
                 s.line_offset = x.indent
-            elseif has_parens && (i == 1 || i == length(x.nodes))
-                nest!(n, s, extra_width = 1)
+            elseif opener && (i == 1 || i == length(x.nodes))
+                nest!(n, s)
             else
                 diff = x.indent - x.nodes[i].indent
                 add_indent!(n, s, diff)
@@ -190,8 +190,9 @@ function n_tuple!(x, s; extra_width = 0)
         end
 
         s.line_offset = x.nodes[end].indent
-        has_parens && (s.line_offset += 1)
+        opener && (s.line_offset += 1)
     else
+        opener && (extra_width += 1)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
@@ -249,6 +250,7 @@ function n_call!(x, s; extra_width = 0)
 
         s.line_offset = x.nodes[end].indent + 1
     else
+        is_closer(x.nodes[end]) && (extra_width += 1)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
@@ -387,7 +389,7 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    # @debug "ENTERING" extra_width s.line_offset x.typ length(x) idx
+    # @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
     if idx !== nothing && line_width > s.margin
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
