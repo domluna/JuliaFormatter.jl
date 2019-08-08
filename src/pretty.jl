@@ -468,7 +468,7 @@ function p_macrocall(x, s)
             )
         )
         if x.args[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(x.args[2], s, include_quotes = false))
+            add_node!(t, p_literal(x.args[2], s, include_quotes = false), max_padding = 0)
         elseif x.args[2].typ == CSTParser.StringH
             add_node!(t, p_stringh(x.args[2], s, include_quotes = false))
         end
@@ -484,9 +484,10 @@ function p_macrocall(x, s)
                 "\"\"\"",
                 nothing,
                 nothing
-            )
+            ),
+            max_padding = 0
         )
-        add_node!(t, pretty(x.args[3], s))
+        add_node!(t, pretty(x.args[3], s), max_padding = 0)
         return t
     end
 
@@ -606,7 +607,7 @@ function p_function(x, s)
             add_node!(t, pretty(x.args[4], s), join_lines = true)
         else
             s.indent += s.indent_size
-            add_node!(t, p_block(x.args[3], s, ignore_single_line = true))
+            add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding = s.indent_size)
             s.indent -= s.indent_size
             add_node!(t, pretty(x.args[4], s))
         end
@@ -630,7 +631,7 @@ function p_struct(x, s)
         add_node!(t, pretty(x.args[4], s), join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[3], s, ignore_single_line = true))
+        add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding = s.indent_size)
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[4], s))
     end
@@ -650,7 +651,7 @@ function p_mutable(x, s)
         add_node!(t, pretty(x.args[5], s), join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[4], s, ignore_single_line = true))
+        add_node!(t, p_block(x.args[4], s, ignore_single_line = true), max_padding = s.indent_size)
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[5], s))
     end
@@ -667,7 +668,7 @@ function p_module(x, s)
         add_node!(t, Whitespace(1))
         add_node!(t, pretty(x.args[4], s), join_lines = true)
     else
-        add_node!(t, pretty(x.args[3], s))
+        add_node!(t, pretty(x.args[3], s), max_padding = 0)
         add_node!(t, pretty(x.args[4], s))
     end
     t
@@ -946,6 +947,7 @@ function p_kw(x, s)
     t
 end
 
+# TODO: think of a better name?
 block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
     x.typ === CSTParser.Do ||
@@ -987,7 +989,6 @@ function nestable(x::CSTParser.EXPR)
     end
     true
 end
-
 
 function nest_arg2(x::CSTParser.EXPR)
     if CSTParser.defines_function(x)

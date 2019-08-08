@@ -60,12 +60,16 @@ end
             a::A
         end"""
         @test fmt(str) == str
+        t = run_pretty(str, 80)
+        @test length(t) == 55
 
         str = """
         struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
             a::A
         end"""
         @test fmt(str) == str
+        t = run_pretty(str, 80)
+        @test length(t) == 47
     end
 
     @testset "where op" begin
@@ -778,6 +782,8 @@ end
         function f()
             20
         end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 12
 
         @test fmt("""
         \"""doc
@@ -831,6 +837,8 @@ end
                  \"""
                  Foo"""
         @test fmt("\"\"\"doc for Foo\"\"\"\nFoo") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 11
 
         str = """
         \"""
@@ -959,6 +967,8 @@ end
 
         end"""
         @test fmt(str) == str
+        t = run_pretty(str, 80)
+        @test length(t) == 14
 
         str_ = """
         module Foo
@@ -1044,17 +1054,23 @@ end
         @test fmt("""
             function  foo
             end""") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 16
 
         str = """function foo() end"""
         @test fmt("""
                      function  foo()
             end""") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 18
 
         str = """function foo()
                      10
                      20
                  end"""
         @test fmt("""function foo() 10;  20 end""") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 14
 
         str = """abstract type AbstractFoo end"""
         @test fmt("""abstract type
@@ -1232,14 +1248,32 @@ end
         @test fmt("mutable struct Foo\n    body  end") == str
 
         str = """
-        module Foo
-        body
+        module A
+        bodybody
         end"""
-        @test fmt("module Foo\n    body  end") == str
+        @test fmt("module A\n    bodybody  end") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 8
 
         str = """
         module Foo end"""
         @test fmt("module Foo\n    end") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 14
+
+        str = """
+        baremodule A
+        bodybody
+        end"""
+        @test fmt("baremodule A\n    bodybody  end") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 12
+
+        str = """
+        baremodule Foo end"""
+        @test fmt("baremodule Foo\n    end") == str
+        t = run_pretty(str, 80)
+        @test length(t) == 18
 
         str = """
         if cond1
@@ -1430,11 +1464,17 @@ end
         @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
 
         str = """
+        @somemacro function (fcall_ | fcall_)
+            body_
+        end"""
+        @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 37) == str
+
+        str = """
         @somemacro function (fcall_ |
                              fcall_)
             body_
         end"""
-        @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 1) == str
+        @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 36) == str
 
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
