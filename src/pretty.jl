@@ -276,7 +276,7 @@ function pretty(x::CSTParser.EXPR, s::State)
             continue
         end
         # @debug "" a a.typ
-        add_node!(t, pretty(a, s), join_lines = join_lines)
+        add_node!(t, pretty(a, s), join_lines = join_lines, max_padding = 0)
     end
     t
 end
