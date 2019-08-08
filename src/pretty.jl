@@ -607,7 +607,11 @@ function p_function(x, s)
             add_node!(t, pretty(x.args[4], s), join_lines = true)
         else
             s.indent += s.indent_size
-            add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding = s.indent_size)
+            add_node!(
+                t,
+                p_block(x.args[3], s, ignore_single_line = true),
+                max_padding = s.indent_size
+            )
             s.indent -= s.indent_size
             add_node!(t, pretty(x.args[4], s))
         end
@@ -631,7 +635,11 @@ function p_struct(x, s)
         add_node!(t, pretty(x.args[4], s), join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[3], s, ignore_single_line = true), max_padding = s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[3], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[4], s))
     end
@@ -651,7 +659,11 @@ function p_mutable(x, s)
         add_node!(t, pretty(x.args[5], s), join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[4], s, ignore_single_line = true), max_padding = s.indent_size)
+        add_node!(
+            t,
+            p_block(x.args[4], s, ignore_single_line = true),
+            max_padding = s.indent_size
+        )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[5], s))
     end
