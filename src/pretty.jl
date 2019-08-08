@@ -48,8 +48,6 @@ function parent_is(x, typs...)
     false
 end
 
-
-
 function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
     if n.typ isa PLeaf
         t.len += length(n)
@@ -105,7 +103,7 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
         # The length of this node is the length of
         # the longest string
         t.len = max(t.len, length(n))
-    elseif max_padding > -1
+    elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
     else
         t.len += length(n)
@@ -269,14 +267,14 @@ function pretty(x::CSTParser.EXPR, s::State)
     end
 
     t = PTree(x, nspaces(s))
-    join_lines = x.typ !== CSTParser.FileH
+    is_fileh = x.typ === CSTParser.FileH
     for a in x
         if a.kind === Tokens.NOTHING
             s.offset += a.fullspan
             continue
         end
         # @debug "" a a.typ
-        add_node!(t, pretty(a, s), join_lines = join_lines, max_padding = 0)
+        add_node!(t, pretty(a, s), join_lines = !is_fileh, max_padding = is_fileh ? 0 : -1)
     end
     t
 end
@@ -564,7 +562,7 @@ function p_block(x, s; ignore_single_line = false, from_quote = false)
             end
         end
     end
-    @info "" t.typ length(t)
+    # @info "" t.typ length(t)
     t
 end
 
