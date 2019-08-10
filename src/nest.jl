@@ -157,6 +157,7 @@ function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     opener = is_opener(x.nodes[1])
+    # @info "ENTERING" x.typ s.line_offset length(x) extra_width
     if idx !== nothing && line_width > s.margin
         # @debug "ENTERING" x.indent s.line_offset x.typ
         if opener
@@ -189,8 +190,10 @@ function n_tuple!(x, s; extra_width = 0)
             end
         end
 
-        s.line_offset = x.nodes[end].indent
-        opener && (s.line_offset += 1)
+        if opener
+            s.line_offset = x.nodes[end].indent + 1
+        end
+        # @info "EXITING" x.typ s.line_offset x.indent x.nodes[end].indent
     else
         opener && (extra_width += 1)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
@@ -218,7 +221,7 @@ n_params!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
 function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    # @debug "ENTERING" s.line_offset x.typ length(x) extra_width
+    # @info "ENTERING" x.typ s.line_offset length(x) extra_width
     if idx !== nothing && line_width > s.margin
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
@@ -319,6 +322,7 @@ end
 
 function n_chainopcall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
+    # @info "ENTERING" x.typ extra_width s.line_offset length(x)
     if line_width > s.margin
         line_offset = s.line_offset
         x.indent = s.line_offset
@@ -389,7 +393,7 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" extra_width s.line_offset x.typ length(x) idx
+    # @info "ENTERING" x.typ extra_width s.line_offset length(x) idx
     if idx !== nothing && line_width > s.margin
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()

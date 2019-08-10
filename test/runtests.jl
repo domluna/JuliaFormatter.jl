@@ -245,13 +245,11 @@ end
                e2"""
         @test fmt(str_, 4, 13) == str
 
-        # This test is semi-broken. It's broken since `e1` will not align
-        # correctly with `cond`. It's correct in the sense that `a, b` folds.
         str = """
         a,
         b = cond ?
             e1 : e2"""
-        @test_broken fmt(str_, 4, 12) == str
+        @test fmt(str_, 4, 12) == str
     end
 
     @testset "op chain" begin
@@ -1810,7 +1808,7 @@ end
         s = run_nest(str, 100)
         @test s.line_offset == length(str)
         s = run_nest(str, length(str) - 1)
-        @test s.line_offset == 0
+        @test s.line_offset == 1
 
         str = """
         splitvar(arg) =
