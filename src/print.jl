@@ -52,7 +52,7 @@ end
         v == "" && continue
         # @info "comment line" l v
         if l == x.endline && v[end] == '\n'
-            v = v[1:prevind(v, length(v))]
+            v = v[1:prevind(v, end)]
         end
         write(io, v)
         prev_nl = v == "\n" ? true : false
@@ -66,6 +66,6 @@ end
     idx = findlast(c -> c == '#', v)
     idx === nothing && return
     idx = findlast(c -> !isspace(c), v[1:prevind(v, idx)])
-    v = v[end] == '\n' ? v[nextind(v, idx):prevind(v, length(v))] : v[nextind(v, idx):end]
+    v = v[end] == '\n' ? v[nextind(v, idx):prevind(v, end)] : v[nextind(v, idx):end]
     write(io, v)
 end
