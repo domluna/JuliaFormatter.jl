@@ -52,7 +52,7 @@ end
         v == "" && continue
         # @info "comment line" l v
         if l == x.endline && v[end] == '\n'
-            v = v[1:end-1]
+            v = v[1:prevind(v, end)]
         end
         write(io, v)
         prev_nl = v == "\n" ? true : false
@@ -61,13 +61,11 @@ end
 
 @inline function print_inlinecomment(io, x, s)
     v = get(s.doc.comments, x.startline, "")
-    v == "" && return
+    isempty(v) && return
     v = getline(s.doc, x.startline)
     idx = findlast(c -> c == '#', v)
     idx === nothing && return
-    idx = findlast(c -> !isspace(c), v[1:idx-1])
-    v = v[end] == '\n' ? v[idx+1:end-1] : v[idx+1:end]
+    idx = findlast(c -> !isspace(c), v[1:prevind(v, idx)])
+    v = v[end] == '\n' ? v[nextind(v, idx):prevind(v, end)] : v[nextind(v, idx):end]
     write(io, v)
 end
-
-

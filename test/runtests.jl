@@ -109,7 +109,7 @@ end
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
-        
+
         # Function def
 
         str_ = """foo() = if cond a else b end"""
@@ -732,7 +732,7 @@ end
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 11
-    
+
     end
 
     @testset "if" begin
@@ -1045,6 +1045,17 @@ end
         b = 20           # foo
         end    # trailing comment"""
         @test fmt(str_) == str
+
+        str = """
+        function bar(x, y)
+            # single comment ending in a subscriptₙ
+            x - y
+        end"""
+        @test fmt("""
+        function bar(x, y)
+            # single comment ending in a subscriptₙ
+            x- y
+        end""") == str
     end
 
     @testset "pretty" begin
@@ -1587,8 +1598,8 @@ end
             :mesh_dim => Cint(3),
         )"""
 
-        str_ = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
-               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+        str_ = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,
+               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
         @test fmt(str_, 4, 80) == str
 
@@ -1613,8 +1624,8 @@ end
             :mesh_dim => Cint(3),
         )"""
 
-        str_ = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
-               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+        str_ = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes,
+               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
         @test fmt(str_, 4, 80) == str
 
@@ -1874,14 +1885,14 @@ end
         @test s.line_offset == 12
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
-        str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes, 
-               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+        str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,
+               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
         s = run_nest(str, 80)
         @test s.line_offset == 1
 
-        str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes, 
-               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1), 
+        str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes,
+               :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
         s = run_nest(str, 80)
         @test s.line_offset == 1
@@ -2076,4 +2087,3 @@ end
 # end
 
 end
-
