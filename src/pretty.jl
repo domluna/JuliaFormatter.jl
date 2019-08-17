@@ -796,12 +796,10 @@ function eq_to_in_normalization!(x)
         if op.kind === Tokens.EQ
             x.args[2].kind = Tokens.IN
         end
-    elseif x.typ === CSTParser.Block
+    elseif x.typ === CSTParser.Block || x.typ === CSTParser.InvisBrackets
         for a in x.args
             eq_to_in_normalization!(a)
         end
-    elseif x.typ === CSTParser.InvisBrackets
-        eq_to_in_normalization!(a)
     end
 end
 
