@@ -141,7 +141,7 @@ end
         str_ = """foo() = for i=1:10 body end"""
         str = """
         foo() =
-            for i = 1:10
+            for i in 1:10
                 body
             end"""
         @test fmt(str_) == str
@@ -205,7 +205,7 @@ end
         str_ = """foo = for i=1:10 body end"""
         str = """
         foo =
-          for i = 1:10
+          for i in 1:10
             body
           end"""
         @test fmt(str_, 2, 1) == str
@@ -447,27 +447,27 @@ end
             arg
         end"""
         @test fmt("""
-        for iter in I, iter2 in I2
+        for iter = I, iter2= I2
             arg
         end""") == str
         @test fmt("""
-        for iter in I, iter2 in I2
+        for iter= I, iter2=I2
         arg
         end""") == str
         @test fmt("""
-        for iter in I, iter2 in I2
+        for iter    = I, iter2 = I2
                 arg
             end""") == str
 
         str = """
-        for i = 1:10
+        for i in 1:10
             body
         end"""
         t = run_pretty(str, 80)
-        @test length(t) == 12
+        @test length(t) == 13
 
         str = """
-        for i = 1:10
+        for i in 1:10
             bodybodybodybody
         end"""
         t = run_pretty(str, 80)
@@ -1086,7 +1086,7 @@ end
                      AbstractFoo
                 end""") == str
 
-        str = """for i = 1:10
+        str = """for i in 1:10
                      1
                      2
                      3
@@ -1224,7 +1224,7 @@ end
         @test fmt("T[a;   b;         c;   e  d    f   ]") == str
 
         str = """T[e for e in x]"""
-        @test fmt("T[e  for e in x  ]") == str
+        @test fmt("T[e  for e= x  ]") == str
 
         str = """struct Foo end"""
         @test fmt("struct Foo\n      end") == str

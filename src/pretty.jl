@@ -131,7 +131,7 @@ function length_to_newline(x::PTree, start = 1)
     x.typ === PLACEHOLDER && (return 0, true)
     is_leaf(x) && (return length(x), false)
     len = 0
-    for i = start:length(x.nodes)
+    for i in start:length(x.nodes)
         n = x.nodes[i]
         ln, nl = length_to_newline(n)
         len += ln
@@ -781,11 +781,27 @@ function p_let(x, s)
     t
 end
 
+function eq_in_normalization!(x)
+    if x.typ === CSTParser.BinaryOpCall
+        op = x.args[2]
+        if op.kind === Tokens.EQ
+            x.args[2].kind = Tokens.IN
+        end
+    elseif x.typ === CSTParser.Block
+        for a in x.args
+            eq_in_normalization!(a)
+        end
+    elseif x.typ === CSTParser.InvisBrackets
+        eq_in_normalization!(a)
+    end
+end
+
 # For/While
 function p_loop(x, s)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, Whitespace(1))
+    eq_in_normalization!(x.args[2])
     add_node!(t, pretty(x.args[2], s), join_lines = true)
     s.indent += s.indent_size
     add_node!(
@@ -1411,6 +1427,7 @@ function p_comprehension(x, s)
             add_node!(t, Whitespace(1))
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Whitespace(1))
+            eq_in_normalization!(x.args[i+1])
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end
