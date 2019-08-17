@@ -35,6 +35,60 @@ end
         @test fmt(str) == str
     end
 
+    @testset "for = vs in normalization" begin
+        str = """
+        for i = 1:n
+            println(i)
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        for i in itr
+            println(i)
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        for i in 1:n
+            println(i)
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        for i in itr
+            println(i)
+        end"""
+        str_ = """
+        for i = itr
+            println(i)
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        for i = I1, j in I2
+            println(i, j)
+        end"""
+        str = """
+        for i in I1, j in I2
+            println(i, j)
+        end"""
+        @test fmt(str_) == str
+
+        str = """
+        for i = 1:30, j in 100:-2:1
+            println(i, j)
+        end"""
+        @test fmt(str) == str
+
+        str_ = "[(i,j) for i=I1,j=I2]"
+        str = "[(i, j) for i in I1, j in I2]"
+        @test fmt(str_) == str
+
+        str_ = "((i,j) for i=I1,j=I2)"
+        str = "((i, j) for i in I1, j in I2)"
+        @test fmt(str_) == str
+    end
+
     @testset "tuples" begin
         @test fmt("a,b") == "a, b"
         @test fmt("a ,b") == "a, b"
@@ -141,7 +195,7 @@ end
         str_ = """foo() = for i=1:10 body end"""
         str = """
         foo() =
-            for i in 1:10
+            for i = 1:10
                 body
             end"""
         @test fmt(str_) == str
@@ -205,7 +259,7 @@ end
         str_ = """foo = for i=1:10 body end"""
         str = """
         foo =
-          for i in 1:10
+          for i = 1:10
             body
           end"""
         @test fmt(str_, 2, 1) == str
@@ -1086,7 +1140,7 @@ end
                      AbstractFoo
                 end""") == str
 
-        str = """for i in 1:10
+        str = """for i = 1:10
                      1
                      2
                      3
@@ -1225,6 +1279,9 @@ end
 
         str = """T[e for e in x]"""
         @test fmt("T[e  for e= x  ]") == str
+
+        str = """T[e for e = 1:2:50]"""
+        @test fmt("T[e  for e= 1:2:50  ]") == str
 
         str = """struct Foo end"""
         @test fmt("struct Foo\n      end") == str

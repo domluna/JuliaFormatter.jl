@@ -35,6 +35,8 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 
+is_colon_op(x) = (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
+
 function parent_is(x, typs...)
     p = x.parent
     p === nothing && return false
@@ -781,19 +783,22 @@ function p_let(x, s)
     t
 end
 
+
+
 # Transforms
 #
-# for i = 1:10 body end
+# for i = iter body end
 #
 # to
 #
-# for i in 1:10 body end
+# for i in iter body end
 #
 # https://github.com/domluna/JuliaFormatter.jl/issues/34
 function eq_to_in_normalization!(x)
     if x.typ === CSTParser.BinaryOpCall
         op = x.args[2]
-        if op.kind === Tokens.EQ
+        arg2 = x.args[3]
+        if op.kind === Tokens.EQ && !is_colon_op(arg2)
             x.args[2].kind = Tokens.IN
         end
     elseif x.typ === CSTParser.Block || x.typ === CSTParser.InvisBrackets
@@ -1436,7 +1441,14 @@ function p_comprehension(x, s)
             add_node!(t, Whitespace(1))
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Whitespace(1))
-            eq_to_in_normalization!(x.args[i+1])
+            if a.kind === Tokens.FOR
+                for j = i+1:length(x)
+                    eq_to_in_normalization!(x.args[j])
+                end
+            end
+        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Whitespace(1))
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end
