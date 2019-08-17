@@ -781,6 +781,15 @@ function p_let(x, s)
     t
 end
 
+# Transforms
+#
+# for i = 1:10 body end
+#
+# to
+#
+# for i in 1:10 body end
+#
+# https://github.com/domluna/JuliaFormatter.jl/issues/34
 function eq_in_normalization!(x)
     if x.typ === CSTParser.BinaryOpCall
         op = x.args[2]
@@ -801,7 +810,9 @@ function p_loop(x, s)
     t = PTree(x, nspaces(s))
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, Whitespace(1))
-    eq_in_normalization!(x.args[2])
+    if x.args[1].kind === Tokens.FOR
+        eq_in_normalization!(x.args[2])
+    end
     add_node!(t, pretty(x.args[2], s), join_lines = true)
     s.indent += s.indent_size
     add_node!(
