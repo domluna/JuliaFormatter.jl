@@ -790,7 +790,7 @@ end
 # for i in 1:10 body end
 #
 # https://github.com/domluna/JuliaFormatter.jl/issues/34
-function eq_in_normalization!(x)
+function eq_to_in_normalization!(x)
     if x.typ === CSTParser.BinaryOpCall
         op = x.args[2]
         if op.kind === Tokens.EQ
@@ -798,10 +798,10 @@ function eq_in_normalization!(x)
         end
     elseif x.typ === CSTParser.Block
         for a in x.args
-            eq_in_normalization!(a)
+            eq_to_in_normalization!(a)
         end
     elseif x.typ === CSTParser.InvisBrackets
-        eq_in_normalization!(a)
+        eq_to_in_normalization!(a)
     end
 end
 
@@ -811,7 +811,7 @@ function p_loop(x, s)
     add_node!(t, pretty(x.args[1], s))
     add_node!(t, Whitespace(1))
     if x.args[1].kind === Tokens.FOR
-        eq_in_normalization!(x.args[2])
+        eq_to_in_normalization!(x.args[2])
     end
     add_node!(t, pretty(x.args[2], s), join_lines = true)
     s.indent += s.indent_size
@@ -1438,7 +1438,7 @@ function p_comprehension(x, s)
             add_node!(t, Whitespace(1))
             add_node!(t, pretty(a, s), join_lines = true)
             add_node!(t, Whitespace(1))
-            eq_in_normalization!(x.args[i+1])
+            eq_to_in_normalization!(x.args[i+1])
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end
