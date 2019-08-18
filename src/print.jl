@@ -47,7 +47,7 @@ end
 
 @inline function print_notcode(io, x, s)
     prev_nl = true
-    for l in x.startline:x.endline
+    for l = x.startline:x.endline
         v = getline(s.doc, l)
         v == "" && continue
         # @info "comment line" l v

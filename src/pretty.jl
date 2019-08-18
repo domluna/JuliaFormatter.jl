@@ -35,7 +35,9 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 
-is_colon_op(x) = (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
+is_colon_op(x) =
+    (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) ||
+    x.typ === CSTParser.ColonOpCall
 
 function parent_is(x, typs...)
     p = x.parent
@@ -133,7 +135,7 @@ function length_to_newline(x::PTree, start = 1)
     x.typ === PLACEHOLDER && (return 0, true)
     is_leaf(x) && (return length(x), false)
     len = 0
-    for i in start:length(x.nodes)
+    for i = start:length(x.nodes)
         n = x.nodes[i]
         ln, nl = length_to_newline(n)
         len += ln
