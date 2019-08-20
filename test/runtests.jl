@@ -35,6 +35,20 @@ end
         @test fmt(str) == str
     end
 
+    @testset "toplevel" begin
+        str = """
+
+        hello = "string";
+
+        a = 10;
+
+
+        c = 50;"""
+        @test fmt(str) == str
+        t = run_pretty(str, 80)
+        @test length(t) == 17
+    end
+
     @testset "for = vs in normalization" begin
         str = """
         for i = 1:n
@@ -207,6 +221,9 @@ end
                 body
             end"""
         @test fmt(str_) == str
+
+        str = """foo() = :(Union{})"""
+        @test fmt(str) == str
 
         str_ = """foo() = for i=1:10 body end"""
         str = """
