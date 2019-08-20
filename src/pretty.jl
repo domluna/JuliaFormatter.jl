@@ -198,6 +198,8 @@ function pretty(x::CSTParser.EXPR, s::State)
         return p_if(x, s)
     elseif x.typ === CSTParser.Try
         return p_try(x, s)
+    elseif x.typ === CSTParser.TopLevel
+        return p_toplevel(x, s)
     elseif x.typ === CSTParser.Begin
         return p_begin(x, s)
     elseif x.typ === CSTParser.Quote
@@ -703,6 +705,20 @@ function p_vardef(x, s)
     t
 end
 
+# TopLevel
+function p_toplevel(x, s)
+    t = PTree(x, nspaces(s))
+    for a in x.args
+        if a.kind === Tokens.NOTHING
+            s.offset += a.fullspan
+            continue
+        end
+        add_node!(t, pretty(a, s), max_padding = s.indent_size)
+        add_node!(t, Semicolon())
+    end
+    t
+end
+
 # Begin
 function p_begin(x, s)
     t = PTree(x, nspaces(s))
@@ -1006,7 +1022,7 @@ block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
     x.typ === CSTParser.Do ||
     x.typ === CSTParser.Begin ||
-    x.typ === CSTParser.Quote ||
+    (x.typ === CSTParser.Quote && x.args[1].kind === Tokens.QUOTE) ||
     x.typ === CSTParser.Try ||
     x.typ === CSTParser.For || x.typ === CSTParser.While || x.typ === CSTParser.Let
 
