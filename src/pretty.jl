@@ -1420,11 +1420,21 @@ end
 function p_vcat(x, s)
     t = PTree(x, nspaces(s))
     st = x.typ === CSTParser.Vcat ? 1 : 2
+    multi_arg = length(x) > st + 2
+
     for (i, a) in enumerate(x)
-        if i > st && i < length(x) - 1
+        if !is_closer(a) && i > st
             add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Semicolon())
-            add_node!(t, Placeholder(1))
+            if i != length(x) - 1
+                add_node!(t, Semicolon())
+                add_node!(t, Placeholder(1))
+            # Keep trailing semicolon if there's only one arg
+            elseif !multi_arg
+                add_node!(t, Semicolon())
+                add_node!(t, Placeholder(0))
+            else
+                add_node!(t, Placeholder(0))
+            end
         else
             add_node!(t, pretty(a, s), join_lines = true)
         end
