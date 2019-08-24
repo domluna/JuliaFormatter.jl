@@ -7,7 +7,7 @@ fmt1(s, i = 4, m = 80) = JuliaFormatter.format_text(s, indent = i, margin = m)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(s, i = 4, m = 80) 
+function fmt(s, i = 4, m = 80)
     s1 = fmt1(s, i, m)
     fmt1(s1, i, m)
 end
