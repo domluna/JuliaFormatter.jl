@@ -854,7 +854,7 @@ end
             e7
             e888888888
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 14
 
     end
@@ -867,62 +867,74 @@ end
         function f()
             20
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 12
 
-        @test fmt("""
+        str = """
         \"""doc
         \"""
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
-        @test fmt("""
+        str = """
         \"""
         doc\"""
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
-        @test fmt("""
+        str = """
         \"""doc\"""
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
-        @test fmt("""
+        str = """
         "doc
         "
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
-        @test fmt("""
+        str = """
         "
         doc"
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
-        @test fmt("""
+        str = """
         "doc"
         function f()
             20
-        end""") == str
+        end"""
+        @test fmt(str) == str
 
         # test aligning to function identation
-        @test fmt("""
+        str_ = """
             "doc"
         function f()
             20
-        end""") == str
+        end"""
+        str = """
+        "doc"
+        function f()
+            20
+        end"""
+        @test fmt(str_) == str
 
         str = """\"""
                  doc for Foo
                  \"""
                  Foo"""
-        @test fmt("\"\"\"doc for Foo\"\"\"\nFoo") == str
-        t = run_pretty(str, 80)
+        @test fmt(str) == str
+        t = run_pretty(str, 80);
         @test length(t) == 11
 
         str = """
