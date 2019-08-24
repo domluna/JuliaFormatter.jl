@@ -1310,6 +1310,16 @@ end
         T[a; b; c; e d f]"""
         @test fmt("T[a;   b;         c;   e  d    f   ]") == str
 
+        str = """
+        T[a; b; c; e d f]"""
+        @test fmt("T[a;   b;         c;   e  d    f    ;   ]") == str
+
+        str = "T[a;]"
+        @test fmt(str) == str
+
+        str = "[a;]"
+        @test fmt(str) == str
+
         str = """T[e for e in x]"""
         @test fmt("T[e  for e= x  ]") == str
 
