@@ -45,7 +45,7 @@ end
 
         c = 50;"""
         @test fmt(str) == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 17
     end
 
@@ -144,7 +144,7 @@ end
             a::A
         end"""
         @test fmt(str) == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 55
 
         str = """
@@ -152,7 +152,7 @@ end
             a::A
         end"""
         @test fmt(str) == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 47
     end
 
@@ -496,7 +496,7 @@ end
         map(1:10, 11:20) do x, y
             x + y
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 24
 
         str = """
@@ -505,7 +505,7 @@ end
             x + y + foo + bar +
             baz
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 27
         @test fmt(str, 4, 26) == str
 
@@ -550,14 +550,14 @@ end
         for i = 1:10
             body
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 12
 
         str = """
         for i in 1:10
             bodybodybodybody
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 20
 
     end
@@ -587,7 +587,7 @@ end
         while a < 100
             a += 1
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 13
 
         str = """
@@ -596,7 +596,7 @@ end
             a += 1
             thisisalongnameforabody
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 27
     end
 
@@ -660,14 +660,14 @@ end
         let x = X, y = Y
             body
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 16
 
         str = """
         let x = X, y = Y
         letthebodieshitthefloor
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 27
     end
 
@@ -803,7 +803,7 @@ end
             c1
             c2
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 14
 
         str = """
@@ -817,7 +817,7 @@ end
             c1
             c2
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 11
 
     end
@@ -837,7 +837,7 @@ end
             e7
             e88888
         end"""
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 13
 
         str = """
@@ -958,14 +958,12 @@ end
         str = """error("foo\\n\\nbar")"""
         @test fmt(str) == str
 
-        # nesting
-
         str = """
         \"""
         \\\\
         \"""
         x"""
-        @test fmt("\"\\\\\" x") == str
+        @test fmt(str) == str
 
         str = """
         begin
@@ -1064,7 +1062,7 @@ end
 
         end"""
         @test fmt(str) == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 14
 
         str_ = """
@@ -1162,14 +1160,14 @@ end
         @test fmt("""
             function  foo
             end""") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 16
 
         str = """function foo() end"""
         @test fmt("""
                      function  foo()
             end""") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 18
 
         str = """function foo()
@@ -1177,7 +1175,7 @@ end
                      20
                  end"""
         @test fmt("""function foo() 10;  20 end""") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 14
 
         str = """abstract type AbstractFoo end"""
@@ -1373,13 +1371,13 @@ end
         bodybody
         end"""
         @test fmt("module A\n    bodybody  end") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 8
 
         str = """
         module Foo end"""
         @test fmt("module Foo\n    end") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 14
 
         str = """
@@ -1387,13 +1385,13 @@ end
         bodybody
         end"""
         @test fmt("baremodule A\n    bodybody  end") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 12
 
         str = """
         baremodule Foo end"""
         @test fmt("baremodule Foo\n    end") == str
-        t = run_pretty(str, 80)
+        t = run_pretty(str, 80);
         @test length(t) == 18
 
         str = """
