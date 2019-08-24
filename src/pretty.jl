@@ -458,6 +458,10 @@ function p_macrocall(x, s)
 
     multi_arg = length(x) > 5 && CSTParser.is_lparen(x.args[2]) ? true : false
 
+    has_closer = is_closer(x.args[end])
+
+    # @info "" has_closer
+
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -478,9 +482,16 @@ function p_macrocall(x, s)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, n, join_lines = true)
             add_node!(t, Placeholder(1))
-        elseif a.fullspan - a.span > 0 && i < length(x)
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Whitespace(1))
+        elseif a.fullspan - a.span > 0
+            if has_closer && i < length(x) - 1
+                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1))
+            elseif !has_closer && i < length(x)
+                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1))
+            else
+                add_node!(t, n, join_lines = true)
+            end
         else
             add_node!(t, n, join_lines = true)
         end
