@@ -352,7 +352,7 @@ function p_punctuation(x, s)
     PTree(x, loc[1], loc[1], val)
 end
 
-function p_literal(x, s; include_quotes = true)
+function p_literal(x, s)
     loc = cursor_loc(s)
     if !is_str_or_cmd(x.kind)
         s.offset += x.fullspan
@@ -376,13 +376,6 @@ function p_literal(x, s; include_quotes = true)
     startline, endline, str = str_info
     # @debug "" loc startline endline str
 
-    if !include_quotes
-        idx = startswith(str, "\"\"\"") ? 4 : 2
-        str = str[idx:end-idx+1]
-        str = strip(str, ' ')
-        str[1] == '\n' && (str = str[2:end])
-        str[end] == '\n' && (str = str[1:end-1])
-    end
     s.offset += x.fullspan
 
     lines = split(str, "\n")
@@ -399,7 +392,7 @@ function p_literal(x, s; include_quotes = true)
         end
     end
 
-    # @debug "" include_quotes lines x.val loc loc[2] sidx
+    # @debug "" lines x.val loc loc[2] sidx
 
     t = PTree(CSTParser.StringH, -1, -1, loc[2], 0, nothing, PTree[], Ref(x))
     for (i, l) in enumerate(lines)
@@ -412,17 +405,10 @@ function p_literal(x, s; include_quotes = true)
 end
 
 # StringH
-function p_stringh(x, s; include_quotes = true)
+function p_stringh(x, s)
     loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
 
-    if !include_quotes
-        idx = startswith(str, "\"\"\"") ? 4 : 2
-        str = str[idx:end-idx+1]
-        str = strip(str, ' ')
-        str[1] == '\n' && (str = str[2:end])
-        str[end] == '\n' && (str = str[1:end-1])
-    end
     s.offset += x.fullspan
 
     lines = split(str, "\n")
@@ -441,7 +427,7 @@ function p_stringh(x, s; include_quotes = true)
         end
     end
 
-    # @debug "" include_quotes lines x.val loc loc[2] sidx
+    # @debug "" lines x.val loc loc[2] sidx
 
     t = PTree(x, loc[2])
     for (i, l) in enumerate(lines)
@@ -460,44 +446,21 @@ function p_macrocall(x, s)
     if x.args[1].typ === CSTParser.GlobalRefDoc
         loc = cursor_loc(s)
         # x.args[1] is empty and fullspan is 0 so we can skip it
-        add_node!(
-            t,
-            PTree(
-                CSTParser.LITERAL,
-                loc[1],
-                loc[1],
-                nspaces(s),
-                3,
-                "\"\"\"",
-                nothing,
-                nothing
-            )
-        )
         if x.args[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(x.args[2], s, include_quotes = false), max_padding = 0)
+            add_node!(t, p_literal(x.args[2], s), max_padding = 0)
         elseif x.args[2].typ == CSTParser.StringH
-            add_node!(t, p_stringh(x.args[2], s, include_quotes = false))
+            add_node!(t, p_stringh(x.args[2], s))
         end
         loc = cursor_loc(s)
-        add_node!(
-            t,
-            PTree(
-                CSTParser.LITERAL,
-                loc[1] - 1,
-                loc[1] - 1,
-                nspaces(s),
-                3,
-                "\"\"\"",
-                nothing,
-                nothing
-            ),
-            max_padding = 0
-        )
         add_node!(t, pretty(x.args[3], s), max_padding = 0)
         return t
     end
 
     multi_arg = length(x) > 5 && CSTParser.is_lparen(x.args[2]) ? true : false
+
+    has_closer = is_closer(x.args[end])
+
+    # @info "" has_closer
 
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(x)
@@ -519,9 +482,16 @@ function p_macrocall(x, s)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, n, join_lines = true)
             add_node!(t, Placeholder(1))
-        elseif a.fullspan - a.span > 0 && i < length(x)
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Whitespace(1))
+        elseif a.fullspan - a.span > 0
+            if has_closer && i < length(x) - 1
+                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1))
+            elseif !has_closer && i < length(x)
+                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1))
+            else
+                add_node!(t, n, join_lines = true)
+            end
         else
             add_node!(t, n, join_lines = true)
         end
