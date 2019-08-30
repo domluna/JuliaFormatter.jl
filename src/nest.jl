@@ -398,7 +398,8 @@ function n_binarycall!(x, s; extra_width = 0)
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
-        if CSTParser.defines_function(x.ref[]) || nest_assignment(x.ref[])
+        has_eq = CSTParser.defines_function(x.ref[]) || nest_assignment(x.ref[])
+        if has_eq
             s.line_offset = x.indent + s.indent_size
             x.nodes[idx] = Whitespace(s.indent_size)
             add_indent!(x.nodes[end], s, s.indent_size)
@@ -425,8 +426,10 @@ function n_binarycall!(x, s; extra_width = 0)
         line_width = s.line_offset + length(x.nodes[idx+1]) + extra_width + 1
         if line_width <= s.margin
             x.nodes[idx-1] = Whitespace(1)
-            x.nodes[idx] = Placeholder(0)
-            add_indent!(x.nodes[end], s, -s.indent_size)
+            if has_eq
+                x.nodes[idx] = Placeholder(0)
+                add_indent!(x.nodes[end], s, -s.indent_size)
+            end
         end
 
         walk(reset_line_offset!, x, s)
