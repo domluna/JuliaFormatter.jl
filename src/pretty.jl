@@ -25,7 +25,8 @@ Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing, false)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false)
-Notcode(startline, endline) = PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false)
+Notcode(startline, endline) =
+    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false)
 InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false)
 
 Base.length(x::PTree) = x.len
@@ -107,7 +108,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         elseif !join_lines
             hascomment(s.doc, current_line) && add_node!(t, InlineComment(current_line), s)
             add_node!(t, Newline(), s)
-        elseif nt === PLACEHOLDER && current_line != n.startline && hascomment(s.doc, current_line)
+        elseif nt === PLACEHOLDER &&
+               current_line != n.startline && hascomment(s.doc, current_line)
             t.force_nest = true
             add_node!(t, InlineComment(current_line), s)
             idx = length(t.nodes)
@@ -301,7 +303,13 @@ function pretty(x::CSTParser.EXPR, s::State)
             continue
         end
         # @debug "" a a.typ
-        add_node!(t, pretty(a, s), s, join_lines = !is_fileh, max_padding = is_fileh ? 0 : -1)
+        add_node!(
+            t,
+            pretty(a, s),
+            s,
+            join_lines = !is_fileh,
+            max_padding = is_fileh ? 0 : -1
+        )
     end
     t
 end
