@@ -84,13 +84,13 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
         current_line = t.nodes[end].endline
         notcode_startline = current_line + 1
         notcode_endline = n.startline - 1
+        nt = t.nodes[end].typ
 
         if notcode_startline <= notcode_endline && n.typ !== CSTParser.LITERAL
             # If there are comments in between node elements
             # nesting is forced in an effort to preserve them.
             t.force_nest = true
 
-            nt = t.nodes[end].typ
             add_node!(t, InlineComment(current_line))
             if nt !== PLACEHOLDER
                 add_node!(t, Newline())
@@ -105,10 +105,11 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
         elseif !join_lines
             add_node!(t, InlineComment(current_line))
             add_node!(t, Newline())
+        elseif nt === PLACEHOLDER
+            add_node!(t, InlineComment(current_line))
+            idx = length(t.nodes)
+            t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
-
-        # forces newline
-        # add_node!(t, Newline())
     end
 
     if n.startline < t.startline || t.startline == -1
