@@ -80,19 +80,37 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
         return
     end
 
-    if !is_prev_newline(t.nodes[end]) && !join_lines
+    if !is_prev_newline(t.nodes[end])
         current_line = t.nodes[end].endline
         notcode_startline = current_line + 1
         notcode_endline = n.startline - 1
 
-        add_node!(t, InlineComment(current_line))
-
         if notcode_startline <= notcode_endline && n.typ !== CSTParser.LITERAL
-            add_node!(t, Newline())
+            # If there are comments in between node elements
+            # nesting is forced in an effort to preserve
+            # them.
+            t.force_nest = true
+
+            nt = t.nodes[end].typ
+            add_node!(t, InlineComment(current_line))
+            if nt !== PLACEHOLDER
+                add_node!(t, Newline())
+            elseif nt === PLACEHOLDER
+                # swap PLACEHOLDER (will be newline) with INLINECOMMENT node
+                idx = length(t.nodes)
+                # @info "HERE" nt idx
+                t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
+            end
+
             add_node!(t, Notcode(notcode_startline, notcode_endline))
+            add_node!(t, Newline())
+        elseif !join_lines
+            add_node!(t, InlineComment(current_line))
+            add_node!(t, Newline())
         end
 
-        add_node!(t, Newline())
+        # forces newline
+        # add_node!(t, Newline())
     end
 
     if n.startline < t.startline || t.startline == -1
@@ -395,7 +413,7 @@ function p_literal(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, loc[2], 0, nothing, PTree[], Ref(x))
+    t = PTree(CSTParser.StringH, -1, -1, loc[2], 0, nothing, PTree[], Ref(x), false)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]

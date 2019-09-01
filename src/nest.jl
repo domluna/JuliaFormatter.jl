@@ -132,7 +132,7 @@ end
 function n_import!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
-    if idx !== nothing && line_width > s.margin
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
         # -3 due to the placeholder being ahead of a comma
         # and another node
         x.indent = s.line_offset + sum(length.(x.nodes[1:idx-3]))
@@ -158,7 +158,7 @@ function n_tuple!(x, s; extra_width = 0)
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     opener = is_opener(x.nodes[1])
     # @info "ENTERING" x.typ s.line_offset length(x) extra_width
-    if idx !== nothing && line_width > s.margin
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
         # @debug "ENTERING" x.indent s.line_offset x.typ
         if opener
             x.nodes[end].indent = x.indent
@@ -222,7 +222,7 @@ function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" x.typ s.line_offset length(x) extra_width
-    if idx !== nothing && line_width > s.margin
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
 
@@ -265,7 +265,7 @@ n_macrocall!(x, s; extra_width = 0) = n_call!(x, s, extra_width = extra_width)
 function n_wherecall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     # @debug "" s.line_offset x.typ line_width extra_width length(x)
-    if line_width > s.margin
+    if line_width > s.margin || x.force_nest
         line_offset = s.line_offset
         # after "A where "
         idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
@@ -323,7 +323,7 @@ end
 function n_chainopcall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     # @info "ENTERING" x.typ extra_width s.line_offset length(x)
-    if line_width > s.margin
+    if line_width > s.margin || x.force_nest
         line_offset = s.line_offset
         x.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, x.nodes))
@@ -394,7 +394,7 @@ function n_binarycall!(x, s; extra_width = 0)
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
     # @info "ENTERING" x.typ extra_width s.line_offset length(x) idx
-    if idx !== nothing && line_width > s.margin
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
         line_offset = s.line_offset
         x.nodes[idx-1] = Newline()
 
