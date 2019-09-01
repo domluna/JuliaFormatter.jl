@@ -103,6 +103,7 @@ end
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
+include("commandline.jl")
 
 """
     format_text(
