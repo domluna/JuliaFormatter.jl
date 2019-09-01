@@ -32,9 +32,9 @@ end
 @testset "All" begin
 
     @testset "basic" begin
+        @test fmt("") == ""
         @test fmt("a") == "a"
         @test fmt("a  #foo") == "a  #foo"
-        @test fmt("") == ""
     end
 
     @testset "nofmt" begin
@@ -1553,6 +1553,7 @@ end
         e4"""
         @test fmt("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", 4, 13) == str
 
+        # I'm an importer/exporter
         str = """
         export a,
                b"""

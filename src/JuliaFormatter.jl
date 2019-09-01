@@ -89,6 +89,7 @@ State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
 @inline getline(d::Document, line::Int) = d.text[d.line_to_range[line]]
+@inline hascomment(d::Document, line::Int) = haskey(d.comments, line)
 
 @inline function cursor_loc(s::State, offset::Int)
     for (l, r) in enumerate(s.doc.ranges)
@@ -132,7 +133,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     s = State(d, indent, margin)
     t = pretty(x, s)
-    add_node!(t, InlineComment(t.endline))
+    hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
     nest!(t, s)
 
     io = IOBuffer()
@@ -144,8 +145,8 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
     end
 
     if t.endline < length(s.doc.ranges)
-        add_node!(t, Newline())
-        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)))
+        add_node!(t, Newline(), s)
+        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)), s)
     end
 
     print_tree(io, t, s)

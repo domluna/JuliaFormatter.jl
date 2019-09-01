@@ -35,6 +35,7 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
+is_colon(x::PTree) = x.typ === CSTParser.OPERATOR && x.val == ":"
 
 is_colon_op(x) =
     (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) ||
@@ -53,7 +54,7 @@ function parent_is(x, typs...)
     false
 end
 
-function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
+function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
     if n.typ isa PLeaf
         t.len += length(n)
         # Don't want to alter the startline/endline of these types
@@ -68,8 +69,8 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
     if n.typ === CSTParser.Block && length(n) == 0
         return
     elseif n.typ === CSTParser.Parameters
-        add_node!(t, Semicolon())
-        add_node!(t, Placeholder(1))
+        add_node!(t, Semicolon(), s)
+        add_node!(t, Placeholder(1), s)
     end
 
     if length(t.nodes) == 0
@@ -91,22 +92,24 @@ function add_node!(t::PTree, n::PTree; join_lines = false, max_padding = -1)
             # nesting is forced in an effort to preserve them.
             t.force_nest = true
 
-            add_node!(t, InlineComment(current_line))
+            hs = hascomment(s.doc, current_line)
+            hs && add_node!(t, InlineComment(current_line), s)
             if nt !== PLACEHOLDER
-                add_node!(t, Newline())
-            elseif nt === PLACEHOLDER
+                add_node!(t, Newline(), s)
+            elseif hs && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
 
-            add_node!(t, Notcode(notcode_startline, notcode_endline))
-            add_node!(t, Newline())
+            add_node!(t, Notcode(notcode_startline, notcode_endline), s)
+            add_node!(t, Newline(), s)
         elseif !join_lines
-            add_node!(t, InlineComment(current_line))
-            add_node!(t, Newline())
-        elseif nt === PLACEHOLDER
-            add_node!(t, InlineComment(current_line))
+            hascomment(s.doc, current_line) && add_node!(t, InlineComment(current_line), s)
+            add_node!(t, Newline(), s)
+        elseif nt === PLACEHOLDER && current_line != n.startline && hascomment(s.doc, current_line)
+            t.force_nest = true
+            add_node!(t, InlineComment(current_line), s)
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
@@ -298,7 +301,7 @@ function pretty(x::CSTParser.EXPR, s::State)
             continue
         end
         # @debug "" a a.typ
-        add_node!(t, pretty(a, s), join_lines = !is_fileh, max_padding = is_fileh ? 0 : -1)
+        add_node!(t, pretty(a, s), s, join_lines = !is_fileh, max_padding = is_fileh ? 0 : -1)
     end
     t
 end
@@ -417,7 +420,7 @@ function p_literal(x, s)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
         tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing, false)
-        add_node!(t, tt)
+        add_node!(t, tt, s)
     end
     t
 end
@@ -452,7 +455,7 @@ function p_stringh(x, s)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
         tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing, false)
-        add_node!(t, tt)
+        add_node!(t, tt, s)
     end
     t
 end
@@ -465,12 +468,12 @@ function p_macrocall(x, s)
         loc = cursor_loc(s)
         # x.args[1] is empty and fullspan is 0 so we can skip it
         if x.args[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(x.args[2], s), max_padding = 0)
+            add_node!(t, p_literal(x.args[2], s), s, max_padding = 0)
         elseif x.args[2].typ == CSTParser.StringH
-            add_node!(t, p_stringh(x.args[2], s))
+            add_node!(t, p_stringh(x.args[2], s), s)
         end
         loc = cursor_loc(s)
-        add_node!(t, pretty(x.args[3], s), max_padding = 0)
+        add_node!(t, pretty(x.args[3], s), s, max_padding = 0)
         return t
     end
 
@@ -485,33 +488,33 @@ function p_macrocall(x, s)
         n = pretty(a, s)
         if a.typ === CSTParser.MacroName
             if a.fullspan - a.span > 0 && length(x) > 1
-                add_node!(t, n, join_lines = true)
-                add_node!(t, Whitespace(1))
+                add_node!(t, n, s, join_lines = true)
+                add_node!(t, Whitespace(1), s)
             else
                 # assumes the next argument is a brace of some sort
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             end
         elseif is_opener(n)
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif is_closer(n)
-            add_node!(t, Placeholder(0))
-            add_node!(t, n, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         elseif a.fullspan - a.span > 0
             if has_closer && i < length(x) - 1
-                add_node!(t, n, join_lines = true)
-                add_node!(t, Whitespace(1))
+                add_node!(t, n, s, join_lines = true)
+                add_node!(t, Whitespace(1), s)
             elseif !has_closer && i < length(x)
-                add_node!(t, n, join_lines = true)
-                add_node!(t, Whitespace(1))
+                add_node!(t, n, s, join_lines = true)
+                add_node!(t, Whitespace(1), s)
             else
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             end
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -528,32 +531,32 @@ function p_block(x, s; ignore_single_line = false, from_quote = false)
         n = pretty(a, s)
         if from_quote && !single_line
             if i == 1 || CSTParser.is_comma(a)
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(x.args[i-1])
-                add_node!(t, Whitespace(1))
-                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, Semicolon())
-                add_node!(t, n, max_padding = 0)
+                add_node!(t, Semicolon(), s)
+                add_node!(t, n, s, max_padding = 0)
             end
         elseif single_line
             if i == 1 || CSTParser.is_comma(a)
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(x.args[i-1])
-                add_node!(t, Whitespace(1))
-                add_node!(t, n, join_lines = true)
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, Semicolon())
-                add_node!(t, Whitespace(1))
-                add_node!(t, n, join_lines = true)
+                add_node!(t, Semicolon(), s)
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
             end
         else
             if i < length(x) && CSTParser.is_comma(a) && is_punc(x.args[i+1])
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(a) && i != length(x)
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, n, max_padding = 0)
+                add_node!(t, n, s, max_padding = 0)
             end
         end
     end
@@ -564,21 +567,21 @@ end
 # Abstract
 function p_abstract(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[3], s), join_lines = true)
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[4], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[3], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[4], s), s, join_lines = true)
     t
 end
 
 # Primitive
 function p_primitive(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(x.args[2], s), join_lines = true)
     add_node!(t, Whitespace(1))
     add_node!(t, pretty(x.args[3], s), join_lines = true)
@@ -592,28 +595,29 @@ end
 # FunctionDef/Macro
 function p_function(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     if length(x) > 3
         if x.args[3].fullspan == 0
-            add_node!(t, Whitespace(1))
-            add_node!(t, pretty(x.args[4], s), join_lines = true)
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(x.args[4], s), s, join_lines = true)
         else
             s.indent += s.indent_size
             add_node!(
                 t,
                 p_block(x.args[3], s, ignore_single_line = true),
+                s,
                 max_padding = s.indent_size
             )
             s.indent -= s.indent_size
-            add_node!(t, pretty(x.args[4], s))
+            add_node!(t, pretty(x.args[4], s), s)
         end
     else
         # function stub, i.e. "function foo end"
         # this should be on one line
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[3], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[3], s), s, join_lines = true)
     end
     t
 end
@@ -621,21 +625,22 @@ end
 # Struct
 function p_struct(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     if x.args[3].fullspan == 0
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[4], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[4], s), s, join_lines = true)
     else
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[3], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[4], s))
+        add_node!(t, pretty(x.args[4], s), s)
     end
     t
 end
@@ -643,23 +648,24 @@ end
 # Mutable
 function p_mutable(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[3], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[3], s), s, join_lines = true)
     if x.args[4].fullspan == 0
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[5], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[5], s), s, join_lines = true)
     else
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[4], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[5], s))
+        add_node!(t, pretty(x.args[5], s), s)
     end
     t
 end
@@ -667,15 +673,15 @@ end
 # ModuleH/BareModule
 function p_module(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     if x.args[3].fullspan == 0
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[4], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[4], s), s, join_lines = true)
     else
-        add_node!(t, pretty(x.args[3], s), max_padding = 0)
-        add_node!(t, pretty(x.args[4], s))
+        add_node!(t, pretty(x.args[3], s), s, max_padding = 0)
+        add_node!(t, pretty(x.args[4], s), s)
     end
     t
 end
@@ -683,11 +689,11 @@ end
 # Const/Local/Global/Return
 function p_vardef(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[1], s), s)
     if x.args[2].fullspan != 0
         for a in x.args[2:end]
-            add_node!(t, Whitespace(1))
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -701,8 +707,8 @@ function p_toplevel(x, s)
             s.offset += a.fullspan
             continue
         end
-        add_node!(t, pretty(a, s), max_padding = s.indent_size)
-        add_node!(t, Semicolon())
+        add_node!(t, pretty(a, s), s, max_padding = s.indent_size)
+        add_node!(t, Semicolon(), s)
     end
     t
 end
@@ -710,21 +716,21 @@ end
 # Begin
 function p_begin(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[1], s), s)
     if x.args[2].fullspan == 0
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[3], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[3], s), s, join_lines = true)
     else
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[2], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[3], s))
+        add_node!(t, pretty(x.args[3], s), s)
     end
-    # t.len = length(t.nodes[1])
     t
 end
 
@@ -732,24 +738,24 @@ end
 function p_quote(x, s)
     t = PTree(x, nspaces(s))
     if x.args[1].typ === CSTParser.KEYWORD && x.args[1].kind === Tokens.QUOTE
-        add_node!(t, pretty(x.args[1], s))
+        add_node!(t, pretty(x.args[1], s), s)
         if x.args[2].fullspan == 0
-            add_node!(t, Whitespace(1))
-            add_node!(t, pretty(x.args[3], s), join_lines = true)
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(x.args[3], s), s, join_lines = true)
         else
             s.indent += s.indent_size
             add_node!(
                 t,
                 p_block(x.args[2], s, ignore_single_line = true),
+                s,
                 max_padding = s.indent_size
             )
             s.indent -= s.indent_size
-            add_node!(t, pretty(x.args[3], s))
+            add_node!(t, pretty(x.args[3], s), s)
         end
-        # t.len = length(t.nodes[1])
     else
         for a in x.args
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -768,23 +774,24 @@ end
 # end
 function p_let(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[1], s), s)
     if length(x.args) > 3
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[2], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[2], s), s, join_lines = true)
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[3], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[end], s))
+        add_node!(t, pretty(x.args[end], s), s)
     else
         s.indent += s.indent_size
-        add_node!(t, p_block(x.args[2], s, ignore_single_line = true))
+        add_node!(t, p_block(x.args[2], s, ignore_single_line = true), s)
         s.indent -= s.indent_size
-        add_node!(t, pretty(x.args[end], s))
+        add_node!(t, pretty(x.args[end], s), s)
     end
     t
 end
@@ -827,43 +834,45 @@ end
 # For/While
 function p_loop(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
     if x.args[1].kind === Tokens.FOR
         eq_to_in_normalization!(x.args[2])
     end
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     s.indent += s.indent_size
     add_node!(
         t,
         p_block(x.args[3], s, ignore_single_line = true),
+        s,
         max_padding = s.indent_size
     )
     s.indent -= s.indent_size
-    add_node!(t, pretty(x.args[4], s))
+    add_node!(t, pretty(x.args[4], s), s)
     t
 end
 
 # Do
 function p_do(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     if x.args[3].fullspan != 0
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[3], s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[3], s), s, join_lines = true)
     end
     if x.args[4].typ === CSTParser.Block
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[4], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
     end
-    add_node!(t, pretty(x.args[end], s))
+    add_node!(t, pretty(x.args[end], s), s)
     t
 end
 
@@ -873,22 +882,23 @@ function p_try(x, s)
     for a in x.args
         if a.fullspan == 0
         elseif a.typ === CSTParser.KEYWORD
-            add_node!(t, pretty(a, s), max_padding = 0)
+            add_node!(t, pretty(a, s), s, max_padding = 0)
         elseif a.typ === CSTParser.Block
             s.indent += s.indent_size
             add_node!(
                 t,
                 p_block(a, s, ignore_single_line = true),
+                s,
                 max_padding = s.indent_size
             )
             s.indent -= s.indent_size
         else
             len = length(t)
-            add_node!(t, Whitespace(1))
+            add_node!(t, Whitespace(1), s)
             n = pretty(a, s)
             # "catch n"
             t.len = max(len, 5 + 1 + length(n))
-            add_node!(t, n, join_lines = true, max_padding = 0)
+            add_node!(t, n, s, join_lines = true, max_padding = 0)
         end
     end
     t
@@ -898,24 +908,25 @@ end
 function p_if(x, s)
     t = PTree(x, nspaces(s))
     if x.args[1].typ === CSTParser.KEYWORD && x.args[1].kind === Tokens.IF
-        add_node!(t, pretty(x.args[1], s))
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(x.args[2], s), join_lines = true)
+        add_node!(t, pretty(x.args[1], s), s)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(x.args[2], s), s, join_lines = true)
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[3], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
 
         len = length(t)
         if length(x.args) > 4
-            add_node!(t, pretty(x.args[4], s), max_padding = 0)
+            add_node!(t, pretty(x.args[4], s), s, max_padding = 0)
             if x.args[4].kind === Tokens.ELSEIF
-                add_node!(t, Whitespace(1))
+                add_node!(t, Whitespace(1), s)
                 n = pretty(x.args[5], s)
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
                 # "elseif n"
                 t.len = max(len, length(n))
             else
@@ -924,22 +935,24 @@ function p_if(x, s)
                 add_node!(
                     t,
                     p_block(x.args[5], s, ignore_single_line = true),
+                    s,
                     max_padding = s.indent_size
                 )
                 s.indent -= s.indent_size
             end
         end
         # END KEYWORD
-        add_node!(t, pretty(x.args[end], s))
+        add_node!(t, pretty(x.args[end], s), s)
     else
         # "cond" part of "elseif cond"
         t.len += 7
-        add_node!(t, pretty(x.args[1], s))
+        add_node!(t, pretty(x.args[1], s), s)
 
         s.indent += s.indent_size
         add_node!(
             t,
             p_block(x.args[2], s, ignore_single_line = true),
+            s,
             max_padding = s.indent_size
         )
         s.indent -= s.indent_size
@@ -947,12 +960,12 @@ function p_if(x, s)
         len = length(t)
         if length(x.args) > 2
             # this either else or elseif keyword
-            add_node!(t, pretty(x.args[3], s), max_padding = 0)
+            add_node!(t, pretty(x.args[3], s), s, max_padding = 0)
 
             if x.args[3].kind === Tokens.ELSEIF
-                add_node!(t, Whitespace(1))
+                add_node!(t, Whitespace(1), s)
                 n = pretty(x.args[4], s)
-                add_node!(t, n, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
                 # "elseif n"
                 t.len = max(len, length(n))
             else
@@ -960,6 +973,7 @@ function p_if(x, s)
                 add_node!(
                     t,
                     p_block(x.args[4], s, ignore_single_line = true),
+                    s,
                     max_padding = s.indent_size
                 )
                 s.indent -= s.indent_size
@@ -975,16 +989,16 @@ function p_chaincall(x, s)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if a.typ === CSTParser.OPERATOR
-            add_node!(t, Whitespace(1))
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i != length(x)
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -995,11 +1009,11 @@ function p_kw(x, s)
     t = PTree(x, nspaces(s))
     for a in x
         if a.kind === Tokens.EQ
-            add_node!(t, Whitespace(1))
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1069,11 +1083,11 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     end
 
     if x.args[1].typ === CSTParser.BinaryOpCall
-        add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace))
+        add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace), s)
     elseif x.args[1].typ === CSTParser.InvisBrackets
-        add_node!(t, p_invisbrackets(x.args[1], s, nonest = nonest, nospace = nospace))
+        add_node!(t, p_invisbrackets(x.args[1], s, nonest = nonest, nospace = nospace), s)
     else
-        add_node!(t, pretty(x.args[1], s))
+        add_node!(t, pretty(x.args[1], s), s)
     end
 
     narg2 = nest_arg2(x)
@@ -1083,21 +1097,21 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         # do nothing
     elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
            nospace
-        add_node!(t, pretty(op, s), join_lines = true)
+        add_node!(t, pretty(op, s), s, join_lines = true)
     elseif op.kind === Tokens.EX_OR || narg2
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(op, s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(op, s), s, join_lines = true)
     elseif nestable(x) && !nonest
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(op, s), join_lines = true)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(op, s), s, join_lines = true)
         # for newline
-        add_node!(t, Placeholder(1))
+        add_node!(t, Placeholder(1), s)
         # for indent, will be converted to `indent_size` if needed
-        add_node!(t, Placeholder(0))
+        add_node!(t, Placeholder(0), s)
     else
-        add_node!(t, Whitespace(1))
-        add_node!(t, pretty(op, s), join_lines = true)
-        add_node!(t, Whitespace(1))
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(op, s), s, join_lines = true)
+        add_node!(t, Whitespace(1), s)
     end
 
 
@@ -1112,7 +1126,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     else
         n = pretty(x.args[3], s)
     end
-    add_node!(t, n, join_lines = narg2 ? false : true)
+    add_node!(t, n, s, join_lines = narg2 ? false : true)
     t
 end
 
@@ -1120,14 +1134,14 @@ end
 # A where B
 function p_wherecall(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
+    add_node!(t, pretty(x.args[1], s), s)
 
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
-    add_node!(t, Whitespace(1))
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
 
     # Used to mark where `B` starts.
-    add_node!(t, Placeholder(0))
+    add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 1
     in_braces = CSTParser.is_lbrace(x.args[3])
@@ -1136,20 +1150,20 @@ function p_wherecall(x, s)
 
     for a in x.args[3:end]
         if is_opener(a) && multi_arg
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
             s.indent += s.indent_size
         elseif is_closer(a) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
             s.indent -= s.indent_size
         elseif CSTParser.is_comma(a)
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif in_braces && a.typ === CSTParser.BinaryOpCall
-            add_node!(t, p_binarycall(a, s, nospace = true), join_lines = true)
+            add_node!(t, p_binarycall(a, s, nospace = true), s, join_lines = true)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1158,48 +1172,48 @@ end
 # Conditional
 function p_condcall(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
-    add_node!(t, Placeholder(1))
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    add_node!(t, Placeholder(1), s)
 
-    add_node!(t, pretty(x.args[3], s), join_lines = true)
-    add_node!(t, Whitespace(1))
-    add_node!(t, pretty(x.args[4], s), join_lines = true)
-    add_node!(t, Placeholder(1))
+    add_node!(t, pretty(x.args[3], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x.args[4], s), s, join_lines = true)
+    add_node!(t, Placeholder(1), s)
 
-    add_node!(t, pretty(x.args[5], s), join_lines = true)
+    add_node!(t, pretty(x.args[5], s), s, join_lines = true)
     t
 end
 
 # UnaryOpCall
 function p_unarycall(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     t
 end
 
 function p_curly(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
     multi_arg = length(CSTParser.get_curly_params(x)) > 1
 
     if multi_arg
-        add_node!(t, Placeholder(0))
+        add_node!(t, Placeholder(0), s)
     end
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1207,24 +1221,24 @@ end
 
 function p_call(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, pretty(x.args[2], s), join_lines = true)
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
     multi_arg = length(CSTParser.get_args(x)) > 1
 
     if multi_arg
-        add_node!(t, Placeholder(0))
+        add_node!(t, Placeholder(0), s)
     end
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1237,30 +1251,32 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
 
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.Block
-            add_node!(t, p_block(a, s, from_quote = true), join_lines = true)
+            add_node!(t, p_block(a, s, from_quote = true), s, join_lines = true)
         elseif a.typ === CSTParser.BinaryOpCall
             add_node!(
                 t,
                 p_binarycall(a, s, nonest = nonest, nospace = nospace),
+                s,
                 join_lines = true
             )
         elseif a.typ === CSTParser.InvisBrackets
-            add_node(
+            add_node!(
                 t,
                 p_invisbrackets(a, s, nonest = nonest, nospace = nospace),
+                s,
                 join_lines = true
             )
         elseif is_opener(a) && multi_arg
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif is_closer(a) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1279,16 +1295,16 @@ function p_tuple(x, s)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if is_opener(n) && multi_arg
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif is_closer(n) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, n, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -1304,16 +1320,16 @@ function p_braces(x, s)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, n, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -1328,16 +1344,16 @@ function p_vect(x, s)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if i == 1 && multi_arg
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(0))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-            add_node!(t, Placeholder(0))
-            add_node!(t, n, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -1350,10 +1366,10 @@ function p_params(x, s)
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, n, join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, n, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -1362,17 +1378,17 @@ end
 # Import, Export, Using, ImportAll
 function p_import(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s))
-    add_node!(t, Whitespace(1))
+    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, Whitespace(1), s)
     for (i, a) in enumerate(x.args[2:end])
         if CSTParser.is_comma(a)
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Placeholder(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         elseif CSTParser.is_colon(a)
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1383,22 +1399,24 @@ function p_ref(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if CSTParser.is_comma(a)
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         elseif a.typ === CSTParser.BinaryOpCall
             add_node!(
                 t,
                 p_binarycall(a, s, nonest = true, nospace = true),
+                s,
                 join_lines = true
             )
         elseif a.typ === CSTParser.InvisBrackets
             add_node!(
                 t,
                 p_invisbrackets(a, s, nonest = true, nospace = true),
+                s,
                 join_lines = true
             )
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1412,19 +1430,19 @@ function p_vcat(x, s)
 
     for (i, a) in enumerate(x)
         if !is_closer(a) && i > st
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
             if i != length(x) - 1
-                add_node!(t, Semicolon())
-                add_node!(t, Placeholder(1))
+                add_node!(t, Semicolon(), s)
+                add_node!(t, Placeholder(1), s)
             # Keep trailing semicolon if there's only one arg
             elseif !multi_arg
-                add_node!(t, Semicolon())
-                add_node!(t, Placeholder(0))
+                add_node!(t, Semicolon(), s)
+                add_node!(t, Placeholder(0), s)
             else
-                add_node!(t, Placeholder(0))
+                add_node!(t, Placeholder(0), s)
             end
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1436,10 +1454,10 @@ function p_hcat(x, s)
     st = x.typ === CSTParser.Hcat ? 1 : 2
     for (i, a) in enumerate(x)
         if i > st && i < length(x) - 1
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1450,10 +1468,10 @@ function p_row(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if i < length(x)
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
@@ -1464,19 +1482,19 @@ function p_comprehension(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
-            add_node!(t, Whitespace(1))
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(x)
                     eq_to_in_normalization!(x.args[j])
                 end
             end
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), join_lines = true)
-            add_node!(t, Whitespace(1))
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(a, s), join_lines = true)
+            add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
     t
