@@ -1202,18 +1202,19 @@ end
         C"""
         @test fmt(str) == str
 
-        str_ = """
-        A ? # foo
-        # comment 1
+        str = """
+        A ? B :
+         # comment
 
-        B : C"""
+        C"""
+        @test fmt(str) == str
+
         str = """
         A ? # foo
         # comment 1
 
-        B :
-        C"""
-        @test fmt(str_) == str
+        B : C"""
+        @test fmt(str) == str
 
         str = """
         begin

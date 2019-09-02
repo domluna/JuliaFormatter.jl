@@ -37,6 +37,7 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 is_colon(x::PTree) = x.typ === CSTParser.OPERATOR && x.val == ":"
+is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
     (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) ||

@@ -359,26 +359,24 @@ function n_chainopcall!(x, s; extra_width = 0)
             end
         end
 
-        if !x.force_nest
-            s.line_offset = line_offset
-            for (i, n) in enumerate(x.nodes)
-                if n.typ === NEWLINE
-                    # +1 for newline to whitespace conversion
-                    l = 1
-                    if i == length(x.nodes) - 1
-                        l += sum(length.(x.nodes[i+1:end])) + extra_width
-                    else
-                        l += sum(length.(x.nodes[i+1:i+3]))
-                    end
-                    # @debug "" s.line_offset l  s.margin
-                    if s.line_offset + l <= s.margin
-                        x.nodes[i] = Whitespace(1)
-                    else
-                        s.line_offset = x.indent
-                    end
+        s.line_offset = line_offset
+        for (i, n) in enumerate(x.nodes)
+            if n.typ === NEWLINE && !is_comment(x.nodes[i+1]) && !is_comment(x.nodes[i-1])
+                # +1 for newline to whitespace conversion
+                width = s.line_offset + 1
+                if i == length(x.nodes) - 1
+                    width += sum(length.(x.nodes[i+1:end])) + extra_width
+                else
+                    width += sum(length.(x.nodes[i+1:i+3]))
                 end
-                s.line_offset += length(x.nodes[i])
+                # @debug "" s.line_offset l  s.margin
+                if width <= s.margin
+                    x.nodes[i] = Whitespace(1)
+                else
+                    s.line_offset = x.indent
+                end
             end
+            s.line_offset += length(x.nodes[i])
         end
 
         s.line_offset = line_offset
