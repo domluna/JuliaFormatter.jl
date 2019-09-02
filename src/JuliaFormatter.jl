@@ -179,7 +179,9 @@ be written to `foo_fmt.jl` instead.
 """
 function format_file(
     filename::AbstractString;
-    indent::Integer = 4, margin::Integer = 92, overwrite::Bool = true,
+    indent::Integer = 4,
+    margin::Integer = 92,
+    overwrite::Bool = true,
     verbose::Bool = false,
 )
     path, ext = splitext(filename)
