@@ -1243,6 +1243,30 @@ end
         """
         @test fmt(str) == str
 
+        str = """
+        foo() = 10 where {
+            A,
+                # comment
+            B
+        }"""
+        @test fmt(str) == str
+
+        str = """
+        foo() = 10 where Foo{
+            A,
+                # comment
+            B
+        }"""
+        @test fmt(str) == str
+
+        str = """
+        foo() = Foo(
+            A,
+                # comment
+            B
+        )"""
+        @test fmt(str) == str
+
     end
 
     @testset "pretty" begin

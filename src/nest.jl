@@ -304,7 +304,7 @@ function n_wherecall!(x, s; extra_width = 0)
                     x.nodes[end].indent = s.line_offset
                 end
                 nest!(n, s)
-            elseif n.typ === PLACEHOLDER && over
+            elseif n.typ === PLACEHOLDER && (over || x.force_nest)
                 x.nodes[i+idx] = Newline()
                 s.line_offset = x.indent
             elseif has_braces
