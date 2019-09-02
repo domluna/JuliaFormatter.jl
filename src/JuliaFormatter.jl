@@ -180,11 +180,13 @@ be written to `foo_fmt.jl` instead.
 function format_file(
     filename::AbstractString;
     indent::Integer = 4, margin::Integer = 92, overwrite::Bool = true,
+    verbose::Bool = false,
 )
     path, ext = splitext(filename)
     if ext != ".jl"
         error("$filename must be a Julia (.jl) source file")
     end
+    verbose && println("Formatting $filename with indent = $indent, margin = $margin")
     str = read(filename) |> String
     str = format_text(str, indent = indent, margin = margin)
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)

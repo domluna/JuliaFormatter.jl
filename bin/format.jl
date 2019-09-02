@@ -22,6 +22,10 @@ Flags:
         The maximum number of characters of code on a single line.  Lines over the
         limit will be wrapped if possible. There are cases where lines cannot be wrapped
         and they will still end up wider than the requested margin.
+    -v, --verbose
+        Print the name of the files being formatted.
+    -h, --help
+        Print this message.
 """
 
 function parse_opts!(args::Vector{String})
@@ -62,7 +66,7 @@ end
 opts = parse_opts!(ARGS)
 @info "" opts
 
-if isempty(ARGS) || haskey(opts, :help) 
+if isempty(ARGS) || haskey(opts, :help)
     write(stdout, help)
     exit(0)
 end
