@@ -26,6 +26,9 @@ Flags:
         Print the name of the files being formatted.
     -h, --help
         Print this message.
+    -o, --overwrite
+        Writes the formatted source to a new file where the original
+        filename is suffixed with _fmt, i.e. `filename_fmt.jl`.
 """
 
 function parse_opts!(args::Vector{String})
@@ -45,19 +48,24 @@ function parse_opts!(args::Vector{String})
             opt = :verbose
         elseif arg == "-h" || arg == "--help"
             opt = :help
+        elseif arg == "-o" || arg == "--overwrite"
+            opt = :overwrite
         else
             error("invalid option $arg")
         end
         if opt == :verbose || opt == :help
             opts[opt] = true
             deleteat!(args, i)
-            continue
+        elseif opt == :overwrite
+            opts[opt] = false
+            deleteat!(args, i)
+        else
+            i < length(args) || error("option $arg requires and argument")
+            val = tryparse(Int, args[i+1])
+            val != nothing || error("invalid value for option $arg: $(args[i+1])")
+            opts[opt] = val
+            deleteat!(args, i:i+1)
         end
-        i < length(args) || error("option $arg requires and argument")
-        val = tryparse(Int, args[i+1])
-        val != nothing || error("invalid value for option $arg: $(args[i+1])")
-        opts[opt] = val
-        deleteat!(args, i:i+1)
     end
     return opts
 end
