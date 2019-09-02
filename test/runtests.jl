@@ -32,9 +32,9 @@ end
 @testset "All" begin
 
     @testset "basic" begin
+        @test fmt("") == ""
         @test fmt("a") == "a"
         @test fmt("a  #foo") == "a  #foo"
-        @test fmt("") == ""
     end
 
     @testset "nofmt" begin
@@ -1160,6 +1160,113 @@ end
             # single comment ending in a subscriptₙ
             x- y
         end""") == str
+
+        str_ = """
+        var = foo(      # eat
+            a, b, # comment 1
+            c, # comment 2
+            # in between comment
+            d # comment 3
+        )        # pancakes"""
+        str = """
+        var = foo(      # eat
+            a,
+            b, # comment 1
+            c, # comment 2
+            # in between comment
+            d # comment 3
+        )        # pancakes"""
+        @test fmt(str_) == str
+
+        str_ = """
+        var = foo(      # eat
+            a, b, # comment 1
+            c, # comment 2
+            d # comment 3
+        )        # pancakes"""
+        str = """
+        var = foo(      # eat
+            a,
+            b, # comment 1
+            c, # comment 2
+            d # comment 3
+        )        # pancakes"""
+        @test fmt(str_) == str
+
+        str = """
+        A ? # foo
+        # comment 1
+
+        B :    # bar
+        # comment 2
+        C"""
+        @test fmt(str) == str
+
+        str = """
+        A ? B :
+         # comment
+
+        C"""
+        @test fmt(str) == str
+
+        str = """
+        A ? # foo
+        # comment 1
+
+        B : C"""
+        @test fmt(str) == str
+
+        str = """
+        begin
+            var = a +
+                # comment
+                  b
+        end
+        """
+        @test fmt(str) == str
+
+        str = """
+        begin
+            var = a +  # inline
+            # comment
+
+                  b
+        end
+        """
+        @test fmt(str) == str
+
+        str = """
+        begin
+            var = a +  # inline
+                  b
+        end
+        """
+        @test fmt(str) == str
+
+        str = """
+        foo() = 10 where {
+            A,
+                # comment
+            B
+        }"""
+        @test fmt(str) == str
+
+        str = """
+        foo() = 10 where Foo{
+            A,
+                # comment
+            B
+        }"""
+        @test fmt(str) == str
+
+        str = """
+        foo() = Foo(
+            A,
+                # comment
+            B
+        )"""
+        @test fmt(str) == str
+
     end
 
     @testset "pretty" begin
@@ -1553,6 +1660,7 @@ end
         e4"""
         @test fmt("cond1 ? e1 : cond2 ? e2 : cond3 ? e3 : e4", 4, 13) == str
 
+        # I'm an importer/exporter
         str = """
         export a,
                b"""
