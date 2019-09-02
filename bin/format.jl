@@ -23,7 +23,7 @@ Flags:
         limit will be wrapped if possible. There are cases where lines cannot be wrapped
         and they will still end up wider than the requested margin.
     -v, --verbose
-        Print the name of the files being formatted.
+        Print the name of the files being formatted with relevant details.
     -h, --help
         Print this message.
     -o, --overwrite

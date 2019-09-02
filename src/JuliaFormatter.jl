@@ -164,6 +164,7 @@ end
         indent::Integer = 4,
         margin::Integer = 92,
         overwrite::Bool = true,
+        verbose::Bool = false,
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -176,6 +177,9 @@ The formatting options are:
 If `overwrite` is `true` the file will be reformatted in place, overwriting
 the existing file; if it is `false`, the formatted version of `foo.jl` will
 be written to `foo_fmt.jl` instead.
+
+If `verbose` is `true` details related to formatting the file will be printed
+to `stdout`.
 """
 function format_file(
     filename::AbstractString;
@@ -201,6 +205,7 @@ end
         indent::Integer = 4,
         margin::Integer = 92,
         overwrite::Bool = true,
+        verbose::Bool = false,
     )
 
 Recursively descend into files and directories, formatting and `.jl`
