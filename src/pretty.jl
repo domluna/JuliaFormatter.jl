@@ -102,7 +102,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
-
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
             add_node!(t, Newline(), s)
         elseif !join_lines
@@ -112,6 +111,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
                current_line != n.startline && hascomment(s.doc, current_line)
             t.force_nest = true
             add_node!(t, InlineComment(current_line), s)
+            # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
@@ -1099,23 +1099,24 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     end
 
     narg2 = nest_arg2(x)
-    # @info "" narg2 nestable(x)
+    # @info "" nestable(x) !nonest narg2
+
+    narg2 && (t.force_nest = true)
+    nest = (nestable(x) && !nonest) || narg2
 
     if op.fullspan == 0
         # do nothing
     elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
            nospace
         add_node!(t, pretty(op, s), s, join_lines = true)
-    elseif op.kind === Tokens.EX_OR || narg2
+    elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
-    elseif nestable(x) && !nonest
+    elseif nest
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         # for newline
         add_node!(t, Placeholder(1), s)
-        # for indent, will be converted to `indent_size` if needed
-        add_node!(t, Placeholder(0), s)
     else
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
@@ -1127,14 +1128,15 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
     elseif x.args[3].typ === CSTParser.InvisBrackets
         n = p_invisbrackets(x.args[3], s, nonest = nonest, nospace = nospace)
-    elseif narg2
-        s.indent += s.indent_size
-        n = pretty(x.args[3], s)
-        s.indent -= s.indent_size
     else
         n = pretty(x.args[3], s)
     end
-    add_node!(t, n, s, join_lines = narg2 ? false : true)
+    add_node!(t, n, s, join_lines = true)
+
+    if nest
+        # for indent, will be converted to `indent_size` if needed
+        insert!(t.nodes, length(t.nodes), Placeholder(0))
+    end
     t
 end
 

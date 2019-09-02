@@ -1160,6 +1160,88 @@ end
             # single comment ending in a subscriptₙ
             x- y
         end""") == str
+
+        str_ = """
+        var = foo(      # eat
+            a, b, # comment 1
+            c, # comment 2
+            # in between comment
+            d # comment 3
+        )        # pancakes"""
+        str = """
+        var = foo(      # eat
+            a,
+            b, # comment 1
+            c, # comment 2
+            # in between comment
+            d # comment 3
+        )        # pancakes"""
+        @test fmt(str_) == str
+
+        str_ = """
+        var = foo(      # eat
+            a, b, # comment 1
+            c, # comment 2
+            d # comment 3
+        )        # pancakes"""
+        str = """
+        var = foo(      # eat
+            a,
+            b, # comment 1
+            c, # comment 2
+            d # comment 3
+        )        # pancakes"""
+        @test fmt(str_) == str
+
+        str = """
+        A ? # foo
+        # comment 1
+
+        B :    # bar
+        # comment 2
+        C"""
+        @test fmt(str) == str
+
+        str_ = """
+        A ? # foo
+        # comment 1
+
+        B : C"""
+        str = """
+        A ? # foo
+        # comment 1
+
+        B :
+        C"""
+        @test fmt(str_) == str
+
+        str = """
+        begin
+            var = a +
+                # comment
+                  b
+        end
+        """
+        @test fmt(str) == str
+
+        str = """
+        begin
+            var = a +  # inline
+            # comment
+
+                  b
+        end
+        """
+        @test fmt(str) == str
+
+        str = """
+        begin
+            var = a +  # inline
+                  b
+        end
+        """
+        @test fmt(str) == str
+
     end
 
     @testset "pretty" begin
