@@ -6,7 +6,7 @@
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
 
 ```julia
-]add https://github.com/domluna/JuliaFormatter.jl
+]add JuliaFormatter
 ```
 
 `JuliaFormatter` exports `format_text`, `format_file` and `format`:
