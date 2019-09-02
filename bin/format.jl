@@ -70,10 +70,7 @@ function parse_opts!(args::Vector{String})
     return opts
 end
 
-@info "" ARGS
 opts = parse_opts!(ARGS)
-@info "" opts
-
 if isempty(ARGS) || haskey(opts, :help)
     write(stdout, help)
     exit(0)
