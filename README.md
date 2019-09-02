@@ -32,11 +32,11 @@ There is also a command-line tool `bin/format.jl` which can be invoked with `-i`
 
 ## How It Works
 
-`JuliaFormatter` parses the `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
+`JuliaFormatter` parses a `.jl` source file into a Concrete Syntax Tree (CST) using [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
 ### Pass 1: Prettify
 
-The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code. The [`pretty` testset](./test/runtests.jl) displays these transformations.
+The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code.
 
 Example:
 
@@ -138,6 +138,25 @@ S <: Union{
 }
 ```
 
+If a comment is detected inside the `PTree` it nesting will be forced. For example:
+
+```julia
+var = foo(
+    a, b, # comment
+    c,
+)
+```
+
+formatted result will be (regardless of the margin)
+
+```julia
+var = foo(
+    a,
+    b, # comment
+    c,
+)
+```
+
 ### Part 3: Printing
 
 Finally, the `PTree` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
@@ -158,31 +177,9 @@ end
 
 `JuliaFormatter` will see the comment on the first line, notice it contains "nofmt", and return the original text.
 
-## Present Limitation(s)
+## Syntax Tree Transformations
 
-Inline comments inside of a nestable types are removed.
+### `for in` vs. `for =`
 
-Example:
-
-```julia
-function foo(
-    a, # a does ...
-    b, # b does ...
-    c
-)
-    body
-end
-```
-
-When formatted will produce:
-
-```julia
-function foo(
-    a,
-    b,
-    c
-)
-    body
-end
-```
+If the RHS is a range, i.e. `1:10` then `for in` is converted to `for =`. Otherwise `for =` is converted to `for in`. See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/34) for the rationale and further explanation.
 
