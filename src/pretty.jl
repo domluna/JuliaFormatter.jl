@@ -1440,8 +1440,13 @@ function p_vcat(x, s)
     multi_arg = length(x) > st + 2
 
     for (i, a) in enumerate(x)
-        if !is_closer(a) && i > st
-            add_node!(t, pretty(a, s), s, join_lines = true)
+        n = pretty(a, s)
+        diff_line = t.endline != t.startline
+        if is_opener(a) && multi_arg
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+        elseif !is_closer(a) && i > st
+            add_node!(t, n, s, join_lines = true)
             if i != length(x) - 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(1), s)
@@ -1453,7 +1458,9 @@ function p_vcat(x, s)
                 add_node!(t, Placeholder(0), s)
             end
         else
-            add_node!(t, pretty(a, s), s, join_lines = true)
+            # If arguments are on different force nest
+            diff_line && (t.force_nest = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t

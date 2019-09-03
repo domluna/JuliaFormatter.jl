@@ -1951,6 +1951,33 @@ end
         str = "(a <=\n b <=\n c <=\n d)"
         @test fmt(str_, 4, 7) == str
         @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        [ a b Expr()
+        d e Expr()]"""
+        str = """
+        [
+         a b Expr();
+         d e Expr()
+        ]"""
+        @test fmt(str_) == str
+        str_ = "[a b Expr(); d e Expr()]"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        T[ a b Expr()
+        d e Expr()]"""
+        str = """
+        T[
+          a b Expr();
+          d e Expr()
+        ]"""
+        @test fmt(str_) == str
+        str_ = "T[a b Expr(); d e Expr()]"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
+
     end
 
     @testset "nesting line offset" begin
