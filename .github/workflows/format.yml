@@ -1,0 +1,11 @@
+name: Format
+
+on: [push, pull_request]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: domluna/JuliaFormatter-action@master
+      with:
+        args: -v src/ test/runtests.jl
