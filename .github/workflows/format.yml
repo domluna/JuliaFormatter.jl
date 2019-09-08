@@ -8,4 +8,4 @@ jobs:
     steps:
     - uses: domluna/JuliaFormatter-action@master
       with:
-        args: -v /github/workspace
+        args: -v .
