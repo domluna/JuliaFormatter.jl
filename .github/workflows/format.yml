@@ -8,4 +8,4 @@ jobs:
     steps:
     - uses: domluna/JuliaFormatter-action@master
       with:
-        args: -v src/ test/runtests.jl
+        args: -v .
