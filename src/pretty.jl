@@ -1169,13 +1169,13 @@ function p_wherecall(x, s)
             add_node!(t, Placeholder(0), s)
             s.indent += s.indent_size
         elseif is_closer(a) && multi_arg
-            # if !CSTParser.is_comma(x.args[i+1])
-            #     add_node!(t, TrailingComma(), s)
-            # end
+            if !CSTParser.is_comma(x.args[i+1])
+                add_node!(t, TrailingComma(), s)
+            end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             s.indent -= s.indent_size
-        elseif CSTParser.is_comma(a)
+        elseif CSTParser.is_comma(a) && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif in_braces && a.typ === CSTParser.BinaryOpCall
@@ -1230,7 +1230,7 @@ function p_curly(x, s)
             end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
+        elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         else
@@ -1263,7 +1263,7 @@ function p_call(x, s)
             end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+1])
+        elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else

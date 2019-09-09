@@ -1243,13 +1243,19 @@ end
         """
         @test fmt(str) == str
 
-        str = """
+        str_ = """
         foo() = 10 where {
             A,
                 # comment
             B
         }"""
-        @test fmt(str) == str
+        str = """
+        foo() = 10 where {
+            A,
+                # comment
+            B,
+        }"""
+        @test fmt(str_) == str
 
         str_ = """
         foo() = 10 where Foo{
@@ -1559,7 +1565,7 @@ end
             F{
               B,
               C,
-            }
+            },
         }
             10
             20
@@ -1578,7 +1584,7 @@ end
             key2 = val2,
         ) where {
             A,
-            F{B,C}
+            F{B,C},
         }
             10
             20
@@ -2275,7 +2281,7 @@ end
           var2::B,
         ) where {
             A,
-            B
+            B,
         }"""
         @test fmt("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
@@ -2291,7 +2297,7 @@ end
         str_ = """
         foo(a, b, c)::Rtype where {
             A,
-            B
+            B,
         } = 10"""
         @test fmt(str, 4, 32) == str_
         @test fmt(str, 4, 19) == str_
@@ -2303,7 +2309,7 @@ end
             c,
         )::Rtype where {
             A,
-            B
+            B,
         } = 10"""
         @test fmt(str, 4, 18) == str_
 
