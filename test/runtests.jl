@@ -423,7 +423,7 @@ end
             s = foo(
                 aaaa,
                 bbbb,
-                cccc
+                cccc,
             )
         end"""
         @test fmt(str, 4, 28) == str
@@ -479,7 +479,7 @@ end
             s = foo(
                 aaaa,
                 bbbb,
-                cccc
+                cccc,
             )
         end"""
         @test fmt(str, 4, 28) == str
@@ -1174,7 +1174,7 @@ end
             b, # comment 1
             c, # comment 2
             # in between comment
-            d # comment 3
+            d, # comment 3
         )        # pancakes"""
         @test fmt(str_) == str
 
@@ -1189,7 +1189,7 @@ end
             a,
             b, # comment 1
             c, # comment 2
-            d # comment 3
+            d, # comment 3
         )        # pancakes"""
         @test fmt(str_) == str
 
@@ -1251,21 +1251,33 @@ end
         }"""
         @test fmt(str) == str
 
-        str = """
+        str_ = """
         foo() = 10 where Foo{
             A,
                 # comment
             B
         }"""
-        @test fmt(str) == str
-
         str = """
+        foo() = 10 where Foo{
+            A,
+                # comment
+            B,
+        }"""
+        @test fmt(str_) == str
+
+        str_ = """
         foo() = Foo(
             A,
                 # comment
             B
         )"""
-        @test fmt(str) == str
+        str = """
+        foo() = Foo(
+            A,
+                # comment
+            B,
+        )"""
+        @test fmt(str_) == str
 
     end
 
@@ -1541,19 +1553,20 @@ end
         function f(
             arg1::A,
             key1 = val1;
-            key2 = val2
+            key2 = val2,
         ) where {
             A,
             F{
               B,
-              C
+              C,
             }
         }
             10
             20
         end"""
+        str_ = "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"
         @test fmt(
-            "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end",
+            str_,
             4,
             1
         ) == str
@@ -1562,7 +1575,7 @@ end
         function f(
             arg1::A,
             key1 = val1;
-            key2 = val2
+            key2 = val2,
         ) where {
             A,
             F{B,C}
@@ -1571,7 +1584,7 @@ end
             20
         end"""
         @test fmt(
-            "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end",
+            str_,
             4,
             17
         ) == str
@@ -1580,13 +1593,13 @@ end
         function f(
             arg1::A,
             key1 = val1;
-            key2 = val2
+            key2 = val2,
         ) where {A,F{B,C}}
             10
             20
         end"""
         @test fmt(
-            "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end",
+            str_,
             4,
             18
         ) == str
@@ -1614,7 +1627,7 @@ end
          a,
          b,
          c,
-         d
+         d,
         )"""
         @test fmt("(a, b, c, d)", 4, 11) == str
 
@@ -1626,7 +1639,7 @@ end
          a,
          b,
          c,
-         d
+         d,
         }"""
         @test fmt("{a, b, c, d}", 4, 11) == str
 
@@ -1638,7 +1651,7 @@ end
          a,
          b,
          c,
-         d
+         d,
         ]"""
         @test fmt("[a, b, c, d]", 4, 11) == str
 
@@ -1692,8 +1705,8 @@ end
              one,
              x -> (
                  true,
-                 false
-             )
+                 false,
+             ),
             )"""
         @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
 
@@ -1830,7 +1843,7 @@ end
 
         str = """this_is_a_long_variable_name = Dict{
              Symbol,
-             Any
+             Any,
         }(
              :numberofpointattributes => NAttributes,
              :numberofpointmtrs => NMTr,
@@ -1890,8 +1903,8 @@ end
             \""",
             foo(
                 b,
-                c
-            )
+                c,
+            ),
         )"""
         @test fmt(str, 4, 1) == str_
 
@@ -1904,7 +1917,7 @@ end
             string.
             Longest line
             \""",
-            foo(b, c)
+            foo(b, c),
         )"""
         @test fmt(str, 4, 31) == str
 
@@ -2125,7 +2138,7 @@ end
                 body2
                 @Expr :break loop_exit2
                 body3
-            end
+            end,
         )"""
         @test fmt(str_, 4, 20) == str
 
@@ -2155,7 +2168,7 @@ end
         f(
           a,
           @g(b, c),
-          d
+          d,
         )"""
         @test fmt("f(a, @g(b, c), d)", 4, 11) == str
 
@@ -2164,9 +2177,9 @@ end
           a,
           @g(
              b,
-             c
+             c,
           ),
-          d
+          d,
         )"""
         @test fmt("f(a, @g(b, c), d)", 4, 10) == str
 
@@ -2175,9 +2188,9 @@ end
          a,
          (
           b,
-          c
+          c,
          ),
-         d
+         d,
         )"""
         @test fmt("(a, (b, c), d)", 4, 7) == str
 
@@ -2186,9 +2199,9 @@ end
          a,
          {
           b,
-          c
+          c,
          },
-         d
+         d,
         )"""
         @test fmt("(a, {b, c}, d)", 4, 6) == str
 
@@ -2196,7 +2209,7 @@ end
         a,
         (
          b,
-         c
+         c,
         ),
         d"""
         @test fmt("a, (b, c), d", 4, 6) == str
@@ -2210,14 +2223,14 @@ end
         str = """
         (
          var1,
-         var2
+         var2,
         ) && var3"""
         @test fmt("(var1,var2) && var3", 4, 10) == str
 
         str = """
         (
          var1,
-         var2
+         var2,
         ) && var3"""
         @test fmt("(var1,var2) && var3", 4, 19) == str
 
@@ -2230,11 +2243,11 @@ end
         str = """
         (
          var1,
-         var2
+         var2,
         ) ?
         (
          var3,
-         var4
+         var4,
         ) :
         var5"""
         @test fmt("(var1,var2) ? (var3,var4) : var5", 4, 13) == str
@@ -2252,14 +2265,14 @@ end
         str = """
         f(
           var1::A,
-          var2::B
+          var2::B,
         ) where {A,B}"""
         @test fmt("f(var1::A, var2::B) where {A,B}", 4, 30) == str
 
         str = """
         f(
           var1::A,
-          var2::B
+          var2::B,
         ) where {
             A,
             B
@@ -2287,7 +2300,7 @@ end
         foo(
             a,
             b,
-            c
+            c,
         )::Rtype where {
             A,
             B
@@ -2301,7 +2314,7 @@ end
         str = """
         transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
           Int32,
-          UInt32
+          UInt32,
         }} = transcode(T, String(Vector(src)))"""
         @test fmt(str_, 2, 80) == str
         @test fmt(str_, 2, 38) == str
@@ -2309,7 +2322,7 @@ end
         str = """
         transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
           Int32,
-          UInt32
+          UInt32,
         }} =
           transcode(T, String(Vector(src)))"""
         @test fmt(str_, 2, 37) == str
@@ -2318,7 +2331,7 @@ end
         str = """
         transcode(
           ::Type{T},
-          src::AbstractVector{UInt8}
+          src::AbstractVector{UInt8},
         ) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"""
         @test fmt(str_, 2, 80) == str
         @test fmt(str_, 2, 68) == str
@@ -2326,7 +2339,7 @@ end
         str = """
         transcode(
           ::Type{T},
-          src::AbstractVector{UInt8}
+          src::AbstractVector{UInt8},
         ) where {T<:Union{Int32,UInt32}} =
           transcode(T, String(Vector(src)))"""
         @test fmt(str_, 2, 67) == str

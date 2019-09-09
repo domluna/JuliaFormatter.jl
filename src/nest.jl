@@ -192,6 +192,7 @@ function n_tuple!(x, s; extra_width = 0)
                 s.line_offset = x.indent
             elseif n.typ === TRAILINGCOMMA
                 x.nodes[i].val = ","
+                # x.nodes[i].len = 1
             elseif opener && (i == 1 || i == length(x.nodes))
                 nest!(n, s)
             else
@@ -255,6 +256,7 @@ function n_call!(x, s; extra_width = 0)
                 s.line_offset = x.indent
             elseif n.typ === TRAILINGCOMMA
                 x.nodes[i].val = ","
+                # x.nodes[i].len = 1
             elseif i == 1 || i == length(x.nodes)
                 nest!(n, s, extra_width = 1)
             else
@@ -315,9 +317,10 @@ function n_wherecall!(x, s; extra_width = 0)
             elseif n.typ === PLACEHOLDER && (over || x.force_nest)
                 x.nodes[i+idx] = Newline()
                 s.line_offset = x.indent
-            # elseif n.typ === TRAILINGCOMMA
-            #     x.nodes[i+idx].val = ","
-            #     x.nodes[i+idx].len = 1
+            elseif n.typ === TRAILINGCOMMA
+                x.nodes[i+idx].val = ","
+                # x.nodes[i+idx].len = 1
+                # nest!(n, s)
             elseif has_braces
                 nest!(n, s, extra_width = 1 + extra_width)
             else

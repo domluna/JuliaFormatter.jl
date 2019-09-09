@@ -23,12 +23,12 @@ end
 
 Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing, false)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
+TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false)
 Notcode(startline, endline) =
     PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false)
 InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false)
-TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false)
 
 Base.length(x::PTree) = x.len
 
@@ -1253,8 +1253,13 @@ function p_call(x, s)
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            if !CSTParser.is_comma(x.args[i+1])
-                add_node!(t, TrailingComma(), s)
+            pn = x.args[i+1]
+            if !CSTParser.is_comma(pn) 
+                if pn.typ !== CSTParser.Parameters
+                    add_node!(t, TrailingComma(), s)
+                elseif pn.typ === CSTParser.Parameters && !CSTParser.is_comma(pn.args[end])
+                    add_node!(t, TrailingComma(), s)
+                end
             end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
