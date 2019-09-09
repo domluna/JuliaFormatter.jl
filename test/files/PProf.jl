@@ -97,7 +97,7 @@ function pprof(
     out::AbstractString = "profile.pb.gz",
     from_c::Bool = true,
     drop_frames::Union{Nothing,AbstractString} = nothing,
-    keep_frames::Union{Nothing,AbstractString} = nothing
+    keep_frames::Union{Nothing,AbstractString} = nothing,
 )
     if data === nothing
         data = copy(Profile.fetch())
@@ -123,7 +123,7 @@ function pprof(
 
     sample_type = [
         ValueType!("events", "count"), # Mandatory
-        ValueType!("stack_depth", "count")
+        ValueType!("stack_depth", "count"),
     ]
 
     prof = PProfile(
@@ -135,7 +135,7 @@ function pprof(
         sample_type = sample_type,
         default_sample_type = 1, # events
         period = period,
-        period_type = ValueType!("cpu", "nanoseconds")
+        period_type = ValueType!("cpu", "nanoseconds"),
     )
 
     if drop_frames !== nothing
@@ -259,9 +259,10 @@ Start or restart the go pprof webserver.
 """
 function refresh(
     ;
+    ;
     webhost::AbstractString = "localhost",
     webport::Integer = 57599,
-    file::AbstractString = "profile.pb.gz"
+    file::AbstractString = "profile.pb.gz",
 )
 
     if proc[] === nothing

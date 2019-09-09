@@ -23,7 +23,7 @@ function _forward end
 function gradm(ex, mut = false)
     @capture(
         shortdef(ex),
-        (name_(args__) = body_) | (name_(args__) where {Ts__} = body_) 
+        (name_(args__) = body_) | (name_(args__) where {Ts__} = body_),
     ) || error("Need a function definition")
     kw = length(args) > 1 && isexpr(args[1], :parameters) ? esc(popfirst!(args)) : nothing
     isclosure = isexpr(name, :(::)) && length(name.args) > 1
@@ -56,7 +56,7 @@ function gradm(ex, mut = false)
             ::$kT,
             kw,
             $f::$T,
-            $(args...)
+            $(args...),
         ) where $(Ts...)
             y, _back = adjoint(__context__, $f, $(argnames...); kw...)
             $(mut ? nothing : :(back(::Nothing) = nothing))
