@@ -1571,11 +1571,7 @@ end
             20
         end"""
         str_ = "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"
-        @test fmt(
-            str_,
-            4,
-            1
-        ) == str
+        @test fmt(str_, 4, 1) == str
 
         str = """
         function f(
@@ -1589,11 +1585,7 @@ end
             10
             20
         end"""
-        @test fmt(
-            str_,
-            4,
-            17
-        ) == str
+        @test fmt(str_, 4, 17) == str
 
         str = """
         function f(
@@ -1604,11 +1596,7 @@ end
             10
             20
         end"""
-        @test fmt(
-            str_,
-            4,
-            18
-        ) == str
+        @test fmt(str_, 4, 18) == str
 
         str = """
         a |

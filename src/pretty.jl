@@ -1,6 +1,15 @@
 # Creates a _prettified_ version of a CST.
 
-@enum(PLeaf, NEWLINE, SEMICOLON, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT, TRAILINGCOMMA)
+@enum(
+    PLeaf,
+    NEWLINE,
+    SEMICOLON,
+    WHITESPACE,
+    PLACEHOLDER,
+    NOTCODE,
+    INLINECOMMENT,
+    TRAILINGCOMMA,
+)
 
 mutable struct PTree
     typ::Union{CSTParser.Head,PLeaf}
@@ -310,7 +319,7 @@ function pretty(x::CSTParser.EXPR, s::State)
             pretty(a, s),
             s,
             join_lines = !is_fileh,
-            max_padding = is_fileh ? 0 : -1
+            max_padding = is_fileh ? 0 : -1,
         )
     end
     t
@@ -621,7 +630,7 @@ function p_function(x, s)
                 t,
                 p_block(x.args[3], s, ignore_single_line = true),
                 s,
-                max_padding = s.indent_size
+                max_padding = s.indent_size,
             )
             s.indent -= s.indent_size
             add_node!(t, pretty(x.args[4], s), s)
@@ -650,7 +659,7 @@ function p_struct(x, s)
             t,
             p_block(x.args[3], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[4], s), s)
@@ -675,7 +684,7 @@ function p_mutable(x, s)
             t,
             p_block(x.args[4], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[5], s), s)
@@ -739,7 +748,7 @@ function p_begin(x, s)
             t,
             p_block(x.args[2], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[3], s), s)
@@ -761,7 +770,7 @@ function p_quote(x, s)
                 t,
                 p_block(x.args[2], s, ignore_single_line = true),
                 s,
-                max_padding = s.indent_size
+                max_padding = s.indent_size,
             )
             s.indent -= s.indent_size
             add_node!(t, pretty(x.args[3], s), s)
@@ -796,7 +805,7 @@ function p_let(x, s)
             t,
             p_block(x.args[3], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
         add_node!(t, pretty(x.args[end], s), s)
@@ -858,7 +867,7 @@ function p_loop(x, s)
         t,
         p_block(x.args[3], s, ignore_single_line = true),
         s,
-        max_padding = s.indent_size
+        max_padding = s.indent_size,
     )
     s.indent -= s.indent_size
     add_node!(t, pretty(x.args[4], s), s)
@@ -881,7 +890,7 @@ function p_do(x, s)
             t,
             p_block(x.args[4], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
     end
@@ -902,7 +911,7 @@ function p_try(x, s)
                 t,
                 p_block(a, s, ignore_single_line = true),
                 s,
-                max_padding = s.indent_size
+                max_padding = s.indent_size,
             )
             s.indent -= s.indent_size
         else
@@ -929,7 +938,7 @@ function p_if(x, s)
             t,
             p_block(x.args[3], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
 
@@ -949,7 +958,7 @@ function p_if(x, s)
                     t,
                     p_block(x.args[5], s, ignore_single_line = true),
                     s,
-                    max_padding = s.indent_size
+                    max_padding = s.indent_size,
                 )
                 s.indent -= s.indent_size
             end
@@ -966,7 +975,7 @@ function p_if(x, s)
             t,
             p_block(x.args[2], s, ignore_single_line = true),
             s,
-            max_padding = s.indent_size
+            max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
 
@@ -987,7 +996,7 @@ function p_if(x, s)
                     t,
                     p_block(x.args[4], s, ignore_single_line = true),
                     s,
-                    max_padding = s.indent_size
+                    max_padding = s.indent_size,
                 )
                 s.indent -= s.indent_size
             end
@@ -1254,7 +1263,7 @@ function p_call(x, s)
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
             pn = x.args[i+1]
-            if !CSTParser.is_comma(pn) 
+            if !CSTParser.is_comma(pn)
                 if pn.typ !== CSTParser.Parameters
                     add_node!(t, TrailingComma(), s)
                 elseif pn.typ === CSTParser.Parameters && !CSTParser.is_comma(pn.args[end])
@@ -1286,14 +1295,14 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
                 t,
                 p_binarycall(a, s, nonest = nonest, nospace = nospace),
                 s,
-                join_lines = true
+                join_lines = true,
             )
         elseif a.typ === CSTParser.InvisBrackets
             add_node!(
                 t,
                 p_invisbrackets(a, s, nonest = nonest, nospace = nospace),
                 s,
-                join_lines = true
+                join_lines = true,
             )
         elseif is_opener(a) && multi_arg
             add_node!(t, pretty(a, s), s, join_lines = true)
@@ -1444,14 +1453,14 @@ function p_ref(x, s)
                 t,
                 p_binarycall(a, s, nonest = true, nospace = true),
                 s,
-                join_lines = true
+                join_lines = true,
             )
         elseif a.typ === CSTParser.InvisBrackets
             add_node!(
                 t,
                 p_invisbrackets(a, s, nonest = true, nospace = true),
                 s,
-                join_lines = true
+                join_lines = true,
             )
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
