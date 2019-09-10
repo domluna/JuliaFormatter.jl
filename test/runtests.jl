@@ -1245,43 +1245,84 @@ end
 
         str_ = """
         foo() = 10 where {
+            # comment
             A,
                 # comment
             B
+            # comment
         }"""
         str = """
         foo() = 10 where {
+            # comment
             A,
                 # comment
             B,
+            # comment
         }"""
         @test fmt(str_) == str
 
         str_ = """
         foo() = 10 where Foo{
+            # comment
             A,
                 # comment
             B
+            # comment
         }"""
         str = """
         foo() = 10 where Foo{
+            # comment
             A,
                 # comment
             B,
+            # comment
         }"""
         @test fmt(str_) == str
 
         str_ = """
         foo() = Foo(
+            # comment
             A,
                 # comment
             B
+            # comment
         )"""
         str = """
         foo() = Foo(
+            # comment
             A,
                 # comment
             B,
+            # comment
+        )"""
+        @test fmt(str_) == str
+
+        str = """
+        foo(
+            # comment
+            ;
+            # comment
+            a = b, # comment
+            c = d,
+            # comment
+        )"""
+        @test_broken fmt(str) == str
+
+        str = """
+        foo(
+            ;
+            a = b, # comment
+            c = d,
+            # comment
+        )"""
+        @test fmt(str) == str
+
+        str_ = """
+        foo(;
+            ;
+            ;a = b, # comment
+            c = d,
+            # comment
         )"""
         @test fmt(str_) == str
 

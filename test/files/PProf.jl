@@ -259,7 +259,6 @@ Start or restart the go pprof webserver.
 """
 function refresh(
     ;
-    ;
     webhost::AbstractString = "localhost",
     webport::Integer = 57599,
     file::AbstractString = "profile.pb.gz",

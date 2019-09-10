@@ -78,11 +78,20 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         return
     end
 
+
     if n.typ === CSTParser.Block && length(n) == 0
         return
     elseif n.typ === CSTParser.Parameters
         add_node!(t, Semicolon(), s)
         add_node!(t, Placeholder(1), s)
+        # If the parameter ; is on its own line
+        # the formatter will think it's a comment since
+        # CSTParser does not detect semicolons.
+        #
+        # This solves that issue but in doing so
+        # comments directly before or after a
+        # parameter ; will not be printed.
+        t.endline = n.startline
     end
 
     if length(t.nodes) == 0
@@ -94,7 +103,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     end
 
     if !is_prev_newline(t.nodes[end])
-        current_line = t.nodes[end].endline
+        current_line = t.endline
         notcode_startline = current_line + 1
         notcode_endline = n.startline - 1
         nt = t.nodes[end].typ
@@ -125,6 +134,10 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
+        end
+
+        if n.typ === CSTParser.Parameters && n.force_nest == true
+            t.force_nest = true
         end
     end
 
