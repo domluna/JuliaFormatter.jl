@@ -67,7 +67,18 @@ function parent_is(x, typs...)
 end
 
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
-    if n.typ isa PLeaf
+    if n.typ === SEMICOLON
+        join_lines = true
+        loc = cursor_loc(s)
+        for l in t.endline:loc[1]
+            if has_semicolon(s.doc, l)
+                # @info "found semicolon" l
+                n.startline = l
+                n.endline = l
+                break
+            end
+        end
+    elseif n.typ isa PLeaf 
         t.len += length(n)
         # Don't want to alter the startline/endline of these types
         if n.typ !== NOTCODE && n.typ !== INLINECOMMENT
@@ -84,14 +95,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     elseif n.typ === CSTParser.Parameters
         add_node!(t, Semicolon(), s)
         add_node!(t, Placeholder(1), s)
-        # If the parameter ; is on its own line
-        # the formatter will think it's a comment since
-        # CSTParser does not detect semicolons.
-        #
-        # This solves that issue but in doing so
-        # comments directly before or after a
-        # parameter ; will not be printed.
-        t.endline = n.startline
     end
 
     if length(t.nodes) == 0

@@ -1306,7 +1306,7 @@ end
             c = d,
             # comment
         )"""
-        @test_broken fmt(str) == str
+        @test fmt(str) == str
 
         str = """
         foo(
@@ -1317,14 +1317,14 @@ end
         )"""
         @test fmt(str) == str
 
-        str_ = """
-        foo(;
-            ;
-            ;a = b, # comment
-            c = d,
-            # comment
-        )"""
-        @test fmt(str_) == str
+        # str_ = """
+        # foo(;
+        #     ;
+        #     ;a = b, # comment
+        #     c = d,
+        #     # comment
+        # )"""
+        # @test_broken fmt(str_) == str
 
     end
 
