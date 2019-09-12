@@ -3,7 +3,7 @@ module JuliaFormatter
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
-export format, format_file, format_dir
+export format, format_text, format_file, format_dir
 
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
