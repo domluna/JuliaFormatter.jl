@@ -35,6 +35,20 @@ end
         @test fmt("") == ""
         @test fmt("a") == "a"
         @test fmt("a  #foo") == "a  #foo"
+        @test fmt("#foo") == "#foo"
+
+        str = """
+        #=
+        Hello, world!
+        =#"""
+        @test fmt(str) == str
+
+        str = """
+        #=
+        Hello, world!
+        =#
+        a"""
+        @test fmt(str) == str
     end
 
     @testset "nofmt" begin

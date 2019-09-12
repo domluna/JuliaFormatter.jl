@@ -127,6 +127,9 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input $text")
 
+    # no actual code
+    x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
+
     d = Document(text)
     # If "nofmt" occurs in a comment on line 1 do not format
     occursin("nofmt", get(d.comments, 1, "")) && (return text)
