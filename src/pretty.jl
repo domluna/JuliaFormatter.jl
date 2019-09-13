@@ -46,7 +46,7 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
-is_colon(x::PTree) = x.typ === CSTParser.OPERATOR && x.val == ":"
+is_colon(x) = x.typ === CSTParser.OPERATOR && x.val == ":"
 is_comma(x::PTree) =
     (x.typ === CSTParser.PUNCTUATION && x.val == ",") || x.typ === TRAILINGCOMMA
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
@@ -93,7 +93,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             return
         end
     elseif n.typ === TRAILINGCOMMA && is_comma(t.nodes[end])
-        # @info "HERE"
         t.nodes[end] = n
         return
     elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
