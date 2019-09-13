@@ -16,7 +16,7 @@ function TetgenIO(
     trifaces = TriangleFace{Cint}[],
     trifacemarkers = Cint[],
     edges = LineFace{Cint}[],
-    edgemarkers = Cint[]
+    edgemarkers = Cint[],
 ) where T
     TetgenIO(
         points,

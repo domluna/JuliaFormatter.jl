@@ -190,6 +190,10 @@ function n_tuple!(x, s; extra_width = 0)
             elseif n.typ === PLACEHOLDER
                 x.nodes[i] = Newline()
                 s.line_offset = x.indent
+            elseif n.typ === TRAILINGCOMMA
+                x.nodes[i].val = ","
+                x.nodes[i].len = 1
+                nest!(x.nodes[i], s)
             elseif opener && (i == 1 || i == length(x.nodes))
                 nest!(n, s)
             else
@@ -251,11 +255,17 @@ function n_call!(x, s; extra_width = 0)
             elseif n.typ === PLACEHOLDER
                 x.nodes[i] = Newline()
                 s.line_offset = x.indent
+            elseif n.typ === TRAILINGCOMMA
+                x.nodes[i].val = ","
+                x.nodes[i].len = 1
+                nest!(x.nodes[i], s)
             elseif i == 1 || i == length(x.nodes)
+                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 nest!(n, s, extra_width = 1)
             else
                 diff = x.indent - x.nodes[i].indent
                 add_indent!(n, s, diff)
+                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 nest!(n, s, extra_width = 1)
             end
         end
@@ -295,10 +305,11 @@ function n_wherecall!(x, s; extra_width = 0)
             x.nodes[end].indent = x.indent
         end
 
-        over = s.line_offset + Blen + extra_width > s.margin
+        over = (s.line_offset + Blen + extra_width > s.margin) || x.force_nest
         # line_offset = s.line_offset
         x.indent += s.indent_size
 
+        last_typ::Union{CSTParser.Head,Nothing} = nothing
         for (i, n) in enumerate(x.nodes[idx+1:end])
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -308,19 +319,24 @@ function n_wherecall!(x, s; extra_width = 0)
                     x.nodes[end].indent = s.line_offset
                 end
                 nest!(n, s)
-            elseif n.typ === PLACEHOLDER && (over || x.force_nest)
+            elseif n.typ === PLACEHOLDER && over
                 x.nodes[i+idx] = Newline()
                 s.line_offset = x.indent
+            elseif n.typ === TRAILINGCOMMA && over
+                x.nodes[i+idx].val = ","
+                x.nodes[i+idx].len = 1
+                nest!(x.nodes[i+idx], s)
             elseif has_braces
                 nest!(n, s, extra_width = 1 + extra_width)
             else
                 nest!(n, s, extra_width = extra_width)
             end
+            (!is_leaf(n) || n.typ === CSTParser.IDENTIFIER) && (last_typ = n.typ)
         end
 
         # Properly reset line offset in the case the last
         # argument is an IDENTIFIER.
-        if over && has_braces && x.nodes[end-2].typ === CSTParser.IDENTIFIER
+        if over && has_braces && last_typ === CSTParser.IDENTIFIER
             s.line_offset = x.nodes[end].indent + 1
         end
     # @debug "" s.line_offset x.typ extra_width

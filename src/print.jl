@@ -50,7 +50,6 @@ end
     for l = x.startline:x.endline
         v = getline(s.doc, l)
         v == "" && continue
-        # @info "comment line" l v
         if l == x.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end

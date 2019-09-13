@@ -78,7 +78,7 @@ function instrument_iterate!(ir, v, ex)
     :literal_indexed_iterate,
     ex.args[2],
     Val(unwrapquote(ex.args[3])),
-    ex.args[4:end]...
+    ex.args[4:end]...,
   )) :
   ex
 end
@@ -148,7 +148,7 @@ ignored_f(f) =
     GlobalRef(Core, :throw),
     GlobalRef(Base, :kwerr),
     GlobalRef(Core, :kwfunc),
-    GlobalRef(Core, :isdefined)
+    GlobalRef(Core, :isdefined),
   )
 ignored_f(ir, f) = ignored_f(f)
 ignored_f(ir, f::Variable) = ignored_f(get(ir, f, nothing))
@@ -180,7 +180,7 @@ function primal(ir::IR)
         yJ = insert!(
           pr,
           v,
-          stmt(xcall(Zygote, :_forward, cx, ex.args...), line = ir[v].line)
+          stmt(xcall(Zygote, :_forward, cx, ex.args...), line = ir[v].line),
         )
         pr[v] = xgetindex(yJ, 1)
         J = insertafter!(
@@ -189,8 +189,8 @@ function primal(ir::IR)
           stmt(
             xgetindex(yJ, 2),
             type = T == Any ? Any : T.parameters[2],
-            line = ir[v].line
-          )
+            line = ir[v].line,
+          ),
         )
         pbs[v] = substitute(pr, J)
       else
@@ -297,8 +297,8 @@ function adjoint(pr::Primal)
           rb,
           stmt(
             xcall(Base, :error, "Can't differentiate $(ex.head) expression"),
-            line = b[v].line
-          )
+            line = b[v].line,
+          ),
         )
       else # A literal value
         continue
@@ -317,11 +317,11 @@ function adjoint(pr::Primal)
         end
       end
     else # Backprop function arguments
-      gs = [grad(arg) for arg = arguments(pr.ir)]
+      gs = [grad(arg) for arg in arguments(pr.ir)]
       Δ = push!(
         rb,
         pr.varargs == nothing ? xcall(Zygote, :tuple, gs...) :
-        xcall(Zygote, :tuple_va, Val(pr.varargs), gs...)
+        xcall(Zygote, :tuple_va, Val(pr.varargs), gs...),
       )
       branches(rb)[1].args[1] = Δ
     end

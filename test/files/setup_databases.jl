@@ -21,43 +21,43 @@ function check_space(free, min_space, database_name)
 end
 
 function parse_commandline()
-    settings = ArgParseSettings(description="""
-    This script set up the needed databases for PhyloSofS in the `--output`
-    path. If the `--pdb`, `--uniclust` or `--pdb70` argument is used, the
-    script is going to create a symbolic link to the indicated folder
-    instead of downloading the database.
+    settings = ArgParseSettings(description = """
+      This script set up the needed databases for PhyloSofS in the `--output`
+      path. If the `--pdb`, `--uniclust` or `--pdb70` argument is used, the
+      script is going to create a symbolic link to the indicated folder
+      instead of downloading the database.
 
-    It creates a `databases` folder in `--output` containing three folders:
-    `pdb`, `uniclust` and `pdb70`
-    """,)
+      It creates a `databases` folder in `--output` containing three folders:
+      `pdb`, `uniclust` and `pdb70`
+      """,)
 
     @add_arg_table settings begin
         "--output", "-o"
-            help = "path where the database folder is going to be created."
-            default = "."
+        help = "path where the database folder is going to be created."
+        default = "."
         "--pdb"
-            help = """
-            path to an already existing local folder containing the entire pdb
-            in mmCIF format.
-            """
-            default = ""
+        help = """
+        path to an already existing local folder containing the entire pdb
+        in mmCIF format.
+        """
+        default = ""
         "--uniclust"
-            help = """
-            path to an already existing local folder containing the uniclust
-            database from the HH-suite databases.
-            """
-            default = ""
+        help = """
+        path to an already existing local folder containing the uniclust
+        database from the HH-suite databases.
+        """
+        default = ""
         "--uniclust_version"
-            help = """
-            Uniclust30 version to be downloaded: YYYY_MM
-            """
-            default = "2018_08"
+        help = """
+        Uniclust30 version to be downloaded: YYYY_MM
+        """
+        default = "2018_08"
         "--pdb70"
-            help = """
-            path to an already existing local folder containing the
-            pdb70_from_mmcif database from the HH-suite databases.
-            """
-            default = ""
+        help = """
+        path to an already existing local folder containing the
+        pdb70_from_mmcif database from the HH-suite databases.
+        """
+        default = ""
     end
 
     return parse_args(settings)
@@ -87,10 +87,14 @@ function main()
     if uniclust == ""
         check_space(free, 14, "HH-suite Uniclust30")
         cd(output_path)
-        download(string(
-            "http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_",
-            uniclust_version, ".tar.gz"
-            ), "uniclust.tar.gz")
+        download(
+            string(
+                "http://wwwuser.gwdg.de/~compbiol/uniclust/2018_08/uniclust30_",
+                uniclust_version,
+                ".tar.gz",
+            ),
+            "uniclust.tar.gz",
+        )
         unpack("uniclust.tar.gz")
         mv("uniclust30_$uniclust_version", "uniclust")
         cd(execution_folder)
@@ -121,8 +125,10 @@ function main()
         check_space(free, 42, "HH-suite pdb70_from_mmcif")
         mkpath(pdb70_path)
         cd(pdb70_path)
-        download("http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/pdb70_from_mmcif_latest.tar.gz",
-            "pdb70.tar.gz")
+        download(
+            "http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/pdb70_from_mmcif_latest.tar.gz",
+            "pdb70.tar.gz",
+        )
         unpack("pdb70.tar.gz")
         cd(execution_folder)
     else
@@ -140,7 +146,7 @@ function main()
     if pdb == ""
         check_space(free, 157, "PDB")
         mkpath(pdb_path)
-        downloadentirepdb(pdb_dir=pdb_path, file_format=MMCIF)
+        downloadentirepdb(pdb_dir = pdb_path, file_format = MMCIF)
     else
         pdb = abspath(pdb)
         symlink(pdb, pdb_path)
