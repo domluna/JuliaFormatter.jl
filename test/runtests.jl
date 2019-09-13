@@ -50,8 +50,21 @@ end
         a = 10;
 
 
-        c = 50;"""
-        @test fmt(str) == str
+        c = 50;
+
+        #comment"""
+        str_ = """
+
+        hello = "string";
+
+        a = 10
+        ;
+
+
+        c = 50;
+
+        #comment"""
+        @test fmt(str_) == str
         t = run_pretty(str, 80)
         @test length(t) == 17
     end
@@ -1046,7 +1059,7 @@ end
         @test fmt(str) == str
     end
 
-    @testset "notcode" begin
+    @testset "comments" begin
         str = """
         module Foo
         # comment 0
@@ -1317,14 +1330,39 @@ end
         )"""
         @test fmt(str) == str
 
+        str_ = """
+        foo(
+            ;
+            ;a = b, # comment
+            c = d,
+            # comment
+        )"""
+        @test fmt(str_) == str
+
+        str_ = """
+        foo( ;
+            ;a = b, # comment
+            c = d,
+            # comment
+        )"""
+        @test fmt(str_) == str
+
+        # str = """
+        # [
+        #  a b Expr();
+        #  d e Expr()
+        # ]"""
         # str_ = """
-        # foo(;
-        #     ;
-        #     ;a = b, # comment
-        #     c = d,
-        #     # comment
-        # )"""
-        # @test_broken fmt(str_) == str
+        # [
+        # ;
+        # ;
+        # ;
+        #  a b Expr();
+        #  ;
+        #  d e Expr();
+        #  ;
+        # ]"""
+        # @test fmt(str_) == str
 
     end
 

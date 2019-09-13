@@ -81,7 +81,6 @@ function Document(text::AbstractString)
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
-    # @debug "" lit_strings comments
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
 end
 

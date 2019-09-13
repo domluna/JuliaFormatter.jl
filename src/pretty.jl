@@ -69,8 +69,9 @@ end
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
-        loc = cursor_loc(s)
-        for l in t.endline:loc[1]
+        loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
+              loc = cursor_loc(s, s.offset - 1) : cursor_loc(s)
+        for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
                 # @info "found semicolon" l
                 n.startline = l
@@ -78,17 +79,27 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
                 break
             end
         end
-    elseif n.typ isa PLeaf 
-        t.len += length(n)
-        # Don't want to alter the startline/endline of these types
-        if n.typ !== NOTCODE && n.typ !== INLINECOMMENT
+        # @info "" t.endline n.endline loc[1]
+
+        # If there's no semicolon, treat it
+        # as a PLeaf
+        if n.startline == -1
+            t.len += length(n)
             n.startline = t.startline
             n.endline = t.endline
+            push!(t.nodes, n)
+            return
         end
+    elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
+        push!(t.nodes, n)
+        return
+    elseif n.typ isa PLeaf
+        t.len += length(n)
+        n.startline = t.startline
+        n.endline = t.endline
         push!(t.nodes, n)
         return
     end
-
 
     if n.typ === CSTParser.Block && length(n) == 0
         return
