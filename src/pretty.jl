@@ -47,7 +47,8 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 is_colon(x::PTree) = x.typ === CSTParser.OPERATOR && x.val == ":"
-is_comma(x::PTree) = (x.typ === CSTParser.PUNCTUATION && x.val == ",") || x.typ === TRAILINGCOMMA
+is_comma(x::PTree) =
+    (x.typ === CSTParser.PUNCTUATION && x.val == ",") || x.typ === TRAILINGCOMMA
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
@@ -1386,7 +1387,7 @@ function p_braces(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-                add_node!(t, TrailingComma(), s)
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
@@ -1411,7 +1412,7 @@ function p_vect(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-                add_node!(t, TrailingComma(), s)
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
