@@ -47,6 +47,7 @@ empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 is_colon(x::PTree) = x.typ === CSTParser.OPERATOR && x.val == ":"
+is_comma(x::PTree) = (x.typ === CSTParser.PUNCTUATION && x.val == ",") || x.typ === TRAILINGCOMMA
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
@@ -90,6 +91,10 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             push!(t.nodes, n)
             return
         end
+    elseif n.typ === TRAILINGCOMMA && is_comma(t.nodes[end])
+        # @info "HERE"
+        t.nodes[end] = n
+        return
     elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
@@ -544,9 +549,7 @@ function p_macrocall(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(n)
-            if !CSTParser.is_comma(x.args[i-1])
-                add_node!(t, TrailingComma(), s)
-            end
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
@@ -1205,9 +1208,7 @@ function p_wherecall(x, s)
             add_node!(t, Placeholder(0), s)
             s.indent += s.indent_size
         elseif is_closer(a) && multi_arg
-            if !CSTParser.is_comma(x.args[i+1])
-                add_node!(t, TrailingComma(), s)
-            end
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             s.indent -= s.indent_size
@@ -1261,9 +1262,7 @@ function p_curly(x, s)
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            if !CSTParser.is_comma(x.args[i+1])
-                add_node!(t, TrailingComma(), s)
-            end
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+3])
@@ -1290,12 +1289,10 @@ function p_call(x, s)
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
             pn = x.args[i+1]
-            if !CSTParser.is_comma(pn)
-                if pn.typ !== CSTParser.Parameters
-                    add_node!(t, TrailingComma(), s)
-                elseif pn.typ === CSTParser.Parameters && !CSTParser.is_comma(pn.args[end])
-                    add_node!(t, TrailingComma(), s)
-                end
+            if pn.typ !== CSTParser.Parameters
+                add_node!(t, TrailingComma(), s)
+            elseif pn.typ === CSTParser.Parameters && !CSTParser.is_comma(pn.args[end])
+                add_node!(t, TrailingComma(), s)
             end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
@@ -1363,9 +1360,7 @@ function p_tuple(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(n) && multi_arg
-            if !CSTParser.is_comma(x.args[i-1])
-                add_node!(t, TrailingComma(), s)
-            end
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
@@ -1391,9 +1386,7 @@ function p_braces(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-            if !CSTParser.is_comma(x.args[i-1])
                 add_node!(t, TrailingComma(), s)
-            end
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
@@ -1418,9 +1411,7 @@ function p_vect(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif i == length(x) && multi_arg
-            if !CSTParser.is_comma(x.args[i-1])
                 add_node!(t, TrailingComma(), s)
-            end
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])

@@ -146,7 +146,7 @@ end
         @test fmt("(a ,b)") == "(a, b)"
         @test fmt("( a, b)") == "(a, b)"
         @test fmt("(a, b )") == "(a, b)"
-        @test fmt("(a, b ,)") == "(a, b,)"
+        @test fmt("(a, b ,)") == "(a, b)"
         @test fmt("""(a,    b ,
                             c)""") == "(a, b, c)"
     end
@@ -374,8 +374,8 @@ end
     @testset "func call" begin
         @test fmt("func(a, b, c)") == "func(a, b, c)"
         @test fmt("func(a,b,c)") == "func(a, b, c)"
-        @test fmt("func(a,b,c,)") == "func(a, b, c,)"
-        @test fmt("func(a,b,c, )") == "func(a, b, c,)"
+        @test fmt("func(a,b,c,)") == "func(a, b, c)"
+        @test fmt("func(a,b,c, )") == "func(a, b, c)"
         @test fmt("func( a,b,c    )") == "func(a, b, c)"
         @test fmt("func(a, b, c) ") == "func(a, b, c)"
         @test fmt("func(a, b; c)") == "func(a, b; c)"
@@ -2237,14 +2237,17 @@ end
     end
 
     @testset "additional length" begin
+        str_ = "f(a, @g(b, c), d)"
         str = """
         f(
           a,
           @g(b, c),
           d,
         )"""
-        @test fmt("f(a, @g(b, c), d)", 4, 11) == str
+        @test fmt(str_, 4, 11) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
+        str_ = "f(a, @g(b, c), d)"
         str = """
         f(
           a,
@@ -2254,8 +2257,10 @@ end
           ),
           d,
         )"""
-        @test fmt("f(a, @g(b, c), d)", 4, 10) == str
+        @test fmt(str_, 4, 10) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
+        str_ = "(a, (b, c), d)"
         str = """
         (
          a,
@@ -2265,8 +2270,10 @@ end
          ),
          d,
         )"""
-        @test fmt("(a, (b, c), d)", 4, 7) == str
+        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
+        str_ = "(a, {b, c}, d)"
         str = """
         (
          a,
@@ -2276,8 +2283,23 @@ end
          },
          d,
         )"""
-        @test fmt("(a, {b, c}, d)", 4, 6) == str
+        @test fmt(str_, 4, 6) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
+        str_ = "(a, [b, c], d)"
+        str = """
+        (
+         a,
+         [
+          b,
+          c,
+         ],
+         d,
+        )"""
+        @test fmt(str_, 4, 6) == str
+        @test fmt(str_, 4, length(str_)) == str_
+
+        str_ = "a, (b, c), d"
         str = """
         a,
         (
@@ -2285,13 +2307,16 @@ end
          c,
         ),
         d"""
-        @test fmt("a, (b, c), d", 4, 6) == str
+        @test fmt(str_, 4, 6) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
+        str_ = "a, (b, c), d"
         str = """
         a,
         (b, c),
         d"""
-        @test fmt("a, (b, c), d", 4, 7) == str
+        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
@@ -2353,7 +2378,9 @@ end
         @test fmt("f(var1::A, var2::B) where {A,B}", 4, 12) == str
 
         str = "foo(a, b, c)::Rtype where {A,B} = 10"
+        str_ = "foo(a, b, c)::Rtype where {A,B,} = 10"
         @test fmt(str, 4, length(str)) == str
+        @test fmt(str_, 4, length(str_)) == str
 
         str_ = """
         foo(a, b, c)::Rtype where {A,B} =
@@ -2421,7 +2448,6 @@ end
 # @testset "meta-format" begin
 #     str = String(read("./runtests.jl"))
 #     str = fmt(str)
-#
 # end
 
 end
