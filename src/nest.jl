@@ -260,10 +260,12 @@ function n_call!(x, s; extra_width = 0)
                 x.nodes[i].len = 1
                 nest!(x.nodes[i], s)
             elseif i == 1 || i == length(x.nodes)
+                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 nest!(n, s, extra_width = 1)
             else
                 diff = x.indent - x.nodes[i].indent
                 add_indent!(n, s, diff)
+                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 nest!(n, s, extra_width = 1)
             end
         end

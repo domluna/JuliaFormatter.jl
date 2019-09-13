@@ -2064,6 +2064,24 @@ end
         @test fmt(str_) == str_
         @test fmt(str_, 4, 1) == str
 
+        # https://github.com/domluna/JuliaFormatter.jl/issues/60
+        str_ = """
+        function write_subproblem_to_file(
+                node::Node, filename::String;
+                format::Symbol=:both, throw_error::Bool = false)
+            body
+        end"""
+        str = """
+        function write_subproblem_to_file(
+            node::Node,
+            filename::String;
+            format::Symbol = :both,
+            throw_error::Bool = false,
+        )
+            body
+        end"""
+        @test fmt(str_) == str
+
     end
 
     @testset "nesting line offset" begin
