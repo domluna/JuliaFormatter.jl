@@ -192,9 +192,16 @@ end
 
     @testset "where op" begin
         str = "Atomic{T}(value) where {T<:AtomicTypes} = new(value)"
+        str_ = "Atomic{T}(value) where T <: AtomicTypes = new(value)"
+        @test fmt(str) == str
+        @test fmt(str_) == str
+
+        str = "Vector{Vector{T} where T}"
         @test fmt(str) == str
 
-        str = "Atomic{T}(value) where T <: AtomicTypes = new(value)"
+        str_ = "Vector{Vector{T}} where T"
+        str = "Vector{Vector{T}} where {T}"
+        @test fmt(str_) == str
         @test fmt(str) == str
     end
 
@@ -2152,13 +2159,14 @@ end
         s = run_nest(str, 1)
         @test s.line_offset == 1
 
-        str = "f(a, b, c) where A"
+        str = "f(a, b, c) where {A}"
         s = run_nest(str, 100)
+        # adds surrounding {...} after `where`
         @test s.line_offset == length(str)
         s = run_nest(str, 1)
-        @test s.line_offset == 9
+        @test s.line_offset == 11
 
-        str = "f(a, b, c) where A <: S"
+        str = "f(a, b, c) where {A<:S}"
         s = run_nest(str, 100)
         @test s.line_offset == length(str)
         s = run_nest(str, 1)

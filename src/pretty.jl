@@ -30,6 +30,10 @@ function PTree(x::CSTParser.EXPR, startline::Int, endline::Int, val::AbstractStr
     PTree(x.typ, startline, endline, 0, length(val), val, nothing, Ref(x), false)
 end
 
+function PTree(x::CSTParser.Head, startline::Int, endline::Int, val::AbstractString)
+    PTree(x, startline, endline, 0, length(val), val, nothing, nothing, false)
+end
+
 Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing, false)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
 TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false)
@@ -1198,10 +1202,10 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 1
-    in_braces = CSTParser.is_lbrace(x.args[3])
+    add_braces = !CSTParser.is_lbrace(x.args[3]) && x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
+    add_braces && add_node!(t, PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "{"), s, join_lines = true)
 
     # @debug "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
-
     for (i, a) in enumerate(x.args[3:end])
         if is_opener(a) && multi_arg
             add_node!(t, pretty(a, s), s, join_lines = true)
@@ -1215,12 +1219,13 @@ function p_wherecall(x, s)
         elseif CSTParser.is_comma(a) && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
-        elseif in_braces && a.typ === CSTParser.BinaryOpCall
+        elseif a.typ === CSTParser.BinaryOpCall
             add_node!(t, p_binarycall(a, s, nospace = true), s, join_lines = true)
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
+    add_braces && add_node!(t, PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "}"), s, join_lines = true)
     t
 end
 

@@ -339,12 +339,16 @@ function n_wherecall!(x, s; extra_width = 0)
             (!is_leaf(n) || n.typ === CSTParser.IDENTIFIER) && (last_typ = n.typ)
         end
 
+        # @info "" s.line_offset x.typ extra_width has_braces
+
         # Properly reset line offset in the case the last
         # argument is an IDENTIFIER.
-        if over && has_braces && last_typ === CSTParser.IDENTIFIER
+        # if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
+        if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
             s.line_offset = x.nodes[end].indent + 1
         end
-    # @debug "" s.line_offset x.typ extra_width
+
+        # @info "" s.line_offset x.typ extra_width has_braces
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
