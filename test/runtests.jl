@@ -2476,6 +2476,28 @@ end
         ) where {T<:Union{Int32,UInt32}} =
           transcode(T, String(Vector(src)))"""
         @test fmt(str_, 2, 67) == str
+
+        # issue 56
+        str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
+        str = """
+        a_long_function_name(Array{Float64,2}[
+            [1.0],
+            [0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+        ])"""
+        @test fmt(str, 4, length(str)) == str_
+        @test fmt(str_) == str
+
+        # unary op
+        str_ = "[1, 1]'"
+        str = """
+        [
+         1,
+         1,
+        ]'"""
+        @test fmt(str, 4, length(str)) == str_
+        @test fmt(str_, 4, length(str_)-1) == str
     end
 
 # @testset "meta-format" begin

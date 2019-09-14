@@ -1462,10 +1462,18 @@ end
 # Ref
 function p_ref(x, s)
     t = PTree(x, nspaces(s))
+    multi_arg = length(x) > 5
     for (i, a) in enumerate(x)
-        if CSTParser.is_comma(a)
+        if is_closer(a) && multi_arg
+            add_node!(t, TrailingComma(), s)
+            add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+        elseif is_opener(a) && multi_arg
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         elseif a.typ === CSTParser.BinaryOpCall
             add_node!(
                 t,

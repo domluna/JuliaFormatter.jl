@@ -77,6 +77,8 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.MacroCall
         n_macrocall!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Ref
+        n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.ChainOpCall
         n_chainopcall!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Comparison
@@ -97,6 +99,9 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_braces!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.InvisBrackets
         n_invisbrackets!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.UnaryOpCall && x.nodes[2].typ === CSTParser.OPERATOR
+        nest!(x.nodes[1], s, extra_width = extra_width + length(x.nodes[2]))
+        nest!(x.nodes[2], s)
     else
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
