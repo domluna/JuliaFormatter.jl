@@ -223,7 +223,8 @@ end
         @test fmt("a:b:c ") == "a:b:c"
         @test fmt("a::b:: c") == "a::b::c"
         @test fmt("a :: b::c") == "a::b::c"
-        @test fmt("2n") == "2n"
+        @test fmt("2a") == "2a"
+        @test fmt("2(a+1)") == "2 * (a + 1)"
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str

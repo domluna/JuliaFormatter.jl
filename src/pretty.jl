@@ -1148,7 +1148,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     narg2 && (t.force_nest = true)
     nest = (nestable(x) && !nonest) || narg2
 
-    if op.fullspan == 0
+    if op.fullspan == 0 && x.args[3].typ === CSTParser.IDENTIFIER
         # do nothing
     elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
            nospace
