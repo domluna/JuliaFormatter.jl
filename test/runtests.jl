@@ -2277,7 +2277,7 @@ end
           d,
         )"""
         @test fmt(str_, 4, 11) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "f(a, @g(b, c), d)"
         str = """
@@ -2290,7 +2290,7 @@ end
           d,
         )"""
         @test fmt(str_, 4, 10) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, (b, c), d)"
         str = """
@@ -2303,7 +2303,7 @@ end
          d,
         )"""
         @test fmt(str_, 4, 7) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, {b, c}, d)"
         str = """
@@ -2316,7 +2316,7 @@ end
          d,
         )"""
         @test fmt(str_, 4, 6) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, [b, c], d)"
         str = """
@@ -2329,7 +2329,7 @@ end
          d,
         )"""
         @test fmt(str_, 4, 6) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "a, (b, c), d"
         str = """
@@ -2340,7 +2340,7 @@ end
         ),
         d"""
         @test fmt(str_, 4, 6) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str_ = "a, (b, c), d"
         str = """
@@ -2348,7 +2348,7 @@ end
         (b, c),
         d"""
         @test fmt(str_, 4, 7) == str
-        @test fmt(str_, 4, length(str_)) == str_
+        @test fmt(str, 4, length(str)) == str_
 
         str = """
         (
