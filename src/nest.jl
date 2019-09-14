@@ -344,7 +344,9 @@ function n_wherecall!(x, s; extra_width = 0)
         # Properly reset line offset in the case the last
         # argument is an IDENTIFIER.
         # if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
-        if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
+        if over &&
+           has_braces &&
+           last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
             s.line_offset = x.nodes[end].indent + 1
         end
 

@@ -2505,7 +2505,7 @@ end
          1,
         ]'"""
         @test fmt(str, 4, length(str)) == str_
-        @test fmt(str_, 4, length(str_)-1) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
     end
 
 # @testset "meta-format" begin

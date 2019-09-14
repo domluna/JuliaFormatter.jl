@@ -1202,8 +1202,14 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 1
-    add_braces = !CSTParser.is_lbrace(x.args[3]) && x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
-    add_braces && add_node!(t, PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "{"), s, join_lines = true)
+    add_braces = !CSTParser.is_lbrace(x.args[3]) &&
+                 x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
+    add_braces && add_node!(
+        t,
+        PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "{"),
+        s,
+        join_lines = true,
+    )
 
     # @debug "" multi_arg in_braces x.args[3].val == "{" x.args[end].val
     for (i, a) in enumerate(x.args[3:end])
@@ -1225,7 +1231,12 @@ function p_wherecall(x, s)
             add_node!(t, pretty(a, s), s, join_lines = true)
         end
     end
-    add_braces && add_node!(t, PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "}"), s, join_lines = true)
+    add_braces && add_node!(
+        t,
+        PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "}"),
+        s,
+        join_lines = true,
+    )
     t
 end
 
