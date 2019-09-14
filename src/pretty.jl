@@ -385,6 +385,12 @@ end
 function p_literal(x, s)
     loc = cursor_loc(s)
     if !is_str_or_cmd(x.kind)
+        if x.val[end] == '.'
+            # If a floating point ends in `.`, add trailing zero.
+            x.val *= '0'
+            x.fullspan += 1
+            x.span += 1
+        end
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], x.val)
     end
@@ -395,7 +401,7 @@ function p_literal(x, s)
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
-    # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an 
+    # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
     if str_info === nothing && x.parent.typ === CSTParser.x_Str
