@@ -1457,8 +1457,17 @@ end
         finally
             # comment
         end"""
-        @test fmt(str_) == str
 
+        @test fmt(str_) == str
+        str = """a = "hello ##" # # # α"""
+        @test fmt(str) == str
+
+        # issue #65
+        str = "1 # α"
+        @test fmt(str) == str
+
+        str = "# α"
+        @test fmt(str) == str
     end
 
     @testset "pretty" begin
