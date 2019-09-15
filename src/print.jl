@@ -59,12 +59,9 @@ end
 end
 
 @inline function print_inlinecomment(io, x, s)
-    v = get(s.doc.comments, x.startline, "")
+    ws, v = get(s.doc.comments, x.startline, "")
     isempty(v) && return
-    v = getline(s.doc, x.startline)
-    idx = findlast(c -> c == '#', v)
-    idx === nothing && return
-    idx = findlast(c -> !isspace(c), v[1:prevind(v, idx)])
-    v = v[end] == '\n' ? v[nextind(v, idx):prevind(v, end)] : v[nextind(v, idx):end]
+    v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
+    write(io, repeat(" ", ws))
     write(io, v)
 end

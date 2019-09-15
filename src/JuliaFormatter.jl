@@ -11,25 +11,28 @@ is_str_or_cmd(x::Tokens.Kind) =
 struct Document
     text::AbstractString
 
-    ranges::Vector{UnitRange{Int}}
-    line_to_range::Dict{Int,UnitRange{Int}}
+    ranges::Vector{UnitRange{Integer}}
+    line_to_range::Dict{Integer,UnitRange{Integer}}
 
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
-    lit_strings::Dict{Int,Tuple{Int,Int,String}}
-    comments::Dict{Int,String}
+    lit_strings::Dict{Integer,Tuple{Integer,Integer,AbstractString}}
+    comments::Dict{Integer,Tuple{Integer,AbstractString}}
 
     # CSTParser does not detect semicolons.
     # It's useful to know where these are for
     # a few node types.
-    semicolons::Set{Int}
+    semicolons::Set{Integer}
 end
+
 function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
     line_to_range = Dict{Int,UnitRange{Int}}()
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
-    comments = Dict{Int,String}()
+    comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
+    # dummy initial token
+    prev_tok = Tokens.Token()
 
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind === Tokens.WHITESPACE
@@ -56,7 +59,9 @@ function Document(text::AbstractString)
             end
         elseif t.kind === Tokens.COMMENT
             if t.startpos[1] == t.endpos[1]
-                comments[t.startpos[1]] = t.val
+                # Determine the number of spaces prior to a possible inline comment
+                ws = prev_tok.kind === Tokens.WHITESPACE ? length(prev_tok.val) : 0
+                comments[t.startpos[1]] = (ws, t.val)
             else
                 sl = t.startpos[1]
                 offset = t.startbyte
@@ -65,41 +70,43 @@ function Document(text::AbstractString)
                     if c == '\n'
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
-                        comments[sl] = t.val[comment_offset:i-1]
+                        comments[sl] = (0, t.val[comment_offset:i-1])
                         sl += 1
                         comment_offset = i + 1
                     end
                     offset += 1
                 end
                 # last comment
-                comments[sl] = t.val[comment_offset:end]
+                comments[sl] = (0, t.val[comment_offset:end])
             end
         elseif t.kind === Tokens.SEMICOLON
             push!(semicolons, t.startpos[1])
         end
+        prev_tok = t
     end
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
+    # @info "" ranges
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
 end
 
 mutable struct State
     doc::Document
-    indent_size::Int
-    indent::Int
-    offset::Int
-    line_offset::Int
-    margin::Int
+    indent_size::Integer
+    indent::Integer
+    offset::Integer
+    line_offset::Integer
+    margin::Integer
 end
 State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
-@inline getline(d::Document, line::Int) = d.text[d.line_to_range[line]]
-@inline hascomment(d::Document, line::Int) = haskey(d.comments, line)
-@inline has_semicolon(d::Document, line::Int) = line in d.semicolons
+@inline getline(d::Document, line::Integer) = d.text[d.line_to_range[line]]
+@inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
+@inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
 
-@inline function cursor_loc(s::State, offset::Int)
+@inline function cursor_loc(s::State, offset::Integer)
     for (l, r) in enumerate(s.doc.ranges)
         if offset in r
             return (l, offset - first(r) + 1, length(r))
@@ -140,7 +147,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     d = Document(text)
     # If "nofmt" occurs in a comment on line 1 do not format
-    occursin("nofmt", get(d.comments, 1, "")) && (return text)
+    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && (return text)
 
     s = State(d, indent, margin)
     t = pretty(x, s)
