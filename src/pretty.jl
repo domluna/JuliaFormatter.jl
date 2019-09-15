@@ -385,14 +385,13 @@ end
 function p_literal(x, s)
     loc = cursor_loc(s)
     if !is_str_or_cmd(x.kind)
-        if x.val[end] == '.'
+        val = x.val
+        if x.kind === Tokens.FLOAT && x.val[end] == '.'
             # If a floating point ends in `.`, add trailing zero.
-            x.val *= '0'
-            x.fullspan += 1
-            x.span += 1
+            val *= '0'
         end
         s.offset += x.fullspan
-        return PTree(x, loc[1], loc[1], x.val)
+        return PTree(x, loc[1], loc[1], val)
     end
 
     # Strings are unescaped by CSTParser

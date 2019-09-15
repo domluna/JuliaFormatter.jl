@@ -2332,6 +2332,17 @@ end
         @test fmt(str_, 2, 67) == str
     end
 
+    @testset "Trailing zeros" begin
+        @test fmt("1.") == "1.0"
+        @test fmt("a * 1. + b") == "a * 1.0 + b"
+        @test fmt("1. + 2. * im") == "1.0 + 2.0 * im"
+        @test fmt("[1., 2.]") == "[1.0, 2.0]"
+        @test fmt("""
+        1. +
+            2.
+        """) == "1.0 + 2.0\n"
+    end
+
 # @testset "meta-format" begin
 #     str = String(read("./runtests.jl"))
 #     str = fmt(str)
