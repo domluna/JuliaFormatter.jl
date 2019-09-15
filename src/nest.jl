@@ -42,9 +42,15 @@ function add_indent!(x, s, indent)
 end
 
 function nest!(nodes::Vector{PTree}, s::State, indent; extra_width = 0)
-    for n in nodes
-        if n.typ === NEWLINE
+    for (i, n) in enumerate(nodes)
+        if n.typ === NEWLINE && nodes[i+1].typ === CSTParser.Block
+            s.line_offset = nodes[i+1].indent
+        elseif n.typ === NOTCODE && nodes[i+1].typ === CSTParser.Block
+            s.line_offset = nodes[i+1].indent
+        elseif n.typ === NEWLINE
             s.line_offset = indent
+        elseif is_leaf(n)
+            s.line_offset += length(n)
         else
             nest!(n, s, extra_width = extra_width)
         end
@@ -102,21 +108,22 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.UnaryOpCall && x.nodes[2].typ === CSTParser.OPERATOR
         nest!(x.nodes[1], s, extra_width = extra_width + length(x.nodes[2]))
         nest!(x.nodes[2], s)
+    elseif x.typ === CSTParser.Do
+        n_do!(x, s, extra_width = extra_width)
     else
-        for (i, n) in enumerate(x.nodes)
-            if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
-                s.line_offset = x.nodes[i+1].indent
-            elseif n.typ === NEWLINE
-                s.line_offset = x.indent
-            elseif n.typ === NOTCODE && x.nodes[i+1].typ === CSTParser.Block
-                s.line_offset = x.nodes[i+1].indent
-            elseif is_leaf(n)
-                s.line_offset += length(n)
-            else
-                nest!(n, s, extra_width = extra_width)
-            end
-        end
+        nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
+end
+
+function n_do!(x, s; extra_width = 0)
+    ew = sum(length.(x.nodes[2:3]))
+    # make sure there are nodes after "do"
+    if x.nodes[4].typ === WHITESPACE
+        ew += length(x.nodes[4])
+        ew += length(x.nodes[5])
+    end
+    nest!(x.nodes[1], s, extra_width = extra_width + ew)
+    nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
 end
 
 function n_invisbrackets!(x, s; extra_width = 0)
@@ -239,7 +246,7 @@ n_params!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
 function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    # @info "ENTERING" x.typ s.line_offset length(x) extra_width
+    # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
