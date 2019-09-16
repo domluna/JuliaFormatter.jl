@@ -77,7 +77,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         join_lines = true
         loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
               loc = cursor_loc(s, s.offset - 1) : cursor_loc(s)
-        for l = t.endline:loc[1]
+        for l in t.endline:loc[1]
             if has_semicolon(s.doc, l)
                 # @info "found semicolon" l
                 n.startline = l
@@ -209,7 +209,7 @@ function length_to_newline(x::PTree, start = 1)
     x.typ === PLACEHOLDER && (return 0, true)
     is_leaf(x) && (return length(x), false)
     len = 0
-    for i = start:length(x.nodes)
+    for i in start:length(x.nodes)
         n = x.nodes[i]
         ln, nl = length_to_newline(n)
         len += ln
@@ -1570,7 +1570,7 @@ function p_comprehension(x, s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
-                for j = i+1:length(x)
+                for j in i+1:length(x)
                     eq_to_in_normalization!(x.args[j])
                 end
             end
