@@ -1428,6 +1428,9 @@ end
         # @test fmt(str_) == str
         #
 
+        # Issue #51
+        # NOTE: `str_` has extra whitespace after
+        # keywords on purpose
         str_ = """
         begin 
             # comment
