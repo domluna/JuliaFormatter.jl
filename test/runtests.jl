@@ -1426,6 +1426,38 @@ end
         #  ;
         # ]"""
         # @test fmt(str_) == str
+        #
+
+        # Issue #51
+        # NOTE: `str_` has extra whitespace after
+        # keywords on purpose
+        str_ = """
+        begin 
+            # comment
+        end"""
+        str = """
+        begin
+            # comment
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        try 
+            # comment
+        catch 
+            # comment
+        finally 
+            # comment
+        end"""
+        str = """
+        try
+            # comment
+        catch
+            # comment
+        finally
+            # comment
+        end"""
+        @test fmt(str_) == str
 
     end
 

@@ -136,6 +136,10 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             # nesting is forced in an effort to preserve them.
             t.force_nest = true
 
+            # If the previous node type is WHITESPACE - reset it.
+            # This fixes cases similar to the one shown in issue #51.
+            nt === WHITESPACE && (t.nodes[end] = Whitespace(0))
+
             hs = hascomment(s.doc, current_line)
             hs && add_node!(t, InlineComment(current_line), s)
             if nt !== PLACEHOLDER
