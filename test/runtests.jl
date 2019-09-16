@@ -88,19 +88,21 @@ end
         for i = 1:n
             println(i)
         end"""
-        @test fmt(str) == str
-
-        str = """
-        for i in itr
+        @test fmt(str) == """
+        for i in 1:n
             println(i)
         end"""
-        @test fmt(str) == str
 
         str = """
-        for i = 1:n
+        for i = iter
             println(i)
         end"""
-        str_ = """
+        @test fmt(str) == """
+        for i in iter
+            println(i)
+        end"""
+
+        str = """
         for i in 1:n
             println(i)
         end"""
@@ -110,47 +112,34 @@ end
         for i in itr
             println(i)
         end"""
-        str_ = """
-        for i = itr
-            println(i)
-        end"""
-        @test fmt(str_) == str
+        @test fmt(str) == str
 
-        str_ = """
+        str = """
         for i = I1, j in I2
             println(i, j)
         end"""
-        str = """
+        @test fmt(str) == """
         for i in I1, j in I2
             println(i, j)
         end"""
-        @test fmt(str_) == str
 
         str = """
         for i = 1:30, j = 100:-2:1
             println(i, j)
         end"""
-        str_ = """
-        for i = 1:30, j in 100:-2:1
+        @test fmt(str) == """
+        for i in 1:30, j in 100:-2:1
             println(i, j)
         end"""
+
+        @test fmt("[(i,j) for i=I1,j=I2]") == "[(i, j) for i in I1, j in I2]"
+        @test fmt("((i,j) for i=I1,j=I2)") == "((i, j) for i in I1, j in I2)"
+
+        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
         @test fmt(str) == str
 
-        str_ = "[(i,j) for i=I1,j=I2]"
-        str = "[(i, j) for i in I1, j in I2]"
-        @test fmt(str_) == str
-
-        str_ = "((i,j) for i=I1,j=I2)"
-        str = "((i, j) for i in I1, j in I2)"
-        @test fmt(str_) == str
-
-        str_ = "[(i,j) for i in 1:2:10,j  in 100:-1:10]"
-        str = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
-        @test fmt(str_) == str
-
-        str_ = "((i,j) for i in 1:2:10,j  in 100:-1:10)"
-        str = "((i, j) for i = 1:2:10, j = 100:-1:10)"
-        @test fmt(str_) == str
+        str = "((i, j) for i in 1:2:10, j in 100:-1:10)"
+        @test fmt(str) == str
     end
 
     @testset "tuples" begin
@@ -270,7 +259,7 @@ end
         str_ = """foo() = for i=1:10 body end"""
         str = """
         foo() =
-            for i = 1:10
+            for i in 1:10
                 body
             end"""
         @test fmt(str_) == str
@@ -334,7 +323,7 @@ end
         str_ = """foo = for i=1:10 body end"""
         str = """
         foo =
-          for i = 1:10
+          for i in 1:10
             body
           end"""
         @test fmt(str_, 2, 1) == str
@@ -634,7 +623,7 @@ end
             body
         end"""
         t = run_pretty(str, 80)
-        @test length(t) == 12
+        @test length(t) == 13
 
         str = """
         for i in 1:10
@@ -1432,7 +1421,7 @@ end
         # NOTE: `str_` has extra whitespace after
         # keywords on purpose
         str_ = """
-        begin 
+        begin
             # comment
         end"""
         str = """
@@ -1442,11 +1431,11 @@ end
         @test fmt(str_) == str
 
         str_ = """
-        try 
+        try
             # comment
-        catch 
+        catch
             # comment
-        finally 
+        finally
             # comment
         end"""
         str = """
@@ -1489,7 +1478,7 @@ end
                      AbstractFoo
                 end""") == str
 
-        str = """for i = 1:10
+        str = """for i in 1:10
                      1
                      2
                      3
@@ -1639,8 +1628,7 @@ end
         str = """T[e for e in x]"""
         @test fmt("T[e  for e= x  ]") == str
 
-        str = """T[e for e = 1:2:50]"""
-        @test fmt("T[e  for e= 1:2:50  ]") == str
+        @test fmt("T[e  for e= 1:2:50  ]") == "T[e for e in 1:2:50]"
 
         str = """struct Foo end"""
         @test fmt("struct Foo\n      end") == str
@@ -1898,7 +1886,7 @@ end
         @test fmt("(a;b;c)", 4, 100) == str
         @test fmt("(a;b;c)", 4, 1) == str
 
-        str = "(x for x = 1:10)"
+        str = "(x for x in 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str
         @test fmt("(x   for x  in  1 : 10)", 4, 1) == str
 

@@ -861,33 +861,12 @@ function p_let(x, s)
     t
 end
 
-
-
-# Transforms
-#
-# for i = iter body end
-#
-# =>
-#
-# for i in iter body end
-#
-# AND
-#
-# for i in 1:10 body end
-#
-# =>
-#
-# for i = 1:10 body end
-#
-# https://github.com/domluna/JuliaFormatter.jl/issues/34
+# Transform all `for i = iter body end` to `for i in iter body end` with no
+# exceptions.
 function eq_to_in_normalization!(x)
     if x.typ === CSTParser.BinaryOpCall
-        op = x.args[2]
-        arg2 = x.args[3]
-        if op.kind === Tokens.EQ && !is_colon_op(arg2)
+        if x.args[2].kind === Tokens.EQ
             x.args[2].kind = Tokens.IN
-        elseif op.kind === Tokens.IN && is_colon_op(arg2)
-            x.args[2].kind = Tokens.EQ
         end
     elseif x.typ === CSTParser.Block || x.typ === CSTParser.InvisBrackets
         for a in x.args
