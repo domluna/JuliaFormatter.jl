@@ -1426,6 +1426,35 @@ end
         #  ;
         # ]"""
         # @test fmt(str_) == str
+        #
+
+        str_ = """
+        begin 
+            # comment
+        end"""
+        str = """
+        begin
+            # comment
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        try 
+            # comment
+        catch 
+            # comment
+        finally 
+            # comment
+        end"""
+        str = """
+        try
+            # comment
+        catch
+            # comment
+        finally
+            # comment
+        end"""
+        @test fmt(str_) == str
 
     end
 
