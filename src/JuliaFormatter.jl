@@ -12,7 +12,7 @@ struct Document
     text::AbstractString
 
     ranges::Vector{UnitRange{Int}}
-    line_to_range::Dict{Integer,UnitRange{Int}}
+    line_to_range::Dict{Int,UnitRange{Int}}
 
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
@@ -96,16 +96,15 @@ end
 
 mutable struct State
     doc::Document
-    indent_size::Integer
-    indent::Integer
-    offset::Integer
-    line_offset::Integer
-    margin::Integer
+    indent_size::Int
+    indent::Int
+    offset::Int
+    line_offset::Int
+    margin::Int
 end
 State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
-@inline getline(d::Document, line::Integer) = d.text[d.line_to_range[line]]
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
 @inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
 
