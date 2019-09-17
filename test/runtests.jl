@@ -1431,33 +1431,41 @@ end
         # Issue #51
         # NOTE: `str_` has extra whitespace after
         # keywords on purpose
-        str_ = """
-        begin 
-            # comment
-        end"""
+        str_ = "begin \n # comment\n end"
         str = """
         begin
-            # comment
+         # comment
         end"""
         @test fmt(str_) == str
 
-        str_ = """
-        try 
-            # comment
-        catch 
-            # comment
-        finally 
-            # comment
-        end"""
+        str_ = "try \n # comment\n catch \n # comment\n finally \n # comment\n end"
         str = """
         try
-            # comment
+         # comment
         catch
-            # comment
+         # comment
         finally
-            # comment
+         # comment
         end"""
         @test fmt(str_) == str
+
+        str = """a = "hello ##" # # # α"""
+        @test fmt(str) == str
+
+        # issue #65
+        str = "1 # α"
+        @test fmt(str) == str
+
+        str = "# α"
+        @test fmt(str) == str
+
+        str = """
+        #=
+        α
+        =#
+        x = 1
+        """
+        @test fmt(str) == str
 
     end
 

@@ -17,19 +17,22 @@ struct Document
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
     lit_strings::Dict{Int,Tuple{Int,Int,String}}
-    comments::Dict{Int,String}
+    comments::Dict{Int,Tuple{Int,String}}
 
     # CSTParser does not detect semicolons.
     # It's useful to know where these are for
     # a few node types.
     semicolons::Set{Int}
 end
+
 function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
     line_to_range = Dict{Int,UnitRange{Int}}()
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
-    comments = Dict{Int,String}()
+    comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
+    # dummy initial token
+    prev_tok = Tokens.Token()
 
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind === Tokens.WHITESPACE
@@ -55,32 +58,44 @@ function Document(text::AbstractString)
                 end
             end
         elseif t.kind === Tokens.COMMENT
+            ws = 0
+            if prev_tok.kind === Tokens.WHITESPACE
+                # Handles the case where the value of the
+                # WHITESPACE token is like " \n ".
+                i = findlast(c -> c == '\n', prev_tok.val)
+                i === nothing && (i = 1)
+                ws = count(c -> c == ' ', prev_tok.val[i:end])
+            end
             if t.startpos[1] == t.endpos[1]
-                comments[t.startpos[1]] = t.val
+                # Determine the number of spaces prior to a possible inline comment
+                comments[t.startpos[1]] = (ws, t.val)
             else
                 sl = t.startpos[1]
                 offset = t.startbyte
-                comment_offset = 1
+                cs = ""
                 for (i, c) in enumerate(t.val)
+                    cs *= c
                     if c == '\n'
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
-                        comments[sl] = t.val[comment_offset:i-1]
+                        comments[sl] = (ws, cs)
                         sl += 1
-                        comment_offset = i + 1
+                        cs = ""
                     end
                     offset += 1
                 end
                 # last comment
-                comments[sl] = t.val[comment_offset:end]
+                comments[sl] = (ws, cs)
             end
         elseif t.kind === Tokens.SEMICOLON
             push!(semicolons, t.startpos[1])
         end
+        prev_tok = t
     end
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
+    # @info "" comments ranges
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
 end
 
@@ -95,11 +110,10 @@ end
 State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
 
 @inline nspaces(s::State) = s.indent
-@inline getline(d::Document, line::Int) = d.text[d.line_to_range[line]]
-@inline hascomment(d::Document, line::Int) = haskey(d.comments, line)
-@inline has_semicolon(d::Document, line::Int) = line in d.semicolons
+@inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
+@inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
 
-@inline function cursor_loc(s::State, offset::Int)
+@inline function cursor_loc(s::State, offset::Integer)
     for (l, r) in enumerate(s.doc.ranges)
         if offset in r
             return (l, offset - first(r) + 1, length(r))
@@ -140,7 +154,7 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     d = Document(text)
     # If "nofmt" occurs in a comment on line 1 do not format
-    occursin("nofmt", get(d.comments, 1, "")) && (return text)
+    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && (return text)
 
     s = State(d, indent, margin)
     t = pretty(x, s)

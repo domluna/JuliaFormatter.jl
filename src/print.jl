@@ -46,25 +46,24 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
 end
 
 @inline function print_notcode(io, x, s)
-    prev_nl = true
     for l = x.startline:x.endline
-        v = getline(s.doc, l)
+        ws, v = get(s.doc.comments, l, (0, "\n"))
         v == "" && continue
         if l == x.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end
+        ws > 0 && write(io, repeat(" ", ws))
         write(io, v)
-        prev_nl = v == "\n" ? true : false
+        if l != x.endline && v[end] != '\n'
+            write(io, "\n")
+        end
     end
 end
 
 @inline function print_inlinecomment(io, x, s)
-    v = get(s.doc.comments, x.startline, "")
+    ws, v = get(s.doc.comments, x.startline, (0, ""))
     isempty(v) && return
-    v = getline(s.doc, x.startline)
-    idx = findlast(c -> c == '#', v)
-    idx === nothing && return
-    idx = findlast(c -> !isspace(c), v[1:prevind(v, idx)])
-    v = v[end] == '\n' ? v[nextind(v, idx):prevind(v, end)] : v[nextind(v, idx):end]
+    v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
+    ws > 0 && write(io, repeat(" ", ws))
     write(io, v)
 end

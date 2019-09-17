@@ -42,10 +42,10 @@ function gradm(ex, mut = false)
     fargs = kw == nothing ? [cx, :($f::$T), args...] : [kw, cx, :($f::$T), args...]
     gradtuple = isclosure ? gradtuple0 : gradtuple1
     gradtuplekw = isclosure ? gradtuple2 : gradtuple3
-    adj = @q @inline ZygoteRules.adjoint($(fargs...)) where $(Ts...) = $(esc(body))
+    adj = @q @inline ZygoteRules.adjoint($(fargs...)) where {$(Ts...)} = $(esc(body))
     quote
         $adj
-        @inline function ZygoteRules._forward($cx, $f::$T, $(args...)) where $(Ts...)
+        @inline function ZygoteRules._forward($cx, $f::$T, $(args...)) where {$(Ts...)}
             y, _back = adjoint(__context__, $f, $(argnames...))
             $(mut ? nothing : :(back(::Nothing) = nothing))
             back(Δ) = $gradtuple(_back(Δ))
@@ -57,7 +57,7 @@ function gradm(ex, mut = false)
             kw,
             $f::$T,
             $(args...),
-        ) where $(Ts...)
+        ) where {$(Ts...)}
             y, _back = adjoint(__context__, $f, $(argnames...); kw...)
             $(mut ? nothing : :(back(::Nothing) = nothing))
             back(Δ) = $gradtuplekw(_back(Δ))

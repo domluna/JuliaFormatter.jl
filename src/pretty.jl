@@ -23,14 +23,14 @@ mutable struct PTree
     force_nest::Bool
 end
 
-PTree(x::CSTParser.EXPR, indent::Int) =
+PTree(x::CSTParser.EXPR, indent::Integer) =
     PTree(x.typ, -1, -1, indent, 0, nothing, PTree[], Ref(x), false)
 
-function PTree(x::CSTParser.EXPR, startline::Int, endline::Int, val::AbstractString)
+function PTree(x::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
     PTree(x.typ, startline, endline, 0, length(val), val, nothing, Ref(x), false)
 end
 
-function PTree(x::CSTParser.Head, startline::Int, endline::Int, val::AbstractString)
+function PTree(x::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
     PTree(x, startline, endline, 0, length(val), val, nothing, nothing, false)
 end
 

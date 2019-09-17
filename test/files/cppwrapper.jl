@@ -35,16 +35,16 @@ function JLPolygon(x::CPolygon)
     JLPolygon(unsafe_wrap(Array, x.vertexlist, x.numberofvertices, own = true))
 end
 
-function JLFacet(f::CFacet{T}) where T
+function JLFacet(f::CFacet{T}) where {T}
     c_polys = unsafe_wrap(Array, f.polygonlist, f.numberofpolygons, own = true)
     holes = unsafe_wrap(Array, f.holelist, f.numberofholes, own = true)
     JLFacet{T}(JLPolygon.(c_polys), holes)
 end
 
-function convert_poly(x::Vector{T}) where T <: Union{
+function convert_poly(x::Vector{T}) where {T<:Union{
     NgonFace{N,Cint},
     NTuple{N,Cint},
-} where N
+}} where {N}
     return map(1:length(x)) do i
         CPolygon(pointer(x, i), N)
     end
@@ -219,7 +219,7 @@ function TetgenIO(
     edges = LineFace{Cint}[],
     edgemarkers = Cint[],
 
-) where T
+) where {T}
     TetgenIO(
         points,
         pointattributes,
@@ -292,7 +292,7 @@ function Base.convert(
     end...)
 end
 
-function Base.convert(::Type{TetgenIO}, io::CPPTetgenIO{T}) where T
+function Base.convert(::Type{TetgenIO}, io::CPPTetgenIO{T}) where {T}
     NSimplex = Int(io.numberofcorners)
     NAttributes = Int(io.numberofpointattributes)
     NMTr = Int(io.numberofpointmtrs)
@@ -339,7 +339,7 @@ function unsafe_array_convert(
     return Base.unsafe_convert(Ptr{CFacet{T}}, facets[3])
 end
 
-function unsafe_array_convert(P::Type{Ptr{T}}, x::Vector{T}) where T
+function unsafe_array_convert(P::Type{Ptr{T}}, x::Vector{T}) where {T}
     Base.unsafe_convert(P, x)
 end
 
@@ -393,7 +393,7 @@ end
 function Base.unsafe_convert(
     ::Type{CPPTetgenIO{T}},
     x::Tuple{CPPTetgenIO{T},Vector{Any}},
-) where T
+) where {T}
     return x[1]
 end
 

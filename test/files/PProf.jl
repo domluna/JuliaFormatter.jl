@@ -45,7 +45,7 @@ Useful for the Strings table
 NOTE: We must use Int64 throughout this package (regardless of system word-size) b/c the
 proto file specifies 64-bit integers.
 """
-function _enter!(dict::OrderedDict{T,Int64}, key::T) where T
+function _enter!(dict::OrderedDict{T,Int64}, key::T) where {T}
     if haskey(dict, key)
         return dict[key]
     else
