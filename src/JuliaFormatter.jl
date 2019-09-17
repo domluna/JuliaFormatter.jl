@@ -72,7 +72,6 @@ function Document(text::AbstractString)
             else
                 sl = t.startpos[1]
                 offset = t.startbyte
-                comment_offset = 1
                 cs = ""
                 for (i, c) in enumerate(t.val)
                     cs *= c
@@ -81,7 +80,6 @@ function Document(text::AbstractString)
                         push!(ranges, s:offset+1)
                         comments[sl] = (ws, cs)
                         sl += 1
-                        comment_offset = i + 1
                         cs = ""
                     end
                     offset += 1
