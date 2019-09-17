@@ -11,18 +11,18 @@ is_str_or_cmd(x::Tokens.Kind) =
 struct Document
     text::AbstractString
 
-    ranges::Vector{UnitRange{Integer}}
-    line_to_range::Dict{Integer,UnitRange{Integer}}
+    ranges::Vector{UnitRange{Int}}
+    line_to_range::Dict{Integer,UnitRange{Int}}
 
     # mapping the offset in the file to the raw literal
     # string and what lines it starts and ends at.
-    lit_strings::Dict{Integer,Tuple{Integer,Integer,AbstractString}}
-    comments::Dict{Integer,Tuple{Integer,AbstractString}}
+    lit_strings::Dict{Int,Tuple{Int,Int,String}}
+    comments::Dict{Int,Tuple{Int,String}}
 
     # CSTParser does not detect semicolons.
     # It's useful to know where these are for
     # a few node types.
-    semicolons::Set{Integer}
+    semicolons::Set{Int}
 end
 
 function Document(text::AbstractString)
@@ -58,26 +58,29 @@ function Document(text::AbstractString)
                 end
             end
         elseif t.kind === Tokens.COMMENT
+            ws = prev_tok.kind === Tokens.WHITESPACE ? count(c -> c == ' ', prev_tok.val) : 0
             if t.startpos[1] == t.endpos[1]
                 # Determine the number of spaces prior to a possible inline comment
-                ws = prev_tok.kind === Tokens.WHITESPACE ? length(prev_tok.val) : 0
                 comments[t.startpos[1]] = (ws, t.val)
             else
                 sl = t.startpos[1]
                 offset = t.startbyte
                 comment_offset = 1
+                cs = ""
                 for (i, c) in enumerate(t.val)
+                    cs *= c
                     if c == '\n'
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
-                        comments[sl] = (0, t.val[comment_offset:i-1])
+                        comments[sl] = (ws, cs)
                         sl += 1
                         comment_offset = i + 1
+                        cs = ""
                     end
                     offset += 1
                 end
                 # last comment
-                comments[sl] = (0, t.val[comment_offset:end])
+                comments[sl] = (ws, cs)
             end
         elseif t.kind === Tokens.SEMICOLON
             push!(semicolons, t.startpos[1])
@@ -87,7 +90,7 @@ function Document(text::AbstractString)
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
-    # @info "" ranges
+    # @info "" comments ranges
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
 end
 

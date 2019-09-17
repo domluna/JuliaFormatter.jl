@@ -1468,6 +1468,15 @@ end
 
         str = "# α"
         @test fmt(str) == str
+
+        str = """
+        #=
+        α
+        =#
+        x = 1
+        """
+        @test fmt(str) == str
+
     end
 
     @testset "pretty" begin

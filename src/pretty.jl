@@ -13,10 +13,10 @@
 
 mutable struct PTree
     typ::Union{CSTParser.Head,PLeaf}
-    startline::Integer
-    endline::Integer
-    indent::Integer
-    len::Integer
+    startline::Int
+    endline::Int
+    indent::Int
+    len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{PTree}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
