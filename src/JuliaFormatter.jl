@@ -58,8 +58,14 @@ function Document(text::AbstractString)
                 end
             end
         elseif t.kind === Tokens.COMMENT
-            ws = prev_tok.kind !== Tokens.WHITESPACE ? 0 :
-                 count(c -> c == ' ', prev_tok.val)
+            ws = 0
+            if prev_tok.kind === Tokens.WHITESPACE
+                # Handles the case where the value of the
+                # WHITESPACE token is like " \n ".
+                i = findlast(c -> c == '\n', prev_tok.val)
+                i === nothing && (i = 1)
+                ws = count(c -> c == ' ', prev_tok.val[i:end])
+            end
             if t.startpos[1] == t.endpos[1]
                 # Determine the number of spaces prior to a possible inline comment
                 comments[t.startpos[1]] = (ws, t.val)
