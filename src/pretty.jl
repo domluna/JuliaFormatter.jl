@@ -1166,7 +1166,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
-    elseif op.dot
+    elseif op.kind === Tokens.CIRCUMFLEX_ACCENT && op.dot
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
