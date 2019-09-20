@@ -1163,21 +1163,19 @@ function p_binarycall(x, s; nonest = false, nospace = false)
 
     if op.fullspan == 0 && x.args[3].typ === CSTParser.IDENTIFIER
         # do nothing
-    elseif (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC) ||
-           nospace
-        add_node!(t, pretty(op, s), s, join_lines = true)
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
-    elseif nest
+    elseif op.kind === Tokens.CIRCUMFLEX_ACCENT && op.dot
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
-        # for newline
-        add_node!(t, Placeholder(1), s)
+        nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
+    elseif nospace || (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
+        add_node!(t, pretty(op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
-        add_node!(t, Whitespace(1), s)
+        nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     end
 
 

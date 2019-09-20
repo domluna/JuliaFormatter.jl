@@ -56,6 +56,13 @@ end
         @test fmt(str) == str
     end
 
+    @testset "dot op" begin
+        @test fmt("10 .^ a") == "10 .^ a"
+        @test fmt("10.0 .^ a") == "10.0 .^ a"
+        @test fmt("a.^b") == "a .^ b"
+        @test fmt("a.^10.") == "a .^ 10.0"
+    end
+
     @testset "toplevel" begin
         str = """
 
