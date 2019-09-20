@@ -237,6 +237,8 @@ end
         @test fmt("a:b:c ") == "a:b:c"
         @test fmt("a::b:: c") == "a::b::c"
         @test fmt("a :: b::c") == "a::b::c"
+        # issue #74
+        @test fmt("0:1/3:2") == "0:1/3:2"
         @test fmt("2a") == "2a"
         @test fmt("2(a+1)") == "2 * (a + 1)"
 

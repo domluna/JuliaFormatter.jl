@@ -304,6 +304,8 @@ function pretty(x::CSTParser.EXPR, s::State)
         return p_unarycall(x, s)
     elseif x.typ === CSTParser.ChainOpCall
         return p_chaincall(x, s)
+    elseif x.typ === CSTParser.ColonOpCall
+        return p_coloncall(x, s)
     elseif x.typ === CSTParser.Comparison
         return p_chaincall(x, s)
     elseif x.typ === CSTParser.Kw
@@ -1068,6 +1070,20 @@ function p_chaincall(x, s)
     end
     t
 end
+#
+# ColonOpCall
+function p_coloncall(x, s)
+    t = PTree(x, nspaces(s))
+    for a in x
+        if a.typ === CSTParser.BinaryOpCall
+            n = p_binarycall(a, s, nonest = true, nospace = true)
+        else
+            n = pretty(a, s)
+        end
+        add_node!(t, n, s, join_lines = true)
+    end
+    t
+end
 
 # CSTParser.Kw
 function p_kw(x, s)
@@ -1170,7 +1186,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif nospace || (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
+    elseif nospace ||
+           (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
         add_node!(t, pretty(op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
