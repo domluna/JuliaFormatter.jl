@@ -9,6 +9,7 @@
     NOTCODE,
     INLINECOMMENT,
     TRAILINGCOMMA,
+    TRAILINGSEMICOLON,
 )
 
 mutable struct PTree
@@ -37,6 +38,7 @@ end
 Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing, false)
 Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
 TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false)
+TrailingSemicolon() = PTree(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false)
 Notcode(startline, endline) =
@@ -1549,7 +1551,7 @@ function p_vcat(x, s)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
             if i != length(x) - 1
-                has_semicolon(s.doc, n.startline) && add_node!(t, Semicolon(), s)
+                has_semicolon(s.doc, n.startline) && add_node!(t, TrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
             # Keep trailing semicolon if there's only one arg
             elseif !multi_arg

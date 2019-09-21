@@ -2636,7 +2636,7 @@ end
         d e Expr();]"""
         str = """
         [
-         a b Expr();
+         a b Expr()
          d e Expr()
         ]"""
         @test fmt(str_) == str
@@ -2649,7 +2649,7 @@ end
         d e Expr();]"""
         str = """
         T[
-          a b Expr();
+          a b Expr()
           d e Expr()
         ]"""
         @test fmt(str_) == str
@@ -2657,6 +2657,7 @@ end
         str_ = "T[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
         @test fmt(str_, 4, 1) == str
+
         str = """
         [
          0.0 0.0 0.0 1.0
