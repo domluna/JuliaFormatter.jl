@@ -413,6 +413,7 @@ end
         @test fmt("func(  a, b; c)") == "func(a, b; c)"
         @test fmt("func(a  ,b; c)") == "func(a, b; c)"
         @test fmt("func(a=1,b; c=1)") == "func(a = 1, b; c = 1)"
+        @test fmt("func(; c = 1)", 4, 1) == "func(; c = 1)"
     end
 
     @testset "begin" begin
@@ -2168,6 +2169,31 @@ end
         end"""
         @test fmt(str_) == str
 
+        # single function kwarg or param should not nest
+        @test fmt("f(;a=1)", 4, 1) == "f(; a = 1)"
+        @test fmt("f(a=1)", 4, 1) == "f(a = 1)"
+
+        # any pairing of argument, kawrg, or param should nest
+        str = """
+        f(
+          arg;
+          a = 1,
+        )"""
+        @test fmt("f(arg;a=1)", 4, 1) == str
+
+        str = """
+        f(
+          arg,
+          a = 1,
+        )"""
+        @test fmt("f(arg,a=1)", 4, 1) == str
+
+        str = """
+        f(
+          a = 1;
+          b = 2,
+        )"""
+        @test fmt("f(a=1; b=2)", 4, 1) == str
     end
 
     @testset "nesting line offset" begin
