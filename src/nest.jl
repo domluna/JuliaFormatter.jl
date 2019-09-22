@@ -206,6 +206,10 @@ function n_tuple!(x, s; extra_width = 0)
                 x.nodes[i].val = ","
                 x.nodes[i].len = 1
                 nest!(x.nodes[i], s)
+            elseif n.typ === TRAILINGSEMICOLON
+                x.nodes[i].val = ""
+                x.nodes[i].len = 0
+                nest!(x.nodes[i], s)
             elseif opener && (i == 1 || i == length(x.nodes))
                 nest!(n, s)
             else
@@ -270,6 +274,10 @@ function n_call!(x, s; extra_width = 0)
             elseif n.typ === TRAILINGCOMMA
                 x.nodes[i].val = ","
                 x.nodes[i].len = 1
+                nest!(x.nodes[i], s)
+            elseif n.typ === TRAILINGSEMICOLON
+                x.nodes[i].val = ""
+                x.nodes[i].len = 0
                 nest!(x.nodes[i], s)
             elseif i == 1 || i == length(x.nodes)
                 n.typ === CSTParser.Parameters && (n.force_nest = true)
