@@ -37,7 +37,7 @@ There is also a command-line tool `bin/format.jl` which can be invoked with `-i`
 
 ### Pass 1: Prettify
 
-The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code.
+The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code; expressions will be attempted to be placed on a single line.
 
 Example:
 
@@ -104,7 +104,7 @@ f(arg1, arg2, arg3)
 f(
   arg1,
   arg2,
-  arg3
+  arg3,
 )
 ```
 
@@ -121,7 +121,7 @@ function longfunctionname_that_is_long(
     args,
     even, 
     more, 
-    args
+    args,
 )
     body
 end
@@ -135,7 +135,7 @@ S <: Union{Type1,Type2,Type3}
 S <: Union{
    Type1,
    Type2,
-   Type3
+   Type3,
 }
 ```
 
@@ -184,3 +184,69 @@ end
 
 If the RHS is a range, i.e. `1:10` then `for in` is converted to `for =`. Otherwise `for =` is converted to `for in`. See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/34) for the rationale and further explanation.
 
+### Trailing Commas
+
+If an iterable expression is nested a trailing comma is added to the last argument. The trailing comma is removed if the expressions is unnested:
+
+
+```julia
+f(a, b, c)
+
+->
+
+f(
+  a,
+  b,
+  c,
+)
+```
+
+See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/44) for more details.
+
+
+
+### Trailing Semicolons
+
+If a matrix expression is nested the semicolons are removed.
+
+```julia
+[1 0; 0 1]
+
+->
+
+[
+ 1 0
+ 0 1
+]
+```
+
+See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/77) for more details.
+
+### Trailing 0s for float literals
+
+If a float literal is missing a trailing 0 it is added:
+
+```julia
+a = 1.
+
+->
+
+a = 1.0
+```
+
+See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/66) for more details.
+
+### Surround `where` arguments with curly brackets
+
+If the arguments of a `where` call are not surrounded by curly brackets, they are added:
+
+
+```julia
+foo(x::T) where T = ...
+
+->
+
+foo(x::T) where {T} = ...
+```
+
+See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/53) for more details.
