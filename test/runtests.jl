@@ -242,6 +242,14 @@ end
         @test fmt("2a") == "2a"
         @test fmt("2(a+1)") == "2 * (a + 1)"
 
+        str_ = "a[1:2 * num_source * num_dump-1]"
+        str = "a[1:2*num_source*num_dump-1]"
+        @test fmt(str_, 4, 1) == str
+
+        str_ = "a[2 * num_source * num_dump-1:1]"
+        str = "a[2*num_source*num_dump-1:1]"
+        @test fmt(str_, 4, 1) == str
+
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
 

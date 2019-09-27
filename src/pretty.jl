@@ -1052,14 +1052,14 @@ function p_if(x, s)
 end
 
 # ChainOpCall/Comparison
-function p_chaincall(x, s)
+function p_chaincall(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if a.typ === CSTParser.OPERATOR
-            add_node!(t, Whitespace(1), s)
+            !nospace && add_node!(t, Whitespace(1), s)
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
+            !(nospace && nonest) && add_node!(t, Placeholder(1), s)
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i != length(x)
@@ -1168,6 +1168,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace), s)
     elseif x.args[1].typ === CSTParser.InvisBrackets
         add_node!(t, p_invisbrackets(x.args[1], s, nonest = nonest, nospace = nospace), s)
+    elseif x.args[1].typ === CSTParser.ChainOpCall
+        add_node!(t, p_chaincall(x.args[1], s, nonest = nonest, nospace = nospace), s)
     else
         add_node!(t, pretty(x.args[1], s), s)
     end
@@ -1201,6 +1203,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
     elseif x.args[3].typ === CSTParser.InvisBrackets
         n = p_invisbrackets(x.args[3], s, nonest = nonest, nospace = nospace)
+    elseif x.args[3].typ === CSTParser.ChainOpCall
+        n = p_chaincall(x.args[3], s, nonest = nonest, nospace = nospace)
     else
         n = pretty(x.args[3], s)
     end
