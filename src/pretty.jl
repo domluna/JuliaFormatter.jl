@@ -1106,7 +1106,8 @@ block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
     x.typ === CSTParser.Do ||
     x.typ === CSTParser.Try ||
-    x.typ === CSTParser.For || x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
+    x.typ === CSTParser.For ||
+    x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.args[3])
 
