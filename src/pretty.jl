@@ -1332,12 +1332,7 @@ function p_call(x, s)
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            pn = x.args[i+1]
-            if pn.typ !== CSTParser.Parameters
-                add_node!(t, TrailingComma(), s)
-            elseif pn.typ === CSTParser.Parameters && !CSTParser.is_comma(pn.args[end])
-                add_node!(t, TrailingComma(), s)
-            end
+            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+3])
@@ -1474,7 +1469,9 @@ function p_params(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         n = pretty(a, s)
-        if CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+        if i == length(x) && CSTParser.is_comma(a)
+            # do nothing
+        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
