@@ -1332,7 +1332,6 @@ function p_call(x, s)
 
     for (i, a) in enumerate(x.args[3:end])
         if i + 2 == length(x) && multi_arg
-            pn = x.args[i+1]
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
