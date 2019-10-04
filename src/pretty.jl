@@ -444,6 +444,8 @@ function p_literal(x, s)
         if x.kind === Tokens.FLOAT && x.val[end] == '.'
             # If a floating point ends in `.`, add trailing zero.
             val *= '0'
+        elseif x.kind === Tokens.FLOAT && x.val[1] == '.'
+            val = '0' * val
         end
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], val)

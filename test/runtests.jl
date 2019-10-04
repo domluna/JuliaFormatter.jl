@@ -2630,6 +2630,17 @@ end
         """) == "1.0 + 2.0\n"
     end
 
+    @testset "Leading zeros" begin
+        @test fmt(".1") == "0.1"
+        @test fmt("a * .1 + b") == "a * 0.1 + b"
+        @test fmt(".1 + .2 * im") == "0.1 + 0.2 * im"
+        @test fmt("[.1, .2]") == "[0.1, 0.2]"
+        @test fmt("""
+        .1 +
+            .2
+        """) == "0.1 + 0.2\n"
+    end
+
     # https://github.com/domluna/JuliaFormatter.jl/issues/77
     @testset "issue 77" begin
         str_ = """
