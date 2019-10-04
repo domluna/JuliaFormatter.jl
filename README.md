@@ -222,9 +222,9 @@ If a matrix expression is nested the semicolons are removed.
 
 See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/77) for more details.
 
-### Trailing 0s for float literals
+### Leading and trailing 0s for float literals
 
-If a float literal is missing a trailing 0 it is added:
+If a float literal is missing a *trailing* 0 it is added:
 
 ```julia
 a = 1.
@@ -232,6 +232,16 @@ a = 1.
 ->
 
 a = 1.0
+```
+
+If a float literal is missing a *leading* 0 it is added:
+
+```julia
+a = .1
+
+->
+
+a = 0.1
 ```
 
 See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/66) for more details.
