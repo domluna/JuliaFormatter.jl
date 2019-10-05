@@ -516,7 +516,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width, _ = length_to_newline(x, 2)
+            return_width, _ = length_to(x, (PLACEHOLDER, NEWLINE), start=2)
         end
 
         # @info "" return_width

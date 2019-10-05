@@ -203,20 +203,18 @@ function is_prev_newline(x::PTree)
 end
 
 """
-`length_to_newline` returns the length to the next NEWLINE or PLACEHOLDER node
+    `length_to(x::PTree, ntyps; start::Int = 1)`
 
-based off the `start` index.
+Returns the length to any node type in `ntyps` based off the `start` index.
 """
-function length_to_newline(x::PTree, start = 1)
-    x.typ === NEWLINE && (return 0, true)
-    x.typ === PLACEHOLDER && (return 0, true)
-    is_leaf(x) && (return length(x), false)
+function length_to(x::PTree, ntyps; start::Int = 1)
+    x.typ in ntyps && return 0, true
+    is_leaf(x) && return length(x), false
     len = 0
     for i = start:length(x.nodes)
-        n = x.nodes[i]
-        ln, nl = length_to_newline(n)
-        len += ln
-        nl && (return len, nl)
+        l, found = length_to(x.nodes[i], ntyps)
+        len += l
+        found && return len, found
     end
     return len, false
 end
