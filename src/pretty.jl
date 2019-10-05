@@ -885,10 +885,16 @@ end
 # for i = 1:10 body end
 #
 # https://github.com/domluna/JuliaFormatter.jl/issues/34
-function eq_to_in_normalization!(x)
+function eq_to_in_normalization!(x, always_use_in)
     if x.typ === CSTParser.BinaryOpCall
         op = x.args[2]
         arg2 = x.args[3]
+
+        if always_use_in
+            x.args[2].kind = Tokens.IN
+            return
+        end
+
         if op.kind === Tokens.EQ && !is_colon_op(arg2)
             x.args[2].kind = Tokens.IN
         elseif op.kind === Tokens.IN && is_colon_op(arg2)
@@ -896,7 +902,7 @@ function eq_to_in_normalization!(x)
         end
     elseif x.typ === CSTParser.Block || x.typ === CSTParser.InvisBrackets
         for a in x.args
-            eq_to_in_normalization!(a)
+            eq_to_in_normalization!(a, always_use_in)
         end
     end
 end
@@ -907,7 +913,7 @@ function p_loop(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     add_node!(t, Whitespace(1), s)
     if x.args[1].kind === Tokens.FOR
-        eq_to_in_normalization!(x.args[2])
+        eq_to_in_normalization!(x.args[2], s.always_use_in)
     end
     add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     s.indent += s.indent_size
@@ -1610,7 +1616,7 @@ function p_comprehension(x, s)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(x)
-                    eq_to_in_normalization!(x.args[j])
+                    eq_to_in_normalization!(x.args[j], s.always_use_in)
                 end
             end
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
