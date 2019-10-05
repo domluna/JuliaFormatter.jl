@@ -3,14 +3,14 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i, m, always_use_in) =
-    JuliaFormatter.format_text(s, indent = i, margin = m, always_use_in = always_use_in)
+fmt1(s, i, m, always_for_in) =
+    JuliaFormatter.format_text(s, indent = i, margin = m, always_for_in = always_for_in)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(s; i = 4, m = 80, always_use_in = false)
-    s1 = fmt1(s, i, m, always_use_in)
-    fmt1(s1, i, m, always_use_in)
+function fmt(s; i = 4, m = 80, always_for_in = false)
+    s1 = fmt1(s, i, m, always_for_in)
+    fmt1(s1, i, m, always_for_in)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 
@@ -171,8 +171,8 @@ end
         for i in 1:n
             println(i)
         end"""
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
 
         str_ = """
         for i = I1, j in I2
@@ -182,8 +182,8 @@ end
         for i in I1, j in I2
             println(i, j)
         end"""
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
 
         str_ = """
         for i = 1:30, j = 100:-2:1
@@ -193,23 +193,23 @@ end
         for i in 1:30, j in 100:-2:1
             println(i, j)
         end"""
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
 
         str_ = "[(i,j) for i=I1,j=I2]"
         str = "[(i, j) for i in I1, j in I2]"
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
 
         str_ = "((i,j) for i=I1,j=I2)"
         str = "((i, j) for i in I1, j in I2)"
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
 
         str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
-        @test fmt(str_, always_use_in = true) == str
-        @test fmt(str, always_use_in = true) == str
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
     end
 
     @testset "tuples" begin
