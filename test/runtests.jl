@@ -3,11 +3,12 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i, m, always_use_in) = JuliaFormatter.format_text(s, indent = i, margin = m, always_use_in = always_use_in)
+fmt1(s, i, m, always_use_in) =
+    JuliaFormatter.format_text(s, indent = i, margin = m, always_use_in = always_use_in)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(s; i = 4, m = 80, always_use_in=false)
+function fmt(s; i = 4, m = 80, always_use_in = false)
     s1 = fmt1(s, i, m, always_use_in)
     fmt1(s1, i, m, always_use_in)
 end

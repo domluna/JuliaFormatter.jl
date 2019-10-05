@@ -53,7 +53,7 @@ function parse_opts!(args::Vector{String})
             opt = :help
         elseif arg == "-o" || arg == "--overwrite"
             opt = :overwrite
-        elseif arg "--always_use_in"
+        elseif arg == "--always_use_in"
             opt = :always_use_in
         else
             error("invalid option $arg")

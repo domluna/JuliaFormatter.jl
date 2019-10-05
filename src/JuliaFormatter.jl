@@ -108,7 +108,8 @@ mutable struct State
     margin::Int
     always_use_in::Bool
 end
-State(doc, indent_size, margin; always_use_in=false) = State(doc, indent_size, 0, 1, 0, margin, always_use_in)
+State(doc, indent_size, margin; always_use_in = false) =
+    State(doc, indent_size, 0, 1, 0, margin, always_use_in)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
@@ -145,7 +146,12 @@ code as another string. The formatting options are:
 If `always_use_in` is true `=` is always replaced with `in` with respect to for loops.
 For example, `for i = 1:10` will be transformed to `for i in 1:10`.
 """
-function format_text(text::AbstractString; indent::Int = 4, margin::Int = 92, always_use_in::Bool=false)
+function format_text(
+    text::AbstractString;
+    indent::Int = 4,
+    margin::Int = 92,
+    always_use_in::Bool = false,
+)
     isempty(text) && return text
 
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
@@ -158,7 +164,7 @@ function format_text(text::AbstractString; indent::Int = 4, margin::Int = 92, al
     # If "nofmt" occurs in a comment on line 1 do not format
     occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && return text
 
-    s = State(d, indent, margin, always_use_in=always_use_in)
+    s = State(d, indent, margin, always_use_in = always_use_in)
     t = pretty(x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
     nest!(t, s)
