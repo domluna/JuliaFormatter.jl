@@ -143,8 +143,9 @@ code as another string. The formatting options are:
 - `indent` which defaults to 4 spaces
 - `margin` which defaults to 92 columns
 
-If `always_use_in` is true `=` is always replaced with `in` with respect to for loops.
-For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+If `always_use_in` is true `=` is always replaced with `in` if part of a
+`for` loop condition.  For example, `for i = 1:10` will be transformed
+to `for i in 1:10`.
 """
 function format_text(
     text::AbstractString;
@@ -215,8 +216,9 @@ be written to `foo_fmt.jl` instead.
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
 
-If `always_use_in` is true `=` is always replaced with `in` with respect to for loops.
-For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+If `always_use_in` is true `=` is always replaced with `in` if part of a
+`for` loop condition.  For example, `for i = 1:10` will be transformed
+to `for i in 1:10`.
 """
 function format_file(
     filename::AbstractString;
