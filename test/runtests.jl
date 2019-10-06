@@ -13,6 +13,7 @@ function fmt(s; i = 4, m = 80, always_for_in = false)
     fmt1(s1, i, m, always_for_in)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
+fmt1(s, i, m) = fmt1(s; i = i, m = m)
 
 function run_pretty(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)
@@ -641,23 +642,22 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do (
-                subproblem1,
-                subproblem2,
-                subproblem3,
-                subproblem4,
-                subproblem5,
-                subproblem6,
-                subproblem7,
-                subproblem8,
-            )
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do (
+            subproblem1,
+            subproblem2,
+            subproblem3,
+            subproblem4,
+            subproblem5,
+            subproblem6,
+            subproblem7,
+            subproblem8,
+        )
+            body
+        end"""
         @test fmt(str_) == str
 
         str_ = """
@@ -665,14 +665,13 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do subproblem1, subproblem2
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do subproblem1, subproblem2
+            body
+        end"""
         @test fmt(str_) == str
 
     end
@@ -1817,6 +1816,7 @@ end
         @test fmt(str) == str
 
         @test fmt("ref[a: (b + c)]") == "ref[a:(b+c)]"
+        @test fmt("ref[a in b]") == "ref[a in b]"
     end
 
     @testset "nesting" begin
@@ -1959,15 +1959,24 @@ end
         @test fmt("foo() = (one, x -> (true, false))", 4, 30) == str
 
         str = """
-        foo() =
-            (
-             one,
-             x -> (
-                 true,
-                 false,
-             ),
-            )"""
+        foo() = (
+            one,
+            x -> (
+                true,
+                false,
+            ),
+        )"""
         @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
+
+        str = """
+        foo() = (
+                 one,
+                 x -> (
+                       true,
+                       false,
+                 ),
+        )"""
+        @test fmt("foo() = (one, x -> (true, false))", 10, 20) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)
@@ -2775,10 +2784,5 @@ end
         ]"""
         @test fmt(str) == str
     end
-
-# @testset "meta-format" begin
-#     str = String(read("./runtests.jl"))
-#     str = fmt(str)
-# end
 
 end

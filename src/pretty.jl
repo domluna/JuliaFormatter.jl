@@ -203,20 +203,18 @@ function is_prev_newline(x::PTree)
 end
 
 """
-`length_to_newline` returns the length to the next NEWLINE or PLACEHOLDER node
+    `length_to(x::PTree, ntyps; start::Int = 1)`
 
-based off the `start` index.
+Returns the length to any node type in `ntyps` based off the `start` index.
 """
-function length_to_newline(x::PTree, start = 1)
-    x.typ === NEWLINE && (return 0, true)
-    x.typ === PLACEHOLDER && (return 0, true)
-    is_leaf(x) && (return length(x), false)
+function length_to(x::PTree, ntyps; start::Int = 1)
+    x.typ in ntyps && return 0, true
+    is_leaf(x) && return length(x), false
     len = 0
     for i = start:length(x.nodes)
-        n = x.nodes[i]
-        ln, nl = length_to_newline(n)
-        len += ln
-        nl && (return len, nl)
+        l, found = length_to(x.nodes[i], ntyps)
+        len += l
+        found && return len, found
     end
     return len, false
 end
@@ -1120,13 +1118,13 @@ block_type(x::CSTParser.EXPR) =
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.args[3])
 
 function nestable(x::CSTParser.EXPR)
-    CSTParser.defines_function(x) && (return true)
-    CSTParser.is_assignment(x) && (return block_type(x.args[3]))
+    CSTParser.defines_function(x) && return true
+    CSTParser.is_assignment(x) && return block_type(x.args[3])
 
     op = x.args[2]
-    op.kind === Tokens.ANON_FUNC && (return false)
-    op.kind === Tokens.PAIR_ARROW && (return false)
-    CSTParser.precedence(op) in (1, 6) && (return false)
+    op.kind === Tokens.ANON_FUNC && return false
+    op.kind === Tokens.PAIR_ARROW && return false
+    CSTParser.precedence(op) in (1, 6) && return false
     if op.kind == Tokens.LAZY_AND || op.kind == Tokens.LAZY_OR
         arg = x.args[1]
         while arg.typ === CSTParser.InvisBrackets
@@ -1196,8 +1194,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif nospace ||
-           (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
+    elseif (nospace || (CSTParser.precedence(op) in (8, 13, 14, 16) &&
+             op.kind !== Tokens.ANON_FUNC)) && op.kind !== Tokens.IN
         add_node!(t, pretty(op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)

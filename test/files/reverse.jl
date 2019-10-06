@@ -106,15 +106,14 @@ function instrument_global!(ir, v, ex)
     if istrackable(ex)
         ir[v] = xcall(Zygote, :unwrap, QuoteNode(ex), ex)
     else
-        ir[v] =
-            prewalk(ex) do x
-                istrackable(x) || return x
-                insert!(
-                    ir,
-                    v,
-                    stmt(xcall(Zygote, :unwrap, QuoteNode(x), x), type = exprtype(x)),
-                )
-            end
+        ir[v] = prewalk(ex) do x
+            istrackable(x) || return x
+            insert!(
+                ir,
+                v,
+                stmt(xcall(Zygote, :unwrap, QuoteNode(x), x), type = exprtype(x)),
+            )
+        end
     end
 end
 
