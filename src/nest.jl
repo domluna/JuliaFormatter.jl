@@ -464,27 +464,48 @@ function n_binarycall!(x, s; extra_width = 0)
             nest!(n, s)
         end
 
-
         # Undo nest if possible
         if !x.force_nest
-            rw, _ =  length_to(x, (NEWLINE,), start=i2+1)
-            # +1 for whitespace
-            line_width = s.line_offset + rw + 1
             # @info "" s.line_offset rw line_width length_to(x, (NEWLINE,), start=1)
-            if line_width + extra_width <= s.margin
+            arg2 = x.nodes[end]
+            arg2.typ === CSTParser.Block && (arg2 = arg2.nodes[1])
+
+            line_width = 0
+            can_unnest = false
+            if arg2.typ === CSTParser.BinaryOpCall
+                line_width = s.line_offset + 1 + length(x.nodes[end])
+                can_unnest = line_width + extra_width <= s.margin
+            else
+                rw, _ = length_to(x, (NEWLINE,), start = i2 + 1)
+                line_width = s.line_offset + 1 + rw
+                can_unnest = line_width + extra_width <= s.margin
+            end
+
+            if can_unnest
                 x.nodes[i1] = Whitespace(1)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
-                    arg2 = x.nodes[end]
 
                     if !is_leaf(arg2)
                         add_indent!(arg2, s, -s.indent_size)
-                        arg2.typ === CSTParser.Block && (arg2 = arg2.nodes[1])
 
                         # There might need to be an additional
-                        if arg2.typ in (CSTParser.TupleH, CSTParser.Vect, CSTParser.Vcat, CSTParser.Braces, CSTParser.Call, CSTParser.Curly, CSTParser.MacroCall, CSTParser.Ref, CSTParser.TypedVcat)
+                        if arg2.typ in (
+                            CSTParser.TupleH,
+                            CSTParser.Vect,
+                            CSTParser.Vcat,
+                            CSTParser.Braces,
+                            CSTParser.Call,
+                            CSTParser.Curly,
+                            CSTParser.MacroCall,
+                            CSTParser.Ref,
+                            CSTParser.TypedVcat,
+                        )
                             close_indent = arg2.nodes[end].indent
-                            diff = min(s.indent_size - arg2.indent, line_width - arg2.indent) 
+                            diff = min(
+                                s.indent_size - arg2.indent,
+                                line_width - arg2.indent,
+                            )
                             add_indent!(arg2, s, diff)
                             arg2.nodes[end].indent = close_indent
                         end
@@ -523,7 +544,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width, _ = length_to(x, (PLACEHOLDER, NEWLINE), start=2)
+            return_width, _ = length_to(x, (PLACEHOLDER, NEWLINE), start = 2)
         end
 
         # @info "" return_width

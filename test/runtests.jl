@@ -13,6 +13,7 @@ function fmt(s; i = 4, m = 80, always_for_in = false)
     fmt1(s1, i, m, always_for_in)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
+fmt1(s, i, m) = fmt1(s; i = i, m = m)
 
 function run_pretty(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)

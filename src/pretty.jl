@@ -1118,13 +1118,13 @@ block_type(x::CSTParser.EXPR) =
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.args[3])
 
 function nestable(x::CSTParser.EXPR)
-    CSTParser.defines_function(x) && (return true)
-    CSTParser.is_assignment(x) && (return block_type(x.args[3]))
+    CSTParser.defines_function(x) && return true
+    CSTParser.is_assignment(x) && return block_type(x.args[3])
 
     op = x.args[2]
-    op.kind === Tokens.ANON_FUNC && (return false)
-    op.kind === Tokens.PAIR_ARROW && (return false)
-    CSTParser.precedence(op) in (1, 6) && (return false)
+    op.kind === Tokens.ANON_FUNC && return false
+    op.kind === Tokens.PAIR_ARROW && return false
+    CSTParser.precedence(op) in (1, 6) && return false
     if op.kind == Tokens.LAZY_AND || op.kind == Tokens.LAZY_OR
         arg = x.args[1]
         while arg.typ === CSTParser.InvisBrackets
@@ -1194,8 +1194,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif (nospace ||
-            (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)) && op.kind !== Tokens.IN
+    elseif (nospace || (CSTParser.precedence(op) in (8, 13, 14, 16) &&
+             op.kind !== Tokens.ANON_FUNC)) && op.kind !== Tokens.IN
         add_node!(t, pretty(op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
