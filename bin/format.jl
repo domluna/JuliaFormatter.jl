@@ -29,6 +29,9 @@ Flags:
     -o, --overwrite
         Writes the formatted source to a new file where the original
         filename is suffixed with _fmt, i.e. `filename_fmt.jl`.
+    --always_for_in
+        Always replaces `=` with `in` for `for` loops.
+        For example, `for i = 1:10` will be transformed to `for i in 1:10`.
 """
 
 function parse_opts!(args::Vector{String})
@@ -50,10 +53,12 @@ function parse_opts!(args::Vector{String})
             opt = :help
         elseif arg == "-o" || arg == "--overwrite"
             opt = :overwrite
+        elseif arg == "--always_for_in"
+            opt = :always_for_in
         else
             error("invalid option $arg")
         end
-        if opt == :verbose || opt == :help
+        if opt in (:verbose, :help, :always_for_in)
             opts[opt] = true
             deleteat!(args, i)
         elseif opt == :overwrite

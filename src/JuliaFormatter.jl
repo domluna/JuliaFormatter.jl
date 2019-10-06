@@ -106,8 +106,10 @@ mutable struct State
     offset::Int
     line_offset::Int
     margin::Int
+    always_for_in::Bool
 end
-State(doc, indent_size, margin) = State(doc, indent_size, 0, 1, 0, margin)
+State(doc, indent_size, margin; always_for_in = false) =
+    State(doc, indent_size, 0, 1, 0, margin, always_for_in)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
@@ -130,8 +132,9 @@ include("print.jl")
 """
     format_text(
         text::AbstractString;
-        indent::Integer = 4,
-        margin::Integer = 92,
+        indent::Int = 4,
+        margin::Int = 92,
+        always_for_in::Bool = false,
     ) :: String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -140,11 +143,17 @@ code as another string. The formatting options are:
 - `indent` which defaults to 4 spaces
 - `margin` which defaults to 92 columns
 
+If `always_for_in` is true `=` is always replaced with `in` if part of a
+`for` loop condition.  For example, `for i = 1:10` will be transformed
+to `for i in 1:10`.
 """
-function format_text(text::AbstractString; indent::Integer = 4, margin::Integer = 92)
-    if isempty(text)
-        return text
-    end
+function format_text(
+    text::AbstractString;
+    indent::Int = 4,
+    margin::Int = 92,
+    always_for_in::Bool = false,
+)
+    isempty(text) && return text
 
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input $text")
@@ -154,9 +163,9 @@ function format_text(text::AbstractString; indent::Integer = 4, margin::Integer 
 
     d = Document(text)
     # If "nofmt" occurs in a comment on line 1 do not format
-    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && (return text)
+    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && return text
 
-    s = State(d, indent, margin)
+    s = State(d, indent, margin, always_for_in = always_for_in)
     t = pretty(x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
     nest!(t, s)
@@ -190,6 +199,7 @@ end
         margin::Integer = 92,
         overwrite::Bool = true,
         verbose::Bool = false,
+        always_for_in::Bool = false,
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -205,6 +215,10 @@ be written to `foo_fmt.jl` instead.
 
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
+
+If `always_for_in` is true `=` is always replaced with `in` if part of a
+`for` loop condition.  For example, `for i = 1:10` will be transformed
+to `for i in 1:10`.
 """
 function format_file(
     filename::AbstractString;
@@ -212,6 +226,7 @@ function format_file(
     margin::Integer = 92,
     overwrite::Bool = true,
     verbose::Bool = false,
+    always_for_in::Bool = false,
 )
     path, ext = splitext(filename)
     if ext != ".jl"
@@ -219,7 +234,7 @@ function format_file(
     end
     verbose && println("Formatting $filename with indent = $indent, margin = $margin")
     str = read(filename) |> String
-    str = format_text(str, indent = indent, margin = margin)
+    str = format_text(str, indent = indent, margin = margin, always_for_in = always_for_in)
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
 end
@@ -231,6 +246,7 @@ end
         margin::Integer = 92,
         overwrite::Bool = true,
         verbose::Bool = false,
+        always_for_in::Bool = false,
     )
 
 Recursively descend into files and directories, formatting and `.jl`
