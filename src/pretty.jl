@@ -1194,8 +1194,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif nospace ||
-           (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
+    elseif (nospace ||
+            (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)) && op.kind !== Tokens.IN
         add_node!(t, pretty(op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)

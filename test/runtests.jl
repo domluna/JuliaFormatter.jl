@@ -641,23 +641,22 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do (
-                subproblem1,
-                subproblem2,
-                subproblem3,
-                subproblem4,
-                subproblem5,
-                subproblem6,
-                subproblem7,
-                subproblem8,
-            )
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do (
+            subproblem1,
+            subproblem2,
+            subproblem3,
+            subproblem4,
+            subproblem5,
+            subproblem6,
+            subproblem7,
+            subproblem8,
+        )
+            body
+        end"""
         @test fmt(str_) == str
 
         str_ = """
@@ -665,14 +664,13 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do subproblem1, subproblem2
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do subproblem1, subproblem2
+            body
+        end"""
         @test fmt(str_) == str
 
     end
@@ -1817,6 +1815,7 @@ end
         @test fmt(str) == str
 
         @test fmt("ref[a: (b + c)]") == "ref[a:(b+c)]"
+        @test fmt("ref[a in b]") == "ref[a in b]"
     end
 
     @testset "nesting" begin
@@ -1959,15 +1958,24 @@ end
         @test fmt("foo() = (one, x -> (true, false))", 4, 30) == str
 
         str = """
-        foo() =
-            (
-             one,
-             x -> (
-                 true,
-                 false,
-             ),
-            )"""
+        foo() = (
+            one,
+            x -> (
+                true,
+                false,
+            ),
+        )"""
         @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
+
+        str = """
+        foo() = (
+                 one,
+                 x -> (
+                       true,
+                       false,
+                 ),
+        )"""
+        @test fmt("foo() = (one, x -> (true, false))", 10, 20) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)
