@@ -2785,9 +2785,4 @@ end
         @test fmt(str) == str
     end
 
-# @testset "meta-format" begin
-#     str = String(read("./runtests.jl"))
-#     str = fmt(str)
-# end
-
 end
