@@ -1,5 +1,19 @@
 module JuliaFormatter
 
+# skips::Vector{UnitRange{Int}}
+#
+# collect during comment collection. skips are a Stack
+#
+#
+# sort skips s.t that they are in order.
+#
+# 1. add skip_until::Int to State. This will be used during print
+# if node lines < s.skip_until don't print
+# turn skip off when startline > skip_until, then pop skip 
+#
+# pop!
+#
+
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
@@ -23,6 +37,8 @@ struct Document
     # It's useful to know where these are for
     # a few node types.
     semicolons::Set{Int}
+
+    format_skips::Vector{UnitRange{Int}}
 end
 
 function Document(text::AbstractString)
@@ -31,8 +47,9 @@ function Document(text::AbstractString)
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
-    # dummy initial token
-    prev_tok = Tokens.Token()
+    format_skips = UnitRange{Int}[]
+    prev_tok = Tokens.Token() # dummy initial token
+    stack = Int[]
 
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind === Tokens.WHITESPACE
@@ -87,6 +104,24 @@ function Document(text::AbstractString)
                 # last comment
                 comments[sl] = (ws, cs)
             end
+
+            #  
+            if startswith("# format: off", t.val)
+                push!(stack, t.startpos[1])
+            elseif startswith("# format: on", t.val)
+                sl = pop!(stack)
+                if length(format_skips) == 0
+                    push!(format_skips, sl:t.startpos[1])
+                else
+                    last_skip = format_skips[end]
+                    if last_skip[1] >= sl
+                        format_skips[end] = sl:t.startpos[1]
+                    elseif last_skip[2] >= sl
+                        format_skips[end] = last_skip[1]:t.startpos[1]
+                    end
+                end
+            end
+
         elseif t.kind === Tokens.SEMICOLON
             push!(semicolons, t.startpos[1])
         end
@@ -95,8 +130,15 @@ function Document(text::AbstractString)
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
-    # @info "" comments ranges
-    Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
+    
+    # If there is a missing "# format: on" tag.
+    # Pretend it's at the end of the file
+    if length(stack) > 0
+        sl = pop!(stack)
+        format_skips = [sl:length(ranges)]
+    end
+    # @info "" comments ranges format_skips
+    Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
 mutable struct State

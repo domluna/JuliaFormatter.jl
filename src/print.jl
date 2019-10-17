@@ -1,3 +1,6 @@
+# state has the ranges where formatting is off
+# essentially we 
+
 function skip_indent(x)
     if x.typ === CSTParser.LITERAL && x.val == ""
         return true
@@ -5,6 +8,12 @@ function skip_indent(x)
         return true
     end
     false
+end
+
+function skip_format(x, s)
+    length(s.doc.format_skips) > 0 || return false
+    skip = s.doc.format_skips[1]
+    x.startline > skip[1] && x.endline < skip[2] ? true : false
 end
 
 function print_leaf(io, x, s)
@@ -18,6 +27,9 @@ function print_leaf(io, x, s)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
+    if skip_format(x, s)
+    end
+
     if is_leaf(x)
         print_leaf(io, x, s)
         return
@@ -32,11 +44,9 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         end
 
         if n.typ === NEWLINE && i < length(x.nodes)
-            if is_closer(x.nodes[i+1])
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1].typ === CSTParser.Block
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif x.nodes[i+1].typ === CSTParser.Begin
+            if is_closer(x.nodes[i+1]) ||
+                x.nodes[i+1].typ === CSTParser.Block ||
+                x.nodes[i+1].typ === CSTParser.Begin
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
                 write(io, ws)
@@ -66,4 +76,19 @@ end
     v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
     ws > 0 && write(io, repeat(" ", ws))
     write(io, v)
+end
+
+@inline function print_noformat(io, x, s)
+    for l = x.startline:x.endline
+        r = s.doc.line_to_range[l]
+        v = s.doc.text[s.doc.ranges[r]]
+        v == "" && continue
+        if l == x.endline && v[end] == '\n'
+            v = v[1:prevind(v, end)]
+        end
+        write(io, v)
+        if l != x.endline && v[end] != '\n'
+            write(io, "\n")
+        end
+    end
 end
