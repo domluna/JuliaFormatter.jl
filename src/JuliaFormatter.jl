@@ -130,14 +130,15 @@ function Document(text::AbstractString)
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
-    
+
     # If there is a missing "# format: on" tag.
     # Pretend it's at the end of the file
     if length(stack) > 0
-        sl = pop!(stack)
+        # sl = pop!(stack)
+        sl = stack[1]
         format_skips = [sl:length(ranges)]
     end
-    # @info "" comments ranges format_skips
+    @info "" format_skips
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 

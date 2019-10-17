@@ -27,8 +27,8 @@ function print_leaf(io, x, s)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
-    if skip_format(x, s)
-    end
+    # if skip_format(x, s)
+    # end
 
     if is_leaf(x)
         print_leaf(io, x, s)
@@ -45,8 +45,7 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
 
         if n.typ === NEWLINE && i < length(x.nodes)
             if is_closer(x.nodes[i+1]) ||
-                x.nodes[i+1].typ === CSTParser.Block ||
-                x.nodes[i+1].typ === CSTParser.Begin
+               x.nodes[i+1].typ === CSTParser.Block || x.nodes[i+1].typ === CSTParser.Begin
                 write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
                 write(io, ws)
