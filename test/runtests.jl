@@ -54,9 +54,92 @@ end
         @test fmt(str) == str
     end
 
-    @testset "nofmt" begin
-        str = "# nofmt\n module Foo a \n end"
+    @testset "format toggle" begin
+        str = "# format: off\n module Foo a \n end"
         @test fmt(str) == str
+
+        str = "# format: off\n# format: on"
+        @test fmt(str) == str
+
+        str = """
+        # this should be formatted
+        a = f(aaa, bbb, ccc)
+
+        # format: off
+        # anything past this point should not be formatted !!!
+        a = f(aaa,
+            bbb,ccc)
+
+        c = 102000
+
+        d = @foo 10 20
+        # format: onono
+
+        e = "what the foocho"
+
+        # comment"""
+        str_ = """
+        # this should be formatted
+        a = f(aaa,
+            bbb,ccc)
+
+        # format: off
+        # anything past this point should not be formatted !!!
+        a = f(aaa,
+            bbb,ccc)
+
+        c = 102000
+
+        d = @foo 10 20
+        # format: onono
+
+        e = "what the foocho"
+
+        # comment"""
+        @test fmt(str_) == str
+
+        str = """
+        # this should be formatted
+        a = f(aaa, bbb, ccc)
+
+        # format: off
+        # this section is not formatted !!!
+        a = f(aaa,
+            bbb,ccc)
+
+        c = 102000
+
+        d = @foo 10 20
+        # turning formatting back on
+        # format: on
+        # back in business !!!
+
+        e = "what the foocho"
+        a = f(aaa, bbb, ccc)
+
+        # comment"""
+        str_ = """
+        # this should be formatted
+        a = f(aaa, bbb, ccc)
+
+        # format: off
+        # this section is not formatted !!!
+        a = f(aaa,
+            bbb,ccc)
+
+        c = 102000
+
+        d = @foo 10 20
+        # turning formatting back on
+        # format: on
+        # back in business !!!
+
+        e = "what the foocho"
+        a = f(aaa,
+            bbb,      ccc)
+
+        # comment"""
+        @test fmt(str_) == str
     end
 
     @testset "dot op" begin

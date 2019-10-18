@@ -38,7 +38,7 @@ struct Document
     # a few node types.
     semicolons::Set{Int}
 
-    format_skips::Vector{UnitRange{Int}}
+    format_skips::Vector{Tuple{Int,Int}}
 end
 
 function Document(text::AbstractString)
@@ -47,7 +47,7 @@ function Document(text::AbstractString)
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
-    format_skips = UnitRange{Int}[]
+    format_skips = Tuple{Int,Int}[]
     prev_tok = Tokens.Token() # dummy initial token
     stack = Int[]
 
@@ -105,19 +105,22 @@ function Document(text::AbstractString)
                 comments[sl] = (ws, cs)
             end
 
-            #  
-            if startswith("# format: off", t.val)
+            # There should not be more than 1 
+            # "off" tag on the stack at a time.
+            if t.val == "# format: off" && length(stack) == 0
                 push!(stack, t.startpos[1])
-            elseif startswith("# format: on", t.val)
+            # If "# format: off" has not been seen
+            # "# format: on" is treated as a normal comment.
+            elseif t.val == "# format: on" && length(stack) > 0
                 sl = pop!(stack)
                 if length(format_skips) == 0
-                    push!(format_skips, sl:t.startpos[1])
+                    push!(format_skips, (sl, t.startpos[1]))
                 else
                     last_skip = format_skips[end]
                     if last_skip[1] >= sl
-                        format_skips[end] = sl:t.startpos[1]
+                        format_skips[end] = (sl, t.startpos[1])
                     elseif last_skip[2] >= sl
-                        format_skips[end] = last_skip[1]:t.startpos[1]
+                        format_skips[end] = (last_skip[1], t.startpos[1])
                     end
                 end
             end
@@ -134,9 +137,11 @@ function Document(text::AbstractString)
     # If there is a SINGLE "# format: off" tag
     # do not format from the "off" tag onwards.
     if length(stack) == 1 && length(format_skips) == 0
-        push!(format_skips, stack[1]:length(ranges))
+        # -1 signifies everything afterwards "# format: off"
+        # will not formatted.
+        push!(format_skips, (stack[1], -1))
     end
-    @info "" format_skips
+    @info "" format_skips ranges
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
@@ -206,9 +211,6 @@ function format_text(
     x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
 
     d = Document(text)
-    # If "nofmt" occurs in a comment on line 1 do not format
-    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && return text
-
     s = State(d, indent, margin, always_for_in = always_for_in)
     t = pretty(x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
