@@ -94,7 +94,7 @@ end
 function print_noformat(io::IOBuffer, skip::Tuple{Int,Int}, s::State)
     startline = skip[1] + 1
     endline = skip[2] == -1 ? length(s.doc.ranges) : skip[2] - 1
-    @info "writing noformat" skip startline:endline
+    # @info "writing noformat" skip startline:endline
     for l = startline:endline
         l == startline && write(io, "\n")
         r = s.doc.line_to_range[l]

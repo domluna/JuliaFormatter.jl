@@ -141,7 +141,7 @@ function Document(text::AbstractString)
         # will not formatted.
         push!(format_skips, (stack[1], -1))
     end
-    @info "" format_skips ranges
+    # @info "" format_skips ranges
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
