@@ -1,5 +1,15 @@
-# state has the ranges where formatting is off
-# essentially we 
+# state has the ranges where formatting is turned off
+# 
+# would this work?
+#
+# if x.startline == skip[1] && s.on
+#   skip = popfirst!(s)
+#   print_noformat(io, skip, s)
+#   s.on = false
+# elseif x.endline == skip[1] && !s.on
+#   s.on = true
+# end
+#
 
 function skip_indent(x)
     if x.typ === CSTParser.LITERAL && x.val == ""
@@ -10,13 +20,20 @@ function skip_indent(x)
     false
 end
 
-function skip_format(x, s)
-    length(s.doc.format_skips) > 0 || return false
+function format_check(x::PTree, s::State)
+    length(s.doc.format_skips) > 0 || return
     skip = s.doc.format_skips[1]
-    x.startline > skip[1] && x.endline < skip[2] ? true : false
+    if x.startline == skip[1] && s.on
+  print_noformat(io, skip, s)
+  s.on = false
+    elseif x.endline == skip[2] && !s.on
+        deleteat!(s.doc.format_skips, 1)
+        s.on = true
+    end
 end
 
 function print_leaf(io, x, s)
+    s.on || return
     if x.typ === NOTCODE
         print_notcode(io, x, s)
     elseif x.typ === INLINECOMMENT
@@ -27,8 +44,7 @@ function print_leaf(io, x, s)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
-    # if skip_format(x, s)
-    # end
+    format_check!(x, s)
 
     if is_leaf(x)
         print_leaf(io, x, s)
@@ -46,15 +62,15 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         if n.typ === NEWLINE && i < length(x.nodes)
             if is_closer(x.nodes[i+1]) ||
                x.nodes[i+1].typ === CSTParser.Block || x.nodes[i+1].typ === CSTParser.Begin
-                write(io, repeat(" ", x.nodes[i+1].indent))
+                s.on && write(io, repeat(" ", x.nodes[i+1].indent))
             elseif !skip_indent(x.nodes[i+1])
-                write(io, ws)
+                s.on && write(io, ws)
             end
         end
     end
 end
 
-@inline function print_notcode(io, x, s)
+@inline function print_notcode(io::IOBuffer, x::PTree, s::State)
     for l = x.startline:x.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
         v == "" && continue
@@ -69,7 +85,7 @@ end
     end
 end
 
-@inline function print_inlinecomment(io, x, s)
+@inline function print_inlinecomment(io::IOBuffer, x::PTree, s::State)
     ws, v = get(s.doc.comments, x.startline, (0, ""))
     isempty(v) && return
     v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
@@ -77,8 +93,8 @@ end
     write(io, v)
 end
 
-@inline function print_noformat(io, x, s)
-    for l = x.startline:x.endline
+@inline function print_noformat(io::IOBuffer, skip::UnitRange{Int}, s::State)
+    for l = skip[1]:skip[2]
         r = s.doc.line_to_range[l]
         v = s.doc.text[s.doc.ranges[r]]
         v == "" && continue

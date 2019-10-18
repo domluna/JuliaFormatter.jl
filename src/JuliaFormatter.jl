@@ -131,12 +131,10 @@ function Document(text::AbstractString)
         line_to_range[l] = r
     end
 
-    # If there is a missing "# format: on" tag.
-    # Pretend it's at the end of the file
-    if length(stack) > 0
-        # sl = pop!(stack)
-        sl = stack[1]
-        format_skips = [sl:length(ranges)]
+    # If there is a SINGLE "# format: off" tag
+    # do not format from the "off" tag onwards.
+    if length(stack) == 1 && length(format_skips) == 0
+        push!(format_skips, stack[1]:length(ranges))
     end
     @info "" format_skips
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
@@ -150,9 +148,12 @@ mutable struct State
     line_offset::Int
     margin::Int
     always_for_in::Bool
+    # if true will output the formatted text
+    # otherwise will output the current text
+    on::Bool
 end
 State(doc, indent_size, margin; always_for_in = false) =
-    State(doc, indent_size, 0, 1, 0, margin, always_for_in)
+    State(doc, indent_size, 0, 1, 0, margin, always_for_in, true)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
