@@ -1,19 +1,5 @@
 module JuliaFormatter
 
-# skips::Vector{UnitRange{Int}}
-#
-# collect during comment collection. skips are a Stack
-#
-#
-# sort skips s.t that they are in order.
-#
-# 1. add skip_until::Int to State. This will be used during print
-# if node lines < s.skip_until don't print
-# turn skip off when startline > skip_until, then pop skip 
-#
-# pop!
-#
-
 using CSTParser
 import CSTParser.Tokenize.Tokens
 
@@ -38,6 +24,9 @@ struct Document
     # a few node types.
     semicolons::Set{Int}
 
+    # List of tuples where a tuple contains
+    # the start and end lines of regions in the
+    # file formatting should be skipped.
     format_skips::Vector{Tuple{Int,Int}}
 end
 

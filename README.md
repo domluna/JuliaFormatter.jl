@@ -185,20 +185,30 @@ var = foo(
 Finally, the `PTree` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
 check is performed.
 
-## Skipping Files
+## Skipping Formatting
 
-If you wish to not format a file this can be done by writing "nofmt" in a comment on the first line
-of the file. Suppose this is the content of `foo.jl`:
+By default formatting is always on. Formatting can be turned toggled with the following comments:
 
 ```julia
-# nofmt
+# format: off
+# turns off formatting from this point onwards
+...
+
+# format: on
+# turns formatting back on from this point onwards
+```
+
+These can be used throughout a file or if you wish an entire file not be formatted add "format: off" at the top of the file:
+
+```julia
+# format: off
 
 module Foo
 ...
 end
 ```
 
-`JuliaFormatter` will see the comment on the first line, notice it contains "nofmt", and return the original text.
+Note the formatter expects `# format: on` and `# format: off` to be on its own line and the whitespace to be an exact match.
 
 ## Syntax Tree Transformations
 
