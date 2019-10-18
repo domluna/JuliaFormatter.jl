@@ -96,11 +96,11 @@ function Document(text::AbstractString)
 
             # There should not be more than 1 
             # "off" tag on the stack at a time.
-            if t.val == "# format: off" && length(stack) == 0
+            if t.val == "#! format: off" && length(stack) == 0
                 push!(stack, t.startpos[1])
-            # If "# format: off" has not been seen
-            # "# format: on" is treated as a normal comment.
-            elseif t.val == "# format: on" && length(stack) > 0
+            # If "#! format: off" has not been seen
+            # "#! format: on" is treated as a normal comment.
+            elseif t.val == "#! format: on" && length(stack) > 0
                 push!(format_skips, (pop!(stack), t.startpos[1]))
             end
 
@@ -113,10 +113,10 @@ function Document(text::AbstractString)
         line_to_range[l] = r
     end
 
-    # If there is a SINGLE "# format: off" tag
+    # If there is a SINGLE "#! format: off" tag
     # do not format from the "off" tag onwards.
     if length(stack) == 1 && length(format_skips) == 0
-        # -1 signifies everything afterwards "# format: off"
+        # -1 signifies everything afterwards "#! format: off"
         # will not formatted.
         push!(format_skips, (stack[1], -1))
     end

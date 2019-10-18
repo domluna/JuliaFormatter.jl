@@ -55,17 +55,17 @@ end
     end
 
     @testset "format toggle" begin
-        str = "# format: off\n module Foo a \n end"
+        str = "#! format: off\n module Foo a \n end"
         @test fmt(str) == str
 
-        str = "# format: off\n# format: on"
+        str = "#! format: off\n#! format: on"
         @test fmt(str) == str
 
         str = """
         # this should be formatted
         a = f(aaa, bbb, ccc)
 
-        # format: off
+        #! format: off
         # anything past this point should not be formatted !!!
         a = f(aaa,
             bbb,ccc)
@@ -73,7 +73,7 @@ end
         c = 102000
 
         d = @foo 10 20
-        # format: onono
+        #! format: onono
 
         e = "what the foocho"
 
@@ -83,7 +83,7 @@ end
         a = f(aaa,
             bbb,ccc)
 
-        # format: off
+        #! format: off
         # anything past this point should not be formatted !!!
         a = f(aaa,
             bbb,ccc)
@@ -91,7 +91,7 @@ end
         c = 102000
 
         d = @foo 10 20
-        # format: onono
+        #! format: onono
 
         e = "what the foocho"
 
@@ -102,7 +102,7 @@ end
         # this should be formatted
         a = f(aaa, bbb, ccc)
 
-        # format: off
+        #! format: off
         # this section is not formatted !!!
         a = f(aaa,
             bbb,ccc)
@@ -111,15 +111,15 @@ end
 
         d = @foo 10 20
         # turning formatting back on
-        # format: on
+        #! format: on
         # back in business !!!
 
         e = "what the foocho"
         a = f(aaa, bbb, ccc)
 
-        # format: off
+        #! format: off
         b = 10*20
-        # format: on
+        #! format: on
         b = 10 * 20
 
         # comment"""
@@ -127,7 +127,7 @@ end
         # this should be formatted
         a = f(aaa, bbb, ccc)
 
-        # format: off
+        #! format: off
         # this section is not formatted !!!
         a = f(aaa,
             bbb,ccc)
@@ -136,16 +136,16 @@ end
 
         d = @foo 10 20
         # turning formatting back on
-        # format: on
+        #! format: on
         # back in business !!!
 
         e = "what the foocho"
         a = f(aaa,
             bbb,      ccc)
 
-        # format: off
+        #! format: off
         b = 10*20
-        # format: on
+        #! format: on
         b = 10*20
 
         # comment"""
