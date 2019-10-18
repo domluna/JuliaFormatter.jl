@@ -117,6 +117,11 @@ end
         e = "what the foocho"
         a = f(aaa, bbb, ccc)
 
+        # format: off
+        b = 10*20
+        # format: on
+        b = 10 * 20
+
         # comment"""
         str_ = """
         # this should be formatted
@@ -137,6 +142,11 @@ end
         e = "what the foocho"
         a = f(aaa,
             bbb,      ccc)
+
+        # format: off
+        b = 10*20
+        # format: on
+        b = 10*20
 
         # comment"""
         @test fmt(str_) == str

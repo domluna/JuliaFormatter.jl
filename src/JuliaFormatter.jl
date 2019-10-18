@@ -101,17 +101,7 @@ function Document(text::AbstractString)
             # If "# format: off" has not been seen
             # "# format: on" is treated as a normal comment.
             elseif t.val == "# format: on" && length(stack) > 0
-                sl = pop!(stack)
-                if length(format_skips) == 0
-                    push!(format_skips, (sl, t.startpos[1]))
-                else
-                    last_skip = format_skips[end]
-                    if last_skip[1] >= sl
-                        format_skips[end] = (sl, t.startpos[1])
-                    elseif last_skip[2] >= sl
-                        format_skips[end] = (last_skip[1], t.startpos[1])
-                    end
-                end
+                push!(format_skips, (pop!(stack), t.startpos[1]))
             end
 
         elseif t.kind === Tokens.SEMICOLON
@@ -130,7 +120,7 @@ function Document(text::AbstractString)
         # will not formatted.
         push!(format_skips, (stack[1], -1))
     end
-    # @info "" format_skips ranges
+    # @info "" format_skips
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
