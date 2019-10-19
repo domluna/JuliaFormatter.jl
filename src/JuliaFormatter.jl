@@ -100,7 +100,7 @@ function Document(text::AbstractString)
                 push!(stack, t.startpos[1])
             # If "#! format: off" has not been seen
             # "#! format: on" is treated as a normal comment.
-            if occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) == 0
+            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
                 push!(format_skips, (pop!(stack), t.startpos[1]))
             end
 
@@ -112,6 +112,7 @@ function Document(text::AbstractString)
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
+
 
     # If there is a SINGLE "#! format: off" tag
     # do not format from the "off" tag onwards.
