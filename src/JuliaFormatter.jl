@@ -96,11 +96,11 @@ function Document(text::AbstractString)
 
             # There should not be more than 1 
             # "off" tag on the stack at a time.
-            if t.val == "#! format: off" && length(stack) == 0
+            if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
                 push!(stack, t.startpos[1])
             # If "#! format: off" has not been seen
             # "#! format: on" is treated as a normal comment.
-            elseif t.val == "#! format: on" && length(stack) > 0
+            if occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) == 0
                 push!(format_skips, (pop!(stack), t.startpos[1]))
             end
 
