@@ -1,7 +1,7 @@
 module JuliaFormatter
 
 using CSTParser
-import CSTParser.Tokenize.Tokens
+using CSTParser.Tokenize
 
 export format, format_text, format_file, format_dir
 
@@ -23,6 +23,11 @@ struct Document
     # It's useful to know where these are for
     # a few node types.
     semicolons::Set{Int}
+
+    # List of tuples where a tuple contains
+    # the start and end lines of regions in the
+    # file formatting should be skipped.
+    format_skips::Vector{Tuple{Int,Int,String}}
 end
 
 function Document(text::AbstractString)
@@ -31,8 +36,11 @@ function Document(text::AbstractString)
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
-    # dummy initial token
-    prev_tok = Tokens.Token()
+    format_skips = Tuple{Int,Int,String}[]
+    prev_tok = Tokens.Token() # dummy initial token
+    stack = Int[]
+    format_on = true
+    str = ""
 
     for t in CSTParser.Tokenize.tokenize(text)
         if t.kind === Tokens.WHITESPACE
@@ -66,6 +74,7 @@ function Document(text::AbstractString)
                 i === nothing && (i = 1)
                 ws = count(c -> c == ' ', prev_tok.val[i:end])
             end
+
             if t.startpos[1] == t.endpos[1]
                 # Determine the number of spaces prior to a possible inline comment
                 comments[t.startpos[1]] = (ws, t.val)
@@ -87,16 +96,42 @@ function Document(text::AbstractString)
                 # last comment
                 comments[sl] = (ws, cs)
             end
+
+            # There should not be more than 1 
+            # "off" tag on the stack at a time.
+            if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
+                push!(stack, t.startpos[1])
+                format_on = false
+            # If "#! format: off" has not been seen
+            # "#! format: on" is treated as a normal comment.
+            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
+                push!(format_skips, (pop!(stack), t.startpos[1], str))
+                str = ""
+                format_on = true
+            end
         elseif t.kind === Tokens.SEMICOLON
             push!(semicolons, t.startpos[1])
         end
         prev_tok = t
+
+        if !format_on
+            str *= Tokenize.untokenize(t)
+        end
     end
     for (l, r) in enumerate(ranges)
         line_to_range[l] = r
     end
-    # @info "" comments ranges
-    Document(text, ranges, line_to_range, lit_strings, comments, semicolons)
+
+
+    # If there is a SINGLE "#! format: off" tag
+    # do not format from the "off" tag onwards.
+    if length(stack) == 1 && length(format_skips) == 0
+        # -1 signifies everything afterwards "#! format: off"
+        # will not formatted.
+        push!(format_skips, (stack[1], -1, str))
+    end
+    # @info "" format_skips
+    Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
 mutable struct State
@@ -107,9 +142,12 @@ mutable struct State
     line_offset::Int
     margin::Int
     always_for_in::Bool
+    # if true will output the formatted text
+    # otherwise will output the current text
+    on::Bool
 end
 State(doc, indent_size, margin; always_for_in = false) =
-    State(doc, indent_size, 0, 1, 0, margin, always_for_in)
+    State(doc, indent_size, 0, 1, 0, margin, always_for_in, true)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
@@ -162,9 +200,6 @@ function format_text(
     x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
 
     d = Document(text)
-    # If "nofmt" occurs in a comment on line 1 do not format
-    occursin("nofmt", get(d.comments, 1, (0, ""))[2]) && return text
-
     s = State(d, indent, margin, always_for_in = always_for_in)
     t = pretty(x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))

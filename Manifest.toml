@@ -41,6 +41,6 @@ deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[Tokenize]]
-git-tree-sha1 = "c8a8b00ae44a94950814ff77850470711a360225"
+git-tree-sha1 = "dfcdbbfb2d0370716c815cbd6f8a364efb6f42cf"
 uuid = "0796e94c-ce3b-5d07-9a54-7f471281c624"
-version = "0.5.5"
+version = "0.5.6"
