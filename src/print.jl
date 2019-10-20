@@ -29,7 +29,6 @@ function format_check(io::IOBuffer, x::PTree, s::State)
         x.startline = skip[2]
         print_notcode(io, x, s)
         # previous NEWLINE node won't be printed
-        # write(io, "\n")
     else
         print_notcode(io, x, s)
     end
@@ -93,24 +92,4 @@ function print_inlinecomment(io::IOBuffer, x::PTree, s::State)
     v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
     ws > 0 && write(io, repeat(" ", ws))
     write(io, v)
-end
-
-function print_noformat(io::IOBuffer, skip::Tuple{Int,Int}, s::State)
-    startline = skip[1] + 1
-    endline = skip[2] == -1 ? length(s.doc.ranges) : skip[2] - 1
-    # @info "writing noformat" skip startline:endline
-    for l = startline:endline
-        l == startline && write(io, "\n")
-        r = s.doc.line_to_range[l]
-        v = s.doc.text[r]
-        v == "" && continue
-        # @info "writing line" l r v
-        if l == endline && v[end] == '\n'
-            v = v[1:prevind(v, end)]
-        end
-        write(io, v)
-        if l != endline && v[end] != '\n'
-            write(io, "\n")
-        end
-    end
 end

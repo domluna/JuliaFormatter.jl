@@ -150,6 +150,25 @@ end
 
         # comment"""
         @test fmt(str_) == str
+
+        str = """
+        # this should be formatted
+        a = f(aaa, bbb, ccc)
+
+        #! format: off
+        # this section is not formatted !!!
+        a = f(aaa,
+            bbb,ccc)
+
+        c = 102000
+
+        #=
+        α
+        =#
+        x =      1
+
+        d = @foo 10 20"""
+        @test fmt(str) == str
     end
 
     @testset "dot op" begin
