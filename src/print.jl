@@ -8,32 +8,36 @@ function skip_indent(x::PTree)
 end
 
 function format_check(io::IOBuffer, x::PTree, s::State)
-    length(s.doc.format_skips) > 0 || return false
+    if length(s.doc.format_skips) == 0
+        print_notcode(io, x, s)
+        return
+    end
+
     skip = s.doc.format_skips[1]
     if skip[1] in x.startline:x.endline && s.on
-        print_noformat(io, (x.endline, skip[2]), s)
+        x.endline = skip[1] - 1
+        print_notcode(io, x, s)
+        x.endline > 1 && write(io, "\n")
+        write(io, skip[3])
         s.on = false
     elseif skip[2] in x.startline:x.endline && !s.on
         deleteat!(s.doc.format_skips, 1)
-        # previous NEWLINE node won't be printed
         s.on = true
         # change the startline, otherwise lines
         # prior to in the NOTCODE node prior to 
         # "format: on" will be reprinted
         x.startline = skip[2]
-        write(io, "\n")
+        print_notcode(io, x, s)
+        # previous NEWLINE node won't be printed
+        # write(io, "\n")
+    else
+        print_notcode(io, x, s)
     end
 end
 
 function print_leaf(io::IOBuffer, x::PTree, s::State)
     if x.typ === NOTCODE
-        if s.on
-            print_notcode(io, x, s)
-            format_check(io, x, s)
-        else
-            format_check(io, x, s)
-            print_notcode(io, x, s)
-        end
+        format_check(io, x, s)
     elseif x.typ === INLINECOMMENT
         print_inlinecomment(io, x, s)
     else
