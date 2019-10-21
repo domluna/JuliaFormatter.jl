@@ -1691,6 +1691,12 @@ end
                      AbstractFoo
                 end""") == str
 
+        str = "primitive type A <: B 32 end"
+        @test fmt("""primitive type
+                     A   <: B
+                     32
+                end""") == str
+
         str = """for i = 1:10
                      1
                      2
