@@ -89,11 +89,11 @@ a:b:c
 
 # ---
 
-foo[a + b]
+list[a + b]
 
 ->
 
-foo[a+b]
+list[a+b]
 ```
 
 ## Nesting
