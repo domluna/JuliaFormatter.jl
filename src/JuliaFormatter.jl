@@ -8,7 +8,7 @@ export format, format_text, format_file, format_dir
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
 
-# on Windows line can end in \r\n
+# on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 
 struct Document
