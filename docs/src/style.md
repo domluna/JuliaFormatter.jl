@@ -162,7 +162,7 @@ foo =
     end
 ```
 
-Function Calls `f(...)` (also applies to F{}, {}, (), [], etc)
+Function Calls `f(...)` (also applies to `F{}`, `{}`, `()`, `[]`)
 
 The arguments are indented. The arguments will never pass the initial opening punctuation, i.e. `(` by more than a single space. If a comment is detected in between arguments nesting will be forced.
 
