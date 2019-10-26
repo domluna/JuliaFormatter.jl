@@ -8,6 +8,9 @@ export format, format_text, format_file, format_dir
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
 
+# on Windows line can end in \r\n
+normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
+
 struct Document
     text::AbstractString
 
@@ -200,6 +203,7 @@ function format_text(
 )
     isempty(text) && return text
 
+    text = normalize_line_ending(text)
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input $text")
 
@@ -275,8 +279,9 @@ function format_file(
         error("$filename must be a Julia (.jl) source file")
     end
     verbose && println("Formatting $filename with indent = $indent, margin = $margin")
-    str = read(filename) |> String
+    str = String(read(filename))
     str = format_text(str, indent = indent, margin = margin, always_for_in = always_for_in)
+    !endswith(str, "\n\n") && (str *= "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
 end
