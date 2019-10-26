@@ -8,7 +8,9 @@
 
 ## Prettify
 
-Normalizes the `.jl` file into a canonical format. All unnecessary whitespace is removed, code is properly indented, and everything which can fit on a single line, does. 
+Normalizes the `.jl` file into a canonical format. All unnecessary whitespace is removed, code is properly indented, and everything which can fit on a single line, does.
+
+This stage creates a `PTree`.
 
 **(all examples assume indentation of 4 spaces)**
 
@@ -98,9 +100,12 @@ list[a+b]
 
 ## Nesting
 
-Lines going over the maximum margin are split into multiple lines so thatthey fit. 
+Lines going over the maximum margin are split into multiple lines such that they fit inside the margin.
 
-Binary operations and conditionals are nested back to front.
+This stage mutates the `PTree` generated from *prettification*.
+
+Most expressions are nested left to right with the exception of binary operations and conditionals which are nested right to left.
+
 
 Examples:
 
@@ -129,7 +134,7 @@ e1 :
 e2
 ```
 
-Short function definitions and 
+Short function definitions and certain blocks - `for`, `while`, `do`, `try`, `if`, or `let` with arguments are initially nested such that the RHS (after `=`) is placed on the next line.
 
 ```julia
 foo() = body
@@ -138,6 +143,23 @@ foo() = body
 
 foo() =
     body
+
+# ---
+
+foo = if this_is_a_condition
+  a
+else
+  b
+end
+
+->
+
+foo =
+    if this_is_a_condition
+        a
+    catch e
+        b
+    end
 ```
 
 Function Calls `f(...)` (also applies to F{}, {}, (), [], etc)
@@ -190,7 +212,6 @@ var = foo(
 )
 ```
 
-### Part 3: Printing
+## Print
 
-Finally, the `PTree` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
-check is performed.
+This stage prints the mutated `PTree`.
