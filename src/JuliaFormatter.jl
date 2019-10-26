@@ -203,7 +203,6 @@ function format_text(
 )
     isempty(text) && return text
 
-    text = normalize_line_ending(text)
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input $text")
 
@@ -232,6 +231,7 @@ function format_text(
     print_tree(io, t, s)
 
     text = String(take!(io))
+    text = normalize_line_ending(text)
 
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for formatted $text")
