@@ -31,4 +31,6 @@ jobs:
       script:
         - docs/make.jl
       after_success: skip
+  allow_failures:
+    - julia: 1.3
 
