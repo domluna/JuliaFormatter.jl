@@ -942,7 +942,7 @@ function p_loop(x, s)
         max_padding = s.indent_size,
     )
     s.indent -= s.indent_size
-    # @info idx t.nodes[end-2].typ
+
     # Possible newline after args if nested to act as a separator
     # to the block body.
     if x.args[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE

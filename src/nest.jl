@@ -32,7 +32,7 @@ function reset_line_offset!(x::PTree, s::State)
 end
 
 
-function add_indent!(x, s, indent)
+function add_indent!(x::PTree, s::State, indent)
     indent == 0 && return
     lo = s.line_offset
     f = (x::PTree, s::State) -> x.indent += indent
@@ -95,7 +95,7 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Vcat
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Block
-        n_tuple!(x, s, extra_width = extra_width, line_offset_as_indent = true)
+        n_block!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.StringH
@@ -175,7 +175,7 @@ function n_import!(x, s; extra_width = 0)
     end
 end
 
-function n_tuple!(x, s; extra_width = 0, line_offset_as_indent = false)
+function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     opener = is_opener(x.nodes[1])
@@ -186,12 +186,7 @@ function n_tuple!(x, s; extra_width = 0, line_offset_as_indent = false)
         end
         line_offset = s.line_offset
 
-
-        if line_offset_as_indent
-            x.indent = s.line_offset
-        else
-            x.indent += s.indent_size
-        end
+        x.indent += s.indent_size
         if x.indent - s.line_offset > 1
             x.indent = s.line_offset
             opener && (x.indent += 1)
@@ -569,3 +564,38 @@ function n_binarycall!(x, s; extra_width = 0)
     end
 end
 
+function n_block!(x, s; extra_width = 0)
+    line_width = s.line_offset + length(x) + extra_width
+    idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
+    # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
+        line_offset = s.line_offset
+        x.indent = s.line_offset
+
+        # @info "DURING" x.indent s.line_offset x.typ
+        for (i, n) in enumerate(x.nodes)
+            if n.typ === NEWLINE
+                s.line_offset = x.indent
+            elseif n.typ === PLACEHOLDER
+                x.nodes[i] = Newline()
+                s.line_offset = x.indent
+            elseif n.typ === TRAILINGCOMMA
+                x.nodes[i].val = ","
+                x.nodes[i].len = 1
+                nest!(x.nodes[i], s)
+            elseif n.typ === TRAILINGSEMICOLON
+                x.nodes[i].val = ""
+                x.nodes[i].len = 0
+                nest!(x.nodes[i], s)
+            else
+                diff = x.indent - x.nodes[i].indent
+                add_indent!(n, s, diff)
+                nest!(n, s, extra_width = 1)
+            end
+        end
+
+        # @info "EXITING" x.typ s.line_offset x.indent x.nodes[end].indent
+    else
+        nest!(x.nodes, s, x.indent, extra_width = extra_width)
+    end
+end
