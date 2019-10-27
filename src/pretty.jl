@@ -166,7 +166,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
 
-        if n.typ === CSTParser.Parameters && n.force_nest == true
+        if n.typ === CSTParser.Parameters && n.force_nest
             t.force_nest = true
         end
     end
