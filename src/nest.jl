@@ -95,7 +95,7 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Vcat
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Block
-        n_tuple!(x, s, extra_width = extra_width, line_offset_as_indent=true)
+        n_tuple!(x, s, extra_width = extra_width, line_offset_as_indent = true)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.StringH
@@ -175,7 +175,7 @@ function n_import!(x, s; extra_width = 0)
     end
 end
 
-function n_tuple!(x, s; extra_width = 0, line_offset_as_indent=false)
+function n_tuple!(x, s; extra_width = 0, line_offset_as_indent = false)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     opener = is_opener(x.nodes[1])
@@ -187,7 +187,7 @@ function n_tuple!(x, s; extra_width = 0, line_offset_as_indent=false)
         line_offset = s.line_offset
 
 
-        if line_offset_as_indent 
+        if line_offset_as_indent
             x.indent = s.line_offset
         else
             x.indent += s.indent_size

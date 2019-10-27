@@ -922,7 +922,7 @@ function p_loop(x, s)
         eq_to_in_normalization!(x.args[2], s.always_for_in)
     end
     if x.args[2].typ === CSTParser.Block
-        add_node!(t, p_block(x.args[2], s, join_args= true), s, join_lines = true)
+        add_node!(t, p_block(x.args[2], s, join_args = true), s, join_lines = true)
         # join_args && add_node!(t, Placeholder(0), s)
     else
         add_node!(t, pretty(x.args[2], s), s, join_lines = true)
