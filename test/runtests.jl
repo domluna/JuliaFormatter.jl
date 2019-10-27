@@ -553,6 +553,7 @@ end
           let var1 = value1,
               var2,
               var3 = value3
+
             body
           end"""
         @test fmt(str_, 2, 1) == str
@@ -924,6 +925,7 @@ end
             # comment
             b,
             c
+
             body
         end"""
         @test fmt("""
@@ -966,7 +968,6 @@ end
         struct name
                 arg
             end""") == str
-
 
         str = """
         mutable struct name
@@ -2916,6 +2917,14 @@ end
             body
         end"""
         @test fmt(str_) == str
+
+        str_ = """
+        for a in x,
+            b in y,
+            c in z
+
+            body
+        end"""
         @test fmt(str, 4, 1) == str_
 
         str = """
@@ -2929,6 +2938,14 @@ end
             body
         end"""
         @test fmt(str_) == str
+
+        str_ = """
+        let a = x,
+            b = y,
+            c = z
+
+            body
+        end"""
         @test fmt(str, 4, 1) == str_
     end
 

@@ -854,6 +854,7 @@ function p_let(x, s)
         else
             add_node!(t, pretty(x.args[2], s), s, join_lines = true)
         end
+        idx = length(t.nodes)
         s.indent += s.indent_size
         add_node!(
             t,
@@ -862,6 +863,11 @@ function p_let(x, s)
             max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
+        # Possible newline after args if nested to act as a separator
+        # to the block body.
+        if x.args[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+            add_node!(t.nodes[idx], Placeholder(0), s)
+        end
         add_node!(t, pretty(x.args[end], s), s)
     else
         s.indent += s.indent_size
@@ -927,6 +933,7 @@ function p_loop(x, s)
     else
         add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     end
+    idx = length(t.nodes)
     s.indent += s.indent_size
     add_node!(
         t,
@@ -935,6 +942,12 @@ function p_loop(x, s)
         max_padding = s.indent_size,
     )
     s.indent -= s.indent_size
+    # @info idx t.nodes[end-2].typ
+    # Possible newline after args if nested to act as a separator
+    # to the block body.
+    if x.args[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+        add_node!(t.nodes[idx], Placeholder(0), s)
+    end
     add_node!(t, pretty(x.args[4], s), s)
     t
 end
