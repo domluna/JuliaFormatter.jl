@@ -2926,6 +2926,7 @@ end
             body
         end"""
         @test fmt(str, 4, 1) == str_
+        @test fmt(str_) == str
 
         str = """
         let a = x, b = y, c = z
@@ -2947,6 +2948,7 @@ end
             body
         end"""
         @test fmt(str, 4, 1) == str_
+        @test fmt(str_) == str
     end
 
 end

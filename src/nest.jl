@@ -96,6 +96,10 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Block
         n_block!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.For
+        n_for!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Let
+        n_for!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.StringH
@@ -238,6 +242,21 @@ function n_stringh!(x, s; extra_width = 0)
     # the multiline string is FIRST encountered in the source file - the above difference
     x.indent = max(x.nodes[1].indent - diff, 0)
     nest!(x.nodes, s, x.indent, extra_width = extra_width)
+end
+
+function n_for!(x, s; extra_width = 0)
+    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[3].nodes)
+    nest!(x.nodes, s, x.indent, extra_width = extra_width)
+
+    # return if the argument block was nested
+    ph_idx !== nothing && x.nodes[3].nodes[ph_idx].typ === NEWLINE && return
+
+    idx = 5
+    n = x.nodes[idx]
+    if n.typ === NOTCODE && n.startline == n.endline
+        res = get(s.doc.comments, n.startline, (0, ""))
+        res == (0, "") && deleteat!(x.nodes, idx-1)
+    end
 end
 
 function n_call!(x, s; extra_width = 0)
