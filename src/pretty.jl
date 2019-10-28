@@ -590,12 +590,12 @@ end
 
 # Block
 # length Block is the length of the longest expr
-function p_block(x, s; ignore_single_line = false, from_quote = false, join_args = false)
+function p_block(x, s; ignore_single_line = false, from_quote = false, join_body = false)
     t = PTree(x, nspaces(s))
     single_line = ignore_single_line ? false :
                   cursor_loc(s)[1] == cursor_loc(s, s.offset + x.span - 1)[1]
 
-    # @info "" from_quote single_line ignore_single_line join_args
+    # @info "" from_quote single_line ignore_single_line join_body
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if from_quote && !single_line
@@ -624,8 +624,8 @@ function p_block(x, s; ignore_single_line = false, from_quote = false, join_args
                 add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(a) && i != length(x)
                 add_node!(t, n, s, join_lines = true)
-                join_args && add_node!(t, Placeholder(1), s)
-            elseif join_args
+                join_body && add_node!(t, Placeholder(1), s)
+            elseif join_body
                 add_node!(t, n, s, join_lines = true)
             else
                 add_node!(t, n, s, max_padding = 0)
@@ -850,7 +850,7 @@ function p_let(x, s)
     if length(x.args) > 3
         add_node!(t, Whitespace(1), s)
         if x.args[2].typ === CSTParser.Block
-            add_node!(t, p_block(x.args[2], s, join_args = true), s, join_lines = true)
+            add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
         else
             add_node!(t, pretty(x.args[2], s), s, join_lines = true)
         end
@@ -928,7 +928,7 @@ function p_loop(x, s)
         eq_to_in_normalization!(x.args[2], s.always_for_in)
     end
     if x.args[2].typ === CSTParser.Block
-        add_node!(t, p_block(x.args[2], s, join_args = true), s, join_lines = true)
+        add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
     else
         add_node!(t, pretty(x.args[2], s), s, join_lines = true)
     end

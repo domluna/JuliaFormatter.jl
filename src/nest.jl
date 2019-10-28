@@ -255,7 +255,7 @@ function n_for!(x, s; extra_width = 0)
     n = x.nodes[idx]
     if n.typ === NOTCODE && n.startline == n.endline
         res = get(s.doc.comments, n.startline, (0, ""))
-        res == (0, "") && deleteat!(x.nodes, idx-1)
+        res == (0, "") && deleteat!(x.nodes, idx - 1)
     end
 end
 
