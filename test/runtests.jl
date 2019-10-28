@@ -13,7 +13,7 @@ function fmt(s; i = 4, m = 80, always_for_in = false)
     fmt1(s1, i, m, always_for_in)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s; i = i, m = m)
+fmt1(s, i, m) = fmt1(s, i, m, false)
 
 function run_pretty(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)
@@ -550,7 +550,10 @@ end
         str_ = """foo = let var1=value1,var2,var3=value3 body end"""
         str = """
         foo =
-          let var1 = value1, var2, var3 = value3
+          let var1 = value1,
+              var2,
+              var3 = value3
+
             body
           end"""
         @test fmt(str_, 2, 1) == str
@@ -917,12 +920,12 @@ end
           body
         end""") == str
 
-        # TODO: This should probably be aligned to match up with `a` ?
         str = """
         let x = a,
             # comment
-        b,
-        c
+            b,
+            c
+
             body
         end"""
         @test fmt("""
@@ -965,7 +968,6 @@ end
         struct name
                 arg
             end""") == str
-
 
         str = """
         mutable struct name
@@ -2901,6 +2903,52 @@ end
          0.5 0.5 0.5 1.0
         ]"""
         @test fmt(str) == str
+    end
+
+    @testset "multi-variable `for` and `let`" begin
+        str = """
+        for a in x, b in y, c in z
+            body
+        end"""
+        str_ = """
+        for a in x,
+            b in y,
+            c in z
+            body
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        for a in x,
+            b in y,
+            c in z
+
+            body
+        end"""
+        @test fmt(str, 4, 1) == str_
+        @test fmt(str_) == str
+
+        str = """
+        let a = x, b = y, c = z
+            body
+        end"""
+        str_ = """
+        let a = x,
+            b = y,
+            c = z
+            body
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        let a = x,
+            b = y,
+            c = z
+
+            body
+        end"""
+        @test fmt(str, 4, 1) == str_
+        @test fmt(str_) == str
     end
 
 end

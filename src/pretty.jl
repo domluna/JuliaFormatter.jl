@@ -166,7 +166,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
 
-        if n.typ === CSTParser.Parameters && n.force_nest == true
+        if n.typ === CSTParser.Parameters && n.force_nest
             t.force_nest = true
         end
     end
@@ -590,11 +590,12 @@ end
 
 # Block
 # length Block is the length of the longest expr
-function p_block(x, s; ignore_single_line = false, from_quote = false)
+function p_block(x, s; ignore_single_line = false, from_quote = false, join_body = false)
     t = PTree(x, nspaces(s))
     single_line = ignore_single_line ? false :
                   cursor_loc(s)[1] == cursor_loc(s, s.offset + x.span - 1)[1]
-    # @debug "" from_quote single_line ignore_single_line
+
+    # @info "" from_quote single_line ignore_single_line join_body
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if from_quote && !single_line
@@ -611,7 +612,7 @@ function p_block(x, s; ignore_single_line = false, from_quote = false)
             if i == 1 || CSTParser.is_comma(a)
                 add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(x.args[i-1])
-                add_node!(t, Whitespace(1), s)
+                add_node!(t, Placeholder(1), s)
                 add_node!(t, n, s, join_lines = true)
             else
                 add_node!(t, Semicolon(), s)
@@ -622,6 +623,9 @@ function p_block(x, s; ignore_single_line = false, from_quote = false)
             if i < length(x) && CSTParser.is_comma(a) && is_punc(x.args[i+1])
                 add_node!(t, n, s, join_lines = true)
             elseif CSTParser.is_comma(a) && i != length(x)
+                add_node!(t, n, s, join_lines = true)
+                join_body && add_node!(t, Placeholder(1), s)
+            elseif join_body
                 add_node!(t, n, s, join_lines = true)
             else
                 add_node!(t, n, s, max_padding = 0)
@@ -845,7 +849,12 @@ function p_let(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     if length(x.args) > 3
         add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+        if x.args[2].typ === CSTParser.Block
+            add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
+        else
+            add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+        end
+        idx = length(t.nodes)
         s.indent += s.indent_size
         add_node!(
             t,
@@ -854,6 +863,11 @@ function p_let(x, s)
             max_padding = s.indent_size,
         )
         s.indent -= s.indent_size
+        # Possible newline after args if nested to act as a separator
+        # to the block body.
+        if x.args[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+            add_node!(t.nodes[idx], Placeholder(0), s)
+        end
         add_node!(t, pretty(x.args[end], s), s)
     else
         s.indent += s.indent_size
@@ -913,7 +927,12 @@ function p_loop(x, s)
     if x.args[1].kind === Tokens.FOR
         eq_to_in_normalization!(x.args[2], s.always_for_in)
     end
-    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    if x.args[2].typ === CSTParser.Block
+        add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
+    else
+        add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    end
+    idx = length(t.nodes)
     s.indent += s.indent_size
     add_node!(
         t,
@@ -922,6 +941,12 @@ function p_loop(x, s)
         max_padding = s.indent_size,
     )
     s.indent -= s.indent_size
+
+    # Possible newline after args if nested to act as a separator
+    # to the block body.
+    if x.args[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+        add_node!(t.nodes[idx], Placeholder(0), s)
+    end
     add_node!(t, pretty(x.args[4], s), s)
     t
 end

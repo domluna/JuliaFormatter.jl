@@ -10,11 +10,9 @@
 #
 # Example:
 #
-# arg1 op arg2
+#     arg1 op arg2
 #
 # the length of " op" will be considered when nesting arg1
-#
-# TODO: How to best format undoing a nest?
 
 function walk(f, x::PTree, s::State)
     f(x, s)
@@ -34,7 +32,7 @@ function reset_line_offset!(x::PTree, s::State)
 end
 
 
-function add_indent!(x, s, indent)
+function add_indent!(x::PTree, s::State, indent)
     indent == 0 && return
     lo = s.line_offset
     f = (x::PTree, s::State) -> x.indent += indent
@@ -96,6 +94,12 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Vcat
         n_tuple!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Block
+        n_block!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.For
+        n_for!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Let
+        n_for!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.StringH
@@ -238,6 +242,21 @@ function n_stringh!(x, s; extra_width = 0)
     # the multiline string is FIRST encountered in the source file - the above difference
     x.indent = max(x.nodes[1].indent - diff, 0)
     nest!(x.nodes, s, x.indent, extra_width = extra_width)
+end
+
+function n_for!(x, s; extra_width = 0)
+    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[3].nodes)
+    nest!(x.nodes, s, x.indent, extra_width = extra_width)
+
+    # return if the argument block was nested
+    ph_idx !== nothing && x.nodes[3].nodes[ph_idx].typ === NEWLINE && return
+
+    idx = 5
+    n = x.nodes[idx]
+    if n.typ === NOTCODE && n.startline == n.endline
+        res = get(s.doc.comments, n.startline, (0, ""))
+        res == (0, "") && deleteat!(x.nodes, idx - 1)
+    end
 end
 
 function n_call!(x, s; extra_width = 0)
@@ -564,3 +583,38 @@ function n_binarycall!(x, s; extra_width = 0)
     end
 end
 
+function n_block!(x, s; extra_width = 0)
+    line_width = s.line_offset + length(x) + extra_width
+    idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
+    # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
+    if idx !== nothing && (line_width > s.margin || x.force_nest)
+        line_offset = s.line_offset
+        x.indent = s.line_offset
+
+        # @info "DURING" x.indent s.line_offset x.typ
+        for (i, n) in enumerate(x.nodes)
+            if n.typ === NEWLINE
+                s.line_offset = x.indent
+            elseif n.typ === PLACEHOLDER
+                x.nodes[i] = Newline()
+                s.line_offset = x.indent
+            elseif n.typ === TRAILINGCOMMA
+                x.nodes[i].val = ","
+                x.nodes[i].len = 1
+                nest!(x.nodes[i], s)
+            elseif n.typ === TRAILINGSEMICOLON
+                x.nodes[i].val = ""
+                x.nodes[i].len = 0
+                nest!(x.nodes[i], s)
+            else
+                diff = x.indent - x.nodes[i].indent
+                add_indent!(n, s, diff)
+                nest!(n, s, extra_width = 1)
+            end
+        end
+
+        # @info "EXITING" x.typ s.line_offset x.indent x.nodes[end].indent
+    else
+        nest!(x.nodes, s, x.indent, extra_width = extra_width)
+    end
+end
