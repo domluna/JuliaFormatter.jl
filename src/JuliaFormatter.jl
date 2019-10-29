@@ -281,7 +281,7 @@ function format_file(
     verbose && println("Formatting $filename with indent = $indent, margin = $margin")
     str = String(read(filename))
     str = format_text(str, indent = indent, margin = margin, always_for_in = always_for_in)
-    !endswith(str, "\n\n") && (str *= "\n")
+    !endswith(str, "\n") && (str *= "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
 end
