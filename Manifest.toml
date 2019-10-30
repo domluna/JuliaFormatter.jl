@@ -5,11 +5,9 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[CSTParser]]
 deps = ["Tokenize"]
-git-tree-sha1 = "6b80f79e186aa1df72d3461917b84212d2209600"
-repo-rev = "master"
-repo-url = "https://github.com/julia-vscode/CSTParser.jl.git"
+git-tree-sha1 = "99dda94f5af21a4565dc2b97edf6a95485f116c3"
 uuid = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
-version = "0.6.2-DEV"
+version = "1.0.0"
 
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
