@@ -79,7 +79,12 @@ function Document(text::AbstractString)
                 # Determine the number of spaces prior to a possible inline comment
                 comments[t.startpos[1]] = (ws, t.val)
             else
-                sl = t.startpos[1]
+                # multiline comment
+                # #=
+                #
+                # #=
+
+                line = t.startpos[1]
                 offset = t.startbyte
                 cs = ""
                 for (i, c) in enumerate(t.val)
@@ -87,14 +92,16 @@ function Document(text::AbstractString)
                     if c == '\n'
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
-                        comments[sl] = (ws, cs)
-                        sl += 1
+                        idx = min(findfirst(c -> !isspace(c), cs), ws + 1)
+                        comments[line] = (ws, cs[idx:end])
+                        line += 1
                         cs = ""
                     end
                     offset += 1
                 end
                 # last comment
-                comments[sl] = (ws, cs)
+                idx = min(findfirst(c -> !isspace(c), cs), ws + 1)
+                comments[line] = (ws, cs[idx:end])
             end
 
             # There should not be more than 1 
@@ -130,7 +137,7 @@ function Document(text::AbstractString)
         # will not formatted.
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" format_skips
+    # @info "" comments
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 

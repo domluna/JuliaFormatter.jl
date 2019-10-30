@@ -1,4 +1,3 @@
-# fmt
 using JuliaFormatter
 using CSTParser
 using Test
@@ -41,9 +40,12 @@ end
         @test fmt("#foo") == "#foo"
 
         str = """
-        #=
-        Hello, world!
-        =#"""
+        begin
+            #=
+               Hello, world!
+             =#
+        end
+        """
         @test fmt(str) == str
 
         str = """
