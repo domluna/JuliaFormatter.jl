@@ -2954,4 +2954,20 @@ end
         @test fmt(str_) == str
     end
 
+    @testset "single newline at end of file" begin
+        str = "a = 10\n"
+
+        f1 = tempname() * ".jl"
+        open(f1, "w") do io
+            write(io, "a = 10\n\n\n\n\n\n")
+        end
+        format_file(f1)
+        format_file(f1)
+        open(f1) do io
+            res = read(io, String)
+            @test res == str
+        end
+        rm(f1)
+    end
+
 end
