@@ -182,8 +182,8 @@ end
 function n_tuple!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    opener = is_opener(x.nodes[1])
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
+    opener = length(x.nodes) > 0 ? is_opener(x.nodes[1]) : false
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         if opener
             x.nodes[end].indent = x.indent

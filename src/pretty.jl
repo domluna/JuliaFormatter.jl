@@ -116,8 +116,10 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         return
     elseif n.typ === CSTParser.Parameters
         add_node!(t, Semicolon(), s)
-        multi_arg = length(CSTParser.get_args(t.ref[])) > 1
-        multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
+        if length(n.nodes) > 0
+            multi_arg = length(CSTParser.get_args(t.ref[])) > 1
+            multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
+        end
     end
 
     if length(t.nodes) == 0

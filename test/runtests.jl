@@ -603,6 +603,7 @@ end
         @test fmt("func(a=1,b; c=1)") == "func(a = 1, b; c = 1)"
         @test fmt("func(; c = 1)", 4, 1) == "func(; c = 1)"
         @test fmt("func(; c = 1,)") == "func(; c = 1)"
+        @test fmt("func(a;)") == "func(a;)"
     end
 
     @testset "begin" begin
