@@ -64,6 +64,26 @@ end
         @test fmt(str) == str
 
         str = """
+        begin
+            #! format: off
+            don't
+                  format
+                         this
+            #! format: on
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        begin
+            #! format: off
+            # don't
+            #     format
+            #            this
+            #! format: on
+        end"""
+        @test fmt(str) == str
+
+        str = """
         # this should be formatted
         a = f(aaa, bbb, ccc)
 

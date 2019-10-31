@@ -14,13 +14,23 @@ function format_check(io::IOBuffer, x::PTree, s::State)
     end
 
     skip = s.doc.format_skips[1]
-    if skip[1] in x.startline:x.endline && s.on
-        x.endline = skip[1] - 1
+    line_range = x.startline:x.endline
+
+    if s.on && skip[1] in line_range && skip[2] in line_range
+        # weird corner case where off and on toggle
+        # are in the same comment block
+        x.endline = skip[1]
         print_notcode(io, x, s)
-        x.endline > 1 && write(io, "\n")
+        write(io, skip[3])
+        x.startline = skip[2]
+        x.endline = skip[2]
+        print_notcode(io, x, s)
+    elseif s.on && skip[1] in line_range
+        x.endline = skip[1]
+        print_notcode(io, x, s)
         write(io, skip[3])
         s.on = false
-    elseif skip[2] in x.startline:x.endline && !s.on
+    elseif !s.on && skip[2] in line_range
         deleteat!(s.doc.format_skips, 1)
         s.on = true
         # change the startline, otherwise lines
