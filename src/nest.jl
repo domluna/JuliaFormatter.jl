@@ -359,7 +359,7 @@ end
 
 function n_chainopcall!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" x.typ extra_width s.line_offset length(x)
+    # @info "ENTERING" x.typ s.line_offset line_width x.force_nest
     if line_width > s.margin || x.force_nest
         line_offset = s.line_offset
         x.indent = s.line_offset
@@ -482,7 +482,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
 
-                    if !is_leaf(arg2)
+                    if !is_leaf(arg2) && arg2.typ !== CSTParser.ConditionalOpCall
                         add_indent!(arg2, s, -s.indent_size)
 
                         # There might need to be an additional

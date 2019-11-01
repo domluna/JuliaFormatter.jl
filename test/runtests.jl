@@ -604,15 +604,60 @@ end
         str_ = """a, b = cond ? e1 : e2"""
         str = """
         a, b = cond ?
-               e1 :
-               e2"""
+            e1 : e2"""
         @test fmt(str_, 4, 13) == str
 
         str = """
-        a,
-        b = cond ?
+        a, b =
+            cond ?
             e1 : e2"""
         @test fmt(str_, 4, 12) == str
+
+        str = """
+        begin
+            variable_name =
+                argument1 + argument2
+        end"""
+        @test fmt(str, 4, 40) == str
+
+        str = """
+        begin
+            variable_name =
+                argument1 +
+                argument2
+        end"""
+        @test fmt(str, 4, 28) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ? expression1 : expression2
+        end"""
+        @test fmt(str, 4, 58) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ? expression1 :
+                expression2
+        end"""
+        @test fmt(str, 4, 46) == str
+
+        str = """
+        begin
+            variable_name = conditional ?
+                expression1 : expression2
+        end"""
+        @test fmt(str, 4, 34) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ?
+                expression1 :
+                expression2
+        end"""
+        @test fmt(str, 4, 32) == str
     end
 
     @testset "op chain" begin

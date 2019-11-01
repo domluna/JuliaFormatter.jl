@@ -111,7 +111,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     if n.typ === SEMICOLON
         join_lines = true
         loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
-              loc = cursor_loc(s, s.offset - 1) : cursor_loc(s)
+            cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
                 # @info "found semicolon" l
@@ -447,38 +447,38 @@ end
 function p_keyword(x, s)
     loc = cursor_loc(s)
     val = x.kind === Tokens.ABSTRACT ? "abstract" :
-          x.kind === Tokens.BAREMODULE ? "baremodule" :
-          x.kind === Tokens.BEGIN ? "begin" :
-          x.kind === Tokens.BREAK ? "break" :
-          x.kind === Tokens.CATCH ? "catch" :
-          x.kind === Tokens.CONST ? "const" :
-          x.kind === Tokens.CONTINUE ? "continue" :
-          x.kind === Tokens.NEW ? "new" :
-          x.kind === Tokens.DO ? "do" :
-          x.kind === Tokens.IF ? "if" :
-          x.kind === Tokens.ELSEIF ? "elseif" :
-          x.kind === Tokens.ELSE ? "else" :
-          x.kind === Tokens.END ? "end" :
-          x.kind === Tokens.EXPORT ? "export" :
-          x.kind === Tokens.FINALLY ? "finally" :
-          x.kind === Tokens.FOR ? "for" :
-          x.kind === Tokens.FUNCTION ? "function" :
-          x.kind === Tokens.GLOBAL ? "global" :
-          x.kind === Tokens.IMPORT ? "import" :
-          x.kind === Tokens.IMPORTALL ? "importall" :
-          x.kind === Tokens.LET ? "let" :
-          x.kind === Tokens.LOCAL ? "local" :
-          x.kind === Tokens.MACRO ? "macro" :
-          x.kind === Tokens.MODULE ? "module" :
-          x.kind === Tokens.MUTABLE ? "mutable" :
-          x.kind === Tokens.OUTER ? "outer " :
-          x.kind === Tokens.PRIMITIVE ? "primitive" :
-          x.kind === Tokens.QUOTE ? "quote" :
-          x.kind === Tokens.RETURN ? "return" :
-          x.kind === Tokens.STRUCT ? "struct" :
-          x.kind === Tokens.TYPE ? "type" :
-          x.kind === Tokens.TRY ? "try" :
-          x.kind === Tokens.USING ? "using" : x.kind === Tokens.WHILE ? "while" : ""
+        x.kind === Tokens.BAREMODULE ? "baremodule" :
+        x.kind === Tokens.BEGIN ? "begin" :
+        x.kind === Tokens.BREAK ? "break" :
+        x.kind === Tokens.CATCH ? "catch" :
+        x.kind === Tokens.CONST ? "const" :
+        x.kind === Tokens.CONTINUE ? "continue" :
+        x.kind === Tokens.NEW ? "new" :
+        x.kind === Tokens.DO ? "do" :
+        x.kind === Tokens.IF ? "if" :
+        x.kind === Tokens.ELSEIF ? "elseif" :
+        x.kind === Tokens.ELSE ? "else" :
+        x.kind === Tokens.END ? "end" :
+        x.kind === Tokens.EXPORT ? "export" :
+        x.kind === Tokens.FINALLY ? "finally" :
+        x.kind === Tokens.FOR ? "for" :
+        x.kind === Tokens.FUNCTION ? "function" :
+        x.kind === Tokens.GLOBAL ? "global" :
+        x.kind === Tokens.IMPORT ? "import" :
+        x.kind === Tokens.IMPORTALL ? "importall" :
+        x.kind === Tokens.LET ? "let" :
+        x.kind === Tokens.LOCAL ? "local" :
+        x.kind === Tokens.MACRO ? "macro" :
+        x.kind === Tokens.MODULE ? "module" :
+        x.kind === Tokens.MUTABLE ? "mutable" :
+        x.kind === Tokens.OUTER ? "outer " :
+        x.kind === Tokens.PRIMITIVE ? "primitive" :
+        x.kind === Tokens.QUOTE ? "quote" :
+        x.kind === Tokens.RETURN ? "return" :
+        x.kind === Tokens.STRUCT ? "struct" :
+        x.kind === Tokens.TYPE ? "type" :
+        x.kind === Tokens.TRY ? "try" :
+        x.kind === Tokens.USING ? "using" : x.kind === Tokens.WHILE ? "while" : ""
     s.offset += x.fullspan
     PTree(x, loc[1], loc[1], val)
 end
@@ -486,14 +486,14 @@ end
 function p_punctuation(x, s)
     loc = cursor_loc(s)
     val = x.kind === Tokens.LPAREN ? "(" :
-          x.kind === Tokens.LBRACE ? "{" :
-          x.kind === Tokens.LSQUARE ? "[" :
-          x.kind === Tokens.RPAREN ? ")" :
-          x.kind === Tokens.RBRACE ? "}" :
-          x.kind === Tokens.RSQUARE ? "]" :
-          x.kind === Tokens.COMMA ? "," :
-          x.kind === Tokens.SEMICOLON ? ";" :
-          x.kind === Tokens.AT_SIGN ? "@" : x.kind === Tokens.DOT ? "." : ""
+        x.kind === Tokens.LBRACE ? "{" :
+        x.kind === Tokens.LSQUARE ? "[" :
+        x.kind === Tokens.RPAREN ? ")" :
+        x.kind === Tokens.RBRACE ? "}" :
+        x.kind === Tokens.RSQUARE ? "]" :
+        x.kind === Tokens.COMMA ? "," :
+        x.kind === Tokens.SEMICOLON ? ";" :
+        x.kind === Tokens.AT_SIGN ? "@" : x.kind === Tokens.DOT ? "." : ""
     s.offset += x.fullspan
     PTree(x, loc[1], loc[1], val)
 end
@@ -678,7 +678,7 @@ end
 function p_block(x, s; ignore_single_line = false, from_quote = false, join_body = false)
     t = PTree(x, nspaces(s))
     single_line = ignore_single_line ? false :
-                  cursor_loc(s)[1] == cursor_loc(s, s.offset + x.span - 1)[1]
+        cursor_loc(s)[1] == cursor_loc(s, s.offset + x.span - 1)[1]
 
     # @info "" from_quote single_line ignore_single_line join_body
     for (i, a) in enumerate(x)
@@ -1229,7 +1229,6 @@ closing_punc_type(x) =
     x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
-# TODO: think of a better name?
 block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
     x.typ === CSTParser.Do ||
@@ -1237,11 +1236,16 @@ block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.For ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
-nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.args[3])
+nest_rhs(x::CSTParser.EXPR) =
+    block_type(x) ||
+    x.typ === CSTParser.ConditionalOpCall ||
+    (x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON)
+
+nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && nest_rhs(x.args[3])
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
-    CSTParser.is_assignment(x) && return block_type(x.args[3])
+    CSTParser.is_assignment(x) && return nest_rhs(x.args[3])
     (
      x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
     ) && return false
@@ -1365,8 +1369,10 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 0
-    add_braces = !CSTParser.is_lbrace(x.args[3]) &&
-                 x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
+    add_braces =
+        !CSTParser.is_lbrace(x.args[3]) &&
+        x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
+
     add_braces && add_node!(
         t,
         PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "{"),

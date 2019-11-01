@@ -28,8 +28,8 @@ function gradm(ex, mut = false)
     kw = length(args) > 1 && isexpr(args[1], :parameters) ? esc(popfirst!(args)) : nothing
     isclosure = isexpr(name, :(::)) && length(name.args) > 1
     f, T = isexpr(name, :(::)) ?
-           (length(name.args) == 1 ? (esc(gensym()), esc(name.args[1])) : esc.(name.args)) :
-           (esc(gensym()), :(Core.Typeof($(esc(name)))))
+        (length(name.args) == 1 ? (esc(gensym()), esc(name.args[1])) : esc.(name.args)) :
+        (esc(gensym()), :(Core.Typeof($(esc(name)))))
     kT = :(Core.kwftype($T))
     Ts == nothing && (Ts = [])
     args = named.(args)

@@ -256,7 +256,7 @@ function adjointcfg(pr::Primal)
         rb = block(ir, b.id)
         for i = 1:length(preds)
             cond = i == length(preds) ? nothing :
-                   push!(rb, xcall(Base, :(!==), alpha(pr.branches[b.id]), BranchNumber(i)))
+                push!(rb, xcall(Base, :(!==), alpha(pr.branches[b.id]), BranchNumber(i)))
             branch!(rb, preds[i].id, unless = cond)
         end
         if !isempty(branches(b)) && branches(b)[end] == IRTools.unreachable
