@@ -2,6 +2,7 @@ using Documenter, JuliaFormatter
 
 makedocs(
     sitename = "JuliaFormatter",
+    format = Documenter.HTML(prettyurls = true),
     modules = [JuliaFormatter],
     pages = [
         "Introduction" => "index.md",
@@ -10,4 +11,9 @@ makedocs(
     ],
 )
 
-deploydocs(repo = "github.com/domluna/JuliaFormatter.jl.git")
+deploydocs(
+    repo = "github.com/domluna/JuliaFormatter.jl.git",
+    target = "build",
+    deps = nothing,
+    make = nothing,
+)
