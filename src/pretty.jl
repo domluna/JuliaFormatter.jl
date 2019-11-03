@@ -1175,7 +1175,9 @@ function p_chaincall(x, s; nonest = false, nospace = false)
         if a.typ === CSTParser.OPERATOR
             !nospace && add_node!(t, Whitespace(1), s)
             add_node!(t, n, s, join_lines = true)
-            !(nospace && nonest) && add_node!(t, Placeholder(1), s)
+            if !(nospace && nonest)
+                add_node!(t, Placeholder(1), s)
+            end
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i != length(x)
@@ -1187,7 +1189,7 @@ function p_chaincall(x, s; nonest = false, nospace = false)
     end
     t
 end
-#
+
 # ColonOpCall
 function p_coloncall(x, s)
     t = PTree(x, nspaces(s))
@@ -1202,7 +1204,7 @@ function p_coloncall(x, s)
     t
 end
 
-# CSTParser.Kw
+# Kw
 function p_kw(x, s)
     t = PTree(x, nspaces(s))
     for a in x
@@ -1231,14 +1233,12 @@ closing_punc_type(x) =
 
 block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
-    x.typ === CSTParser.Do ||
-    x.typ === CSTParser.Try ||
-    x.typ === CSTParser.For ||
+    x.typ === CSTParser.Do || x.typ === CSTParser.Try || x.typ === CSTParser.For ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
 nest_rhs(x::CSTParser.EXPR) =
-    block_type(x) ||
-    x.typ === CSTParser.ConditionalOpCall ||
+    block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
+    x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison ||
     (x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON)
 
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && nest_rhs(x.args[3])
@@ -1260,7 +1260,7 @@ function nestable(x::CSTParser.EXPR)
         end
         if arg.typ === CSTParser.BinaryOpCall
             op = arg.args[2].kind
-            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && (return true)
+            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && return true
         end
 
         arg = x.args[3]
@@ -1269,7 +1269,7 @@ function nestable(x::CSTParser.EXPR)
         end
         if arg.typ === CSTParser.BinaryOpCall
             op = arg.args[2].kind
-            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && (return true)
+            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && return true
         end
 
         return parent_is(

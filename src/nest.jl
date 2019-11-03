@@ -462,13 +462,16 @@ function n_binarycall!(x, s; extra_width = 0)
 
         # Undo nest if possible
         if !x.force_nest
-            # @info "" s.line_offset rw line_width length_to(x, (NEWLINE,), start=1)
             arg2 = x.nodes[end]
             arg2.typ === CSTParser.Block && (arg2 = arg2.nodes[1])
 
             line_width = 0
             can_unnest = false
-            if arg2.typ === CSTParser.BinaryOpCall
+            op = x.ref[][2]
+            lazyop = op.kind === Tokens.LAZY_OR || op.kind === Tokens.LAZY_AND
+
+            if (arg2.typ === CSTParser.BinaryOpCall && !lazyop) ||
+               arg2.typ === CSTParser.UnaryOpCall
                 line_width = s.line_offset + 1 + length(x.nodes[end])
                 can_unnest = line_width + extra_width <= s.margin
             else
@@ -482,7 +485,11 @@ function n_binarycall!(x, s; extra_width = 0)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
 
-                    if !is_leaf(arg2) && arg2.typ !== CSTParser.ConditionalOpCall
+                    if !is_leaf(arg2) &&
+                       !(arg2.typ === CSTParser.ConditionalOpCall ||
+                         arg2.typ === CSTParser.Comparison ||
+                         arg2.typ === CSTParser.ChainOpCall)
+
                         add_indent!(arg2, s, -s.indent_size)
 
                         # There might need to be an additional
