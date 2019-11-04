@@ -100,7 +100,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter
+        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter || en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
