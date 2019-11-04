@@ -658,6 +658,91 @@ end
                 expression2
         end"""
         @test fmt(str, 4, 32) == str
+
+        str = "shmem[pout*rows+row] += shmem[pin*rows+row] + shmem[pin*rows+row-offset]"
+
+        str_ = """
+        shmem[pout*rows+row] +=
+               shmem[pin*rows+row] + shmem[pin*rows+row-offset]"""
+        @test fmt(str, 7, 71) == str_
+        str_ = """
+        shmem[pout*rows+row] +=
+               shmem[pin*rows+row] +
+               shmem[pin*rows+row-offset]"""
+        @test fmt(str, 7, 54) == str_
+
+        str = """
+        begin
+           var =
+              func(
+                 arg1,
+                 arg2,
+                 arg3,
+              ) * num
+        end"""
+        @test fmt(str, 3, 13) == str
+
+        str = """
+        begin
+           var = func(
+              arg1,
+              arg2,
+              arg3,
+           ) * num
+        end"""
+        @test fmt(str, 3, 14) == str
+        @test fmt(str, 3, 29) == str
+
+        str = """
+        begin
+           var =
+              func(arg1, arg2, arg3) *
+              num
+        end"""
+        @test fmt(str, 3, 30) == str
+
+        str = """
+        begin
+           var =
+              func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 34) == str
+
+        str = """
+        begin
+           var = func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 37) == str
+
+        str = """
+        begin
+            foo() =
+                (one, x -> (true, false))
+        end"""
+        @test fmt(str, 4, 36) == str
+        @test fmt(str, 4, 33) == str
+
+        str = """
+        begin
+            foo() = (
+                one,
+                x -> (true, false),
+            )
+        end"""
+        @test fmt(str, 4, 32) == str
+        @test fmt(str, 4, 28) == str
+
+        str = """
+        begin
+                  foo() = (
+                           one,
+                           x -> (
+                                 true,
+                                 false,
+                           ),
+                  )
+        end"""
+        @test fmt(str, 10, 39) == str
     end
 
     @testset "op chain" begin
@@ -2320,30 +2405,6 @@ end
                          b"""
         @test fmt("import M1.M2.M3:a,b", 4, 1) == str
 
-        str = """
-        foo() =
-            (one, x -> (true, false))"""
-        @test fmt("foo() = (one, x -> (true, false))", 4, 30) == str
-
-        str = """
-        foo() = (
-            one,
-            x -> (
-                true,
-                false,
-            ),
-        )"""
-        @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
-
-        str = """
-        foo() = (
-                 one,
-                 x -> (
-                       true,
-                       false,
-                 ),
-        )"""
-        @test fmt("foo() = (one, x -> (true, false))", 10, 20) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)

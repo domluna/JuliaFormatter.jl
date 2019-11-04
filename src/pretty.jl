@@ -142,6 +142,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
+            t.len -= 1
         else
             t.len += length(n)
             n.startline = t.startline
@@ -1231,21 +1232,19 @@ closing_punc_type(x) =
     x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
-block_type(x::CSTParser.EXPR) =
-    x.typ === CSTParser.If ||
+block_type(x::CSTParser.EXPR) = x.typ === CSTParser.If ||
     x.typ === CSTParser.Do || x.typ === CSTParser.Try || x.typ === CSTParser.For ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
-nest_rhs(x::CSTParser.EXPR) =
-    block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
+nest_rhs(x::CSTParser.EXPR) = block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
     x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison ||
     (x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON)
 
-nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && nest_rhs(x.args[3])
+nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1 && nest_rhs(x[3])
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
-    CSTParser.is_assignment(x) && return nest_rhs(x.args[3])
+    nest_assignment(x) && return true
     (
      x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
     ) && return false

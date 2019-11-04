@@ -61,8 +61,7 @@ function instrument_getproperty!(ir, v, ex)
     ex
 end
 
-is_literal_getindex(ex) =
-    iscall(ex, Base, :getindex) &&
+is_literal_getindex(ex) = iscall(ex, Base, :getindex) &&
     length(ex.args) == 3 && ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_getindex!(ir, v, ex)
@@ -71,8 +70,7 @@ function instrument_getindex!(ir, v, ex)
     ex
 end
 
-is_literal_iterate(ex) =
-    iscall(ex, Base, :indexed_iterate) &&
+is_literal_iterate(ex) = iscall(ex, Base, :indexed_iterate) &&
     length(ex.args) >= 3 && ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_iterate!(ir, v, ex)
@@ -147,18 +145,17 @@ function record_branches!(ir::IR)
     return ir, brs
 end
 
-ignored_f(f) =
-    f in (
-        GlobalRef(Base, :not_int),
-        GlobalRef(Core.Intrinsics, :not_int),
-        GlobalRef(Core, :(===)),
-        GlobalRef(Core, :apply_type),
-        GlobalRef(Core, :typeof),
-        GlobalRef(Core, :throw),
-        GlobalRef(Base, :kwerr),
-        GlobalRef(Core, :kwfunc),
-        GlobalRef(Core, :isdefined),
-    )
+ignored_f(f) = f in (
+    GlobalRef(Base, :not_int),
+    GlobalRef(Core.Intrinsics, :not_int),
+    GlobalRef(Core, :(===)),
+    GlobalRef(Core, :apply_type),
+    GlobalRef(Core, :typeof),
+    GlobalRef(Core, :throw),
+    GlobalRef(Base, :kwerr),
+    GlobalRef(Core, :kwfunc),
+    GlobalRef(Core, :isdefined),
+)
 ignored_f(ir, f) = ignored_f(f)
 ignored_f(ir, f::Variable) = ignored_f(get(ir, f, nothing))
 

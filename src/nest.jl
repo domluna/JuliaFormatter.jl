@@ -421,6 +421,29 @@ end
 n_comparison!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
 n_condcall!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
 
+
+function dedent!(x::PTree, s::State, line_width::Int)
+    is_leaf(x) && return
+    x.typ === CSTParser.ConditionalOpCall && return
+    x.typ === CSTParser.Comparison && return
+    x.typ === CSTParser.ChainOpCall && return
+    x.typ === CSTParser.BinaryOpCall && return
+
+    # @info "dedent" line_width x.indent
+
+    if closing_punc_type(x)
+        close_indent = x.nodes[end].indent
+        diff = min(close_indent - x.indent, line_width - x.indent)
+        # diff = x.indent - (close_indent + s.indent_size)
+        # @info "dedent punc" diff line_width close_indent x.indent
+        add_indent!(x, s, diff)
+        x.nodes[end].indent -= s.indent_size + diff
+    else
+        add_indent!(x, s, -s.indent_size)
+    end
+    # @info "dedent final indents" x.indent x.nodes[end].indent
+end
+
 # arg1 op arg2
 #
 # nest in order of
@@ -470,7 +493,8 @@ function n_binarycall!(x, s; extra_width = 0)
             op = x.ref[][2]
             lazyop = op.kind === Tokens.LAZY_OR || op.kind === Tokens.LAZY_AND
 
-            if (arg2.typ === CSTParser.BinaryOpCall && !lazyop) ||
+            if (arg2.typ === CSTParser.BinaryOpCall &&
+                (!lazyop && !CSTParser.is_assignment(x.ref[]))) ||
                arg2.typ === CSTParser.UnaryOpCall
                 line_width = s.line_offset + 1 + length(x.nodes[end])
                 can_unnest = line_width + extra_width <= s.margin
@@ -480,29 +504,21 @@ function n_binarycall!(x, s; extra_width = 0)
                 can_unnest = line_width + extra_width <= s.margin
             end
 
+            # @info "" can_unnest arg2.typ has_eq
+
             if can_unnest
                 x.nodes[i1] = Whitespace(1)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
 
-                    if !is_leaf(arg2) &&
-                       !(arg2.typ === CSTParser.ConditionalOpCall ||
-                         arg2.typ === CSTParser.Comparison ||
-                         arg2.typ === CSTParser.ChainOpCall)
-
-                        add_indent!(arg2, s, -s.indent_size)
-
-                        # There might need to be an additional
-                        if closing_punc_type(arg2)
-                            close_indent = arg2.nodes[end].indent
-                            diff = min(
-                                s.indent_size - arg2.indent,
-                                line_width - arg2.indent,
-                            )
-                            add_indent!(arg2, s, diff)
-                            arg2.nodes[end].indent = close_indent
+                    # recursive dedent
+                    if arg2.typ === CSTParser.BinaryOpCall
+                        arg2 = arg2.nodes[1]
+                        while arg2.typ === CSTParser.InvisBrackets
+                            arg2 = arg2.nodes[3]
                         end
                     end
+                    dedent!(arg2, s, line_width)
                 end
             end
         end
