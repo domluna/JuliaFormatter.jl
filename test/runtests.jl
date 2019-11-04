@@ -402,6 +402,18 @@ end
     @testset "unary ops" begin
         @test fmt("! x") == "!x"
         @test fmt("x ...") == "x..."
+
+        # Issue 110
+        str = raw"""
+        if x
+            if y
+                :($lhs = fffffffffffffffffffffff(
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
+                    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,
+                ))
+            end
+        end"""
+        @test fmt(str) == str
     end
 
     @testset "binary ops" begin

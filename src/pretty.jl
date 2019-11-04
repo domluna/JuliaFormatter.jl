@@ -1155,7 +1155,7 @@ block_type(x::CSTParser.EXPR) =
 nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.args[3])
 
 function nestable(x::CSTParser.EXPR)
-    CSTParser.defines_function(x) && return true
+    CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     CSTParser.is_assignment(x) && return block_type(x.args[3])
 
     op = x.args[2]

@@ -48,8 +48,6 @@ function nest!(nodes::Vector{PTree}, s::State, indent; extra_width = 0)
             s.line_offset = nodes[i+1].indent
         elseif n.typ === NEWLINE
             s.line_offset = indent
-        elseif is_leaf(n)
-            s.line_offset += length(n)
         else
             nest!(n, s, extra_width = extra_width)
         end
@@ -572,7 +570,7 @@ function n_binarycall!(x, s; extra_width = 0)
         end
 
         # @info "" return_width
-        # @debug "" s.line_offset return_width length(x.nodes[1])
+        # @info "" s.line_offset return_width length(x.nodes[1])
 
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
