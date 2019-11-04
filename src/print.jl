@@ -60,7 +60,7 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         return
     end
 
-    ws = repeat(" ", x.indent)
+    ws = repeat(" ", max(x.indent, 0))
     for (i, n) in enumerate(x.nodes)
         if is_leaf(n)
             print_leaf(io, n, s)

@@ -245,7 +245,12 @@ function n_stringh!(x, s; extra_width = 0)
 end
 
 function n_for!(x, s; extra_width = 0)
-    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[3].nodes)
+    block_idx = findfirst(n -> !is_leaf(n), x.nodes)
+    if block_idx === nothing
+        nest!(x.nodes, s, x.indent, extra_width = extra_width)
+        return
+    end
+    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[block_idx].nodes)
     nest!(x.nodes, s, x.indent, extra_width = extra_width)
 
     # return if the argument block was nested

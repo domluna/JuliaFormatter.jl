@@ -96,7 +96,8 @@ function Document(text::AbstractString)
                     if c == '\n'
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
-                        idx = min(findfirst(c -> !isspace(c), cs), ws + 1)
+                        fc = findfirst(c -> !isspace(c), cs)
+                        idx = fc === nothing ? 1 : min(fc, ws + 1)
                         comments[line] = (ws, cs[idx:end])
                         line += 1
                         cs = ""
@@ -147,7 +148,7 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" comments format_skips
+    # @info "" lit_strings
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
@@ -241,7 +242,7 @@ function format_text(
     text = normalize_line_ending(text)
 
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    ps.errored && error("Parsing error for formatted $text")
+    ps.errored && error("Parsing error for formatted text:\n\n $text")
     return text
 end
 
