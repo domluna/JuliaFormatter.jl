@@ -98,8 +98,18 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             push!(t.nodes, n)
             return
         end
-    elseif n.typ === TRAILINGCOMMA && is_comma(t.nodes[end])
-        t.nodes[end] = n
+    elseif n.typ === TRAILINGCOMMA
+        en = t.nodes[end]
+        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter
+            # don't insert trailing comma in these cases
+        elseif is_comma(en)
+            t.nodes[end] = n
+        else
+            t.len += length(n)
+            n.startline = t.startline
+            n.endline = t.endline
+            push!(t.nodes, n)
+        end
         return
     elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
         push!(t.nodes, n)
@@ -460,7 +470,8 @@ function p_literal(x, s)
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    if str_info === nothing && x.parent.typ === CSTParser.x_Str
+    if str_info === nothing &&
+       (x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd)
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], x.val)
     end
@@ -567,7 +578,6 @@ function p_macrocall(x, s)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(n)
-            add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
