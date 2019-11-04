@@ -470,8 +470,8 @@ function p_literal(x, s)
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    if str_info === nothing && (x.parent.typ === CSTParser.x_Str || 
-                                x.parent.typ === CSTParser.x_Cmd)
+    if str_info === nothing &&
+       (x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd)
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], x.val)
     end
