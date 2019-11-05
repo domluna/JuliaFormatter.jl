@@ -3053,7 +3053,7 @@ end
         # This shouldn't before `for` otherwise the
         # formatted text will result in a parsing error.
         str = "var = (x, y) for x = 1:10, y = 1:10"
-        @test fmt(str, 4, length(str)-1) == str
+        @test fmt(str, 4, length(str) - 1) == str
 
         str_ = """
         begin

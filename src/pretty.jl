@@ -62,7 +62,7 @@ is_colon_op(x) =
     x.typ === CSTParser.ColonOpCall
 
 # f a function which returns a bool
-function parent_is(x, f; ignore_typs=(CSTParser.InvisBrackets,))
+function parent_is(x, f; ignore_typs = (CSTParser.InvisBrackets,))
     p = x.parent
     p === nothing && return false
     while p !== nothing && p.typ in ignore_typs
@@ -97,7 +97,9 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter || en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
+        if en.typ === CSTParser.Generator ||
+           en.typ === CSTParser.Filter ||
+           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -1141,8 +1143,14 @@ function p_kw(x, s)
     t
 end
 
-closing_punc_type(x) = x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
-    x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call || x.typ === CSTParser.Curly || x.typ === CSTParser.MacroCall ||
+closing_punc_type(x) =
+    x.typ === CSTParser.TupleH ||
+    x.typ === CSTParser.Vect ||
+    x.typ === CSTParser.Vcat ||
+    x.typ === CSTParser.Braces ||
+    x.typ === CSTParser.Call ||
+    x.typ === CSTParser.Curly ||
+    x.typ === CSTParser.MacroCall ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 # TODO: think of a better name?
@@ -1182,7 +1190,10 @@ function nestable(x::CSTParser.EXPR)
             (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && (return true)
         end
 
-        return parent_is(x, x -> x.typ in (CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While))
+        return parent_is(
+            x,
+            x -> x.typ in (CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While),
+        )
     end
     true
 end
@@ -1672,7 +1683,16 @@ function p_generator(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
-            if a.kind === Tokens.FOR && parent_is(a, x -> closing_punc_type(x), ignore_typs=(CSTParser.InvisBrackets,CSTParser.Generator,CSTParser.Flatten,CSTParser.Filter))
+            if a.kind === Tokens.FOR && parent_is(
+                a,
+                x -> closing_punc_type(x),
+                ignore_typs = (
+                    CSTParser.InvisBrackets,
+                    CSTParser.Generator,
+                    CSTParser.Flatten,
+                    CSTParser.Filter,
+                ),
+            )
                 add_node!(t, Placeholder(1), s)
                 t.indent += s.indent_size
             else

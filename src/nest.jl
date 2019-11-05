@@ -592,7 +592,7 @@ function n_binarycall!(x, s; extra_width = 0)
     end
 end
 
-function n_block!(x, s; extra_width = 0, custom_indent=0)
+function n_block!(x, s; extra_width = 0, custom_indent = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
