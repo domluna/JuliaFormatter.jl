@@ -61,17 +61,14 @@ is_colon_op(x) =
     (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) ||
     x.typ === CSTParser.ColonOpCall
 
-function parent_is(x, typs...)
+# f a function which returns a bool
+function parent_is(x, f; ignore_typs = (CSTParser.InvisBrackets,))
     p = x.parent
     p === nothing && return false
-    while p !== nothing && p.typ === CSTParser.InvisBrackets
+    while p !== nothing && p.typ in ignore_typs
         p = p.parent
     end
-
-    for typ in typs
-        p.typ === typ && return true
-    end
-    false
+    f(p)
 end
 
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
@@ -100,7 +97,9 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter || en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
+        if en.typ === CSTParser.Generator ||
+           en.typ === CSTParser.Filter ||
+           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -354,11 +353,11 @@ function pretty(x::CSTParser.EXPR, s::State)
     elseif x.typ === CSTParser.Ref
         return p_ref(x, s)
     elseif x.typ === CSTParser.Comprehension
-        return p_comprehension(x, s)
+        return p_vect(x, s)
     elseif x.typ === CSTParser.Generator
-        return p_comprehension(x, s)
+        return p_gen(x, s)
     elseif x.typ === CSTParser.Filter
-        return p_comprehension(x, s)
+        return p_gen(x, s)
     end
 
     t = PTree(x, nspaces(s))
@@ -1144,6 +1143,17 @@ function p_kw(x, s)
     t
 end
 
+closing_punc_type(x) =
+    x.typ === CSTParser.TupleH ||
+    x.typ === CSTParser.Vect ||
+    x.typ === CSTParser.Vcat ||
+    x.typ === CSTParser.Braces ||
+    x.typ === CSTParser.Call ||
+    x.typ === CSTParser.Curly ||
+    x.typ === CSTParser.Comprehension ||
+    x.typ === CSTParser.MacroCall ||
+    x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
+
 # TODO: think of a better name?
 block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
@@ -1181,7 +1191,10 @@ function nestable(x::CSTParser.EXPR)
             (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && (return true)
         end
 
-        return parent_is(x, CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While)
+        return parent_is(
+            x,
+            x -> x.typ in (CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While),
+        )
     end
     true
 end
@@ -1641,12 +1654,26 @@ function p_row(x, s)
     t
 end
 
-# Comprehension/Generator/Filter
-function p_comprehension(x, s)
+# Generator/Filter
+function p_gen(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
-            add_node!(t, Whitespace(1), s)
+            if a.kind === Tokens.FOR && parent_is(
+                a,
+                x -> closing_punc_type(x),
+                ignore_typs = (
+                    CSTParser.InvisBrackets,
+                    CSTParser.Generator,
+                    CSTParser.Flatten,
+                    CSTParser.Filter,
+                ),
+            )
+                add_node!(t, Placeholder(1), s)
+                t.indent += s.indent_size
+            else
+                add_node!(t, Whitespace(1), s)
+            end
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR

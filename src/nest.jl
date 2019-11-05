@@ -31,7 +31,6 @@ function reset_line_offset!(x::PTree, s::State)
     s.line_offset += length(x)
 end
 
-
 function add_indent!(x::PTree, s::State, indent)
     indent == 0 && return
     lo = s.line_offset
@@ -113,6 +112,12 @@ function nest!(x::PTree, s::State; extra_width = 0)
         nest!(x.nodes[2], s)
     elseif x.typ === CSTParser.Do
         n_do!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Generator
+        n_gen!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Filter
+        n_gen!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Comprehension
+        n_tuple!(x, s, extra_width = extra_width)
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
@@ -586,13 +591,14 @@ function n_binarycall!(x, s; extra_width = 0)
     end
 end
 
-function n_block!(x, s; extra_width = 0)
+function n_block!(x, s; extra_width = 0, custom_indent = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         line_offset = s.line_offset
-        x.indent = s.line_offset
+
+        x.indent = custom_indent > 0 ? custom_indent : s.line_offset
 
         # @info "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)
@@ -621,3 +627,6 @@ function n_block!(x, s; extra_width = 0)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
+
+n_gen!(x, s; extra_width = 0) =
+    n_block!(x, s, extra_width = extra_width, custom_indent = x.indent)
