@@ -356,7 +356,7 @@ function pretty(x::CSTParser.EXPR, s::State)
     elseif x.typ === CSTParser.Comprehension
         return p_comprehension(x, s)
     elseif x.typ === CSTParser.Generator
-        return p_comprehension(x, s)
+        return p_generator(x, s)
     elseif x.typ === CSTParser.Filter
         return p_comprehension(x, s)
     end
@@ -1647,6 +1647,28 @@ function p_comprehension(x, s)
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
             add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+            if a.kind === Tokens.FOR
+                for j = i+1:length(x)
+                    eq_to_in_normalization!(x.args[j], s.always_for_in)
+                end
+            end
+        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+            add_node!(t, pretty(a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+        else
+            add_node!(t, pretty(a, s), s, join_lines = true)
+        end
+    end
+    t
+end
+
+function p_generator(x, s)
+    t = PTree(x, nspaces(s))
+    for (i, a) in enumerate(x)
+        if a.typ === CSTParser.KEYWORD
+            add_node!(t, a.kind == Tokens.FOR ? Placeholder(1) : Whitespace(1), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR

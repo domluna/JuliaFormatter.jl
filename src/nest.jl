@@ -113,6 +113,8 @@ function nest!(x::PTree, s::State; extra_width = 0)
         nest!(x.nodes[2], s)
     elseif x.typ === CSTParser.Do
         n_do!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Generator
+        n_generator!(x, s, extra_width = extra_width)
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
@@ -127,6 +129,11 @@ function n_do!(x, s; extra_width = 0)
     end
     nest!(x.nodes[1], s, extra_width = extra_width + ew)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
+end
+
+function n_generator!(x, s; extra_width = 0)
+    @info "" x.indent
+    n_block!(x, s, extra_width = extra_width)
 end
 
 function n_invisbrackets!(x, s; extra_width = 0)
