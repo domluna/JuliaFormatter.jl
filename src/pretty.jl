@@ -353,11 +353,11 @@ function pretty(x::CSTParser.EXPR, s::State)
     elseif x.typ === CSTParser.Ref
         return p_ref(x, s)
     elseif x.typ === CSTParser.Comprehension
-        return p_comprehension(x, s)
+        return p_vect(x, s)
     elseif x.typ === CSTParser.Generator
-        return p_generator(x, s)
+        return p_gen(x, s)
     elseif x.typ === CSTParser.Filter
-        return p_comprehension(x, s)
+        return p_gen(x, s)
     end
 
     t = PTree(x, nspaces(s))
@@ -1150,6 +1150,7 @@ closing_punc_type(x) =
     x.typ === CSTParser.Braces ||
     x.typ === CSTParser.Call ||
     x.typ === CSTParser.Curly ||
+    x.typ === CSTParser.Comprehension ||
     x.typ === CSTParser.MacroCall ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
@@ -1653,33 +1654,8 @@ function p_row(x, s)
     t
 end
 
-
-
-# Comprehension/Generator/Filter
-function p_comprehension(x, s)
-    t = PTree(x, nspaces(s))
-    for (i, a) in enumerate(x)
-        if a.typ === CSTParser.KEYWORD
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
-            if a.kind === Tokens.FOR
-                for j = i+1:length(x)
-                    eq_to_in_normalization!(x.args[j], s.always_for_in)
-                end
-            end
-        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
-        else
-            add_node!(t, pretty(a, s), s, join_lines = true)
-        end
-    end
-    t
-end
-
-
-function p_generator(x, s)
+# Generator/Filter
+function p_gen(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD

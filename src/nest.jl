@@ -31,7 +31,6 @@ function reset_line_offset!(x::PTree, s::State)
     s.line_offset += length(x)
 end
 
-
 function add_indent!(x::PTree, s::State, indent)
     indent == 0 && return
     lo = s.line_offset
@@ -114,7 +113,11 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Do
         n_do!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Generator
-        n_generator!(x, s, extra_width = extra_width)
+        n_gen!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Filter
+        n_gen!(x, s, extra_width = extra_width)
+    elseif x.typ === CSTParser.Comprehension
+        n_tuple!(x, s, extra_width = extra_width)
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
@@ -129,10 +132,6 @@ function n_do!(x, s; extra_width = 0)
     end
     nest!(x.nodes[1], s, extra_width = extra_width + ew)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
-end
-
-function n_generator!(x, s; extra_width = 0)
-    n_block!(x, s, extra_width = extra_width, custom_indent = x.indent)
 end
 
 function n_invisbrackets!(x, s; extra_width = 0)
@@ -628,3 +627,6 @@ function n_block!(x, s; extra_width = 0, custom_indent = 0)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
+
+n_gen!(x, s; extra_width = 0) =
+    n_block!(x, s, extra_width = extra_width, custom_indent = x.indent)
