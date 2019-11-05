@@ -132,8 +132,7 @@ function n_do!(x, s; extra_width = 0)
 end
 
 function n_generator!(x, s; extra_width = 0)
-    @info "" x.indent
-    n_block!(x, s, extra_width = extra_width)
+    n_block!(x, s, extra_width = extra_width, custom_indent = x.indent)
 end
 
 function n_invisbrackets!(x, s; extra_width = 0)
@@ -593,13 +592,14 @@ function n_binarycall!(x, s; extra_width = 0)
     end
 end
 
-function n_block!(x, s; extra_width = 0)
+function n_block!(x, s; extra_width = 0, custom_indent=0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         line_offset = s.line_offset
-        x.indent = s.line_offset
+
+        x.indent = custom_indent > 0 ? custom_indent : s.line_offset
 
         # @info "DURING" x.indent s.line_offset x.typ
         for (i, n) in enumerate(x.nodes)

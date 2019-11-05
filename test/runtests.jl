@@ -3049,5 +3049,34 @@ end
 
     end
 
+    @testset "comphrehensions types" begin
+        # This shouldn't before `for` otherwise the
+        # formatted text will result in a parsing error.
+        str = "var = (x, y) for x = 1:10, y = 1:10"
+        @test fmt(str, 4, length(str)-1) == str
+
+        str_ = """
+        begin
+        weights = Dict((file, i) => w for (file, subject) in subjects for (
+                i,
+                w,
+            ) in enumerate(weightfn.(eachrow(subject.events))))
+        end"""
+
+        str = """
+        begin
+            weights = Dict((file, i) => w for (file, subject) in subjects
+                for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+        end"""
+        @test fmt(str_, 4, 90) == str
+
+        str = """
+        begin
+            weights = Dict((file, i) => w
+                for (file, subject) in subjects
+                for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+        end"""
+        @test fmt(str_, 4, 60) == str
+    end
 
 end
