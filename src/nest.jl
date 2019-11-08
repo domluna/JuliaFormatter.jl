@@ -104,7 +104,7 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Braces
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.InvisBrackets
-        n_invisbrackets!(x, s, extra_width = extra_width)
+        n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.UnaryOpCall && x.nodes[2].typ === CSTParser.OPERATOR
         nest!(x.nodes[1], s, extra_width = extra_width + length(x.nodes[2]))
         nest!(x.nodes[2], s)
@@ -515,7 +515,7 @@ function n_binarycall!(x, s; extra_width = 0)
                     if arg2.typ === CSTParser.BinaryOpCall
                         arg2 = arg2.nodes[1]
                         while arg2.typ === CSTParser.InvisBrackets
-                            arg2 = arg2.nodes[3]
+                            arg2 = arg2.nodes[2]
                         end
                     end
                     dedent!(arg2, s, line_width)
