@@ -3085,6 +3085,6 @@ end
         dirs = JuliaFormatter.splitpath(@__DIR__)
         @test length(dirs) > 2
         @test dirs[end] == "test"
-        @test dirs[end - 1] == "JuliaFormatter"
+        @test occursin("JuliaFormatter", dirs[end - 1])
     end
 end
