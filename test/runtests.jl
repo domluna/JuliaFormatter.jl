@@ -3079,4 +3079,12 @@ end
         @test fmt(str_, 4, 60) == str
     end
 
+    @testset "Splitpath issue" begin
+        # TODO(odow): seet the TODO in src/JuliaFormatter.jl. Remove once
+        # JuliaFormatter.jl drops support for Julia 1.0.
+        dirs = JuliaFormatter.splitpath(@__DIR__)
+        @test length(dirs) > 2
+        @test dirs[end] == "test"
+        @test occursin("JuliaFormatter", dirs[end - 1])
+    end
 end
