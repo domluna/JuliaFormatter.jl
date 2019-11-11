@@ -11,9 +11,4 @@ makedocs(
     ],
 )
 
-deploydocs(
-    repo = "github.com/domluna/JuliaFormatter.jl.git",
-    target = "build",
-    deps = nothing,
-    make = nothing,
-)
+deploydocs(repo = "github.com/domluna/JuliaFormatter.jl.git")

@@ -1,6 +1,7 @@
 # JuliaFormatter.jl
 
-<a href="https://JuliaFormatter.github.io/JuliaFormatter.jl/latest"><img src="https://img.shields.io/badge/docs-latest-blue.svg"></a>
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev)
 [![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
 
 Width-sensitive formatter for Julia code. Inspired by gofmt and refmt.
