@@ -257,8 +257,7 @@ Start or restart the go pprof webserver.
 - `webport::Integer`: Which port to launch the webserver on.
 - `file::String`: Profile file to open.
 """
-function refresh(
-    ;
+function refresh(;
     webhost::AbstractString = "localhost",
     webport::Integer = 57599,
     file::AbstractString = "profile.pb.gz",
