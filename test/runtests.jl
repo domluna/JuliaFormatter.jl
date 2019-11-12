@@ -3130,7 +3130,7 @@ end
             weights = Dict((file, i) => w for (file, subject) in subjects
                 for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
         end"""
-        @test fmt(str_, 4, 90) == str
+        @test_broken fmt(str_, 4, 90) == str
 
         str = """
         begin
@@ -3138,7 +3138,7 @@ end
                 for (file, subject) in subjects
                 for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
         end"""
-        @test fmt(str_, 4, 60) == str
+        @test_broken fmt(str_, 4, 60) == str
     end
 
     @testset "Splitpath issue" begin

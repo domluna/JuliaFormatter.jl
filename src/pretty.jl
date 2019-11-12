@@ -1698,21 +1698,22 @@ function p_gen(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
-            if a.kind === Tokens.FOR && parent_is(
-                a,
-                x -> closing_punc_type(x),
-                ignore_typs = (
-                    CSTParser.InvisBrackets,
-                    CSTParser.Generator,
-                    CSTParser.Flatten,
-                    CSTParser.Filter,
-                ),
-            )
-                add_node!(t, Placeholder(1), s)
-                t.indent += s.indent_size
-            else
-                add_node!(t, Whitespace(1), s)
-            end
+            # if a.kind === Tokens.FOR && parent_is(
+            #     a,
+            #     x -> closing_punc_type(x),
+            #     ignore_typs = (
+            #         CSTParser.InvisBrackets,
+            #         CSTParser.Generator,
+            #         CSTParser.Flatten,
+            #         CSTParser.Filter,
+            #     ),
+            # )
+            #     add_node!(t, Placeholder(1), s)
+            #     t.indent += s.indent_size
+            # else
+            #     add_node!(t, Whitespace(1), s)
+            # end
+            add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
