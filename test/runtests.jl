@@ -638,6 +638,61 @@ end
         @test fmt("func(; c = 1)", 4, 1) == "func(; c = 1)"
         @test fmt("func(; c = 1,)") == "func(; c = 1)"
         @test fmt("func(a;)") == "func(a;)"
+
+        str = """
+        func(;
+            a,
+            b,
+        )"""
+        @test fmt(str, 4, 1) == str
+
+        str = """
+        func(
+            x;
+            a,
+            b,
+        )"""
+        @test fmt(str, 4, 1) == str
+    end
+
+    @testset "macro call" begin
+        str = """
+        @f(
+           a,
+           b;
+           x
+        )"""
+        str_ = "@f(a, b; x)"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
+
+        str = """
+        @f(
+           a;
+           x
+        )"""
+        str_ = "@f(a; x)"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
+
+        str = "@f(; x)"
+        @test fmt(str) == str
+        @test fmt(str, 4, 1) == str
+
+        str = """
+        @f(;
+           a,
+           b
+        )"""
+        @test fmt(str, 4, 1) == str
+
+        str = """
+        @f(
+           x;
+           a,
+           b
+        )"""
+        @test fmt(str, 4, 1) == str
     end
 
     @testset "begin" begin
@@ -1619,13 +1674,20 @@ end
         @test fmt(str) == str
 
         str = """
+        foo(;
+            a = b, # comment
+            c = d,
+            # comment
+        )"""
+
+        str_ = """
         foo(
             ;
             a = b, # comment
             c = d,
             # comment
         )"""
-        @test fmt(str) == str
+        @test fmt(str_) == str
 
         str_ = """
         foo(
