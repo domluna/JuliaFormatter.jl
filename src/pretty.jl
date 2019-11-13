@@ -130,7 +130,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         en = t.nodes[end]
         if en.typ === CSTParser.Generator ||
            en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall
+           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall ||
+           (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -1483,12 +1484,7 @@ end
 # TupleH
 function p_tuple(x, s)
     t = PTree(x, nspaces(s))
-    multi_arg = false
-    if CSTParser.is_lparen(x.args[1]) && length(x) > 2
-        multi_arg = true
-    elseif !CSTParser.is_lparen(x.args[1]) && length(x) > 0
-        multi_arg = true
-    end
+    multi_arg = n_args(x) > 0
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)

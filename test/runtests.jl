@@ -348,6 +348,7 @@ end
     end
 
     @testset "tuples" begin
+        @test fmt("(a,)") == "(a,)"
         @test fmt("a,b") == "a, b"
         @test fmt("a ,b") == "a, b"
         @test fmt("(a,b)") == "(a, b)"
