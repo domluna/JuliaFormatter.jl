@@ -2269,83 +2269,6 @@ end
         )"""
         @test fmt("(arg1)", 4, 1) == str
 
-        str_ = """
-        begin
-        if foo
-        elseif baz
-        elseif (a || b) && c
-        elseif bar
-        else
-        end
-        end"""
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a || b) && c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 24) == str
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a || b) &&
-                   c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 23) == str
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (
-                a || b
-            ) && c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 21) == str
-        @test fmt(str_, 4, 15) == str
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (
-                a ||
-                b
-            ) && c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 14) == str
-        @test fmt(str_, 4, 11) == str
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (
-                a ||
-                b
-            ) &&
-            c
-            elseif bar
-            else
-            end
-        end"""
-        @test_broken fmt(str_, 4, 10) == str
-        @test_broken fmt(str_, 4, 1) == str
 
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
@@ -2568,6 +2491,19 @@ end
           b = 2,
         )"""
         @test fmt("f(a=1; b=2)", 4, 1) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif a ||
+                   b &&
+                   c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str, 4, 1) == str
     end
 
     @testset "nesting line offset" begin
@@ -3269,6 +3205,76 @@ some_function(
                 end
         end"""
         @test fmt(str, 8, 92) == str
+
+        #
+        # Don't nest the op if an arg is invisbrackets
+        #
+
+        str_ = """
+        begin
+        if foo
+        elseif baz
+        elseif (a || b) && c
+        elseif bar
+        else
+        end
+        end"""
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (a || b) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 24) == str
+        @test fmt(str_, 4, 23) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a || b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 21) == str
+        @test fmt(str_, 4, 15) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a ||
+                b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 14) == str
+        @test fmt(str_, 4, 10) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a ||
+                b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 9) == str
+        @test fmt(str_, 4, 1) == str
     end
 
 end

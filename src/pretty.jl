@@ -58,8 +58,7 @@ is_comma(x::PTree) =
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
-    (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) ||
-    x.typ === CSTParser.ColonOpCall
+    (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
 
 # f a function which returns a bool
 function parent_is(x, f; ignore_typs = (CSTParser.InvisBrackets,))
@@ -507,8 +506,9 @@ function p_literal(x, s)
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    if str_info === nothing &&
-       (x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd)
+    if str_info === nothing && (
+        x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd
+    )
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], x.val)
     end
@@ -1284,8 +1284,9 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     elseif (
-        nospace ||
-        (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
+        nospace || (
+            CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC
+        )
     ) && op.kind !== Tokens.IN
         add_node!(t, pretty(op, s), s, join_lines = true)
     else

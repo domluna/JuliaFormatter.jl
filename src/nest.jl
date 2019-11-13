@@ -446,8 +446,11 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs
-    if length(idxs) == 2 && (line_width > s.margin || x.force_nest)
+    invis_args = x.nodes[1].typ === CSTParser.InvisBrackets ||
+                 x.nodes[end].typ === CSTParser.InvisBrackets
+    # arg2_invis = false
+    # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs x.ref[][2]
+    if length(idxs) == 2 && (line_width > s.margin || x.force_nest) && !invis_args
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -501,17 +504,7 @@ function n_binarycall!(x, s; extra_width = 0)
                         add_indent!(arg2, s, -s.indent_size)
 
                         # There might need to be an additional
-                        if arg2.typ in (
-                            CSTParser.TupleH,
-                            CSTParser.Vect,
-                            CSTParser.Vcat,
-                            CSTParser.Braces,
-                            CSTParser.Call,
-                            CSTParser.Curly,
-                            CSTParser.MacroCall,
-                            CSTParser.Ref,
-                            CSTParser.TypedVcat,
-                        )
+                        if closing_punc_type(arg2)
                             close_indent = arg2.nodes[end].indent
                             diff = min(
                                 s.indent_size - arg2.indent,
@@ -525,6 +518,7 @@ function n_binarycall!(x, s; extra_width = 0)
             end
         end
 
+        s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
         # Handles the case of a function def defined
