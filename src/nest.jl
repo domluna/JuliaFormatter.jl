@@ -134,23 +134,7 @@ function n_do!(x, s; extra_width = 0)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
 end
 
-function n_invisbrackets!(x, s; extra_width = 0)
-    for (i, n) in enumerate(x.nodes)
-        if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
-            s.line_offset = x.nodes[i+1].indent
-        elseif n.typ === NEWLINE
-            s.line_offset = x.indent
-        elseif n.typ === NOTCODE && x.nodes[i+1].typ === CSTParser.Block
-            s.line_offset = x.nodes[i+1].indent
-        elseif is_leaf(n)
-            s.line_offset += length(n)
-        elseif i == length(x.nodes) - 1
-            nest!(n, s, extra_width = extra_width + 1)
-        else
-            nest!(n, s, extra_width = extra_width)
-        end
-    end
-end
+n_invisbrackets!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
 
 # Import,Using,Export,ImportAll
 function n_import!(x, s; extra_width = 0)

@@ -1443,7 +1443,8 @@ end
 # InvisBrackets
 function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
-    multi_arg = length(x) > 4
+    parent_invis = x[2].typ === CSTParser.InvisBrackets
+    # @info "" x parent_invis
 
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.Block
@@ -1462,15 +1463,14 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
                 s,
                 join_lines = true,
             )
-        elseif is_opener(a) && multi_arg
+        elseif is_opener(a) && !parent_invis && !nonest
+            # @info "opening"
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
-        elseif is_closer(a) && multi_arg
+        elseif is_closer(a) && !parent_invis && !nonest
+            # @info "closing"
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
-            add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
         end
