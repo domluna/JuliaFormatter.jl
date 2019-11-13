@@ -407,10 +407,12 @@ end
         str = raw"""
         if x
             if y
-                :($lhs = fffffffffffffffffffffff(
-                    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
-                    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,
-                ))
+                :(
+                  $lhs = fffffffffffffffffffffff(
+                      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
+                      yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,
+                  )
+                )
             end
         end"""
         @test fmt(str) == str
@@ -2216,10 +2218,20 @@ end
 
         str = "(a; b; c)"
         @test fmt("(a;b;c)", 4, 100) == str
+
+        str = """
+        (
+         a; b; c
+        )"""
         @test fmt("(a;b;c)", 4, 1) == str
 
         str = "(x for x = 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str
+
+        str = """
+        (
+         x for x = 1:10
+        )"""
         @test fmt("(x   for x  in  1 : 10)", 4, 1) == str
 
         # indent for TupleH with no parens
@@ -2251,68 +2263,13 @@ end
         str = "{arg1}"
         @test fmt(str, 4, 1) == str
 
-        str = "(arg1)"
-        @test fmt(str, 4, 1) == str
-
-        str_ = """
-        begin
-        if foo
-        elseif baz
-        elseif (a || b) && c
-        elseif bar
-        else
-        end
-        end"""
-
         str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a ||
-                    b) && c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 21) == str
-        @test fmt(str_, 4, 19) == str
+        (
+         arg1
+        )"""
+        @test fmt("(arg1)", 4, 1) == str
 
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a ||
-                    b) &&
-                   c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 18) == str
 
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a || b) &&
-                   c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 23) == str
-        @test fmt(str_, 4, 22) == str
-
-        str = """
-        begin
-            if foo
-            elseif baz
-            elseif (a || b) && c
-            elseif bar
-            else
-            end
-        end"""
-        @test fmt(str_, 4, 24) == str
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """
@@ -2420,36 +2377,74 @@ end
         str_ = "(a + b + c + d)"
         @test fmt(str_, 4, 15) == str_
 
-        str = "(a + b + c +\n d)"
+        str = """
+        (
+         a + b + c +
+         d
+        )"""
         @test fmt(str_, 4, 14) == str
         @test fmt(str_, 4, 12) == str
 
-        str = "(a + b +\n c + d)"
+        str = """
+        (
+         a + b +
+         c + d
+        )"""
         @test fmt(str_, 4, 11) == str
         @test fmt(str_, 4, 8) == str
 
-        str = "(a +\n b +\n c + d)"
+        str = """
+        (
+         a +
+         b +
+         c + d
+        )"""
         @test fmt(str_, 4, 7) == str
 
-        str = "(a +\n b +\n c +\n d)"
+        str = """
+        (
+         a +
+         b +
+         c +
+         d
+        )"""
         @test fmt(str_, 4, 1) == str
 
         str_ = "(a <= b <= c <= d)"
         @test fmt(str_, 4, 18) == str_
 
-        str = "(a <= b <= c <=\n d)"
+        str = """
+        (
+         a <= b <= c <=
+         d
+        )"""
         @test fmt(str_, 4, 17) == str
         @test fmt(str_, 4, 15) == str
 
-        str = "(a <= b <=\n c <= d)"
+        str = """
+        (
+         a <= b <=
+         c <= d
+        )"""
         @test fmt(str_, 4, 14) == str
         @test fmt(str_, 4, 10) == str
 
-        str = "(a <=\n b <=\n c <= d)"
+        str = """
+        (
+         a <=
+         b <=
+         c <= d
+        )"""
         @test fmt(str_, 4, 9) == str
         @test fmt(str_, 4, 8) == str
 
-        str = "(a <=\n b <=\n c <=\n d)"
+        str = """
+        (
+         a <=
+         b <=
+         c <=
+         d
+        )"""
         @test fmt(str_, 4, 7) == str
         @test fmt(str_, 4, 1) == str
 
@@ -2496,6 +2491,19 @@ end
           b = 2,
         )"""
         @test fmt("f(a=1; b=2)", 4, 1) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif a ||
+                   b &&
+                   c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str, 4, 1) == str
     end
 
     @testset "nesting line offset" begin
@@ -3149,4 +3157,124 @@ end
         @test dirs[end] == "test"
         @test occursin("JuliaFormatter", dirs[end-1])
     end
+
+    @testset "invisbrackets" begin
+        str = """
+        some_function(
+            (((
+               very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
+                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+               ) for x in xs
+            ))),
+            another_argument,
+        )"""
+        @test fmt(str) == str
+
+        str_ = """
+some_function(
+(((
+               very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
+                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+               )
+               for x in xs
+               ))),
+           another_argument,
+       )"""
+        @test fmt(str_) == str
+
+        str = """
+        if ((
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        ))
+          nothing
+        end"""
+        @test fmt(str, 2, 92) == str
+
+        str = """
+        begin
+                if ((
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                ))
+                        nothing
+                end
+        end"""
+        @test fmt(str, 8, 92) == str
+
+        #
+        # Don't nest the op if an arg is invisbrackets
+        #
+
+        str_ = """
+        begin
+        if foo
+        elseif baz
+        elseif (a || b) && c
+        elseif bar
+        else
+        end
+        end"""
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (a || b) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 24) == str
+        @test fmt(str_, 4, 23) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a || b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 21) == str
+        @test fmt(str_, 4, 15) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a ||
+                b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 14) == str
+        @test fmt(str_, 4, 10) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
+            elseif (
+                a ||
+                b
+            ) && c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 9) == str
+        @test fmt(str_, 4, 1) == str
+    end
+
 end

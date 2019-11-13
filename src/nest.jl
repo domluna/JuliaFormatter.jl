@@ -134,23 +134,7 @@ function n_do!(x, s; extra_width = 0)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
 end
 
-function n_invisbrackets!(x, s; extra_width = 0)
-    for (i, n) in enumerate(x.nodes)
-        if n.typ === NEWLINE && x.nodes[i+1].typ === CSTParser.Block
-            s.line_offset = x.nodes[i+1].indent
-        elseif n.typ === NEWLINE
-            s.line_offset = x.indent
-        elseif n.typ === NOTCODE && x.nodes[i+1].typ === CSTParser.Block
-            s.line_offset = x.nodes[i+1].indent
-        elseif is_leaf(n)
-            s.line_offset += length(n)
-        elseif i == length(x.nodes) - 1
-            nest!(n, s, extra_width = extra_width + 1)
-        else
-            nest!(n, s, extra_width = extra_width)
-        end
-    end
-end
+n_invisbrackets!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
 
 # Import,Using,Export,ImportAll
 function n_import!(x, s; extra_width = 0)
@@ -462,8 +446,11 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs
-    if length(idxs) == 2 && (line_width > s.margin || x.force_nest)
+    invis_args = x.nodes[1].typ === CSTParser.InvisBrackets ||
+                 x.nodes[end].typ === CSTParser.InvisBrackets
+    # arg2_invis = false
+    # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs x.ref[][2]
+    if length(idxs) == 2 && (line_width > s.margin && !invis_args || x.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -517,17 +504,7 @@ function n_binarycall!(x, s; extra_width = 0)
                         add_indent!(arg2, s, -s.indent_size)
 
                         # There might need to be an additional
-                        if arg2.typ in (
-                            CSTParser.TupleH,
-                            CSTParser.Vect,
-                            CSTParser.Vcat,
-                            CSTParser.Braces,
-                            CSTParser.Call,
-                            CSTParser.Curly,
-                            CSTParser.MacroCall,
-                            CSTParser.Ref,
-                            CSTParser.TypedVcat,
-                        )
+                        if closing_punc_type(arg2)
                             close_indent = arg2.nodes[end].indent
                             diff = min(
                                 s.indent_size - arg2.indent,
@@ -541,6 +518,7 @@ function n_binarycall!(x, s; extra_width = 0)
             end
         end
 
+        s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
     else
         # Handles the case of a function def defined
