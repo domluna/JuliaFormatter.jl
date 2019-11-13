@@ -446,11 +446,8 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    invis_args = x.nodes[1].typ === CSTParser.InvisBrackets ||
-                 x.nodes[end].typ === CSTParser.InvisBrackets
-    # arg2_invis = false
     # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs x.ref[][2]
-    if length(idxs) == 2 && (line_width > s.margin && !invis_args || x.force_nest)
+    if length(idxs) == 2 && (line_width > s.margin || x.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]

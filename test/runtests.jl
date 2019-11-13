@@ -3136,17 +3136,17 @@ end
         str = """
         begin
             weights = Dict((file, i) => w for (file, subject) in subjects
-                for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+            for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
         end"""
-        @test_broken fmt(str_, 4, 90) == str
+        @test fmt(str_, 4, 90) == str
 
         str = """
         begin
             weights = Dict((file, i) => w
-                for (file, subject) in subjects
-                for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+            for (file, subject) in subjects
+            for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
         end"""
-        @test_broken fmt(str_, 4, 60) == str
+        @test fmt(str_, 4, 60) == str
     end
 
     @testset "Splitpath issue" begin
@@ -3165,7 +3165,8 @@ end
                very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
                    very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
                    very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
-               ) for x in xs
+               )
+               for x in xs
             ))),
             another_argument,
         )"""
@@ -3230,7 +3231,6 @@ some_function(
             end
         end"""
         @test fmt(str_, 4, 24) == str
-        @test fmt(str_, 4, 23) == str
 
         str = """
         begin
@@ -3243,7 +3243,7 @@ some_function(
             else
             end
         end"""
-        @test fmt(str_, 4, 21) == str
+        @test fmt(str_, 4, 23) == str
         @test fmt(str_, 4, 15) == str
 
         str = """

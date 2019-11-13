@@ -595,6 +595,7 @@ function p_macrocall(x, s)
     end
 
     multi_arg = n_args(x) > 1
+    multi_arg = true
     has_closer = is_closer(x.args[end])
 
     # @info "" has_closer
@@ -1206,8 +1207,8 @@ nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     CSTParser.is_assignment(x) && return block_type(x.args[3])
-
-    op = x.args[2]
+    (x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets) && return false
+    op = x[2]
     op.kind === Tokens.ANON_FUNC && return false
     op.kind === Tokens.PAIR_ARROW && return false
     CSTParser.precedence(op) in (1, 6) && return false
@@ -1269,10 +1270,9 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     end
 
     narg2 = nest_arg2(x)
-    # @info "" nestable(x) !nonest narg2
-
     narg2 && (t.force_nest = true)
     nest = (nestable(x) && !nonest) || narg2
+    # @info "" nestable(x) !nonest narg2 nest x[2]
 
     if op.fullspan == 0 && x.args[3].typ === CSTParser.IDENTIFIER
         # do nothing
@@ -1328,6 +1328,7 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 1
+    multi_arg = true
     add_braces = !CSTParser.is_lbrace(x.args[3]) &&
                  x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
     add_braces && add_node!(
@@ -1397,6 +1398,7 @@ function p_curly(x, s)
     add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
     multi_arg = length(CSTParser.get_curly_params(x)) > 1
+    multi_arg = true
 
     if multi_arg
         add_node!(t, Placeholder(0), s)
@@ -1423,6 +1425,7 @@ function p_call(x, s)
     add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
     multi_arg = n_args(x) > 1
+    multi_arg = true
 
     if multi_arg
         add_node!(t, Placeholder(0), s)
@@ -1490,6 +1493,7 @@ function p_tuple(x, s)
     elseif !CSTParser.is_lparen(x.args[1]) && length(x) > 2
         multi_arg = true
     end
+    multi_arg = true
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1515,7 +1519,8 @@ function p_braces(x, s)
     t = PTree(x, nspaces(s))
     # {a,b}
     multi_arg = length(x) > 4
-    # @debug "" multi_arg typeof(x)
+    multi_arg = true
+
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1541,6 +1546,7 @@ function p_vect(x, s)
     t = PTree(x, nspaces(s))
     # [a,b]
     multi_arg = length(x) > 4
+    multi_arg = true
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1701,22 +1707,27 @@ function p_gen(x, s)
     t = PTree(x, nspaces(s))
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.KEYWORD
-            # if a.kind === Tokens.FOR && parent_is(
-            #     a,
-            #     x -> closing_punc_type(x),
-            #     ignore_typs = (
-            #         CSTParser.InvisBrackets,
-            #         CSTParser.Generator,
-            #         CSTParser.Flatten,
-            #         CSTParser.Filter,
-            #     ),
-            # )
+            if a.kind === Tokens.FOR && parent_is(
+                a,
+                x -> closing_punc_type(x),
+                ignore_typs = (
+                    CSTParser.InvisBrackets,
+                    CSTParser.Generator,
+                    CSTParser.Flatten,
+                    CSTParser.Filter,
+                ),
+            )
+                add_node!(t, Placeholder(1), s)
+            else
+                add_node!(t, Whitespace(1), s)
+            end
+            # if a.kind === Tokens.FOR
             #     add_node!(t, Placeholder(1), s)
-            #     t.indent += s.indent_size
             # else
             #     add_node!(t, Whitespace(1), s)
             # end
-            add_node!(t, Whitespace(1), s)
+
+            # add_node!(t, Placeholder(1), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
@@ -1724,7 +1735,14 @@ function p_gen(x, s)
                     eq_to_in_normalization!(x.args[j], s.always_for_in)
                 end
             end
-        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+        elseif a.typ === CSTParser.BinaryOpCall
+            add_node!(
+                t,
+                p_binarycall(a, s, nonest = true),
+                s,
+                join_lines = true,
+            )
+ elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
