@@ -637,7 +637,13 @@ end
         @test fmt("func(  a, b; c)") == "func(a, b; c)"
         @test fmt("func(a  ,b; c)") == "func(a, b; c)"
         @test fmt("func(a=1,b; c=1)") == "func(a = 1, b; c = 1)"
-        @test fmt("func(; c = 1)", 4, 1) == "func(; c = 1)"
+
+        str = """
+        func(;
+          c = 1,
+        )"""
+        @test fmt("func(; c = 1)", 2, 1) == str
+
         @test fmt("func(; c = 1,)") == "func(; c = 1)"
         @test fmt("func(a;)") == "func(a;)"
 
@@ -677,9 +683,13 @@ end
         @test fmt(str_) == str_
         @test fmt(str_, 4, 1) == str
 
-        str = "@f(; x)"
-        @test fmt(str) == str
-        @test fmt(str, 4, 1) == str
+        str = """
+        @f(;
+          x
+        )"""
+        str_ = "@f(; x)"
+        @test fmt(str_) == str_
+        @test fmt(str_, 2, 1) == str
 
         str = """
         @f(;
@@ -1375,6 +1385,22 @@ end
                                 can be created at https://gist.github.com/.\"""))
            end
         end"""
+        @test fmt(str_,4,200) == str
+
+        str = """
+        begin
+            begin
+                throw(
+                    ErrorException(
+                        \"""An error occured formatting \$filename. :-(
+
+                        Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
+                        with a link to a gist containing the contents of the file. A gist
+                        can be created at https://gist.github.com/.\""",
+                    ),
+                )
+            end
+        end"""
         @test fmt(str_) == str
 
 
@@ -1387,11 +1413,21 @@ end
 
         str_ = """
         foo() =
-          llvmcall(\"""
-                   llvm1
-                   llvm2
-                   \""")"""
+          llvmcall(
+            \"""
+            llvm1
+            llvm2
+            \""",
+          )"""
         @test fmt(str, 2, 10) == str_
+
+        # str_ = """
+        # foo() =
+        #   llvmcall(\"""
+        #            llvm1
+        #            llvm2
+        #            \""")"""
+        # @test fmt(str, 2, 10) == str_
 
         str = """
         str = \"""
@@ -2207,11 +2243,22 @@ end
         @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 37) == str
 
         str = """
-        @somemacro function (fcall_ |
-                             fcall_)
+        @somemacro function (
+            fcall_ | fcall_,
+        )
             body_
         end"""
         @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 36) == str
+        @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 20) == str
+
+        str = """
+        @somemacro function (
+            fcall_ |
+            fcall_,
+        )
+            body_
+        end"""
+        @test fmt("@somemacro function (fcall_ | fcall_) body_ end", 4, 19) == str
 
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
@@ -2249,25 +2296,45 @@ end
         end"""
         @test fmt(str, 4, 1) == str
 
-        # don't nest < 2 args
+        str = """
+        A where {
+            B,
+        }"""
+        str_ = "A where {B}"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
 
-        str = "A where {B}"
+        str = """
+        foo(
+          arg1,
+        )"""
+        str_ = "foo(arg1)"
+        @test fmt(str_) == str_
+        @test fmt(str, 2, 1) == str
+
+        str = """
+        [
+         arg1,
+        ]"""
+        str_ = "[arg1]"
+        @test fmt(str_) == str_
         @test fmt(str, 4, 1) == str
 
-        str = "foo(arg1)"
-        @test fmt(str, 4, 1) == str
-
-        str = "[arg1]"
-        @test fmt(str, 4, 1) == str
-
-        str = "{arg1}"
+        str = """
+        {
+         arg1,
+        }"""
+        str_ = "{arg1}"
+        @test fmt(str_) == str_
         @test fmt(str, 4, 1) == str
 
         str = """
         (
          arg1
         )"""
-        @test fmt("(arg1)", 4, 1) == str
+        str_ = "(arg1)"
+        @test fmt(str_) == str_
+        @test fmt(str_, 4, 1) == str
 
 
 
@@ -2286,15 +2353,20 @@ end
                :mesh_dim => Cint(3),)"""
         @test fmt(str_, 4, 80) == str
 
-        str = """this_is_a_long_variable_name = Dict{
+        str = """
+        this_is_a_long_variable_name = Dict{
              Symbol,
              Any,
         }(
              :numberofpointattributes => NAttributes,
              :numberofpointmtrs => NMTr,
              :numberofcorners => NSimplex,
-             :firstnumber => Cint(1),
-             :mesh_dim => Cint(3),
+             :firstnumber => Cint(
+                  1,
+             ),
+             :mesh_dim => Cint(
+                  3,
+             ),
         )"""
         @test fmt(str_, 5, 1) == str
 
@@ -2466,10 +2538,6 @@ end
         end"""
         @test fmt(str_) == str
 
-        # single function kwarg or param should not nest
-        @test fmt("f(;a=1)", 4, 1) == "f(; a = 1)"
-        @test fmt("f(a=1)", 4, 1) == "f(a = 1)"
-
         # any pairing of argument, kawrg, or param should nest
         str = """
         f(
@@ -2564,13 +2632,15 @@ end
         # adds surrounding {...} after `where`
         @test s.line_offset == length(str)
         s = run_nest(str, 1)
-        @test s.line_offset == 11
+        @test s.line_offset == 1
 
         str = "f(a, b, c) where {A<:S}"
         s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, 1)
+        s = run_nest(str, length(str)-1)
         @test s.line_offset == 14
+        s = run_nest(str, 1)
+        @test s.line_offset == 1
 
         str = "f(a, b, c) where Union{A,B,Union{C,D,E}}"
         s = run_nest(str, 100)
@@ -2852,21 +2922,30 @@ end
         @test fmt(str, 4, 52) == str
 
         str_ = "transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
-        str = """
-        transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
-          Int32,
-          UInt32,
-        }} = transcode(T, String(Vector(src)))"""
-        @test fmt(str_, 2, 80) == str
-        @test fmt(str_, 2, 38) == str
 
         str = """
-        transcode(::Type{THISISONESUPERLONGTYPE1234567}) where {T<:Union{
-          Int32,
-          UInt32,
-        }} =
+        transcode(
+          ::Type{THISISONESUPERLONGTYPE1234567},
+        ) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"""
+        @test fmt(str_, 2, 80) == str
+        @test fmt(str_, 2, 68) == str
+
+        str = """
+        transcode(
+          ::Type{THISISONESUPERLONGTYPE1234567},
+        ) where {T<:Union{Int32,UInt32}} =
           transcode(T, String(Vector(src)))"""
-        @test fmt(str_, 2, 37) == str
+        @test fmt(str_, 2, 67) == str
+        @test fmt(str_, 2, 40) == str
+
+        str = """
+        transcode(
+          ::Type{
+            THISISONESUPERLONGTYPE1234567,
+          },
+        ) where {T<:Union{Int32,UInt32}} =
+          transcode(T, String(Vector(src)))"""
+        @test fmt(str_, 2, 39) == str
 
         str_ = "transcode(::Type{T}, src::AbstractVector{UInt8}) where {T<:Union{Int32,UInt32}} = transcode(T, String(Vector(src)))"
         str = """
@@ -2888,14 +2967,23 @@ end
         # issue 56
         str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
         str = """
-        a_long_function_name(Array{Float64,2}[
-            [1.0],
-            [0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-        ])"""
+        a_long_function_name(
+            Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]],
+        )"""
         @test fmt(str, 4, length(str)) == str_
         @test fmt(str_) == str
+        @test fmt(str_,4,79) == str
+
+        str = """
+        a_long_function_name(
+            Array{Float64,2}[
+                [1.0],
+                [0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+            ],
+        )"""
+        @test fmt(str_,4,78) == str
 
         # unary op
         str_ = "[1, 1]'"
@@ -3135,18 +3223,35 @@ end
 
         str = """
         begin
-            weights = Dict((file, i) => w for (file, subject) in subjects
-            for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+            weights = Dict(
+                (file, i) => w for (file, subject) in subjects
+                for (i, w) in enumerate(weightfn.(eachrow(subject.events)))
+            )
         end"""
         @test fmt(str_, 4, 90) == str
 
         str = """
         begin
-            weights = Dict((file, i) => w
-            for (file, subject) in subjects
-            for (i, w) in enumerate(weightfn.(eachrow(subject.events))))
+            weights = Dict(
+                (file, i) => w for (file, subject) in subjects
+                for (i, w) in enumerate(
+                    weightfn.(eachrow(subject.events)),
+                )
+            )
         end"""
         @test fmt(str_, 4, 60) == str
+
+        str = """
+        begin
+            weights = Dict(
+                (file, i) => w
+                for (file, subject) in subjects
+                for (i, w) in enumerate(
+                    weightfn.(eachrow(subject.events)),
+                )
+            )
+        end"""
+        @test fmt(str_, 4, 50) == str
     end
 
     @testset "Splitpath issue" begin

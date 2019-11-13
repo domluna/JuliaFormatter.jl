@@ -74,7 +74,7 @@ end
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function n_args(x::CSTParser.EXPR)
     n = 0
-    if x.typ === CSTParser.MacroCall
+    if x.typ === CSTParser.MacroCall || x.typ === CSTParser.TypedVcat
         for i = 2:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -91,7 +91,7 @@ function n_args(x::CSTParser.EXPR)
             end
         end
         return n
-    elseif x.typ === CSTParser.Parameters
+    elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Vcat
         for i = 1:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -163,7 +163,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
         add_node!(t, Semicolon(), s)
         if length(n.nodes) > 0
-            multi_arg = n_args(t.ref[]) > 1
+            multi_arg = n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
         end
     end
@@ -594,8 +594,7 @@ function p_macrocall(x, s)
         return t
     end
 
-    multi_arg = n_args(x) > 1
-    multi_arg = true
+    multi_arg = n_args(x) > 0
     has_closer = is_closer(x.args[end])
 
     # @info "" has_closer
@@ -1327,8 +1326,7 @@ function p_wherecall(x, s)
     # Used to mark where `B` starts.
     add_node!(t, Placeholder(0), s)
 
-    multi_arg = length(CSTParser.get_where_params(x)) > 1
-    multi_arg = true
+    multi_arg = length(CSTParser.get_where_params(x)) > 0
     add_braces = !CSTParser.is_lbrace(x.args[3]) &&
                  x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
     add_braces && add_node!(
@@ -1397,8 +1395,7 @@ function p_curly(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
-    multi_arg = length(CSTParser.get_curly_params(x)) > 1
-    multi_arg = true
+    multi_arg = length(CSTParser.get_curly_params(x)) > 0
 
     if multi_arg
         add_node!(t, Placeholder(0), s)
@@ -1424,8 +1421,7 @@ function p_call(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     add_node!(t, pretty(x.args[2], s), s, join_lines = true)
 
-    multi_arg = n_args(x) > 1
-    multi_arg = true
+    multi_arg = n_args(x) > 0
 
     if multi_arg
         add_node!(t, Placeholder(0), s)
@@ -1488,12 +1484,11 @@ end
 function p_tuple(x, s)
     t = PTree(x, nspaces(s))
     multi_arg = false
-    if CSTParser.is_lparen(x.args[1]) && length(x) > 4
+    if CSTParser.is_lparen(x.args[1]) && length(x) > 2
         multi_arg = true
-    elseif !CSTParser.is_lparen(x.args[1]) && length(x) > 2
+    elseif !CSTParser.is_lparen(x.args[1]) && length(x) > 0
         multi_arg = true
     end
-    multi_arg = true
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1517,10 +1512,7 @@ end
 # Braces
 function p_braces(x, s)
     t = PTree(x, nspaces(s))
-    # {a,b}
-    multi_arg = length(x) > 4
-    multi_arg = true
-
+    multi_arg = length(x) > 2
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1544,9 +1536,7 @@ end
 # Vect
 function p_vect(x, s)
     t = PTree(x, nspaces(s))
-    # [a,b]
-    multi_arg = length(x) > 4
-    multi_arg = true
+    multi_arg = length(x) > 2
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1644,7 +1634,8 @@ end
 function p_vcat(x, s)
     t = PTree(x, nspaces(s))
     st = x.typ === CSTParser.Vcat ? 1 : 2
-    multi_arg = length(x) > st + 2
+    multi_arg = n_args(x) > 0
+    # @info "" multi_arg length(x) st
 
     for (i, a) in enumerate(x)
         n = pretty(a, s)
@@ -1658,7 +1649,7 @@ function p_vcat(x, s)
                 has_semicolon(s.doc, n.startline) && add_node!(t, TrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
             # Keep trailing semicolon if there's only one arg
-            elseif !multi_arg
+            elseif n_args(x) == 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(0), s)
             else
