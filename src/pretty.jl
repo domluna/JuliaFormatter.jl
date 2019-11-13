@@ -91,7 +91,8 @@ function n_args(x::CSTParser.EXPR)
             end
         end
         return n
-    elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Vcat
+    elseif x.typ === CSTParser.Parameters ||
+           x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH
         for i = 1:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -130,8 +131,10 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         en = t.nodes[end]
         if en.typ === CSTParser.Generator ||
            en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall ||
-           (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
+           en.typ === CSTParser.Flatten ||
+           en.typ === CSTParser.MacroCall || (
+            is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1
+        )
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -256,7 +259,7 @@ end
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-function length_to(x::PTree, ntyps; start::Int = 1)
+function length_to(x::PTree, ntyps::Vector; start::Int = 1)
     x.typ in ntyps && return 0, true
     is_leaf(x) && return length(x), false
     len = 0
@@ -1207,7 +1210,9 @@ nest_assignment(x::CSTParser.EXPR) = CSTParser.is_assignment(x) && block_type(x.
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     CSTParser.is_assignment(x) && return block_type(x.args[3])
-    (x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets) && return false
+    (
+     x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
+    ) && return false
     op = x[2]
     op.kind === Tokens.ANON_FUNC && return false
     op.kind === Tokens.PAIR_ARROW && return false
@@ -1723,13 +1728,8 @@ function p_gen(x, s)
                 end
             end
         elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(
-                t,
-                p_binarycall(a, s, nonest = true),
-                s,
-                join_lines = true,
-            )
- elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
+            add_node!(t, p_binarycall(a, s, nonest = true), s, join_lines = true)
+        elseif CSTParser.is_comma(a) && i < length(x) && !is_punc(x.args[i+1])
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
         else

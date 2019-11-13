@@ -224,10 +224,11 @@ function n_stringh!(x, s; extra_width = 0)
 
     # This difference notes if there is a change due to nesting.
     diff = x.indent - s.line_offset
+    @info "" x.indent s.line_offset diff max(x.nodes[1].indent - diff, 0)
 
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference
-    x.indent = max(x.nodes[1].indent - diff, 0)
+    diff > 0 && (x.indent = max(x.nodes[1].indent - diff, 0))
     nest!(x.nodes, s, x.indent, extra_width = extra_width)
 end
 
@@ -488,7 +489,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 line_width = s.line_offset + 1 + length(x.nodes[end])
                 can_unnest = line_width + extra_width <= s.margin
             else
-                rw, _ = length_to(x, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
                 line_width = s.line_offset + 1 + rw
                 can_unnest = line_width + extra_width <= s.margin
             end
@@ -547,7 +548,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width, _ = length_to(x, (PLACEHOLDER, NEWLINE), start = 2)
+            return_width, _ = length_to(x, [PLACEHOLDER, NEWLINE], start = 2)
         end
 
         # @info "" return_width
