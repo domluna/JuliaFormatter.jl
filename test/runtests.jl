@@ -3246,29 +3246,29 @@ some_function(
                ))),
            another_argument,
        )"""
-       @test fmt(str_) == str
+        @test fmt(str_) == str
 
-       str = """
-       if ((
-         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-       ))
-         nothing
-       end"""
-       @test fmt(str,2,92) == str
+        str = """
+        if ((
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        ))
+          nothing
+        end"""
+        @test fmt(str, 2, 92) == str
 
-       str = """
-       begin
-               if ((
-                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-               ))
-                       nothing
-               end
-       end"""
-       @test fmt(str,8,92) == str
+        str = """
+        begin
+                if ((
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                ))
+                        nothing
+                end
+        end"""
+        @test fmt(str, 8, 92) == str
     end
 
 end
