@@ -99,8 +99,6 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_for!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
-    elseif x.typ === CSTParser.StringH
-        n_stringh!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Parameters
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Braces
@@ -215,21 +213,6 @@ function n_tuple!(x, s; extra_width = 0)
         opener && (extra_width += 1)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
-end
-
-
-function n_stringh!(x, s; extra_width = 0)
-    # The indent of StringH is set to the the offset
-    # of when the quote is first encountered in the source file.
-
-    # This difference notes if there is a change due to nesting.
-    diff = x.indent - s.line_offset
-    # @info "" x.indent s.line_offset diff max(x.nodes[1].indent - diff, 0)
-
-    # The new indent for the string is index of when a character in
-    # the multiline string is FIRST encountered in the source file - the above difference
-    diff != 0 && (x.indent = max(x.nodes[1].indent - diff, 0))
-    nest!(x.nodes, s, x.indent, extra_width = extra_width)
 end
 
 function n_for!(x, s; extra_width = 0)
