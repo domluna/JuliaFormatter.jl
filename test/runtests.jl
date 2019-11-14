@@ -1411,6 +1411,35 @@ end
                          llvm2
                          \""")"""
         @test fmt(str) == str
+        # nests and then unnests
+        @test fmt(str, 2, 20) == str
+
+        str_ = """
+        foo() =
+          llvmcall(\"""
+                   llvm1
+                   llvm2
+                   \""")"""
+        @test fmt(str, 2, 19) == str_
+
+        # the length calculation is kind of wonky here
+        # but it's still a worthwhile test
+        str_ = """
+        foo() =
+            llvmcall(\"""
+                     llvm1
+                     llvm2
+                     \""")"""
+        @test fmt(str, 4, 19) == str_
+        str_ = """
+        foo() = llvmcall(
+            \"""
+            llvm1
+            llvm2
+            \""",
+        )"""
+        @test fmt(str, 4, 18) == str_
+
 
         str_ = """
         foo() =
@@ -1421,14 +1450,6 @@ end
             \""",
           )"""
         @test fmt(str, 2, 10) == str_
-
-        # str_ = """
-        # foo() =
-        #   llvmcall(\"""
-        #            llvm1
-        #            llvm2
-        #            \""")"""
-        # @test fmt(str, 2, 10) == str_
 
         str = """
         str = \"""
