@@ -1195,6 +1195,7 @@ closing_punc_type(x) =
     x.typ === CSTParser.Curly ||
     x.typ === CSTParser.Comprehension ||
     x.typ === CSTParser.MacroCall ||
+    x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 # TODO: think of a better name?
