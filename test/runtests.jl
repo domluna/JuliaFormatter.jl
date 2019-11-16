@@ -1386,7 +1386,7 @@ end
                                 can be created at https://gist.github.com/.\"""))
            end
         end"""
-        @test fmt(str_,4,200) == str
+        @test fmt(str_, 4, 200) == str
 
         str = """
         begin
@@ -1965,7 +1965,9 @@ end
                          e8
                      end
                  end"""
-        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end") == str
+        @test fmt(
+            "begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",
+        ) == str
 
         str = """if cond1
                      e1
@@ -2423,14 +2425,25 @@ end
         @test fmt("begin\n a && b || c && d\nend", 4, 1) == str
 
         str = """
+        func(
+            a,
+            \"""this
+            is another
+            multi-line
+            string.
+            Longest line
+            \""",
+            foo(b, c),
+        )"""
+
+        str_ = """
         func(a, \"""this
                 is another
                 multi-line
                 string.
                 Longest line
                 \""", foo(b, c))"""
-        @test fmt(str, 4, 100) == str
-
+        @test fmt(str_) == str
         str_ = """
         func(
             a,
@@ -2447,18 +2460,6 @@ end
         )"""
         @test fmt(str, 4, 1) == str_
 
-        str = """
-        func(
-            a,
-            \"""this
-            is another
-            multi-line
-            string.
-            Longest line
-            \""",
-            foo(b, c),
-        )"""
-        @test fmt(str, 4, 31) == str
 
 
         # Ref
@@ -2659,7 +2660,7 @@ end
         str = "f(a, b, c) where {A<:S}"
         s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str)-1)
+        s = run_nest(str, length(str) - 1)
         @test s.line_offset == 14
         s = run_nest(str, 1)
         @test s.line_offset == 1
@@ -2994,7 +2995,7 @@ end
         )"""
         @test fmt(str, 4, length(str)) == str_
         @test fmt(str_) == str
-        @test fmt(str_,4,79) == str
+        @test fmt(str_, 4, 79) == str
 
         str = """
         a_long_function_name(
@@ -3005,7 +3006,7 @@ end
                 [0.5 0.5; 0.5 0.5],
             ],
         )"""
-        @test fmt(str_,4,78) == str
+        @test fmt(str_, 4, 78) == str
 
         # unary op
         str_ = "[1, 1]'"
