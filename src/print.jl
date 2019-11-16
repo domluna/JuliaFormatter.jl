@@ -76,7 +76,7 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
-                nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
+               nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
                 write(io, repeat(" ", nodes[i+1].indent))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
@@ -93,7 +93,7 @@ function print_stringh(io::IOBuffer, x::PTree, s::State)
 
     # This difference notes if there is a change due to nesting.
     diff = x.indent - s.line_offset
-    # @info "" x.indent s.line_offset diff max(x.nodes[1].indent - diff, 0)
+    # @info "" length(x) s.line_offset
 
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference

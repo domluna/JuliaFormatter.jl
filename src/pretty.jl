@@ -74,7 +74,7 @@ end
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function n_args(x::CSTParser.EXPR)
     n = 0
-    if x.typ === CSTParser.MacroCall || x.typ === CSTParser.TypedVcat
+    if x.typ === CSTParser.MacroCall || x.typ === CSTParser.TypedVcat || x.typ === CSTParser.Ref
         for i = 2:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -91,8 +91,7 @@ function n_args(x::CSTParser.EXPR)
             end
         end
         return n
-    elseif x.typ === CSTParser.Parameters ||
-           x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH
+    elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Braces || x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
         for i = 1:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -236,6 +235,11 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         # The length of this node is the length of
         # the longest string
         t.len = max(t.len, length(n))
+    elseif n.typ === CSTParser.StringH
+        closing_punc_type(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
+        # heuristic for the margin of the node
+        # is a multiline string
+        t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
     else

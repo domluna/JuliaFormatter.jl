@@ -238,7 +238,7 @@ end
 function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin
+    # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin x.nodes[1].val
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
