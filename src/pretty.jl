@@ -80,36 +80,56 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(x::CSTParser.EXPR)
-    args = []
     if x.typ === CSTParser.MacroCall ||
        x.typ === CSTParser.TypedVcat || x.typ === CSTParser.Ref || x.typ === CSTParser.Curly
-        for i = 2:length(x.args)
-            arg = x.args[i]
-            CSTParser.ispunctuation(arg) && continue
-            if CSTParser.typof(arg) === CSTParser.Parameters
-                for j = 1:length(arg.args)
-                    parg = arg.args[j]
-                    CSTParser.ispunctuation(parg) && continue
-                    push!(args, parg)
-                end
-            else
-                push!(args, arg)
-            end
-        end
-        return args
+        return get_args(x.args[2:end])
     elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Braces ||
            x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH ||
            x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
-        for i = 1:length(x.args)
-            arg = x.args[i]
-            CSTParser.ispunctuation(arg) && continue
-            push!(args, arg)
-        end
-        return args
+        return get_args(x.args)
     end
     CSTParser.get_args(x)
 end
-n_args(x::CSTParser.EXPR) = length(get_args(x))
+
+function get_args(args::Vector{CSTParser.EXPR})
+    args0 = CSTParser.EXPR[]
+    for arg in args
+        CSTParser.ispunctuation(arg) && continue
+        if CSTParser.typof(arg) === CSTParser.Parameters
+            for j = 1:length(arg.args)
+                parg = arg.args[j]
+                CSTParser.ispunctuation(parg) && continue
+                push!(args0, parg)
+            end
+        else
+            push!(args0, arg)
+        end
+    end
+    args0
+end
+
+function get_args(x::PTree)
+    is_iterable(x) || error("get_args requires an iterable PTree type")
+    sidx = findfirst(is_opener, x.nodes)
+    sidx === nothing && (sidx = 1)
+    args = PTree[]
+    for i = sidx:length(x.nodes)
+        arg = x.nodes[i]
+        arg.typ === CSTParser.PUNCTUATION && continue
+        arg.typ isa PLeaf && continue
+        if arg.typ === CSTParser.Parameters
+            for j = 1:length(arg.nodes)
+                parg = arg.nodes[j]
+                push!(args, parg)
+            end
+        else
+            push!(args, arg)
+        end
+    end
+    args
+end
+
+n_args(x) = length(get_args(x))
 
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
@@ -248,7 +268,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
     elseif n.typ === CSTParser.StringH
-        closing_punc_type(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
+        is_iterable(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
         t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
@@ -1220,34 +1240,30 @@ function p_kw(x, s)
     t
 end
 
-closing_punc_type(x) =
+is_str(x) = is_str_or_cmd(x.kind) || x.typ === CSTParser.StringH
+
+is_iterable(x) =
     x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
     x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
     x.typ === CSTParser.Curly || x.typ === CSTParser.Comprehension ||
     x.typ === CSTParser.MacroCall || x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
-block_type(x::CSTParser.EXPR) =
+is_block(x::CSTParser.EXPR) =
     x.typ === CSTParser.If ||
     x.typ === CSTParser.Do || x.typ === CSTParser.Try || x.typ === CSTParser.For ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
-nest_rhs(x::CSTParser.EXPR) =
-    block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
-    x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison || (
-        x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON
-    )
-
-nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1 && nest_rhs(x[3])
+nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1
 
 unnestable_arg(x) =
-    closing_punc_type(x) || x.typ === CSTParser.StringH || x.typ === CSTParser.LITERAL || (
+    is_iterable(x) || is_str(x) || x.typ === CSTParser.LITERAL || (
         x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.DOT
     )
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
-    nest_assignment(x) && return true
+    nest_assignment(x) && !is_str(x[3]) && return true
     (
      x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
     ) && return false
@@ -1287,7 +1303,7 @@ function nest_arg2(x::CSTParser.EXPR)
     if CSTParser.defines_function(x)
         arg2 = x.args[3]
         arg2.typ === CSTParser.Block && (arg2 = arg2.args[1])
-        return block_type(arg2)
+        return is_block(arg2)
     end
     false
 end
@@ -1372,7 +1388,9 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     nest = length(CSTParser.get_where_params(x)) > 0
-    # nest = !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
+    args = get_args(x.args[3:end])
+    # nest = length(args) > 0 && !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
+    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
         !CSTParser.is_lbrace(x.args[3]) &&
         x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
@@ -1495,9 +1513,8 @@ end
 # InvisBrackets
 function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
-    parent_invis = x[2].typ === CSTParser.InvisBrackets
-    parent_invis = closing_punc_type(x[2])
-    # @info "" x parent_invis
+    nest = !is_iterable(x[2]) && !nonest
+    # @info "" x nest
 
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.Block
@@ -1516,11 +1533,11 @@ function p_invisbrackets(x, s; nonest = false, nospace = false)
                 s,
                 join_lines = true,
             )
-        elseif is_opener(a) && !parent_invis && !nonest
+        elseif is_opener(a) && nest
             # @info "opening"
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
-        elseif is_closer(a) && !parent_invis && !nonest
+        elseif is_closer(a) && nest
             # @info "closing"
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(a, s), s, join_lines = true)
@@ -1749,7 +1766,7 @@ function p_gen(x, s)
         if a.typ === CSTParser.KEYWORD
             if a.kind === Tokens.FOR && parent_is(
                 a,
-                x -> closing_punc_type(x),
+                is_iterable,
                 ignore_typs = (
                     CSTParser.InvisBrackets,
                     CSTParser.Generator,

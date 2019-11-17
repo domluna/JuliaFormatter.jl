@@ -547,22 +547,39 @@ end
         foo = begin
           body
         end"""
-        @test fmt(str_, 2, 1) == str
+        @test fmt(str_, 2, 11) == str
+        str = """
+        foo =
+          begin
+            body
+          end"""
+        @test fmt(str_, 2, 10) == str
 
         str_ = """foo = quote body end"""
         str = """
         foo = quote
           body
         end"""
-        @test fmt(str_, 2, 1) == str
+        @test fmt(str_, 2, 11) == str
+        str = """
+        foo =
+          quote
+            body
+          end"""
+        @test fmt(str_, 2, 10) == str
 
         str_ = """foo = for i=1:10 body end"""
+        str = """
+        foo = for i = 1:10
+          body
+        end"""
+        @test fmt(str_, 2, 18) == str
         str = """
         foo =
           for i = 1:10
             body
           end"""
-        @test fmt(str_, 2, 1) == str
+        @test fmt(str_, 2, 17) == str
 
         str_ = """foo = while cond body end"""
         str = """
@@ -587,19 +604,48 @@ end
         str_ = """foo = let var1=value1,var2,var3=value3 body end"""
         str = """
         foo =
+          let var1 = value1, var2, var3 = value3
+            body
+          end"""
+        @test fmt(str_, 2, 43) == str
+        @test fmt(str_, 2, 40) == str
+
+        str = """
+        foo =
           let var1 = value1,
               var2,
               var3 = value3
 
             body
           end"""
-        @test fmt(str_, 2, 1) == str
+        @test fmt(str_, 2, 39) == str
+
 
         str = """
+        foo =
+          let var1 =
+                value1,
+              var2,
+              var3 =
+                value3
+
+            body
+          end"""
+        @test fmt(str_, 2, 19) == str
+        @test fmt(str_, 2, 1) == str
+
+        str_ = """
         foo = let
           body
         end"""
-        @test fmt(str, 2, 1) == str
+        @test fmt(str_, 2, 9) == str_
+        str = """
+        foo =
+          let
+            body
+          end"""
+        @test fmt(str_, 2, 8) == str
+        @test fmt(str_, 2, 1) == str
 
         str_ = """a, b = cond ? e1 : e2"""
         str = """
@@ -770,7 +816,7 @@ end
         @test fmt(str) == str
 
         str = """
-        ignored_f(f) = f in (((
+        ignored_f(f) = f in (foo(@foo(foo(
             GlobalRef(Base, :not_int),
             GlobalRef(Core.Intrinsics, :not_int),
             GlobalRef(Core, :(===)),
@@ -780,8 +826,11 @@ end
             GlobalRef(Base, :kwerr),
             GlobalRef(Core, :kwfunc),
             GlobalRef(Core, :isdefined),
-        )))"""
+        ))))"""
         @test fmt(str) == str
+
+        str = "var = \"a_long_function_stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\""
+        fmt(str, 4, 1) == str
     end
 
     @testset "op chain" begin
@@ -1026,22 +1075,23 @@ end
             body
         end"""
         str = """
-        model = SDDP.LinearPolicyGraph(
-            stages = 2,
-            lower_bound = 1,
-            direct_mode = false,
-        ) do (
-            subproblem1,
-            subproblem2,
-            subproblem3,
-            subproblem4,
-            subproblem5,
-            subproblem6,
-            subproblem7,
-            subproblem8,
-        )
-            body
-        end"""
+        model =
+            SDDP.LinearPolicyGraph(
+                stages = 2,
+                lower_bound = 1,
+                direct_mode = false,
+            ) do (
+                subproblem1,
+                subproblem2,
+                subproblem3,
+                subproblem4,
+                subproblem5,
+                subproblem6,
+                subproblem7,
+                subproblem8,
+            )
+                body
+            end"""
         @test fmt(str_) == str
 
         str_ = """
@@ -1049,13 +1099,14 @@ end
             body
         end"""
         str = """
-        model = SDDP.LinearPolicyGraph(
-            stages = 2,
-            lower_bound = 1,
-            direct_mode = false,
-        ) do subproblem1, subproblem2
-            body
-        end"""
+        model =
+            SDDP.LinearPolicyGraph(
+                stages = 2,
+                lower_bound = 1,
+                direct_mode = false,
+            ) do subproblem1, subproblem2
+                body
+            end"""
         @test fmt(str_) == str
 
     end
@@ -2504,16 +2555,17 @@ end
         @test fmt(str_, 4, 80) == str
 
         str = """
-        this_is_a_long_variable_name = Dict{
-             Symbol,
-             Any,
-        }(
-             :numberofpointattributes => NAttributes,
-             :numberofpointmtrs => NMTr,
-             :numberofcorners => NSimplex,
-             :firstnumber => Cint(1),
-             :mesh_dim => Cint(3),
-        )"""
+        this_is_a_long_variable_name =
+             Dict{
+                  Symbol,
+                  Any,
+             }(
+                  :numberofpointattributes => NAttributes,
+                  :numberofpointmtrs => NMTr,
+                  :numberofcorners => NSimplex,
+                  :firstnumber => Cint(1),
+                  :mesh_dim => Cint(3),
+             )"""
         @test fmt(str_, 5, 1) == str
 
         str = """
@@ -3231,8 +3283,19 @@ end
 
             body
         end"""
-        @test fmt(str, 4, 1) == str_
         @test fmt(str_) == str
+
+        str_ = """
+        let a =
+                x,
+            b =
+                y,
+            c =
+                z
+
+            body
+        end"""
+        @test fmt(str, 4, 1) == str_
 
         str = """
         let

@@ -1,12 +1,3 @@
-function skip_indent(x::PTree)
-    if x.typ === CSTParser.LITERAL && x.val == ""
-        return true
-    elseif x.typ === NEWLINE || x.typ === NOTCODE
-        return true
-    end
-    false
-end
-
 function format_check(io::IOBuffer, x::PTree, s::State)
     if length(s.doc.format_skips) == 0
         print_notcode(io, x, s)
@@ -77,7 +68,7 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
                nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
-                write(io, repeat(" ", nodes[i+1].indent))
+                write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
                 write(io, ws)
