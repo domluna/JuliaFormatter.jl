@@ -1469,6 +1469,46 @@ end
 
         str = raw"""@test :(x`s`flag) == :(@x_cmd "s" "flag")"""
         @test fmt(str) == str
+
+        str = raw"""
+        if free < min_space
+            throw(ErrorException(\"""
+            Free space: \$free Gb
+            Please make sure to have at least \$min_space Gb of free disk space
+            before downloading the $database_name database.
+            \"""))
+        end"""
+        @test fmt(str) == str
+
+        # Technically it nests sonner than it should but that's due to the 
+        # closing parenthesis. ATM I don't think it's worth factoring that in.
+
+        str_ = raw"""
+        if free < min_space
+            throw(
+                ErrorException(\"""
+          Free space: \$free Gb
+          Please make sure to have at least \$min_space Gb of free disk space
+          before downloading the $database_name database.
+          \"""),
+            )
+        end"""
+        @test fmt(str, 4, 71) == str_
+
+        str_ = raw"""
+        if free < min_space
+            throw(
+                ErrorException(
+                    \"""
+        Free space: \$free Gb
+        Please make sure to have at least \$min_space Gb of free disk space
+        before downloading the $database_name database.
+        \""",
+                ),
+            )
+        end"""
+        @test fmt(str, 4, 69) == str_
+
     end
 
     @testset "comments" begin

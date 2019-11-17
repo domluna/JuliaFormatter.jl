@@ -74,7 +74,8 @@ end
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function n_args(x::CSTParser.EXPR)
     n = 0
-    if x.typ === CSTParser.MacroCall || x.typ === CSTParser.TypedVcat || x.typ === CSTParser.Ref
+    if x.typ === CSTParser.MacroCall ||
+       x.typ === CSTParser.TypedVcat || x.typ === CSTParser.Ref
         for i = 2:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -91,7 +92,11 @@ function n_args(x::CSTParser.EXPR)
             end
         end
         return n
-    elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Braces || x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
+    elseif x.typ === CSTParser.Parameters ||
+           x.typ === CSTParser.Braces ||
+           x.typ === CSTParser.Vcat ||
+           x.typ === CSTParser.TupleH ||
+           x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
         for i = 1:length(x.args)
             arg = x.args[i]
             CSTParser.ispunctuation(arg) && continue
@@ -232,13 +237,15 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     if !join_lines && is_end(n)
         # end keyword isn't useful w.r.t margin lengths
     elseif t.typ === CSTParser.StringH
+        # @info "insert literal into stringh" length(n) n n.indent + length(n) - t.indent t.indent n.indent
+
         # The length of this node is the length of
-        # the longest string
-        t.len = max(t.len, length(n))
+        # the longest string. The length of the string is
+        # only considered "in the positive" when it's past
+        # the hits the initial """ offset, i.e. `t.indent`.
+        t.len = max(t.len, n.indent + length(n) - t.indent)
     elseif n.typ === CSTParser.StringH
         closing_punc_type(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
-        # heuristic for the margin of the node
-        # is a multiline string
         t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
@@ -542,11 +549,11 @@ function p_literal(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, loc[2], 0, nothing, PTree[], Ref(x), false)
+    t = PTree(CSTParser.StringH, -1, -1, loc[2]-1, 0, nothing, PTree[], Ref(x), false)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing, false)
+        tt = PTree(CSTParser.LITERAL, ln, ln, sidx-1, length(l), l, nothing, nothing, false)
         add_node!(t, tt, s)
     end
     t
@@ -577,11 +584,11 @@ function p_stringh(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(x, loc[2])
+    t = PTree(x, loc[2]-1)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, sidx, length(l), l, nothing, nothing, false)
+        tt = PTree(CSTParser.LITERAL, ln, ln, sidx-1, length(l), l, nothing, nothing, false)
         add_node!(t, tt, s)
     end
     t

@@ -92,13 +92,13 @@ function print_stringh(io::IOBuffer, x::PTree, s::State)
     # of when the quote is first encountered in the source file.
 
     # This difference notes if there is a change due to nesting.
-    diff = x.indent - s.line_offset
+    diff = x.indent + 1 - s.line_offset
     # @info "" length(x) s.line_offset
 
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference
-    # diff != 0 && (x.indent = max(x.nodes[1].indent - diff, 0))
-    x.indent = max(x.nodes[1].indent - diff, 0)
+    # +1 since the character is 1 space after the indent
+    x.indent = max(x.nodes[1].indent + 1 - diff, 0)
     print_tree(io, x, s)
 end
 
