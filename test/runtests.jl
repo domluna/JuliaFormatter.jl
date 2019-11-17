@@ -1550,23 +1550,7 @@ end
            end
         end"""
         @test fmt(str_, 4, 200) == str
-
-        str = """
-        begin
-            begin
-                throw(
-                    ErrorException(
-                        \"""An error occured formatting \$filename. :-(
-
-                        Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
-                        with a link to a gist containing the contents of the file. A gist
-                        can be created at https://gist.github.com/.\""",
-                    ),
-                )
-            end
-        end"""
-        @test fmt(str_) == str
-
+        @test fmt(str_, 4, 1) == str
 
         str = """
         foo() = llvmcall(\"""
@@ -1594,24 +1578,14 @@ end
                      llvm2
                      \""")"""
         @test fmt(str, 4, 19) == str_
-        str_ = """
-        foo() = llvmcall(
-            \"""
-            llvm1
-            llvm2
-            \""",
-        )"""
         @test fmt(str, 4, 18) == str_
-
 
         str_ = """
         foo() =
-          llvmcall(
-            \"""
-            llvm1
-            llvm2
-            \""",
-          )"""
+          llvmcall(\"""
+                   llvm1
+                   llvm2
+                   \""")"""
         @test fmt(str, 2, 10) == str_
 
         str = """
@@ -1642,35 +1616,7 @@ end
             \"""))
         end"""
         @test fmt(str) == str
-
-        # Technically it nests sonner than it should but that's due to the 
-        # closing parenthesis. ATM I don't think it's worth factoring that in.
-
-        str_ = raw"""
-        if free < min_space
-            throw(
-                ErrorException(\"""
-          Free space: \$free Gb
-          Please make sure to have at least \$min_space Gb of free disk space
-          before downloading the $database_name database.
-          \"""),
-            )
-        end"""
-        @test fmt(str, 4, 71) == str_
-
-        str_ = raw"""
-        if free < min_space
-            throw(
-                ErrorException(
-                    \"""
-        Free space: \$free Gb
-        Please make sure to have at least \$min_space Gb of free disk space
-        before downloading the $database_name database.
-        \""",
-                ),
-            )
-        end"""
-        @test fmt(str, 4, 69) == str_
+        @test fmt(str, 4, 1) == str
 
     end
 
@@ -2168,9 +2114,7 @@ end
                          e8
                      end
                  end"""
-        @test fmt(
-            "begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",
-        ) == str
+        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) == str
 
         str = """if cond1
                      e1
@@ -2564,12 +2508,8 @@ end
              :numberofpointattributes => NAttributes,
              :numberofpointmtrs => NMTr,
              :numberofcorners => NSimplex,
-             :firstnumber => Cint(
-                  1,
-             ),
-             :mesh_dim => Cint(
-                  3,
-             ),
+             :firstnumber => Cint(1),
+             :mesh_dim => Cint(3),
         )"""
         @test fmt(str_, 5, 1) == str
 
@@ -3121,23 +3061,14 @@ end
         # issue 56
         str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
         str = """
-        a_long_function_name(
-            Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]],
-        )"""
+        a_long_function_name(Array{Float64,2}[
+            [1.0],
+            [0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+        ])"""
         @test fmt(str, 4, length(str)) == str_
-        @test fmt(str_) == str
-        @test fmt(str_, 4, 79) == str
-
-        str = """
-        a_long_function_name(
-            Array{Float64,2}[
-                [1.0],
-                [0.5 0.5],
-                [0.5 0.5; 0.5 0.5],
-                [0.5 0.5; 0.5 0.5],
-            ],
-        )"""
-        @test fmt(str_, 4, 78) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
 
         # unary op
         str_ = "[1, 1]'"

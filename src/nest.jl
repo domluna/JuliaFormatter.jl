@@ -104,7 +104,7 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Braces
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.InvisBrackets
-        n_invisbrackets!(x, s, extra_width = extra_width)
+        n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.UnaryOpCall && x.nodes[2].typ === CSTParser.OPERATOR
         nest!(x.nodes[1], s, extra_width = extra_width + length(x.nodes[2]))
         nest!(x.nodes[2], s)
@@ -132,19 +132,6 @@ function n_do!(x, s; extra_width = 0)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
 end
 
-function n_invisbrackets!(x, s; extra_width = 0)
-    # line_offset = s.line_offset
-    n_tuple!(x, s, extra_width = extra_width)
-    # length(x.nodes) == 3 && return
-    # rw, _ = length_to(x, [NEWLINE], start = 3)
-    # line_margin = line_offset + 1 + rw
-    # # @info "" rw line_offset x.nodes[3].indent s.margin extra_width
-    # if line_margin + extra_width <= s.margin
-    #     x.nodes[2] = Placeholder(0)
-    #     x.nodes[4] = Placeholder(0)
-    #     dedent!(x.nodes[3], s, x.indent, line_margin)
-    # end
-end
 
 # Import,Using,Export,ImportAll
 function n_import!(x, s; extra_width = 0)
