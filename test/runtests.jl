@@ -2,7 +2,7 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i = 4, m=80, always_for_in=false) =
+fmt1(s, i = 4, m = 80, always_for_in = false) =
     JuliaFormatter.format_text(s, indent = i, margin = m, always_for_in = always_for_in)
 
 # Verifies formatting the formatted text
@@ -724,6 +724,14 @@ end
 
         str = """
         begin
+            foo() = 
+                (
+                 one,
+                 x -> (true, false),
+                )
+        end"""
+        str = """
+        begin
             foo() = (
                 one,
                 x -> (true, false),
@@ -743,6 +751,34 @@ end
                   )
         end"""
         @test fmt(str, 10, 39) == str
+
+        str = """
+        ignored_f(f) = f in (
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )"""
+        @test fmt(str) == str
+
+        str = """
+        ignored_f(f) = f in (((
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )))"""
+        @test fmt(str) == str
     end
 
     @testset "op chain" begin

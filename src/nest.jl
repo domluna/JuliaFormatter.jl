@@ -104,7 +104,7 @@ function nest!(x::PTree, s::State; extra_width = 0)
     elseif x.typ === CSTParser.Braces
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.InvisBrackets
-        n_tuple!(x, s, extra_width = extra_width)
+        n_invisbrackets!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.UnaryOpCall && x.nodes[2].typ === CSTParser.OPERATOR
         nest!(x.nodes[1], s, extra_width = extra_width + length(x.nodes[2]))
         nest!(x.nodes[2], s)
@@ -132,13 +132,25 @@ function n_do!(x, s; extra_width = 0)
     nest!(x.nodes[2:end], s, x.indent, extra_width = extra_width)
 end
 
-n_invisbrackets!(x, s; extra_width = 0) = n_tuple!(x, s, extra_width = extra_width)
+function n_invisbrackets!(x, s; extra_width = 0)
+    # line_offset = s.line_offset
+    n_tuple!(x, s, extra_width = extra_width)
+    # length(x.nodes) == 3 && return
+    # rw, _ = length_to(x, [NEWLINE], start = 3)
+    # line_margin = line_offset + 1 + rw
+    # # @info "" rw line_offset x.nodes[3].indent s.margin extra_width
+    # if line_margin + extra_width <= s.margin
+    #     x.nodes[2] = Placeholder(0)
+    #     x.nodes[4] = Placeholder(0)
+    #     dedent!(x.nodes[3], s, x.indent, line_margin)
+    # end
+end
 
 # Import,Using,Export,ImportAll
 function n_import!(x, s; extra_width = 0)
-    line_width = s.line_offset + length(x) + extra_width
+    line_margin = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
-    if idx !== nothing && (line_width > s.margin || x.force_nest)
+    if idx !== nothing && (line_margin > s.margin || x.force_nest)
         sidx = findfirst(n -> is_colon(n), x.nodes)
         if sidx === nothing
             sidx = 2
@@ -165,11 +177,11 @@ function n_import!(x, s; extra_width = 0)
 end
 
 function n_tuple!(x, s; extra_width = 0)
-    line_width = s.line_offset + length(x) + extra_width
+    line_margin = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
     opener = length(x.nodes) > 0 ? is_opener(x.nodes[1]) : false
-    if idx !== nothing && (line_width > s.margin || x.force_nest)
+    if idx !== nothing && (line_margin > s.margin || x.force_nest)
         if opener
             x.nodes[end].indent = x.indent
         end
@@ -236,10 +248,10 @@ function n_for!(x, s; extra_width = 0)
 end
 
 function n_call!(x, s; extra_width = 0)
-    line_width = s.line_offset + length(x) + extra_width
+    line_margin = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin x.nodes[1].val
-    if idx !== nothing && (line_width > s.margin || x.force_nest)
+    if idx !== nothing && (line_margin > s.margin || x.force_nest)
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
 
@@ -287,9 +299,9 @@ end
 
 # "A where B"
 function n_wherecall!(x, s; extra_width = 0)
-    line_width = s.line_offset + length(x) + extra_width
-    # @debug "" s.line_offset x.typ line_width extra_width length(x)
-    if line_width > s.margin || x.force_nest
+    line_margin = s.line_offset + length(x) + extra_width
+    # @debug "" s.line_offset x.typ line_margin extra_width length(x)
+    if line_margin > s.margin || x.force_nest
         line_offset = s.line_offset
         # after "A where "
         idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
@@ -339,28 +351,19 @@ function n_wherecall!(x, s; extra_width = 0)
             (!is_leaf(n) || n.typ === CSTParser.IDENTIFIER) && (last_typ = n.typ)
         end
 
-
         # @info "" s.line_offset x.typ extra_width has_braces
-
-        # Properly reset line offset in the case the last
-        # argument is an IDENTIFIER.
-        # if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
         if over && has_braces
             s.line_offset = x.nodes[end].indent + 1
         end
-
-        # s.line_offset = line_offset
-        # walk(reset_line_offset!, x, s)
-        # @info "" s.line_offset x.typ extra_width has_braces
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
 
 function n_chainopcall!(x, s; extra_width = 0)
-    line_width = s.line_offset + length(x) + extra_width
-    # @info "ENTERING" x.typ s.line_offset line_width x.force_nest
-    if line_width > s.margin || x.force_nest
+    line_margin = s.line_offset + length(x) + extra_width
+    # @info "ENTERING" x.typ s.line_offset line_margin x.force_nest
+    if line_margin > s.margin || x.force_nest
         line_offset = s.line_offset
         x.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, x.nodes))
@@ -417,31 +420,29 @@ function n_chainopcall!(x, s; extra_width = 0)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
-
 n_comparison!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
 n_condcall!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
 
-
-function dedent!(x::PTree, s::State, line_width::Int)
+function dedent!(x::PTree, s::State, pindent::Int, line_margin::Int)
     is_leaf(x) && return
     x.typ === CSTParser.ConditionalOpCall && return
     x.typ === CSTParser.Comparison && return
     x.typ === CSTParser.ChainOpCall && return
     x.typ === CSTParser.BinaryOpCall && return
-
-    # @info "dedent" line_width x.indent
+    if x.typ === CSTParser.InvisBrackets &&
+       length(x.nodes) == 3 && closing_punc_type(x.nodes[2])
+        dedent!(x.nodes[2], s, pindent, line_margin)
+        return
+    end
 
     if closing_punc_type(x)
-        close_indent = x.nodes[end].indent
-        diff = min(close_indent - x.indent, line_width - x.indent)
-        # diff = x.indent - (close_indent + s.indent_size)
-        # @info "dedent punc" diff line_width close_indent x.indent
+        diff = min(line_margin, pindent + s.indent_size) - x.indent
+        # @info "" pindent diff x.indent x.typ
         add_indent!(x, s, diff)
-        x.nodes[end].indent -= s.indent_size + diff
+        x.nodes[end].indent = pindent
     else
         add_indent!(x, s, -s.indent_size)
     end
-    # @info "dedent final indents" x.indent x.nodes[end].indent
 end
 
 # arg1 op arg2
@@ -453,15 +454,16 @@ end
 function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
-    line_width = s.line_offset + length(x) + extra_width
+    line_margin = s.line_offset + length(x) + extra_width
     # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs x.ref[][2]
-    if length(idxs) == 2 && (line_width > s.margin || x.force_nest)
+    if length(idxs) == 2 && (line_margin > s.margin || x.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
         x.nodes[i1] = Newline()
+        cst = x.ref[]
 
-        has_eq = CSTParser.defines_function(x.ref[]) || nest_assignment(x.ref[])
+        has_eq = CSTParser.defines_function(cst) || nest_assignment(cst)
         if has_eq
             s.line_offset = x.indent + s.indent_size
             x.nodes[i2] = Whitespace(s.indent_size)
@@ -488,37 +490,32 @@ function n_binarycall!(x, s; extra_width = 0)
             arg2 = x.nodes[end]
             arg2.typ === CSTParser.Block && (arg2 = arg2.nodes[1])
 
-            line_width = 0
-            can_unnest = false
-            op = x.ref[][2]
+            op = cst[2]
             lazyop = op.kind === Tokens.LAZY_OR || op.kind === Tokens.LAZY_AND
 
-            if (arg2.typ === CSTParser.BinaryOpCall &&
-                (!lazyop && !CSTParser.is_assignment(x.ref[]))) ||
-               arg2.typ === CSTParser.UnaryOpCall
-                line_width = s.line_offset + 1 + length(x.nodes[end])
-                can_unnest = line_width + extra_width <= s.margin
+            if (
+                arg2.typ === CSTParser.BinaryOpCall && (
+                    !is_lazy_op(cst) && !CSTParser.is_assignment(cst)
+                )
+            ) || arg2.typ === CSTParser.UnaryOpCall
+                line_margin = s.line_offset + 1 + length(x.nodes[end])
             else
                 rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
-                line_width = s.line_offset + 1 + rw
-                can_unnest = line_width + extra_width <= s.margin
+                line_margin = s.line_offset + 1 + rw
             end
-
             # @info "" can_unnest arg2.typ has_eq
 
-            if can_unnest
+            if line_margin + extra_width <= s.margin
                 x.nodes[i1] = Whitespace(1)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
-
                     # recursive dedent
                     if arg2.typ === CSTParser.BinaryOpCall
-                        arg2 = arg2.nodes[1]
-                        while arg2.typ === CSTParser.InvisBrackets
-                            arg2 = arg2.nodes[2]
-                        end
+                        dedent!(arg2.nodes[1], s, x.indent, line_margin)
+                        dedent!(arg2.nodes[end], s, x.indent, line_margin)
+                    else
+                        dedent!(arg2, s, x.indent, line_margin)
                     end
-                    dedent!(arg2, s, line_width)
                 end
             end
         end
@@ -575,10 +572,10 @@ function n_binarycall!(x, s; extra_width = 0)
 end
 
 function n_block!(x, s; extra_width = 0, custom_indent = 0)
-    line_width = s.line_offset + length(x) + extra_width
+    line_margin = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
-    if idx !== nothing && (line_width > s.margin || x.force_nest)
+    if idx !== nothing && (line_margin > s.margin || x.force_nest)
         line_offset = s.line_offset
 
         x.indent = custom_indent > 0 ? custom_indent : s.line_offset

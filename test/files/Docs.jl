@@ -296,8 +296,7 @@ macroname(s::Symbol) = Symbol('@', s)
 macroname(x::Expr) = Expr(x.head, x.args[1], macroname(x.args[end].value))
 
 isfield(@nospecialize x) =
-    isexpr(x, :.) &&
-    (isa(x.args[1], Symbol) || isfield(x.args[1])) && (
+    isexpr(x, :.) && (isa(x.args[1], Symbol) || isfield(x.args[1])) && (
         isa(x.args[2], QuoteNode) || isexpr(x.args[2], :quote)
     )
 
@@ -341,9 +340,7 @@ function metadata(__source__, __module__, expr, ismodule)
                 end
             elseif isexpr(each, :function) || isexpr(each, :(=))
                 break
-            elseif isa(each, String) ||
-                   isexpr(each, :string) ||
-                   isexpr(each, :call) || (
+            elseif isa(each, String) || isexpr(each, :string) || isexpr(each, :call) || (
                 isexpr(each, :macrocall) && each.args[1] === Symbol("@doc_str")
             )
                 # forms that might be doc strings

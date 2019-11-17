@@ -58,10 +58,14 @@ is_comma(x::PTree) =
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
-    (x.typ === CSTParser.BinaryOpCall && x.args[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
+    (x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
+
+is_lazy_op(x) = x.typ === CSTParser.BinaryOpCall && (
+    x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND
+)
 
 # f a function which returns a bool
-function parent_is(x, f; ignore_typs = (CSTParser.InvisBrackets,))
+function parent_is(x, f; ignore_typs = [])
     p = x.parent
     p === nothing && return false
     while p !== nothing && p.typ in ignore_typs
@@ -92,10 +96,8 @@ function n_args(x::CSTParser.EXPR)
             end
         end
         return n
-    elseif x.typ === CSTParser.Parameters ||
-           x.typ === CSTParser.Braces ||
-           x.typ === CSTParser.Vcat ||
-           x.typ === CSTParser.TupleH ||
+    elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Braces ||
+           x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH ||
            x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
         for i = 1:length(x.args)
             arg = x.args[i]
@@ -133,10 +135,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator ||
-           en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten ||
-           en.typ === CSTParser.MacroCall || (
+        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter ||
+           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall || (
             is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1
         )
             # don't insert trailing comma in these cases
@@ -1220,16 +1220,10 @@ function p_kw(x, s)
     t
 end
 
-closing_punc_type(x) =
-    x.typ === CSTParser.TupleH ||
-    x.typ === CSTParser.Vect ||
-    x.typ === CSTParser.Vcat ||
-    x.typ === CSTParser.Braces ||
-    x.typ === CSTParser.Call ||
-    x.typ === CSTParser.Curly ||
-    x.typ === CSTParser.Comprehension ||
-    x.typ === CSTParser.MacroCall ||
-    x.typ === CSTParser.InvisBrackets ||
+closing_punc_type(x) = x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
+    x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
+    x.typ === CSTParser.Curly || x.typ === CSTParser.Comprehension ||
+    x.typ === CSTParser.MacroCall || x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 block_type(x::CSTParser.EXPR) = x.typ === CSTParser.If ||
@@ -1237,8 +1231,9 @@ block_type(x::CSTParser.EXPR) = x.typ === CSTParser.If ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
 nest_rhs(x::CSTParser.EXPR) = block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
-    x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison ||
-    (x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON)
+    x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison || (
+        x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON
+    )
 
 nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1 && nest_rhs(x[3])
 
@@ -1274,6 +1269,7 @@ function nestable(x::CSTParser.EXPR)
         return parent_is(
             x,
             x -> x.typ in (CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While),
+            ignore_typs = [CSTParser.InvisBrackets],
         )
     end
     true
@@ -1368,8 +1364,7 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     multi_arg = length(CSTParser.get_where_params(x)) > 0
-    add_braces =
-        !CSTParser.is_lbrace(x.args[3]) &&
+    add_braces = !CSTParser.is_lbrace(x.args[3]) &&
         x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
 
     add_braces && add_node!(
@@ -1489,6 +1484,7 @@ end
 function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     parent_invis = x[2].typ === CSTParser.InvisBrackets
+    parent_invis = closing_punc_type(x[2])
     # @info "" x parent_invis
 
     for (i, a) in enumerate(x)
