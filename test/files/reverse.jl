@@ -147,18 +147,17 @@ function record_branches!(ir::IR)
     return ir, brs
 end
 
-ignored_f(f) =
-    f in (
-        GlobalRef(Base, :not_int),
-        GlobalRef(Core.Intrinsics, :not_int),
-        GlobalRef(Core, :(===)),
-        GlobalRef(Core, :apply_type),
-        GlobalRef(Core, :typeof),
-        GlobalRef(Core, :throw),
-        GlobalRef(Base, :kwerr),
-        GlobalRef(Core, :kwfunc),
-        GlobalRef(Core, :isdefined),
-    )
+ignored_f(f) = f in (
+    GlobalRef(Base, :not_int),
+    GlobalRef(Core.Intrinsics, :not_int),
+    GlobalRef(Core, :(===)),
+    GlobalRef(Core, :apply_type),
+    GlobalRef(Core, :typeof),
+    GlobalRef(Core, :throw),
+    GlobalRef(Base, :kwerr),
+    GlobalRef(Core, :kwfunc),
+    GlobalRef(Core, :isdefined),
+)
 ignored_f(ir, f) = ignored_f(f)
 ignored_f(ir, f::Variable) = ignored_f(get(ir, f, nothing))
 
@@ -256,7 +255,7 @@ function adjointcfg(pr::Primal)
         rb = block(ir, b.id)
         for i = 1:length(preds)
             cond = i == length(preds) ? nothing :
-                   push!(rb, xcall(Base, :(!==), alpha(pr.branches[b.id]), BranchNumber(i)))
+                push!(rb, xcall(Base, :(!==), alpha(pr.branches[b.id]), BranchNumber(i)))
             branch!(rb, preds[i].id, unless = cond)
         end
         if !isempty(branches(b)) && branches(b)[end] == IRTools.unreachable

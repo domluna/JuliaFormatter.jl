@@ -280,8 +280,9 @@ function astname(x::Expr, ismacro::Bool)
     if isexpr(x, :.)
         ismacro ? macroname(x) : x
     # Call overloading, e.g. `(a::A)(b) = b` or `function (a::A)(b) b end` should document `A(b)`
-    elseif (isexpr(x, :function) || isexpr(x, :(=))) && isexpr(x.args[1], :call) &&
-                                                        isexpr(x.args[1].args[1], :(::))
+    elseif (
+        isexpr(x, :function) || isexpr(x, :(=))
+    ) && isexpr(x.args[1], :call) && isexpr(x.args[1].args[1], :(::))
         return astname(x.args[1].args[1].args[end], ismacro)
     else
         n = isexpr(x, (:module, :struct)) ? 2 : 1
@@ -296,10 +297,9 @@ macroname(s::Symbol) = Symbol('@', s)
 macroname(x::Expr) = Expr(x.head, x.args[1], macroname(x.args[end].value))
 
 isfield(@nospecialize x) =
-    isexpr(x, :.) &&
-    (isa(x.args[1], Symbol) || isfield(x.args[1])) && (
-        isa(x.args[2], QuoteNode) || isexpr(x.args[2], :quote)
-    )
+    isexpr(x, :.) && (
+     isa(x.args[1], Symbol) || isfield(x.args[1])
+    ) && (isa(x.args[2], QuoteNode) || isexpr(x.args[2], :quote))
 
 # @doc expression builders.
 # =========================
@@ -341,11 +341,10 @@ function metadata(__source__, __module__, expr, ismodule)
                 end
             elseif isexpr(each, :function) || isexpr(each, :(=))
                 break
-            elseif isa(each, String) ||
-                   isexpr(each, :string) ||
-                   isexpr(each, :call) || (
-                isexpr(each, :macrocall) && each.args[1] === Symbol("@doc_str")
-            )
+            elseif isa(each, String) || isexpr(each, :string) || isexpr(
+                each,
+                :call,
+            ) || (isexpr(each, :macrocall) && each.args[1] === Symbol("@doc_str"))
                 # forms that might be doc strings
                 last_docstr = each
             end
@@ -358,28 +357,24 @@ end
 
 function keyworddoc(__source__, __module__, str, def::Base.BaseDocs.Keyword)
     @nospecialize str
-    docstr = esc(
-        docexpr(
-            __source__,
-            __module__,
-            lazy_iterpolate(str),
-            metadata(__source__, __module__, def, false),
-        ),
-    )
+    docstr = esc(docexpr(
+        __source__,
+        __module__,
+        lazy_iterpolate(str),
+        metadata(__source__, __module__, def, false),
+    ),)
     return :($setindex!($(keywords), $docstr, $(esc(quot(def.name)))); nothing)
 end
 
 function objectdoc(__source__, __module__, str, def, expr, sig = :(Union{}))
     @nospecialize str def expr sig
     binding = esc(bindingexpr(namify(expr)))
-    docstr = esc(
-        docexpr(
-            __source__,
-            __module__,
-            lazy_iterpolate(str),
-            metadata(__source__, __module__, expr, false),
-        ),
-    )
+    docstr = esc(docexpr(
+        __source__,
+        __module__,
+        lazy_iterpolate(str),
+        metadata(__source__, __module__, expr, false),
+    ),)
     # Note: we want to avoid introducing line number nodes here (issue #24468)
     return Expr(:block, esc(def), :($(doc!)($__module__, $binding, $docstr, $(esc(sig)))))
 end
@@ -566,11 +561,11 @@ function docm(source::LineNumberNode, mod::Module, meta, ex, define::Bool = true
     #   function f end
     #   f(...)
     #
-          isexpr(x, FUNC_HEADS) && is_signature(x.args[1]) ?
-          objectdoc(source, mod, meta, def, x, signature(x)) :
-          isexpr(x, [:function, :macro]) && !isexpr(x.args[1], :call) ?
-          objectdoc(source, mod, meta, def, x) :
-          isexpr(x, :call) ? calldoc(source, mod, meta, x) :
+        isexpr(x, FUNC_HEADS) && is_signature(x.args[1]) ?
+        objectdoc(source, mod, meta, def, x, signature(x)) :
+        isexpr(x, [:function, :macro]) && !isexpr(x.args[1], :call) ?
+        objectdoc(source, mod, meta, def, x) :
+        isexpr(x, :call) ? calldoc(source, mod, meta, x) :
 
     # Type definitions.
     #
@@ -578,8 +573,7 @@ function docm(source::LineNumberNode, mod::Module, meta, ex, define::Bool = true
     #   abstract type T end
     #   primitive type T N end
     #
-          isexpr(x, [:struct, :abstract, :primitive]) ?
-          objectdoc(source, mod, meta, def, x) :
+        isexpr(x, [:struct, :abstract, :primitive]) ? objectdoc(source, mod, meta, def, x) :
 
     # "Bindings". Names that resolve to objects with different names, ie.
     #
@@ -587,26 +581,26 @@ function docm(source::LineNumberNode, mod::Module, meta, ex, define::Bool = true
     #   T = S
     #   global T = S
     #
-          isexpr(x, BINDING_HEADS) && !isexpr(x.args[1], :call) ?
-          objectdoc(source, mod, meta, def, x) :
+        isexpr(x, BINDING_HEADS) && !isexpr(x.args[1], :call) ?
+        objectdoc(source, mod, meta, def, x) :
 
     # Quoted macrocall syntax. `:@time` / `:(Base.@time)`.
-          isquotedmacrocall(x) ? objectdoc(source, mod, meta, def, x) :
+        isquotedmacrocall(x) ? objectdoc(source, mod, meta, def, x) :
     # Modules and baremodules.
-          isexpr(x, :module) ? moduledoc(source, mod, meta, def, x) :
+        isexpr(x, :module) ? moduledoc(source, mod, meta, def, x) :
     # Document several expressions with the same docstring. `a, b, c`.
-          isexpr(x, :tuple) ? multidoc(source, mod, meta, x, define) :
+        isexpr(x, :tuple) ? multidoc(source, mod, meta, x, define) :
     # Errors generated by calling `macroexpand` are passed back to the call site.
-          isexpr(x, :error) ? esc(x) :
+        isexpr(x, :error) ? esc(x) :
     # When documenting macro-generated code we look for embedded `@__doc__` calls.
-          __doc__!(meta, x, define) ? esc(x) :
+        __doc__!(meta, x, define) ? esc(x) :
     # Any "basic" expression such as a bare function or module name or numeric literal.
-          isbasicdoc(x) ? objectdoc(source, mod, meta, nothing, x) :
+        isbasicdoc(x) ? objectdoc(source, mod, meta, nothing, x) :
 
     # All other expressions are undocumentable and should be handled on a case-by-case basis
     # with `@__doc__`. Unbound string literals are also undocumentable since they cannot be
     # retrieved from the module's metadata `IdDict` without a reference to the string.
-          docerror(ex)
+        docerror(ex)
 
     return doc
 end

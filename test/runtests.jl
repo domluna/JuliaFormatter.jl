@@ -2,7 +2,7 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i, m, always_for_in) =
+fmt1(s, i = 4, m = 80, always_for_in = false) =
     JuliaFormatter.format_text(s, indent = i, margin = m, always_for_in = always_for_in)
 
 # Verifies formatting the formatted text
@@ -604,15 +604,184 @@ end
         str_ = """a, b = cond ? e1 : e2"""
         str = """
         a, b = cond ?
-               e1 :
-               e2"""
+            e1 : e2"""
         @test fmt(str_, 4, 13) == str
 
         str = """
-        a,
-        b = cond ?
+        a, b =
+            cond ?
             e1 : e2"""
         @test fmt(str_, 4, 12) == str
+
+        str = """
+        begin
+            variable_name =
+                argument1 + argument2
+        end"""
+        @test fmt(str, 4, 40) == str
+
+        str = """
+        begin
+            variable_name =
+                argument1 +
+                argument2
+        end"""
+        @test fmt(str, 4, 28) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ? expression1 : expression2
+        end"""
+        @test fmt(str, 4, 58) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ? expression1 :
+                expression2
+        end"""
+        @test fmt(str, 4, 46) == str
+
+        str = """
+        begin
+            variable_name = conditional ?
+                expression1 : expression2
+        end"""
+        @test fmt(str, 4, 34) == str
+
+        str = """
+        begin
+            variable_name =
+                conditional ?
+                expression1 :
+                expression2
+        end"""
+        @test fmt(str, 4, 32) == str
+
+        str = "shmem[pout*rows+row] += shmem[pin*rows+row] + shmem[pin*rows+row-offset]"
+
+        str_ = """
+        shmem[pout*rows+row] +=
+               shmem[pin*rows+row] + shmem[pin*rows+row-offset]"""
+        @test fmt(str, 7, 71) == str_
+        str_ = """
+        shmem[pout*rows+row] +=
+               shmem[pin*rows+row] +
+               shmem[pin*rows+row-offset]"""
+        @test fmt(str, 7, 54) == str_
+
+        str = """
+        begin
+           var = func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 37) == str
+
+        str_ = """
+        begin
+           var =
+              func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 36) == str_
+        @test fmt(str, 3, 34) == str_
+
+        str_ = """
+        begin
+           var =
+              func(arg1, arg2, arg3) *
+              num
+        end"""
+        @test fmt(str, 3, 33) == str_
+        @test fmt(str, 3, 30) == str_
+
+        str_ = """
+        begin
+           var =
+              func(
+                 arg1,
+                 arg2,
+                 arg3,
+              ) * num
+        end"""
+        @test fmt(str, 3, 29) == str_
+
+        str_ = """
+        begin
+           var =
+              func(
+                 arg1,
+                 arg2,
+                 arg3,
+              ) *
+              num
+        end"""
+        @test fmt(str, 3, 1) == str_
+
+        str = """
+        begin
+            foo() =
+                (one, x -> (true, false))
+        end"""
+        @test fmt(str, 4, 36) == str
+        @test fmt(str, 4, 33) == str
+
+        str = """
+        begin
+            foo() = 
+                (
+                 one,
+                 x -> (true, false),
+                )
+        end"""
+        str = """
+        begin
+            foo() = (
+                one,
+                x -> (true, false),
+            )
+        end"""
+        @test fmt(str, 4, 32) == str
+        @test fmt(str, 4, 28) == str
+
+        str = """
+        begin
+                  foo() = (
+                           one,
+                           x -> (
+                                 true,
+                                 false,
+                           ),
+                  )
+        end"""
+        @test fmt(str, 10, 39) == str
+
+        str = """
+        ignored_f(f) = f in (
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )"""
+        @test fmt(str) == str
+
+        str = """
+        ignored_f(f) = f in (((
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )))"""
+        @test fmt(str) == str
     end
 
     @testset "op chain" begin
@@ -845,13 +1014,10 @@ end
 
         str = """
         map(1:10, 11:20) do x, y
-            x + y + foo + bar + ba
-            x + y + foo + bar +
-            baz
+            z = reallylongvariablename
         end"""
         t = run_pretty(str, 80)
-        @test length(t) == 27
-        @test fmt(str, 4, 26) == str
+        @test length(t) == 30
 
         # issue #58
 
@@ -1387,23 +1553,7 @@ end
            end
         end"""
         @test fmt(str_, 4, 200) == str
-
-        str = """
-        begin
-            begin
-                throw(
-                    ErrorException(
-                        \"""An error occured formatting \$filename. :-(
-
-                        Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
-                        with a link to a gist containing the contents of the file. A gist
-                        can be created at https://gist.github.com/.\""",
-                    ),
-                )
-            end
-        end"""
-        @test fmt(str_) == str
-
+        @test fmt(str_, 4, 1) == str
 
         str = """
         foo() = llvmcall(\"""
@@ -1431,24 +1581,14 @@ end
                      llvm2
                      \""")"""
         @test fmt(str, 4, 19) == str_
-        str_ = """
-        foo() = llvmcall(
-            \"""
-            llvm1
-            llvm2
-            \""",
-        )"""
         @test fmt(str, 4, 18) == str_
-
 
         str_ = """
         foo() =
-          llvmcall(
-            \"""
-            llvm1
-            llvm2
-            \""",
-          )"""
+          llvmcall(\"""
+                   llvm1
+                   llvm2
+                   \""")"""
         @test fmt(str, 2, 10) == str_
 
         str = """
@@ -1479,35 +1619,7 @@ end
             \"""))
         end"""
         @test fmt(str) == str
-
-        # Technically it nests sonner than it should but that's due to the 
-        # closing parenthesis. ATM I don't think it's worth factoring that in.
-
-        str_ = raw"""
-        if free < min_space
-            throw(
-                ErrorException(\"""
-          Free space: \$free Gb
-          Please make sure to have at least \$min_space Gb of free disk space
-          before downloading the $database_name database.
-          \"""),
-            )
-        end"""
-        @test fmt(str, 4, 71) == str_
-
-        str_ = raw"""
-        if free < min_space
-            throw(
-                ErrorException(
-                    \"""
-        Free space: \$free Gb
-        Please make sure to have at least \$min_space Gb of free disk space
-        before downloading the $database_name database.
-        \""",
-                ),
-            )
-        end"""
-        @test fmt(str, 4, 69) == str_
+        @test fmt(str, 4, 1) == str
 
     end
 
@@ -2005,9 +2117,7 @@ end
                          e8
                      end
                  end"""
-        @test fmt(
-            "begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",
-        ) == str
+        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) == str
 
         str = """if cond1
                      e1
@@ -2275,30 +2385,6 @@ end
                          b"""
         @test fmt("import M1.M2.M3:a,b", 4, 1) == str
 
-        str = """
-        foo() =
-            (one, x -> (true, false))"""
-        @test fmt("foo() = (one, x -> (true, false))", 4, 30) == str
-
-        str = """
-        foo() = (
-            one,
-            x -> (
-                true,
-                false,
-            ),
-        )"""
-        @test fmt("foo() = (one, x -> (true, false))", 4, 20) == str
-
-        str = """
-        foo() = (
-                 one,
-                 x -> (
-                       true,
-                       false,
-                 ),
-        )"""
-        @test fmt("foo() = (one, x -> (true, false))", 10, 20) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)
@@ -2425,12 +2511,8 @@ end
              :numberofpointattributes => NAttributes,
              :numberofpointmtrs => NMTr,
              :numberofcorners => NSimplex,
-             :firstnumber => Cint(
-                  1,
-             ),
-             :mesh_dim => Cint(
-                  3,
-             ),
+             :firstnumber => Cint(1),
+             :mesh_dim => Cint(3),
         )"""
         @test fmt(str_, 5, 1) == str
 
@@ -2510,31 +2592,7 @@ end
         @test fmt("a[(1 + 2)]", 4, 1) == str
 
         str_ = "(a + b + c + d)"
-        @test fmt(str_, 4, 15) == str_
-
-        str = """
-        (
-         a + b + c +
-         d
-        )"""
-        @test fmt(str_, 4, 14) == str
-        @test fmt(str_, 4, 12) == str
-
-        str = """
-        (
-         a + b +
-         c + d
-        )"""
-        @test fmt(str_, 4, 11) == str
-        @test fmt(str_, 4, 8) == str
-
-        str = """
-        (
-         a +
-         b +
-         c + d
-        )"""
-        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
@@ -2543,35 +2601,11 @@ end
          c +
          d
         )"""
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 1) == str
 
         str_ = "(a <= b <= c <= d)"
-        @test fmt(str_, 4, 18) == str_
-
-        str = """
-        (
-         a <= b <= c <=
-         d
-        )"""
-        @test fmt(str_, 4, 17) == str
-        @test fmt(str_, 4, 15) == str
-
-        str = """
-        (
-         a <= b <=
-         c <= d
-        )"""
-        @test fmt(str_, 4, 14) == str
-        @test fmt(str_, 4, 10) == str
-
-        str = """
-        (
-         a <=
-         b <=
-         c <= d
-        )"""
-        @test fmt(str_, 4, 9) == str
-        @test fmt(str_, 4, 8) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
@@ -2580,7 +2614,7 @@ end
          c <=
          d
         )"""
-        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 1) == str
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/60
@@ -3030,23 +3064,14 @@ end
         # issue 56
         str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
         str = """
-        a_long_function_name(
-            Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]],
-        )"""
+        a_long_function_name(Array{Float64,2}[
+            [1.0],
+            [0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+            [0.5 0.5; 0.5 0.5],
+        ])"""
         @test fmt(str, 4, length(str)) == str_
-        @test fmt(str_) == str
-        @test fmt(str_, 4, 79) == str
-
-        str = """
-        a_long_function_name(
-            Array{Float64,2}[
-                [1.0],
-                [0.5 0.5],
-                [0.5 0.5; 0.5 0.5],
-                [0.5 0.5; 0.5 0.5],
-            ],
-        )"""
-        @test fmt(str_, 4, 78) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
 
         # unary op
         str_ = "[1, 1]'"
@@ -3297,9 +3322,10 @@ end
         begin
             weights = Dict(
                 (file, i) => w for (file, subject) in subjects
-                for (i, w) in enumerate(
-                    weightfn.(eachrow(subject.events)),
-                )
+                for (
+                    i,
+                    w,
+                ) in enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 60) == str
@@ -3309,9 +3335,10 @@ end
             weights = Dict(
                 (file, i) => w
                 for (file, subject) in subjects
-                for (i, w) in enumerate(
-                    weightfn.(eachrow(subject.events)),
-                )
+                for (
+                    i,
+                    w,
+                ) in enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 50) == str
