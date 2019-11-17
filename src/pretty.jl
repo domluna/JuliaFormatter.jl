@@ -1233,7 +1233,7 @@ block_type(x::CSTParser.EXPR) =
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
 nest_rhs(x::CSTParser.EXPR) =
-    block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
+    block_type(x) || closing_punc_type(x) || x.typ === CSTParser.ConditionalOpCall ||
     x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison || (
         x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON
     )
