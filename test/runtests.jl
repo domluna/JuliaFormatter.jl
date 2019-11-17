@@ -1011,13 +1011,10 @@ end
 
         str = """
         map(1:10, 11:20) do x, y
-            x + y + foo + bar + ba
-            x + y + foo + bar +
-            baz
+            z = reallylongvariablename
         end"""
         t = run_pretty(str, 80)
-        @test length(t) == 27
-        @test fmt(str, 4, 26) == str
+        @test length(t) == 30
 
         # issue #58
 
@@ -2652,31 +2649,7 @@ end
         @test fmt("a[(1 + 2)]", 4, 1) == str
 
         str_ = "(a + b + c + d)"
-        @test fmt(str_, 4, 15) == str_
-
-        str = """
-        (
-         a + b + c +
-         d
-        )"""
-        @test fmt(str_, 4, 14) == str
-        @test fmt(str_, 4, 12) == str
-
-        str = """
-        (
-         a + b +
-         c + d
-        )"""
-        @test fmt(str_, 4, 11) == str
-        @test fmt(str_, 4, 8) == str
-
-        str = """
-        (
-         a +
-         b +
-         c + d
-        )"""
-        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
@@ -2685,35 +2658,11 @@ end
          c +
          d
         )"""
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 1) == str
 
         str_ = "(a <= b <= c <= d)"
-        @test fmt(str_, 4, 18) == str_
-
-        str = """
-        (
-         a <= b <= c <=
-         d
-        )"""
-        @test fmt(str_, 4, 17) == str
-        @test fmt(str_, 4, 15) == str
-
-        str = """
-        (
-         a <= b <=
-         c <= d
-        )"""
-        @test fmt(str_, 4, 14) == str
-        @test fmt(str_, 4, 10) == str
-
-        str = """
-        (
-         a <=
-         b <=
-         c <= d
-        )"""
-        @test fmt(str_, 4, 9) == str
-        @test fmt(str_, 4, 8) == str
+        @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
@@ -2722,7 +2671,7 @@ end
          c <=
          d
         )"""
-        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 1) == str
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/60

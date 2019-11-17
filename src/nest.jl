@@ -360,7 +360,7 @@ function n_wherecall!(x, s; extra_width = 0)
     end
 end
 
-function n_chainopcall!(x, s; extra_width = 0)
+function n_condcall!(x, s; extra_width = 0)
     line_margin = s.line_offset + length(x) + extra_width
     # @info "ENTERING" x.typ s.line_offset line_margin x.force_nest
     if line_margin > s.margin || x.force_nest
@@ -420,8 +420,8 @@ function n_chainopcall!(x, s; extra_width = 0)
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
 end
-n_comparison!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
-n_condcall!(x, s; extra_width = 0) = n_chainopcall!(x, s, extra_width = extra_width)
+n_comparison!(x, s; extra_width = 0) = n_block!(x, s, extra_width = extra_width)
+n_chainopcall!(x, s; extra_width = 0) = n_block!(x, s, extra_width = extra_width)
 
 function dedent!(x::PTree, s::State, pindent::Int, line_margin::Int)
     is_leaf(x) && return

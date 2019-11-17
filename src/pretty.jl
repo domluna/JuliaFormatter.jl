@@ -1181,9 +1181,6 @@ function p_chaincall(x, s; nonest = false, nospace = false)
             end
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
             add_node!(t, n, s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i != length(x)
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
         else
             add_node!(t, n, s, join_lines = true)
         end
