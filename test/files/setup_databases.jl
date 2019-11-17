@@ -29,7 +29,7 @@ function parse_commandline()
 
       It creates a `databases` folder in `--output` containing three folders:
       `pdb`, `uniclust` and `pdb70`
-      """,)
+      """)
 
     @add_arg_table settings begin
         "--output", "-o"

@@ -52,6 +52,7 @@ function print_leaf(io::IOBuffer, x::PTree, s::State)
     else
         s.on && write(io, x.val)
     end
+    s.line_offset += length(x)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
@@ -59,24 +60,46 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
         print_leaf(io, x, s)
         return
     end
+    print_tree(io, x.nodes, s, x.indent)
+end
 
-    ws = repeat(" ", max(x.indent, 0))
-    for (i, n) in enumerate(x.nodes)
+function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
+    ws = repeat(" ", max(indent, 0))
+    for (i, n) in enumerate(nodes)
         if is_leaf(n)
             print_leaf(io, n, s)
+        elseif n.typ === CSTParser.StringH
+            print_stringh(io, n, s)
         else
             print_tree(io, n, s)
         end
 
-        if n.typ === NEWLINE && s.on && i < length(x.nodes)
-            if is_closer(x.nodes[i+1]) ||
-               x.nodes[i+1].typ === CSTParser.Block || x.nodes[i+1].typ === CSTParser.Begin
-                write(io, repeat(" ", x.nodes[i+1].indent))
-            elseif !skip_indent(x.nodes[i+1])
+        if n.typ === NEWLINE && s.on && i < length(nodes)
+            if is_closer(nodes[i+1]) ||
+               nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
+                write(io, repeat(" ", nodes[i+1].indent))
+                s.line_offset = nodes[i+1].indent
+            elseif !skip_indent(nodes[i+1])
                 write(io, ws)
+                s.line_offset = indent
             end
         end
     end
+end
+
+function print_stringh(io::IOBuffer, x::PTree, s::State)
+    # The indent of StringH is set to the the offset
+    # of when the quote is first encountered in the source file.
+
+    # This difference notes if there is a change due to nesting.
+    diff = x.indent + 1 - s.line_offset
+    # @info "" length(x) s.line_offset
+
+    # The new indent for the string is index of when a character in
+    # the multiline string is FIRST encountered in the source file - the above difference
+    # +1 since the character is 1 space after the indent
+    x.indent = max(x.nodes[1].indent + 1 - diff, 0)
+    print_tree(io, x, s)
 end
 
 function print_notcode(io::IOBuffer, x::PTree, s::State)

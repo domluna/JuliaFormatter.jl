@@ -99,8 +99,6 @@ function nest!(x::PTree, s::State; extra_width = 0)
         n_for!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.TypedVcat
         n_call!(x, s, extra_width = extra_width)
-    elseif x.typ === CSTParser.StringH
-        n_stringh!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Parameters
         n_tuple!(x, s, extra_width = extra_width)
     elseif x.typ === CSTParser.Braces
@@ -217,20 +215,6 @@ function n_tuple!(x, s; extra_width = 0)
     end
 end
 
-
-function n_stringh!(x, s; extra_width = 0)
-    # The indent of StringH is set to the the offset
-    # of when the quote is first encountered in the source file.
-
-    # This difference notes if there is a change due to nesting.
-    diff = x.indent - s.line_offset
-
-    # The new indent for the string is index of when a character in
-    # the multiline string is FIRST encountered in the source file - the above difference
-    x.indent = max(x.nodes[1].indent - diff, 0)
-    nest!(x.nodes, s, x.indent, extra_width = extra_width)
-end
-
 function n_for!(x, s; extra_width = 0)
     block_idx = findfirst(n -> !is_leaf(n), x.nodes)
     if block_idx === nothing
@@ -254,7 +238,7 @@ end
 function n_call!(x, s; extra_width = 0)
     line_width = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
-    # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin
+    # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin x.nodes[1].val
     if idx !== nothing && (line_width > s.margin || x.force_nest)
         x.nodes[end].indent = x.indent
         line_offset = s.line_offset
@@ -355,17 +339,18 @@ function n_wherecall!(x, s; extra_width = 0)
             (!is_leaf(n) || n.typ === CSTParser.IDENTIFIER) && (last_typ = n.typ)
         end
 
+
         # @info "" s.line_offset x.typ extra_width has_braces
 
         # Properly reset line offset in the case the last
         # argument is an IDENTIFIER.
         # if over && has_braces && last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
-        if over &&
-           has_braces &&
-           last_typ === CSTParser.IDENTIFIER && x.nodes[end-2].typ === TRAILINGCOMMA
+        if over && has_braces
             s.line_offset = x.nodes[end].indent + 1
         end
 
+        # s.line_offset = line_offset
+        # walk(reset_line_offset!, x, s)
         # @info "" s.line_offset x.typ extra_width has_braces
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
@@ -446,11 +431,8 @@ function n_binarycall!(x, s; extra_width = 0)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_width = s.line_offset + length(x) + extra_width
-    invis_args = x.nodes[1].typ === CSTParser.InvisBrackets ||
-                 x.nodes[end].typ === CSTParser.InvisBrackets
-    # arg2_invis = false
     # @info "ENTERING" x.typ extra_width s.line_offset length(x) idxs x.ref[][2]
-    if length(idxs) == 2 && (line_width > s.margin && !invis_args || x.force_nest)
+    if length(idxs) == 2 && (line_width > s.margin || x.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -490,7 +472,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 line_width = s.line_offset + 1 + length(x.nodes[end])
                 can_unnest = line_width + extra_width <= s.margin
             else
-                rw, _ = length_to(x, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
                 line_width = s.line_offset + 1 + rw
                 can_unnest = line_width + extra_width <= s.margin
             end
@@ -549,7 +531,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width, _ = length_to(x, (PLACEHOLDER, NEWLINE), start = 2)
+            return_width, _ = length_to(x, [PLACEHOLDER, NEWLINE], start = 2)
         end
 
         # @info "" return_width

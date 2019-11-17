@@ -223,6 +223,7 @@ function format_text(
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
     nest!(t, s)
 
+    s.line_offset = 0
     io = IOBuffer()
 
     # Print comments and whitespace before code.
