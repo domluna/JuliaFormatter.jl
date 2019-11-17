@@ -816,7 +816,7 @@ end
         @test fmt(str) == str
 
         str = """
-        ignored_f(f) = f in (((
+        ignored_f(f) = f in (foo(@foo(foo(
             GlobalRef(Base, :not_int),
             GlobalRef(Core.Intrinsics, :not_int),
             GlobalRef(Core, :(===)),
@@ -826,8 +826,11 @@ end
             GlobalRef(Base, :kwerr),
             GlobalRef(Core, :kwfunc),
             GlobalRef(Core, :isdefined),
-        )))"""
+        ))))"""
         @test fmt(str) == str
+
+        str = "var = \"a_long_function_stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\""
+        fmt(str, 4, 1) == str
     end
 
     @testset "op chain" begin

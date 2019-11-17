@@ -109,7 +109,28 @@ function get_args(x::CSTParser.EXPR)
     end
     CSTParser.get_args(x)
 end
-n_args(x::CSTParser.EXPR) = length(get_args(x))
+
+function get_args(x::PTree)
+    is_iterable(x) || error("get_args requires an iterable PTree type")
+    sidx = findfirst(is_opener, x.nodes)
+    args = []
+    for i = sidx:length(x.nodes)
+        arg = x.nodes[i]
+        arg.typ === CSTParser.PUNCTUATION && continue
+        arg.typ isa PLeaf && continue
+        if arg.typ === CSTParser.Parameters
+            for j = 1:length(arg.nodes)
+                parg = arg.nodes[j]
+                push!(args, parg)
+            end
+        else
+            push!(args, arg)
+        end
+    end
+    args
+end
+
+n_args(x) = length(get_args(x))
 
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
@@ -1220,6 +1241,8 @@ function p_kw(x, s)
     t
 end
 
+is_str(x) = is_str_or_cmd(x.kind) || x.typ === CSTParser.StringH
+
 is_iterable(x) =
     x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
     x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
@@ -1235,13 +1258,13 @@ is_block(x::CSTParser.EXPR) =
 nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1
 
 unnestable_arg(x) =
-    is_iterable(x) || x.typ === CSTParser.StringH || x.typ === CSTParser.LITERAL || (
+    is_iterable(x) || is_str(x) || x.typ === CSTParser.LITERAL || (
         x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.DOT
     )
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
-    nest_assignment(x) && return true
+    nest_assignment(x) && !is_str(x[3]) && return true
     (
      x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
     ) && return false

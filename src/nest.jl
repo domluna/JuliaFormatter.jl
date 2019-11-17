@@ -426,14 +426,16 @@ function dedent!(x::PTree, s::State, pindent::Int, line_margin::Int)
     x.typ === CSTParser.Comparison && return
     x.typ === CSTParser.ChainOpCall && return
     x.typ === CSTParser.BinaryOpCall && return
-    if x.typ === CSTParser.InvisBrackets &&
-       length(x.nodes) == 3 && is_iterable(x.nodes[2])
-        dedent!(x.nodes[2], s, pindent, line_margin)
-        return
-    end
 
     if is_iterable(x)
-        diff = min(line_margin, pindent + s.indent_size) - x.indent
+        indent = x.indent
+        args = get_args(x)
+        while length(args) == 1 && is_iterable(args[1])
+            indent = args[1].indent
+            args = get_args(args[1])
+        end
+        diff = min(line_margin, pindent + s.indent_size) - indent
+        # @info "" pindent diff x.indent line_margin indent
         # @info "" pindent diff x.indent x.typ
         add_indent!(x, s, diff)
         x.nodes[end].indent = pindent
@@ -492,7 +494,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 arg2.typ === CSTParser.BinaryOpCall && (
                     !(is_lazy_op(cst) && !has_eq) && cst[2].kind !== Tokens.IN
                 )
-               ) || arg2.typ === CSTParser.UnaryOpCall || is_block(cst)
+            ) || arg2.typ === CSTParser.UnaryOpCall || is_block(cst)
                 line_margin = s.line_offset + 1 + length(x.nodes[end])
             else
                 rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
@@ -504,6 +506,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 x.nodes[i1] = Whitespace(1)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
+                    # x.indent -= s.indent_size
                     # recursive dedent
                     if arg2.typ === CSTParser.BinaryOpCall
                         dedent!(arg2.nodes[1], s, x.indent, line_margin)
