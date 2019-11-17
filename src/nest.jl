@@ -14,12 +14,25 @@
 #
 # the length of " op" will be considered when nesting arg1
 
+function skip_indent(x::PTree)
+    if x.typ === CSTParser.LITERAL && x.val == ""
+        return true
+    elseif x.typ === NEWLINE || x.typ === NOTCODE
+        return true
+    end
+    false
+end
+
 function walk(f, x::PTree, s::State)
     f(x, s)
     is_leaf(x) && return
-    for n in x.nodes
-        if n.typ === NEWLINE
-            s.line_offset = x.indent
+    for (i, n) in enumerate(x.nodes)
+        if n.typ === NEWLINE && i < length(x.nodes)
+            if is_closer(x.nodes[i+1])
+                s.line_offset = x.nodes[i+1].indent
+            elseif !skip_indent(x.nodes[i+1])
+                s.line_offset = x.indent
+            end
         else
             walk(f, n, s)
         end
@@ -138,7 +151,7 @@ function n_import!(x, s; extra_width = 0)
     line_margin = s.line_offset + length(x) + extra_width
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && (line_margin > s.margin || x.force_nest)
-        sidx = findfirst(n -> is_colon(n), x.nodes)
+        sidx = findfirst(is_colon, x.nodes)
         if sidx === nothing
             sidx = 2
         else
@@ -310,7 +323,6 @@ function n_wherecall!(x, s; extra_width = 0)
         end
 
         over = (s.line_offset + Blen + extra_width > s.margin) || x.force_nest
-        # line_offset = s.line_offset
         x.indent += s.indent_size
 
         last_typ::Union{CSTParser.Head,Nothing} = nothing
@@ -338,10 +350,8 @@ function n_wherecall!(x, s; extra_width = 0)
             (!is_leaf(n) || n.typ === CSTParser.IDENTIFIER) && (last_typ = n.typ)
         end
 
-        # @info "" s.line_offset x.typ extra_width has_braces
-        if over && has_braces
-            s.line_offset = x.nodes[end].indent + 1
-        end
+        s.line_offset = line_offset
+        walk(reset_line_offset!, x, s)
     else
         nest!(x.nodes, s, x.indent, extra_width = extra_width)
     end
@@ -417,12 +427,12 @@ function dedent!(x::PTree, s::State, pindent::Int, line_margin::Int)
     x.typ === CSTParser.ChainOpCall && return
     x.typ === CSTParser.BinaryOpCall && return
     if x.typ === CSTParser.InvisBrackets &&
-       length(x.nodes) == 3 && closing_punc_type(x.nodes[2])
+       length(x.nodes) == 3 && is_iterable(x.nodes[2])
         dedent!(x.nodes[2], s, pindent, line_margin)
         return
     end
 
-    if closing_punc_type(x)
+    if is_iterable(x)
         diff = min(line_margin, pindent + s.indent_size) - x.indent
         # @info "" pindent diff x.indent x.typ
         add_indent!(x, s, diff)
@@ -482,7 +492,7 @@ function n_binarycall!(x, s; extra_width = 0)
                 arg2.typ === CSTParser.BinaryOpCall && (
                     !(is_lazy_op(cst) && !has_eq) && cst[2].kind !== Tokens.IN
                 )
-            ) || arg2.typ === CSTParser.UnaryOpCall
+               ) || arg2.typ === CSTParser.UnaryOpCall || is_block(cst)
                 line_margin = s.line_offset + 1 + length(x.nodes[end])
             else
                 rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
@@ -505,8 +515,12 @@ function n_binarycall!(x, s; extra_width = 0)
             end
         end
 
+        # @info "before reset" line_offset s.line_offset
+
         s.line_offset = line_offset
         walk(reset_line_offset!, x, s)
+
+        # @info "after reset" line_offset s.line_offset
     else
         # Handles the case of a function def defined
         # as "foo(a)::R where {A,B} = body".
