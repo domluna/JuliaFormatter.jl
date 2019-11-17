@@ -2,7 +2,7 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i, m, always_for_in) =
+fmt1(s, i = 4, m=80, always_for_in=false) =
     JuliaFormatter.format_text(s, indent = i, margin = m, always_for_in = always_for_in)
 
 # Verifies formatting the formatted text
