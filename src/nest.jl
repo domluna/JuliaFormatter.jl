@@ -476,13 +476,11 @@ function n_binarycall!(x, s; extra_width = 0)
         if !x.force_nest
             arg2 = x.nodes[end]
             arg2.typ === CSTParser.Block && (arg2 = arg2.nodes[1])
-
-            op = cst[2]
-            lazyop = op.kind === Tokens.LAZY_OR || op.kind === Tokens.LAZY_AND
+            cst = arg2.ref[]
 
             if (
                 arg2.typ === CSTParser.BinaryOpCall && (
-                    !is_lazy_op(cst) && !CSTParser.is_assignment(cst)
+                    !(is_lazy_op(cst) && !has_eq) && cst[2].kind !== Tokens.IN
                 )
             ) || arg2.typ === CSTParser.UnaryOpCall
                 line_margin = s.line_offset + 1 + length(x.nodes[end])
@@ -538,7 +536,7 @@ function n_binarycall!(x, s; extra_width = 0)
         if idx !== nothing && idx > 1
             return_width = length(x.nodes[idx].nodes[1]) + length(x.nodes[2])
         elseif idx === nothing
-            return_width, _ = length_to(x, [PLACEHOLDER, NEWLINE], start = 2)
+            return_width, _ = length_to(x, [NEWLINE], start = 2)
         end
 
         # @info "" return_width

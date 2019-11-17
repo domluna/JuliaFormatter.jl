@@ -47,10 +47,11 @@ end
 unwrapquote(x) = x
 unwrapquote(x::QuoteNode) = x.value
 
-is_literal_getproperty(ex) = (
-    iscall(ex, Base, :getproperty) ||
-    iscall(ex, Core, :getfield) || iscall(ex, Base, :getfield)
-) && ex.args[3] isa Union{QuoteNode,Integer}
+is_literal_getproperty(ex) =
+    (
+     iscall(ex, Base, :getproperty) ||
+     iscall(ex, Core, :getfield) || iscall(ex, Base, :getfield)
+    ) && ex.args[3] isa Union{QuoteNode,Integer}
 
 function instrument_getproperty!(ir, v, ex)
     is_literal_getproperty(ex) ?
@@ -60,7 +61,8 @@ function instrument_getproperty!(ir, v, ex)
     ex
 end
 
-is_literal_getindex(ex) = iscall(ex, Base, :getindex) &&
+is_literal_getindex(ex) =
+    iscall(ex, Base, :getindex) &&
     length(ex.args) == 3 && ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_getindex!(ir, v, ex)
@@ -69,7 +71,8 @@ function instrument_getindex!(ir, v, ex)
     ex
 end
 
-is_literal_iterate(ex) = iscall(ex, Base, :indexed_iterate) &&
+is_literal_iterate(ex) =
+    iscall(ex, Base, :indexed_iterate) &&
     length(ex.args) >= 3 && ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_iterate!(ir, v, ex)

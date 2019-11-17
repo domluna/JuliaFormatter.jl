@@ -673,6 +673,29 @@ end
 
         str = """
         begin
+           var = func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 37) == str
+
+        str_ = """
+        begin
+           var =
+              func(arg1, arg2, arg3) * num
+        end"""
+        @test fmt(str, 3, 36) == str_
+        @test fmt(str, 3, 34) == str_
+
+        str_ = """
+        begin
+           var =
+              func(arg1, arg2, arg3) *
+              num
+        end"""
+        @test fmt(str, 3, 33) == str_
+        @test fmt(str, 3, 30) == str_
+
+        str_ = """
+        begin
            var =
               func(
                  arg1,
@@ -680,39 +703,19 @@ end
                  arg3,
               ) * num
         end"""
-        @test fmt(str, 3, 13) == str
+        @test fmt(str, 3, 29) == str_
 
-        str = """
-        begin
-           var = func(
-              arg1,
-              arg2,
-              arg3,
-           ) * num
-        end"""
-        @test fmt(str, 3, 14) == str
-        @test fmt(str, 3, 29) == str
-
-        str = """
+        str_ = """
         begin
            var =
-              func(arg1, arg2, arg3) *
+              func(
+                 arg1,
+                 arg2,
+                 arg3,
+              ) *
               num
         end"""
-        @test fmt(str, 3, 30) == str
-
-        str = """
-        begin
-           var =
-              func(arg1, arg2, arg3) * num
-        end"""
-        @test fmt(str, 3, 34) == str
-
-        str = """
-        begin
-           var = func(arg1, arg2, arg3) * num
-        end"""
-        @test fmt(str, 3, 37) == str
+        @test fmt(str, 3, 1) == str_
 
         str = """
         begin
@@ -3319,9 +3322,10 @@ end
         begin
             weights = Dict(
                 (file, i) => w for (file, subject) in subjects
-                for (i, w) in enumerate(
-                    weightfn.(eachrow(subject.events)),
-                )
+                for (
+                    i,
+                    w,
+                ) in enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 60) == str
@@ -3331,9 +3335,10 @@ end
             weights = Dict(
                 (file, i) => w
                 for (file, subject) in subjects
-                for (i, w) in enumerate(
-                    weightfn.(eachrow(subject.events)),
-                )
+                for (
+                    i,
+                    w,
+                ) in enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 50) == str

@@ -58,11 +58,14 @@ is_comma(x::PTree) =
 is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
-    (x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON) || x.typ === CSTParser.ColonOpCall
+    (
+     x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON
+    ) || x.typ === CSTParser.ColonOpCall
 
-is_lazy_op(x) = x.typ === CSTParser.BinaryOpCall && (
-    x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND
-)
+is_lazy_op(x) =
+    x.typ === CSTParser.BinaryOpCall && (
+        x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND
+    )
 
 # f a function which returns a bool
 function parent_is(x, f; ignore_typs = [])
@@ -1217,17 +1220,20 @@ function p_kw(x, s)
     t
 end
 
-closing_punc_type(x) = x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
+closing_punc_type(x) =
+    x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
     x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
     x.typ === CSTParser.Curly || x.typ === CSTParser.Comprehension ||
     x.typ === CSTParser.MacroCall || x.typ === CSTParser.InvisBrackets ||
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
-block_type(x::CSTParser.EXPR) = x.typ === CSTParser.If ||
+block_type(x::CSTParser.EXPR) =
+    x.typ === CSTParser.If ||
     x.typ === CSTParser.Do || x.typ === CSTParser.Try || x.typ === CSTParser.For ||
     x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
 
-nest_rhs(x::CSTParser.EXPR) = block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
+nest_rhs(x::CSTParser.EXPR) =
+    block_type(x) || x.typ === CSTParser.ConditionalOpCall ||
     x.typ === CSTParser.ChainOpCall || x.typ === CSTParser.Comparison || (
         x.typ === CSTParser.BinaryOpCall && x[2].kind !== Tokens.COLON
     )
@@ -1235,7 +1241,9 @@ nest_rhs(x::CSTParser.EXPR) = block_type(x) || x.typ === CSTParser.ConditionalOp
 nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1 && nest_rhs(x[3])
 
 unnestable_arg(x) =
-    closing_punc_type(x) || x.typ === CSTParser.StringH || x.typ === CSTParser.LITERAL
+    closing_punc_type(x) || x.typ === CSTParser.StringH || x.typ === CSTParser.LITERAL || (
+        x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.DOT
+    )
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
@@ -1365,7 +1373,8 @@ function p_wherecall(x, s)
 
     nest = length(CSTParser.get_where_params(x)) > 0
     # nest = !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
-    add_braces = !CSTParser.is_lbrace(x.args[3]) &&
+    add_braces =
+        !CSTParser.is_lbrace(x.args[3]) &&
         x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
 
     add_braces && add_node!(
