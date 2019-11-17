@@ -549,11 +549,21 @@ function p_literal(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, loc[2]-1, 0, nothing, PTree[], Ref(x), false)
+    t = PTree(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, PTree[], Ref(x), false)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, sidx-1, length(l), l, nothing, nothing, false)
+        tt = PTree(
+            CSTParser.LITERAL,
+            ln,
+            ln,
+            sidx - 1,
+            length(l),
+            l,
+            nothing,
+            nothing,
+            false,
+        )
         add_node!(t, tt, s)
     end
     t
@@ -584,11 +594,21 @@ function p_stringh(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(x, loc[2]-1)
+    t = PTree(x, loc[2] - 1)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(CSTParser.LITERAL, ln, ln, sidx-1, length(l), l, nothing, nothing, false)
+        tt = PTree(
+            CSTParser.LITERAL,
+            ln,
+            ln,
+            sidx - 1,
+            length(l),
+            l,
+            nothing,
+            nothing,
+            false,
+        )
         add_node!(t, tt, s)
     end
     t

@@ -41,10 +41,9 @@ function JLFacet(f::CFacet{T}) where {T}
     JLFacet{T}(JLPolygon.(c_polys), holes)
 end
 
-function convert_poly(x::Vector{T}) where {T<:Union{
-    NgonFace{N,Cint},
-    NTuple{N,Cint},
-}} where {N}
+function convert_poly(
+    x::Vector{T},
+) where {T<:Union{NgonFace{N,Cint},NTuple{N,Cint}}} where {N}
     return map(1:length(x)) do i
         CPolygon(pointer(x, i), N)
     end
