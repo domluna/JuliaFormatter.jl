@@ -300,7 +300,7 @@ end
 # "A where B"
 function n_wherecall!(x, s; extra_width = 0)
     line_margin = s.line_offset + length(x) + extra_width
-    # @debug "" s.line_offset x.typ line_margin extra_width length(x)
+    # @info "" s.line_offset x.typ line_margin extra_width length(x) x.force_nest line_margin > s.margin
     if line_margin > s.margin || x.force_nest
         line_offset = s.line_offset
         # after "A where "

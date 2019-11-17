@@ -80,40 +80,39 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(x::CSTParser.EXPR)
-    args = []
     if x.typ === CSTParser.MacroCall ||
        x.typ === CSTParser.TypedVcat || x.typ === CSTParser.Ref || x.typ === CSTParser.Curly
-        for i = 2:length(x.args)
-            arg = x.args[i]
-            CSTParser.ispunctuation(arg) && continue
-            if CSTParser.typof(arg) === CSTParser.Parameters
-                for j = 1:length(arg.args)
-                    parg = arg.args[j]
-                    CSTParser.ispunctuation(parg) && continue
-                    push!(args, parg)
-                end
-            else
-                push!(args, arg)
-            end
-        end
-        return args
+        return get_args(x.args[2:end])
     elseif x.typ === CSTParser.Parameters || x.typ === CSTParser.Braces ||
            x.typ === CSTParser.Vcat || x.typ === CSTParser.TupleH ||
            x.typ === CSTParser.Vect || x.typ === CSTParser.InvisBrackets
-        for i = 1:length(x.args)
-            arg = x.args[i]
-            CSTParser.ispunctuation(arg) && continue
-            push!(args, arg)
-        end
-        return args
+        return get_args(x.args)
     end
     CSTParser.get_args(x)
+end
+
+function get_args(args::Vector{CSTParser.EXPR})
+    args0 = CSTParser.EXPR[]
+    for arg in args
+        CSTParser.ispunctuation(arg) && continue
+        if CSTParser.typof(arg) === CSTParser.Parameters
+            for j = 1:length(arg.args)
+                parg = arg.args[j]
+                CSTParser.ispunctuation(parg) && continue
+                push!(args0, parg)
+            end
+        else
+            push!(args0, arg)
+        end
+    end
+    args0
 end
 
 function get_args(x::PTree)
     is_iterable(x) || error("get_args requires an iterable PTree type")
     sidx = findfirst(is_opener, x.nodes)
-    args = []
+    sidx === nothing && (sidx = 1)
+    args = PTree[]
     for i = sidx:length(x.nodes)
         arg = x.nodes[i]
         arg.typ === CSTParser.PUNCTUATION && continue
@@ -1389,7 +1388,9 @@ function p_wherecall(x, s)
     add_node!(t, Placeholder(0), s)
 
     nest = length(CSTParser.get_where_params(x)) > 0
-    # nest = !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
+    args = get_args(x.args[3:end])
+    # nest = length(args) > 0 && !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
+    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
         !CSTParser.is_lbrace(x.args[3]) &&
         x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly

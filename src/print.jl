@@ -68,7 +68,7 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
                nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
-                write(io, repeat(" ", nodes[i+1].indent))
+                write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
                 write(io, ws)
