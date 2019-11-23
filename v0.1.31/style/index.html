@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Code Style · JuliaFormatter</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">JuliaFormatter</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Code Style</a><ul class="internal"><li><a class="tocitem" href="#Prettify-1"><span>Prettify</span></a></li><li><a class="tocitem" href="#Nesting-1"><span>Nesting</span></a></li><li><a class="tocitem" href="#Print-1"><span>Print</span></a></li></ul></li><li><a class="tocitem" href="../transforms/">Syntax Transforms</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Code Style</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Code Style</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/domluna/JuliaFormatter.jl/blob/master/docs/src/style.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Style-1"><a class="docs-heading-anchor" href="#Style-1">Style</a><a class="docs-heading-anchor-permalink" href="#Style-1" title="Permalink"></a></h1><p><code>JuliaFormatter</code> consists of 3 stages:</p><ol><li>Prettify</li><li>Nest</li><li>Print</li></ol><h2 id="Prettify-1"><a class="docs-heading-anchor" href="#Prettify-1">Prettify</a><a class="docs-heading-anchor-permalink" href="#Prettify-1" title="Permalink"></a></h2><p>Normalizes the <code>.jl</code> file into a canonical format. All unnecessary whitespace is removed, code is properly indented, and everything which can fit on a single line, does.</p><p>This stage creates a <code>PTree</code>.</p><p><strong>(all examples assume indentation of 4 spaces)</strong></p><p>Examples:</p><p>Functions, macros, structs with no arguments are placed on a single line. This also applies to abstract and primitive types.</p><pre><code class="language-julia">function  foo
+ end
+
+-&gt;
+
+function foo end</code></pre><p>Functions calls <code>foo(args)</code>, tuples <code>(args)</code>, arrays <code>[args]</code>, braces <code>{args}</code>, struct or where definitions <code>Foo{args}</code> are placed on a single line. Unless the arguments are surrounded by <code>{}</code> each argument is separated by a single space.</p><pre><code class="language-julia">f(
+a,b
+,c )
+
+-&gt;
+
+f(a, b, c)</code></pre><p>Blocks and their bodies are properly indented.</p><pre><code class="language-julia">begin
+  a
+    b
+c
+       end
+
+-&gt;
+
+begin
+    a
+    b
+    c
+end
+
+# ---
+
+struct Foo{A, B}
+ a::A
+  b::B
+end
+
+-&gt;
+
+struct Foo{A,B}
+    a::A
+    b::B
+end</code></pre><p>Binary calls are placed on a single line. The vast majority of operators and arguments are separated by a single space with the exception of colons and operations inside an indexing expression.</p><pre><code class="language-julia">a+b
+
+-&gt; 
+
+a + b
+
+# ---
+
+a : a : c
+
+-&gt;
+
+a:b:c
+
+# ---
+
+list[a + b]
+
+-&gt;
+
+list[a+b]</code></pre><h2 id="Nesting-1"><a class="docs-heading-anchor" href="#Nesting-1">Nesting</a><a class="docs-heading-anchor-permalink" href="#Nesting-1" title="Permalink"></a></h2><p>Lines going over the maximum margin are split into multiple lines such that they fit inside the margin.</p><p>This stage mutates the <code>PTree</code> generated from <em>prettification</em>.</p><p>Most expressions are nested left to right with the exception of binary operations and conditionals which are nested right to left.</p><p>Examples:</p><pre><code class="language-julia">arg1 + arg2
+
+-&gt;
+
+arg1 + 
+arg2
+
+# ---
+
+cond ? e1 : e2
+
+-&gt;
+
+cond ? e1 :
+e2
+
+-&gt;
+
+cond ? 
+e1 :
+e2</code></pre><p>Short function definitions and certain blocks - <code>for</code>, <code>while</code>, <code>do</code>, <code>try</code>, <code>if</code>, or <code>let</code> with arguments are initially nested such that the RHS (after <code>=</code>) is placed on the next line.</p><pre><code class="language-julia">foo() = body
+
+-&gt;
+
+foo() =
+    body
+
+# ---
+
+foo = if this_is_a_condition
+  a
+else
+  b
+end
+
+-&gt;
+
+foo =
+    if this_is_a_condition
+        a
+    catch e
+        b
+    end</code></pre><p>Function Calls <code>f(...)</code> (also applies to <code>F{}</code>, <code>{}</code>, <code>()</code>, <code>[]</code>)</p><p>The arguments are indented. The arguments will never pass the initial opening punctuation, i.e. <code>(</code> by more than a single space. If a comment is detected in between arguments nesting will be forced.</p><pre><code class="language-julia">f(arg1, arg2, arg3)
+
+-&gt;
+
+f(
+  arg1,
+  arg2,
+  arg3,
+)
+
+# ---
+
+function longfunctionname_that_is_long(lots, of, args, even, more, args)
+    body
+end
+
+-&gt;
+
+function longfunctionname_that_is_long(
+    lots, 
+    of, 
+    args,
+    even, 
+    more, 
+    args,
+)
+    body
+end
+
+# ---
+
+var = foo(
+    a, b, # comment
+    c,
+)
+
+-&gt;
+
+var = foo(
+    a,
+    b, # comment
+    c,
+)</code></pre><h2 id="Print-1"><a class="docs-heading-anchor" href="#Print-1">Print</a><a class="docs-heading-anchor-permalink" href="#Print-1" title="Permalink"></a></h2><p>This stage prints the mutated <code>PTree</code>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../transforms/">Syntax Transforms »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 23 November 2019 19:20">Saturday 23 November 2019</span>. Using Julia version 1.2.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
