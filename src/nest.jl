@@ -182,18 +182,22 @@ function n_tuple!(x, s; extra_width = 0)
     # @info "ENTERING" idx x.typ s.line_offset length(x) extra_width
     opener = length(x.nodes) > 0 ? is_opener(x.nodes[1]) : false
     if idx !== nothing && (line_margin > s.margin || x.force_nest)
+        line_offset = s.line_offset
         if opener
             x.nodes[end].indent = x.indent
         end
-        line_offset = s.line_offset
-
-        x.indent += s.indent_size
-        if x.indent - s.line_offset > 1
-            x.indent = s.line_offset
-            opener && (x.indent += 1)
+        if x.typ !== CSTParser.Parameters && !(x.typ === CSTParser.TupleH && !opener)
+            x.indent += s.indent_size
         end
 
-        # @debug "DURING" x.indent s.line_offset x.typ
+        if x.typ === CSTParser.Vcat
+            if x.indent - s.line_offset > 1
+                x.indent = s.line_offset
+                opener && (x.indent += 1)
+            end
+        end
+
+        # @info "DURING" x.typ x.indent s.line_offset
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -227,44 +231,25 @@ function n_tuple!(x, s; extra_width = 0)
     end
 end
 
-function n_for!(x, s; extra_width = 0)
-    block_idx = findfirst(n -> !is_leaf(n), x.nodes)
-    if block_idx === nothing
-        nest!(x.nodes, s, x.indent, extra_width = extra_width)
-        return
-    end
-    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[block_idx].nodes)
-    nest!(x.nodes, s, x.indent, extra_width = extra_width)
-
-    # return if the argument block was nested
-    ph_idx !== nothing && x.nodes[3].nodes[ph_idx].typ === NEWLINE && return
-
-    idx = 5
-    n = x.nodes[idx]
-    if n.typ === NOTCODE && n.startline == n.endline
-        res = get(s.doc.comments, n.startline, (0, ""))
-        res == (0, "") && deleteat!(x.nodes, idx - 1)
-    end
-end
 
 function n_call!(x, s; extra_width = 0)
     line_margin = s.line_offset + length(x) + extra_width
     idx = findlast(n -> n.typ === PLACEHOLDER, x.nodes)
     # @info "ENTERING" x.typ s.line_offset length(x) extra_width s.margin x.nodes[1].val
     if idx !== nothing && (line_margin > s.margin || x.force_nest)
-        x.nodes[end].indent = x.indent
         line_offset = s.line_offset
-
-        caller_len = length(x.nodes[1])
-
+        x.nodes[end].indent = x.indent
         x.indent += s.indent_size
-        # @debug "ENTERING" x.indent s.line_offset x.typ
-        if x.indent - s.line_offset > caller_len + 1
-            x.indent = s.line_offset + caller_len + 1
-            x.nodes[end].indent = s.line_offset
+
+        if x.typ === CSTParser.TypedVcat
+            caller_len = length(x.nodes[1])
+            if x.indent - s.line_offset > caller_len + 1
+                x.indent = s.line_offset + caller_len + 1
+                x.nodes[end].indent = s.line_offset
+            end
         end
 
-        # @debug "DURING" x.indent s.line_offset x.typ
+        # @info "DURING" x.typ x.indent s.line_offset
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
@@ -506,7 +491,6 @@ function n_binarycall!(x, s; extra_width = 0)
                 x.nodes[i1] = Whitespace(1)
                 if has_eq
                     x.nodes[i2] = Placeholder(0)
-                    # x.indent -= s.indent_size
                     # recursive dedent
                     if arg2.typ === CSTParser.BinaryOpCall
                         dedent!(arg2.nodes[1], s, x.indent, line_margin)
@@ -570,6 +554,26 @@ function n_binarycall!(x, s; extra_width = 0)
                 nest!(n, s, extra_width = extra_width)
             end
         end
+    end
+end
+
+function n_for!(x, s; extra_width = 0)
+    block_idx = findfirst(n -> !is_leaf(n), x.nodes)
+    if block_idx === nothing
+        nest!(x.nodes, s, x.indent, extra_width = extra_width)
+        return
+    end
+    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes[block_idx].nodes)
+    nest!(x.nodes, s, x.indent, extra_width = extra_width)
+
+    # return if the argument block was nested
+    ph_idx !== nothing && x.nodes[3].nodes[ph_idx].typ === NEWLINE && return
+
+    idx = 5
+    n = x.nodes[idx]
+    if n.typ === NOTCODE && n.startline == n.endline
+        res = get(s.doc.comments, n.startline, (0, ""))
+        res == (0, "") && deleteat!(x.nodes, idx - 1)
     end
 end
 

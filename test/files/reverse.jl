@@ -49,14 +49,15 @@ unwrapquote(x::QuoteNode) = x.value
 
 is_literal_getproperty(ex) =
     (
-     iscall(ex, Base, :getproperty) ||
-     iscall(ex, Core, :getfield) || iscall(ex, Base, :getfield)
+        iscall(ex, Base, :getproperty) ||
+        iscall(ex, Core, :getfield) || iscall(ex, Base, :getfield)
     ) && ex.args[3] isa Union{QuoteNode,Integer}
 
 function instrument_getproperty!(ir, v, ex)
     is_literal_getproperty(ex) ?
     (
-     ir[v] = xcall(Zygote, :literal_getproperty, ex.args[2], Val(unwrapquote(ex.args[3])))
+        ir[v] =
+            xcall(Zygote, :literal_getproperty, ex.args[2], Val(unwrapquote(ex.args[3])))
     ) :
     ex
 end
@@ -78,13 +79,13 @@ is_literal_iterate(ex) =
 function instrument_iterate!(ir, v, ex)
     is_literal_iterate(ex) ?
     (
-     ir[v] = xcall(
-         Zygote,
-         :literal_indexed_iterate,
-         ex.args[2],
-         Val(unwrapquote(ex.args[3])),
-         ex.args[4:end]...,
-     )
+        ir[v] = xcall(
+            Zygote,
+            :literal_indexed_iterate,
+            ex.args[2],
+            Val(unwrapquote(ex.args[3])),
+            ex.args[4:end]...,
+        )
     ) :
     ex
 end

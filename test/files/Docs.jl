@@ -298,7 +298,7 @@ macroname(x::Expr) = Expr(x.head, x.args[1], macroname(x.args[end].value))
 
 isfield(@nospecialize x) =
     isexpr(x, :.) && (
-     isa(x.args[1], Symbol) || isfield(x.args[1])
+        isa(x.args[1], Symbol) || isfield(x.args[1])
     ) && (isa(x.args[2], QuoteNode) || isexpr(x.args[2], :quote))
 
 # @doc expression builders.
