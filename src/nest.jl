@@ -190,13 +190,6 @@ function n_tuple!(x, s; extra_width = 0)
             x.indent += s.indent_size
         end
 
-        if x.typ === CSTParser.Vcat
-            if x.indent - s.line_offset > 1
-                x.indent = s.line_offset
-                opener && (x.indent += 1)
-            end
-        end
-
         # @info "DURING" x.typ x.indent s.line_offset
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
@@ -240,14 +233,6 @@ function n_call!(x, s; extra_width = 0)
         line_offset = s.line_offset
         x.nodes[end].indent = x.indent
         x.indent += s.indent_size
-
-        if x.typ === CSTParser.TypedVcat
-            caller_len = length(x.nodes[1])
-            if x.indent - s.line_offset > caller_len + 1
-                x.indent = s.line_offset + caller_len + 1
-                x.nodes[end].indent = s.line_offset
-            end
-        end
 
         # @info "DURING" x.typ x.indent s.line_offset
         for (i, n) in enumerate(x.nodes)
