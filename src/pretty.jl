@@ -59,7 +59,7 @@ is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
 
 is_colon_op(x) =
     (
-     x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON
+        x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON
     ) || x.typ === CSTParser.ColonOpCall
 
 is_lazy_op(x) =
@@ -1265,7 +1265,7 @@ function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     nest_assignment(x) && !is_str(x[3]) && return true
     (
-     x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
+        x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
     ) && return false
     op = x[2]
     op.kind === Tokens.ANON_FUNC && return false

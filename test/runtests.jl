@@ -409,10 +409,10 @@ end
         if x
             if y
                 :(
-                  $lhs = fffffffffffffffffffffff(
-                      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
-                      yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,
-                  )
+                    $lhs = fffffffffffffffffffffff(
+                        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
+                        yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,
+                    )
                 )
             end
         end"""
@@ -773,33 +773,36 @@ end
 
         str = """
         begin
-            foo() = 
-                (
-                 one,
-                 x -> (true, false),
-                )
-        end"""
-        str = """
-        begin
             foo() = (
                 one,
                 x -> (true, false),
             )
         end"""
         @test fmt(str, 4, 32) == str
-        @test fmt(str, 4, 28) == str
+        @test_broken fmt(str, 4, 27) == str
+        str = """
+        begin
+            foo() = (
+                one,
+                x -> (
+                    true,
+                    false,
+                ),
+            )
+        end"""
+        @test fmt(str, 4, 26) == str
 
         str = """
         begin
                   foo() = (
                            one,
                            x -> (
-                                 true,
-                                 false,
+                                     true,
+                                     false,
                            ),
                   )
         end"""
-        @test fmt(str, 10, 39) == str
+        @test fmt(str, 10, 42) == str
 
         str = """
         ignored_f(f) = f in (
@@ -885,9 +888,9 @@ end
     @testset "macro call" begin
         str = """
         @f(
-           a,
-           b;
-           x
+            a,
+            b;
+            x
         )"""
         str_ = "@f(a, b; x)"
         @test fmt(str_) == str_
@@ -895,8 +898,8 @@ end
 
         str = """
         @f(
-           a;
-           x
+            a;
+            x
         )"""
         str_ = "@f(a; x)"
         @test fmt(str_) == str_
@@ -912,16 +915,16 @@ end
 
         str = """
         @f(;
-           a,
-           b
+            a,
+            b
         )"""
         @test fmt(str, 4, 1) == str
 
         str = """
         @f(
-           x;
-           a,
-           b
+            x;
+            a,
+            b
         )"""
         @test fmt(str, 4, 1) == str
     end
@@ -2311,8 +2314,8 @@ end
         ) where {
             A,
             F{
-              B,
-              C,
+                B,
+                C,
             },
         }
             10
@@ -2358,7 +2361,11 @@ end
         a, b, c, d"""
         @test fmt("a, b, c, d", 4, 10) == str
 
-        str = """a,\nb,\nc,\nd"""
+        str = """
+        a,
+        b,
+        c,
+        d"""
         @test fmt("a, b, c, d", 4, 9) == str
 
         str = """(a, b, c, d)"""
@@ -2366,10 +2373,10 @@ end
 
         str = """
         (
-         a,
-         b,
-         c,
-         d,
+            a,
+            b,
+            c,
+            d,
         )"""
         @test fmt("(a, b, c, d)", 4, 11) == str
 
@@ -2378,10 +2385,10 @@ end
 
         str = """
         {
-         a,
-         b,
-         c,
-         d,
+            a,
+            b,
+            c,
+            d,
         }"""
         @test fmt("{a, b, c, d}", 4, 11) == str
 
@@ -2390,10 +2397,10 @@ end
 
         str = """
         [
-         a,
-         b,
-         c,
-         d,
+            a,
+            b,
+            c,
+            d,
         ]"""
         @test fmt("[a, b, c, d]", 4, 11) == str
 
@@ -2469,18 +2476,18 @@ end
 
         str = """
         (
-         a; b; c
+          a; b; c
         )"""
-        @test fmt("(a;b;c)", 4, 1) == str
+        @test fmt("(a;b;c)", 2, 1) == str
 
         str = "(x for x = 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str
 
         str = """
         (
-         x for x = 1:10
+          x for x = 1:10
         )"""
-        @test fmt("(x   for x  in  1 : 10)", 4, 1) == str
+        @test fmt("(x   for x  in  1 : 10)", 2, 1) == str
 
         # indent for TupleH with no parens
         str = """
@@ -2515,27 +2522,27 @@ end
 
         str = """
         [
-         arg1,
+          arg1,
         ]"""
         str_ = "[arg1]"
         @test fmt(str_) == str_
-        @test fmt(str, 4, 1) == str
+        @test fmt(str, 2, 1) == str
 
         str = """
         {
-         arg1,
+          arg1,
         }"""
         str_ = "{arg1}"
         @test fmt(str_) == str_
-        @test fmt(str, 4, 1) == str
+        @test fmt(str, 2, 1) == str
 
         str = """
         (
-         arg1
+          arg1
         )"""
         str_ = "(arg1)"
         @test fmt(str_) == str_
-        @test fmt(str_, 4, 1) == str
+        @test fmt(str_, 2, 1) == str
 
 
 
@@ -2648,26 +2655,26 @@ end
 
         str = """
         (
-         a +
-         b +
-         c +
-         d
+          a +
+          b +
+          c +
+          d
         )"""
-        @test fmt(str_, 4, length(str_) - 1) == str
-        @test fmt(str_, 4, 1) == str
+        @test fmt(str_, 2, length(str_) - 1) == str
+        @test fmt(str_, 2, 1) == str
 
         str_ = "(a <= b <= c <= d)"
         @test fmt(str_, 4, length(str_)) == str_
 
         str = """
         (
-         a <=
-         b <=
-         c <=
-         d
+           a <=
+           b <=
+           c <=
+           d
         )"""
-        @test fmt(str_, 4, length(str_) - 1) == str
-        @test fmt(str_, 4, 1) == str
+        @test fmt(str_, 3, length(str_) - 1) == str
+        @test fmt(str_, 3, 1) == str
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/60
         str_ = """
@@ -2690,24 +2697,24 @@ end
         # any pairing of argument, kawrg, or param should nest
         str = """
         f(
-          arg;
-          a = 1,
+            arg;
+            a = 1,
         )"""
         @test fmt("f(arg;a=1)", 4, 1) == str
 
         str = """
         f(
-          arg,
-          a = 1,
+           arg,
+           a = 1,
         )"""
-        @test fmt("f(arg,a=1)", 4, 1) == str
+        @test fmt("f(arg,a=1)", 3, 1) == str
 
         str = """
         f(
-          a = 1;
-          b = 2,
+         a = 1;
+         b = 2,
         )"""
-        @test fmt("f(a=1; b=2)", 4, 1) == str
+        @test fmt("f(a=1; b=2)", 1, 1) == str
 
         str = """
         begin
@@ -2900,74 +2907,89 @@ end
         str_ = "f(a, @g(b, c), d)"
         str = """
         f(
-          a,
-          @g(b, c),
-          d,
+            a,
+            @g(b, c),
+            d,
         )"""
-        @test fmt(str_, 4, 11) == str
+        @test fmt(str_, 4, 13) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "f(a, @g(b, c), d)"
         str = """
         f(
-          a,
-          @g(
-             b,
-             c
-          ),
-          d,
+            a,
+            @g(
+                b,
+                c
+            ),
+            d,
         )"""
-        @test fmt(str_, 4, 10) == str
+        @test fmt(str_, 4, 12) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, (b, c), d)"
         str = """
         (
-         a,
-         (
-          b,
-          c,
-         ),
-         d,
+            a,
+            (b, c),
+            d,
         )"""
-        @test fmt(str_, 4, 7) == str
+        @test fmt(str_, 4, 11) == str
         @test fmt(str, 4, length(str)) == str_
+
+        str = """
+        (
+            a,
+            (
+                b,
+                c,
+            ),
+            d,
+        )"""
+        @test fmt(str_, 4, 10) == str
 
         str_ = "(a, {b, c}, d)"
         str = """
         (
-         a,
-         {
-          b,
-          c,
-         },
-         d,
+            a,
+            {b, c},
+            d,
         )"""
-        @test fmt(str_, 4, 6) == str
+        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 11) == str
+
+        str = """
+        (
+            a,
+            {
+                b,
+                c,
+            },
+            d,
+        )"""
+        @test fmt(str_, 4, 10) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, [b, c], d)"
         str = """
         (
-         a,
-         [
-          b,
-          c,
-         ],
-         d,
+            a,
+            [b, c],
+            d,
         )"""
-        @test fmt(str_, 4, 6) == str
-        @test fmt(str, 4, length(str)) == str_
+        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 11) == str
 
-        str_ = "a, (b, c), d"
         str = """
-        a,
         (
-         b,
-         c,
-        ),
-        d"""
-        @test fmt(str_, 4, 6) == str
+            a,
+            [
+                b,
+                c,
+            ],
+            d,
+        )"""
+        @test fmt(str_, 4, 10) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "a, (b, c), d"
@@ -2975,62 +2997,74 @@ end
         a,
         (b, c),
         d"""
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 7) == str
+
+        str = """
+        a,
+        (
+            b,
+            c,
+        ),
+        d"""
+        @test fmt(str_, 4, 6) == str
         @test fmt(str, 4, length(str)) == str_
 
+        str_ = "(var1,var2) && var3"
         str = """
         (
-         var1,
-         var2,
+            var1,
+            var2,
         ) && var3"""
-        @test fmt("(var1,var2) && var3", 4, 10) == str
+        @test fmt(str_, 4, 10) == str
 
         str = """
         (
-         var1,
-         var2,
+            var1,
+            var2,
         ) && var3"""
-        @test fmt("(var1,var2) && var3", 4, 19) == str
+        @test fmt(str_, 4, 19) == str
 
+        str_ = "(var1,var2) ? (var3,var4) : var5"
         str = """
         (var1, var2) ?
         (var3, var4) :
         var5"""
-        @test fmt("(var1,var2) ? (var3,var4) : var5", 4, 14) == str
+        @test fmt(str_, 4, 14) == str
 
         str = """
         (
-         var1,
-         var2,
+            var1,
+            var2,
         ) ?
         (
-         var3,
-         var4,
+            var3,
+            var4,
         ) :
         var5"""
-        @test fmt("(var1,var2) ? (var3,var4) : var5", 4, 13) == str
+        @test fmt(str_, 4, 13) == str
 
         str = """
         (var1, var2) ? (var3, var4) :
         var5"""
-        @test fmt("(var1,var2) ? (var3,var4) : var5", 4, 29) == str
+        @test fmt(str_, 4, 29) == str
 
         str = """
         (var1, var2) ?
         (var3, var4) : var5"""
-        @test fmt("(var1,var2) ? (var3,var4) : var5", 4, 28) == str
+        @test fmt(str_, 4, 28) == str
 
         str = """
         f(
-          var1::A,
-          var2::B,
+            var1::A,
+            var2::B,
         ) where {A,B}"""
         @test fmt("f(var1::A, var2::B) where {A,B}", 4, 30) == str
 
         str = """
         f(
-          var1::A,
-          var2::B,
+            var1::A,
+            var2::B,
         ) where {
             A,
             B,
@@ -3058,14 +3092,14 @@ end
 
         str_ = """
         foo(
-            a,
-            b,
-            c,
+              a,
+              b,
+              c,
         )::Rtype where {
-            A,
-            B,
+              A,
+              B,
         } = 10"""
-        @test fmt(str, 4, 18) == str_
+        @test fmt(str, 6, 18) == str_
 
         str = "keytype(::Type{<:AbstractDict{K,V}}) where {K,V} = K"
         @test fmt(str, 4, 52) == str
@@ -3129,11 +3163,11 @@ end
         str_ = "[1, 1]'"
         str = """
         [
-         1,
-         1,
+          1,
+          1,
         ]'"""
-        @test fmt(str, 4, length(str)) == str_
-        @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str, 2, length(str)) == str_
+        @test fmt(str_, 2, length(str_) - 1) == str
     end
 
     @testset "Trailing zeros" begin
@@ -3159,24 +3193,24 @@ end
     end
 
     # https://github.com/domluna/JuliaFormatter.jl/issues/77
-    @testset "issue 77" begin
+    @testset "matrices" begin
         str_ = """
-        [ a b Expr()
-        d e Expr()]"""
+        [ a b expr()
+        d e expr()]"""
         str = """
         [
-         a b Expr()
-         d e Expr()
+          a b expr()
+          d e expr()
         ]"""
-        @test fmt(str_) == str
+        @test fmt(str_, 2, 92) == str
 
         str_ = """
         T[ a b Expr()
         d e Expr()]"""
         str = """
         T[
-          a b Expr()
-          d e Expr()
+            a b Expr()
+            d e Expr()
         ]"""
         @test fmt(str_) == str
 
@@ -3185,21 +3219,21 @@ end
         d e Expr();]"""
         str = """
         [
-         a b Expr()
-         d e Expr()
+           a b Expr()
+           d e Expr()
         ]"""
-        @test fmt(str_) == str
+        @test fmt(str_, 3, 92) == str
         str_ = "[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
-        @test fmt(str_, 4, 1) == str
+        @test fmt(str_, 3, 1) == str
 
         str_ = """
         T[ a b Expr();
         d e Expr();]"""
         str = """
         T[
-          a b Expr()
-          d e Expr()
+            a b Expr()
+            d e Expr()
         ]"""
         @test fmt(str_) == str
 
@@ -3209,36 +3243,36 @@ end
 
         str = """
         [
-         0.0 0.0 0.0 1.0
-         0.0 0.0 0.1 1.0
-         0.0 0.0 0.2 1.0
-         0.0 0.0 0.3 1.0
-         0.0 0.0 0.4 1.0
-         0.0 0.0 0.5 1.0
-         0.0 0.0 0.6 1.0
-         0.0 0.0 0.7 1.0
-         0.0 0.0 0.8 1.0
-         0.0 0.0 0.9 1.0
-         0.0 0.0 1.0 1.0
-         0.0 0.0 0.0 1.0
-         0.0 0.1 0.1 1.0
-         0.0 0.2 0.2 1.0
-         0.0 0.3 0.3 1.0
-         0.0 0.4 0.4 1.0
-         0.0 0.5 0.5 1.0
-         0.0 0.6 0.6 1.0
-         0.0 0.7 0.7 1.0
-         0.0 0.8 0.8 1.0
-         0.0 0.9 0.9 1.0
-         0.0 1.0 1.0 1.0
-         0.0 0.0 0.0 1.0
-         0.1 0.1 0.1 1.0
-         0.2 0.2 0.2 1.0
-         0.3 0.3 0.3 1.0
-         0.4 0.4 0.4 1.0
-         0.5 0.5 0.5 1.0
+          0.0 0.0 0.0 1.0
+          0.0 0.0 0.1 1.0
+          0.0 0.0 0.2 1.0
+          0.0 0.0 0.3 1.0
+          0.0 0.0 0.4 1.0
+          0.0 0.0 0.5 1.0
+          0.0 0.0 0.6 1.0
+          0.0 0.0 0.7 1.0
+          0.0 0.0 0.8 1.0
+          0.0 0.0 0.9 1.0
+          0.0 0.0 1.0 1.0
+          0.0 0.0 0.0 1.0
+          0.0 0.1 0.1 1.0
+          0.0 0.2 0.2 1.0
+          0.0 0.3 0.3 1.0
+          0.0 0.4 0.4 1.0
+          0.0 0.5 0.5 1.0
+          0.0 0.6 0.6 1.0
+          0.0 0.7 0.7 1.0
+          0.0 0.8 0.8 1.0
+          0.0 0.9 0.9 1.0
+          0.0 1.0 1.0 1.0
+          0.0 0.0 0.0 1.0
+          0.1 0.1 0.1 1.0
+          0.2 0.2 0.2 1.0
+          0.3 0.3 0.3 1.0
+          0.4 0.4 0.4 1.0
+          0.5 0.5 0.5 1.0
         ]"""
-        @test fmt(str) == str
+        @test fmt(str, 2, 92) == str
     end
 
     @testset "multi-variable `for` and `let`" begin
@@ -3420,11 +3454,11 @@ end
         str = """
         some_function(
             (((
-               very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
-                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
-                   very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
-               )
-               for x in xs
+                very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
+                    very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+                    very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
+                )
+                for x in xs
             ))),
             another_argument,
         )"""
@@ -3456,9 +3490,9 @@ some_function(
         str = """
         begin
                 if ((
-                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
-                     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+                        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                 ))
                         nothing
                 end
