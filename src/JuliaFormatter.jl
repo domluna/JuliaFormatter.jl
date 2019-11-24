@@ -148,7 +148,7 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" lit_strings
+    # @info "" comments
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 

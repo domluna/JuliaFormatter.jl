@@ -98,6 +98,7 @@ function print_notcode(io::IOBuffer, x::PTree, s::State)
     for l = x.startline:x.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
         v == "" && continue
+        v == "\n" && (ws = 0)
         if l == x.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end
