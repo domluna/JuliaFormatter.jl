@@ -1282,8 +1282,6 @@ function nestable(x::CSTParser.EXPR)
     if x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
         return false
     end
-    x[2].kind === Tokens.ANON_FUNC && return false
-    x[2].kind === Tokens.PAIR_ARROW && return false
     CSTParser.precedence(x[2]) in (1, 6) && return false
     true
 end

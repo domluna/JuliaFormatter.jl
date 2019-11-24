@@ -2572,11 +2572,16 @@ end
                   Symbol,
                   Any,
              }(
-                  :numberofpointattributes => NAttributes,
-                  :numberofpointmtrs => NMTr,
-                  :numberofcorners => NSimplex,
-                  :firstnumber => Cint(1),
-                  :mesh_dim => Cint(3),
+                  :numberofpointattributes =>
+                       NAttributes,
+                  :numberofpointmtrs =>
+                       NMTr,
+                  :numberofcorners =>
+                       NSimplex,
+                  :firstnumber =>
+                       Cint(1),
+                  :mesh_dim =>
+                       Cint(3),
              )"""
         @test fmt(str_, 5, 1) == str
 
