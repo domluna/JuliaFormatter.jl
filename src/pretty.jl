@@ -1283,31 +1283,6 @@ function nestable(x::CSTParser.EXPR)
     op.kind === Tokens.ANON_FUNC && return false
     op.kind === Tokens.PAIR_ARROW && return false
     CSTParser.precedence(op) in (1, 6) && return false
-    if op.kind == Tokens.LAZY_AND || op.kind == Tokens.LAZY_OR
-        arg = x.args[1]
-        while arg.typ === CSTParser.InvisBrackets
-            arg = arg.args[2]
-        end
-        if arg.typ === CSTParser.BinaryOpCall
-            op = arg.args[2].kind
-            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && return true
-        end
-
-        arg = x.args[3]
-        while arg.typ === CSTParser.InvisBrackets
-            arg = arg.args[2]
-        end
-        if arg.typ === CSTParser.BinaryOpCall
-            op = arg.args[2].kind
-            (op == Tokens.LAZY_AND || op == Tokens.LAZY_OR) && return true
-        end
-
-        return parent_is(
-            x,
-            x -> x.typ in (CSTParser.If, CSTParser.BinaryOpCall, CSTParser.While),
-            ignore_typs = [CSTParser.InvisBrackets],
-        )
-    end
     true
 end
 

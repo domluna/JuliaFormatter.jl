@@ -2596,8 +2596,10 @@ end
 
         str = """
         begin
-            a && b
-            a || b
+            a &&
+            b
+            a ||
+            b
         end"""
         @test fmt(str, 4, 1) == str
 
@@ -3026,18 +3028,25 @@ end
 
         str_ = "(var1,var2) && var3"
         str = """
-        (
-            var1,
-            var2,
-        ) && var3"""
-        @test fmt(str_, 4, 10) == str
+        (var1, var2) &&
+        var3"""
+        @test fmt(str_, 4, 19) == str
+        @test fmt(str_, 4, 15) == str
 
         str = """
         (
             var1,
             var2,
         ) && var3"""
-        @test fmt(str_, 4, 19) == str
+        @test fmt(str_, 4, 14) == str
+
+        str = """
+        (
+            var1,
+            var2,
+        ) &&
+        var3"""
+        @test fmt(str_, 4, 1) == str
 
         str_ = "(var1,var2) ? (var3,var4) : var5"
         str = """
