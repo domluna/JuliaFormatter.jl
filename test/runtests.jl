@@ -3642,6 +3642,15 @@ some_function(
             @test X <: Y
         end"""
         @test fmt(str, 4, 90) == str
+
+        str = """
+        ys = map(xs) do x
+            return (
+                very_very_very_very_very_very_very_very_very_very_very_long_expr,
+                very_very_very_very_very_very_very_very_very_very_very_long_expr,
+            )
+        end"""
+        @test fmt(str) == str
     end
 
 end

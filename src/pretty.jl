@@ -1263,9 +1263,8 @@ is_iterable(x) =
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 is_block(x::CSTParser.EXPR) =
-    x.typ === CSTParser.If ||
-    x.typ === CSTParser.Do || x.typ === CSTParser.Try || x.typ === CSTParser.For ||
-    x.typ === CSTParser.While || (x.typ === CSTParser.Let && length(x) > 3)
+    x.typ === CSTParser.If || x.typ === CSTParser.Do || x.typ === CSTParser.Try ||
+    x.typ === CSTParser.For || x.typ === CSTParser.While || x.typ === CSTParser.Let
 
 nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1
 
