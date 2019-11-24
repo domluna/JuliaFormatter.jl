@@ -76,9 +76,9 @@ function dedent!(x::PTree, s::State)
         return
     end
     x.typ === CSTParser.ConditionalOpCall && return
-    x.typ === CSTParser.Comparison && return
-    x.typ === CSTParser.ChainOpCall && return
-    x.typ === CSTParser.BinaryOpCall && return
+    # x.typ === CSTParser.Comparison && return
+    # x.typ === CSTParser.ChainOpCall && return
+    # x.typ === CSTParser.BinaryOpCall && return
     x.typ === CSTParser.StringH && return
 
     # dedent
@@ -455,7 +455,10 @@ function n_binarycall!(x, s)
         cst = x.ref[]
 
         has_eq = CSTParser.defines_function(cst) || nest_assignment(cst)
-        if has_eq
+        has_arrow = cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC
+        indent_nest = has_eq || has_arrow
+
+        if indent_nest
             s.line_offset = x.indent + s.indent_size
             x[i2] = Whitespace(s.indent_size)
             add_indent!(x[end], s, s.indent_size)
@@ -486,9 +489,9 @@ function n_binarycall!(x, s)
             line_margin = s.line_offset
             if (
                 arg2.typ === CSTParser.BinaryOpCall && (
-                    !(is_lazy_op(cst) && !has_eq) && cst[2].kind !== Tokens.IN
+                    !(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN
                 )
-            ) || arg2.typ === CSTParser.UnaryOpCall
+            ) || arg2.typ === CSTParser.UnaryOpCall || arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison #|| arg2.typ === CSTParser.ConditionalOpCall
                 line_margin += length(x[end])
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)
@@ -502,11 +505,11 @@ function n_binarycall!(x, s)
                 line_margin += rw
             end
 
-            # @info "" arg2.typ has_eq s.line_offset line_margin x.extra_margin length(x[end])
+            # @info "" arg2.typ indent_nest s.line_offset line_margin x.extra_margin length(x[end])
 
             if line_margin + x.extra_margin <= s.margin
                 x[i1] = Whitespace(1)
-                if has_eq
+                if indent_nest
                     x[i2] = Whitespace(0)
                     # s.line_offset = line_offset
                     walk(dedent!, arg2, s)
