@@ -1656,15 +1656,13 @@ end
 # Import, Export, Using, ImportAll
 function p_import(x, s)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s), s)
+    add_node!(t, pretty(x[1], s), s)
     add_node!(t, Whitespace(1), s)
+
     for (i, a) in enumerate(x.args[2:end])
-        if CSTParser.is_comma(a)
+        if CSTParser.is_comma(a) || CSTParser.is_colon(a)
             add_node!(t, pretty(a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif CSTParser.is_colon(a)
-            add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
         end

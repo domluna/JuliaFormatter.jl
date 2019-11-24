@@ -194,15 +194,12 @@ function n_import!(x, s)
     line_margin = s.line_offset + length(x) + x.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && (line_margin > s.margin || x.force_nest)
-        sidx = findfirst(is_colon, x.nodes)
-        if sidx === nothing
-            sidx = 2
-        else
-            # for the WHITESPACE node after the colon
-            sidx += 1
+        x.indent += s.indent_size
+        if x.indent + sum(length.(x[idx+1:end])) <= s.margin
+            x[idx] = Newline(length=x[idx].len)
+            walk(reset_line_offset!, x, s)
+            return
         end
-        x.indent = s.line_offset + sum(length.(x[1:sidx]))
-        s.line_offset = x.indent
 
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
