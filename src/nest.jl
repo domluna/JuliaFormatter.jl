@@ -483,15 +483,23 @@ function n_binarycall!(x, s)
             arg2.typ === CSTParser.Block && (arg2 = arg2[1])
             cst = arg2.ref[]
 
+            line_margin = s.line_offset
             if (
                 arg2.typ === CSTParser.BinaryOpCall && (
                     !(is_lazy_op(cst) && !has_eq) && cst[2].kind !== Tokens.IN
                 )
-            ) || arg2.typ === CSTParser.UnaryOpCall || is_block(cst)
-                line_margin = s.line_offset + 1 + length(x[end])
+            ) || arg2.typ === CSTParser.UnaryOpCall
+                line_margin += length(x[end])
+            elseif is_block(cst)
+                idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)
+                if idx === nothing
+                    line_margin += length(x[end])
+                else
+                    line_margin += sum(length.(arg2[1:idx-1]))
+                end
             else
                 rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
-                line_margin = s.line_offset + rw
+                line_margin += rw
             end
 
             # @info "" arg2.typ has_eq s.line_offset line_margin x.extra_margin length(x[end])
