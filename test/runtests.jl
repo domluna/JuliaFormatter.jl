@@ -779,7 +779,7 @@ end
             )
         end"""
         @test fmt(str, 4, 32) == str
-        @test_broken fmt(str, 4, 27) == str
+        @test fmt(str, 4, 27) == str
         str = """
         begin
             foo() = (
@@ -791,18 +791,6 @@ end
             )
         end"""
         @test fmt(str, 4, 26) == str
-
-        str = """
-        begin
-                  foo() = (
-                           one,
-                           x -> (
-                                     true,
-                                     false,
-                           ),
-                  )
-        end"""
-        @test fmt(str, 10, 42) == str
 
         str = """
         ignored_f(f) = f in (
@@ -3567,6 +3555,33 @@ some_function(
         end"""
         @test fmt(str_, 4, 9) == str
         @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "unnest" begin
+        str = """
+        let X = LinearAlgebra.Symmetric{T,S} where {S<:(AbstractArray{U,2} where {U<:T})} where {T},
+            Y = Union{
+                LinearAlgebra.Hermitian{T,S} where {S<:(AbstractArray{U,2} where {U<:T})} where T,
+                LinearAlgebra.Symmetric{T,S} where {S<:(AbstractArray{U,2} where {U<:T})} where T,
+            }
+
+            @test X <: Y
+        end"""
+        @test fmt(str, 4, 92) == str
+
+        str = """
+        let X = LinearAlgebra.Symmetric{
+                T,
+                S,
+            } where {S<:(AbstractArray{U,2} where {U<:T})} where {T},
+            Y = Union{
+                LinearAlgebra.Hermitian{T,S} where {S<:(AbstractArray{U,2} where {U<:T})} where T,
+                LinearAlgebra.Symmetric{T,S} where {S<:(AbstractArray{U,2} where {U<:T})} where T,
+            }
+
+            @test X <: Y
+        end"""
+        @test fmt(str, 4, 90) == str
     end
 
 end
