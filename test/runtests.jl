@@ -2413,24 +2413,41 @@ end
         # I'm an importer/exporter
         str = """
         export a,
-               b"""
+            b"""
         @test fmt("export a,b", 4, 1) == str
 
         str = """
         using a,
-              b"""
-        @test fmt("using a,b", 4, 1) == str
+          b"""
+        @test fmt("using a,b", 2, 1) == str
+
+        str_ = "using M1.M2.M3: bar, baz"
+        str = """
+        using M1.M2.M3:
+            bar, baz"""
+        @test fmt(str, 4, 24) == str_
+        @test fmt(str_, 4, 23) == str
+        @test fmt(str_, 4, 12) == str
 
         str = """
-        using M: a,
-                 b"""
-        @test fmt("using M:a,b", 4, 1) == str
+        using M1.M2.M3:
+            bar,
+            baz"""
+        @test fmt(str_, 4, 11) == str
+
+        str_ = "import M1.M2.M3: bar, baz"
+        str = """
+        import M1.M2.M3:
+            bar, baz"""
+        @test fmt(str, 4, 25) == str_
+        @test fmt(str_, 4, 24) == str
+        @test fmt(str_, 4, 12) == str
 
         str = """
-        import M1.M2.M3: a,
-                         b"""
-        @test fmt("import M1.M2.M3:a,b", 4, 1) == str
-
+        import M1.M2.M3:
+            bar,
+            baz"""
+        @test fmt(str_, 4, 11) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)
@@ -2875,7 +2892,9 @@ end
         s = run_nest(str, length(str))
         @test s.line_offset == length(str)
         s = run_nest(str, length(str) - 1)
-        @test s.line_offset == 12
+        @test s.line_offset == 74
+        s = run_nest(str, 73)
+        @test s.line_offset == 9
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,
@@ -2889,6 +2908,13 @@ end
                :mesh_dim => Cint(3),)"""
         s = run_nest(str, 80)
         @test s.line_offset == 1
+
+        str = "import A: foo, bar, baz"
+        s = run_nest(str, 22)
+        @test s.line_offset == 17
+        s = run_nest(str, 16)
+        @test s.line_offset == 7
+
     end
 
     @testset "additional length" begin
