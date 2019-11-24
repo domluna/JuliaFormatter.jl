@@ -3097,12 +3097,46 @@ end
         @test fmt(str, 4, 33) == str_
 
         str_ = """
-        foo(a, b, c)::Rtype where {
+        foo(
+            a,
+            b,
+            c,
+        )::Rtype where {A,B} = 10"""
+        @test fmt(str, 4, 32) == str_
+        @test fmt(str, 4, 25) == str_
+
+        str_ = """
+        foo(
+            a,
+            b,
+            c,
+        )::Rtype where {A,B} =
+            10"""
+        @test fmt(str, 4, 24) == str_
+        @test fmt(str, 4, 22) == str_
+
+        str_ = """
+        foo(
+            a,
+            b,
+            c,
+        )::Rtype where {
             A,
             B,
         } = 10"""
-        @test fmt(str, 4, 32) == str_
-        @test fmt(str, 4, 19) == str_
+        @test fmt(str, 4, 21) == str_
+
+        str_ = """
+        foo(
+          a,
+          b,
+          c,
+        )::Rtype where {
+          A,
+          B,
+        } =
+          10"""
+        @test fmt(str, 2, 1) == str_
 
         str_ = """
         foo(

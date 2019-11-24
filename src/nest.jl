@@ -537,19 +537,19 @@ function n_binarycall!(x, s)
         idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, x.nodes)
         return_width = 0
         if idx !== nothing && idx > 1
-            return_width = length(x[idx][1]) + length(x[2])
+            return_width = length(x[idx]) + length(x[2])
         elseif idx === nothing
             return_width, _ = length_to(x, [NEWLINE], start = 2)
         end
 
-        # @info "" return_width
-        # @info "" s.line_offset return_width length(x[1])
+        # @info "" idx map(n -> n.typ, x.nodes)
+        # @info "" s.line_offset length(x[1]) return_width x.extra_margin
 
         for (i, n) in enumerate(x.nodes)
             if n.typ === NEWLINE
                 s.line_offset = x.indent
             elseif i == 1
-                n.extra_margin = return_width
+                n.extra_margin = return_width + x.extra_margin
                 nest!(n, s)
             elseif i == idx
                 n.extra_margin = x.extra_margin
