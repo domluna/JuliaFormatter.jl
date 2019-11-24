@@ -296,10 +296,7 @@ function adjoint(pr::Primal)
             if haskey(pr.pullbacks, v)
                 g = push!(
                     rb,
-                    stmt(
-                        Expr(:call, alpha(pr.pullbacks[v]), grad(v)),
-                        line = b[v].line,
-                    ),
+                    stmt(Expr(:call, alpha(pr.pullbacks[v]), grad(v)), line = b[v].line),
                 )
                 for (i, x) in enumerate(ex.args)
                     x isa Variable || continue
@@ -337,7 +334,7 @@ function adjoint(pr::Primal)
             Δ = push!(
                 rb,
                 pr.varargs == nothing ? xcall(Zygote, :tuple, gs...) :
-                xcall(Zygote, :tuple_va, Val(pr.varargs), gs...),
+                    xcall(Zygote, :tuple_va, Val(pr.varargs), gs...),
             )
             branches(rb)[1].args[1] = Δ
         end

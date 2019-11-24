@@ -22,40 +22,51 @@ mutable struct PTree
     nodes::Union{Nothing,Vector{PTree}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
     force_nest::Bool
+    extra_margin::Int
 end
 
 PTree(x::CSTParser.EXPR, indent::Integer) =
-    PTree(x.typ, -1, -1, indent, 0, nothing, PTree[], Ref(x), false)
+    PTree(x.typ, -1, -1, indent, 0, nothing, PTree[], Ref(x), false, 0)
 
 function PTree(x::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
-    PTree(x.typ, startline, endline, 0, length(val), val, nothing, Ref(x), false)
+    PTree(x.typ, startline, endline, 0, length(val), val, nothing, Ref(x), false, 0)
 end
 
 function PTree(x::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    PTree(x, startline, endline, 0, length(val), val, nothing, nothing, false)
+    PTree(x, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
 end
 
-Newline() = PTree(NEWLINE, -1, -1, 0, 0, "\n", nothing, nothing, false)
-Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
-TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false)
-TrailingSemicolon() = PTree(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false)
-Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false)
-Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false)
+function Base.setindex!(pt::PTree, node::PTree, ind::Int)
+    # pt.len = pt.len - pt.nodes[ind].len + node.len
+    pt.nodes[ind] = node
+end
+Base.getindex(pt::PTree, inds...) = pt.nodes[inds...]
+Base.lastindex(pt::PTree) = length(pt.nodes)
+
+
+Newline(; length = 0, force_nest = false) =
+    PTree(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
+Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
+TrailingSemicolon() =
+    PTree(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
+Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 Notcode(startline, endline) =
-    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false)
-InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false)
+    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
+InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
 
-Base.length(x::PTree) = x.len
+Base.length(pt::PTree) = pt.len
 
-is_leaf(x::PTree) = x.nodes === nothing
-empty_start(x::PTree) = x.startline == 1 && x.endline == 1 && x.val == ""
+is_leaf(pt::PTree) = pt.nodes === nothing
+empty_start(pt::PTree) = pt.startline == 1 && pt.endline == 1 && pt.val == ""
 
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 is_colon(x) = x.typ === CSTParser.OPERATOR && x.val == ":"
-is_comma(x::PTree) =
-    (x.typ === CSTParser.PUNCTUATION && x.val == ",") || x.typ === TRAILINGCOMMA
-is_comment(x::PTree) = x.typ === INLINECOMMENT || x.typ === NOTCODE
+is_comma(pt::PTree) =
+    (pt.typ === CSTParser.PUNCTUATION && pt.val == ",") || pt.typ === TRAILINGCOMMA
+is_comment(pt::PTree) = pt.typ === INLINECOMMENT || pt.typ === NOTCODE
 
 is_colon_op(x) =
     (
@@ -68,8 +79,8 @@ is_lazy_op(x) =
     )
 
 # f a function which returns a bool
-function parent_is(x, f; ignore_typs = [])
-    p = x.parent
+function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
+    p = cst.parent
     p === nothing && return false
     while p !== nothing && p.typ in ignore_typs
         p = p.parent
@@ -225,17 +236,17 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             hs = hascomment(s.doc, current_line)
             hs && add_node!(t, InlineComment(current_line), s)
             if nt !== PLACEHOLDER
-                add_node!(t, Newline(), s)
+                add_node!(t, Newline(force_nest = true), s)
             elseif hs && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
-            add_node!(t, Newline(), s)
+            add_node!(t, Newline(force_nest = true), s)
         elseif !join_lines
             hascomment(s.doc, current_line) && add_node!(t, InlineComment(current_line), s)
-            add_node!(t, Newline(), s)
+            add_node!(t, Newline(force_nest = true), s)
         elseif nt === PLACEHOLDER &&
                current_line != n.startline && hascomment(s.doc, current_line)
             t.force_nest = true
@@ -572,7 +583,7 @@ function p_literal(x, s)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, PTree[], Ref(x), false)
+    t = PTree(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, PTree[], Ref(x), false, 0)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
@@ -586,6 +597,7 @@ function p_literal(x, s)
             nothing,
             nothing,
             false,
+            0,
         )
         add_node!(t, tt, s)
     end
@@ -631,6 +643,7 @@ function p_stringh(x, s)
             nothing,
             nothing,
             false,
+            0,
         )
         add_node!(t, tt, s)
     end

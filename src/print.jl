@@ -89,7 +89,7 @@ function print_stringh(io::IOBuffer, x::PTree, s::State)
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference
     # +1 since the character is 1 space after the indent
-    x.indent = max(x.nodes[1].indent + 1 - diff, 0)
+    x.indent = max(x[1].indent + 1 - diff, 0)
     print_tree(io, x, s)
 end
 
