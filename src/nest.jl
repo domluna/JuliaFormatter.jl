@@ -76,9 +76,6 @@ function dedent!(x::PTree, s::State)
         return
     end
     x.typ === CSTParser.ConditionalOpCall && return
-    # x.typ === CSTParser.Comparison && return
-    # x.typ === CSTParser.ChainOpCall && return
-    # x.typ === CSTParser.BinaryOpCall && return
     x.typ === CSTParser.StringH && return
 
     # dedent
@@ -491,7 +488,8 @@ function n_binarycall!(x, s)
                 arg2.typ === CSTParser.BinaryOpCall && (
                     !(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN
                 )
-            ) || arg2.typ === CSTParser.UnaryOpCall || arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison #|| arg2.typ === CSTParser.ConditionalOpCall
+            ) || arg2.typ === CSTParser.UnaryOpCall ||
+                 arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison
                 line_margin += length(x[end])
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)
@@ -506,12 +504,10 @@ function n_binarycall!(x, s)
             end
 
             # @info "" arg2.typ indent_nest s.line_offset line_margin x.extra_margin length(x[end])
-
             if line_margin + x.extra_margin <= s.margin
                 x[i1] = Whitespace(1)
                 if indent_nest
                     x[i2] = Whitespace(0)
-                    # s.line_offset = line_offset
                     walk(dedent!, arg2, s)
                 end
             end
