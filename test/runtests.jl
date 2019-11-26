@@ -2675,6 +2675,7 @@ end
         @test fmt(str_, 2, length(str_) - 1) == str
         @test fmt(str_, 2, 1) == str
 
+
         str_ = "(a <= b <= c <= d)"
         @test fmt(str_, 4, length(str_)) == str_
 
@@ -2687,6 +2688,24 @@ end
         )"""
         @test fmt(str_, 3, length(str_) - 1) == str
         @test fmt(str_, 3, 1) == str
+
+        # Don't join the first argument in a comparison
+        # or chainopcall node, even if possible.
+        str_ = "const a = arg1 + arg2 + arg3"
+        str = """
+        const a =
+            arg1 +
+            arg2 +
+            arg3"""
+        @test fmt(str_, 4, 18) == str
+
+        str_ = "const a = arg1 == arg2 == arg3"
+        str = """
+        const a =
+            arg1 ==
+            arg2 ==
+            arg3"""
+        @test fmt(str_, 4, 19) == str
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/60
         str_ = """
