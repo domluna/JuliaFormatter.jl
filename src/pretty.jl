@@ -78,6 +78,20 @@ is_lazy_op(x) =
         x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND
     )
 
+function is_multiline(pt::PTree)
+    pt.typ === CSTParser.StringH && return true
+    if pt.typ === CSTParser.x_Str && pt[2].typ === CSTParser.StringH
+        return true
+    elseif pt.typ === CSTParser.x_Cmd && pt[2].typ === CSTParser.StringH
+        return true
+    elseif pt.typ === CSTParser.Vcat && pt.endline > pt.startline
+        return true
+    elseif pt.typ === CSTParser.TypedVcat && pt.endline > pt.startline
+        return true
+    end
+    false
+end
+
 # f a function which returns a bool
 function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
     p = cst.parent
@@ -278,7 +292,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         # only considered "in the positive" when it's past
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
-    elseif n.typ === CSTParser.StringH
+    elseif is_multiline(n)
         is_iterable(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
         t.len += length(n)
     elseif max_padding >= 0
