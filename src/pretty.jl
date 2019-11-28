@@ -1279,9 +1279,6 @@ unnestable_arg(x) =
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     nest_assignment(x) && !is_str(x[3]) && return true
-    if x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
-        return false
-    end
     CSTParser.precedence(x[2]) in (1, 6) && return false
     true
 end

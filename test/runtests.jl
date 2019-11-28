@@ -3609,6 +3609,18 @@ some_function(
         begin
             if foo
             elseif baz
+            elseif (a || b) &&
+                   c
+            elseif bar
+            else
+            end
+        end"""
+        @test fmt(str_, 4, 23) == str
+
+        str = """
+        begin
+            if foo
+            elseif baz
             elseif (
                 a || b
             ) && c
@@ -3616,7 +3628,6 @@ some_function(
             else
             end
         end"""
-        @test fmt(str_, 4, 23) == str
         @test fmt(str_, 4, 15) == str
 
         str = """
@@ -3641,7 +3652,8 @@ some_function(
             elseif (
                 a ||
                 b
-            ) && c
+            ) &&
+                   c
             elseif bar
             else
             end
