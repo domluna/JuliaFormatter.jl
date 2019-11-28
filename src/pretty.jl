@@ -971,11 +971,14 @@ function p_let(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     if length(x.args) > 3
         add_node!(t, Whitespace(1), s)
+        s.indent += s.indent_size
         if x.args[2].typ === CSTParser.Block
             add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
         else
             add_node!(t, pretty(x.args[2], s), s, join_lines = true)
         end
+        s.indent -= s.indent_size
+
         idx = length(t.nodes)
         s.indent += s.indent_size
         add_node!(
@@ -1276,13 +1279,12 @@ unnestable_arg(x) =
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
     nest_assignment(x) && !is_str(x[3]) && return true
-    (
-        x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
-    ) && return false
-    op = x[2]
-    op.kind === Tokens.ANON_FUNC && return false
-    op.kind === Tokens.PAIR_ARROW && return false
-    CSTParser.precedence(op) in (1, 6) && return false
+    if x[1].typ === CSTParser.InvisBrackets || x[3].typ === CSTParser.InvisBrackets
+        return false
+    end
+    x[2].kind === Tokens.ANON_FUNC && return false
+    x[2].kind === Tokens.PAIR_ARROW && return false
+    CSTParser.precedence(x[2]) in (1, 6) && return false
     true
 end
 
@@ -1501,7 +1503,7 @@ end
 function p_invisbrackets(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
     nest = !is_iterable(x[2]) && !nonest
-    # @info "" x nest
+    # @info "nest invis" nonest
 
     for (i, a) in enumerate(x)
         if a.typ === CSTParser.Block

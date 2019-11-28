@@ -3662,4 +3662,66 @@ some_function(
         @test fmt(str) == str
     end
 
+    @testset "issue 137" begin
+        str = """
+        (let x = f() do
+                body
+            end
+            x
+        end for x in xs)"""
+        str_ = """
+        (
+               let x = f() do
+                       body
+                   end
+                   x
+               end for x in xs
+         )"""
+        @test fmt(str_) == str
+
+        str = """
+        (let
+            x = f() do
+                body
+            end
+            x
+        end for x in xs)"""
+        str_ = """
+        (
+          let
+              x = f() do
+                  body
+              end
+              x
+          end for x in xs
+         )"""
+        @test fmt(str_) == str
+
+        str = """
+        let n = try
+                ..
+            catch
+                ..
+            end
+            ..
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        let n = let
+                ..
+            end
+            ..
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        let n = begin
+                ..
+            end
+            ..
+        end"""
+        @test fmt(str) == str
+    end
+
 end
