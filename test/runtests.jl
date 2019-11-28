@@ -3704,7 +3704,7 @@ some_function(
                 ..
             end
             ..
-        end""" 
+        end"""
         @test fmt(str) == str
 
         str = """
@@ -3712,7 +3712,7 @@ some_function(
                 ..
             end
             ..
-        end""" 
+        end"""
         @test fmt(str) == str
 
         str = """
@@ -3720,7 +3720,7 @@ some_function(
                 ..
             end
             ..
-        end""" 
+        end"""
         @test fmt(str) == str
     end
 
