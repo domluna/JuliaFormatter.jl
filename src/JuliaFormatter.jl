@@ -7,6 +7,8 @@ export format, format_text, format_file, format_dir
 
 is_str_or_cmd(x::Tokens.Kind) =
     x in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
+is_str_or_cmd(x::CSTParser.Head) =
+    x in (CSTParser.StringH, CSTParser.x_Str, CSTParser.x_Cmd)
 
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
