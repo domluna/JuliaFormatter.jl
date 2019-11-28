@@ -485,11 +485,10 @@ function n_binarycall!(x, s)
 
             line_margin = s.line_offset
             if (
-                arg2.typ === CSTParser.BinaryOpCall && (
-                    !(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN
-                )
+                arg2.typ === CSTParser.BinaryOpCall &&
+                (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)
             ) || arg2.typ === CSTParser.UnaryOpCall ||
-                 arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison
+               arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison
                 line_margin += length(x[end])
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)

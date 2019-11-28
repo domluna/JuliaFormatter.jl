@@ -69,14 +69,12 @@ is_comma(pt::PTree) =
 is_comment(pt::PTree) = pt.typ === INLINECOMMENT || pt.typ === NOTCODE
 
 is_colon_op(x) =
-    (
-        x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON
-    ) || x.typ === CSTParser.ColonOpCall
+    (x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON) ||
+    x.typ === CSTParser.ColonOpCall
 
 is_lazy_op(x) =
-    x.typ === CSTParser.BinaryOpCall && (
-        x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND
-    )
+    x.typ === CSTParser.BinaryOpCall &&
+    (x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND)
 
 function is_multiline(pt::PTree)
     pt.typ === CSTParser.StringH && return true
@@ -183,9 +181,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
         if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall || (
-            is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1
-        )
+           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall ||
+           (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -569,9 +566,8 @@ function p_literal(x, s)
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    if str_info === nothing && (
-        x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd
-    )
+    if str_info === nothing &&
+       (x.parent.typ === CSTParser.x_Str || x.parent.typ === CSTParser.x_Cmd)
         s.offset += x.fullspan
         return PTree(x, loc[1], loc[1], x.val)
     end
@@ -1286,9 +1282,8 @@ is_block(x::CSTParser.EXPR) =
 nest_assignment(x::CSTParser.EXPR) = CSTParser.precedence(x[2].kind) == 1
 
 unnestable_arg(x) =
-    is_iterable(x) || is_str(x) || x.typ === CSTParser.LITERAL || (
-        x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.DOT
-    )
+    is_iterable(x) || is_str(x) || x.typ === CSTParser.LITERAL ||
+    (x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.DOT)
 
 function nestable(x::CSTParser.EXPR)
     CSTParser.defines_function(x) && x[1].typ !== CSTParser.UnaryOpCall && return true
@@ -1342,9 +1337,8 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         add_node!(t, pretty(op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     elseif (
-        nospace || (
-            CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC
-        )
+        nospace ||
+        (CSTParser.precedence(op) in (8, 13, 14, 16) && op.kind !== Tokens.ANON_FUNC)
     ) && op.kind !== Tokens.IN
         add_node!(t, pretty(op, s), s, join_lines = true)
     else
