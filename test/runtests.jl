@@ -3760,4 +3760,86 @@ some_function(
         @test fmt(str) == str
     end
 
+    @testset "multiline / issue 139" begin
+        str_ = """
+        m = match(r\"""
+                  (
+                      pattern1 |
+                      pattern2 |
+                      pattern3
+                  )
+                  \"""x, aaa, str)"""
+        str = """
+        m = match(
+            r\"""
+            (
+                pattern1 |
+                pattern2 |
+                pattern3
+            )
+            \"""x,
+            aaa,
+            str,
+        )"""
+        @test fmt(str_) == str
+
+        str_ = """
+        m = match(r```
+                  (
+                      pattern1 |
+                      pattern2 |
+                      pattern3
+                  )
+                  ```x, aaa, str)"""
+        str = """
+        m = match(
+            r```
+            (
+                pattern1 |
+                pattern2 |
+                pattern3
+            )
+            ```x,
+            aaa,
+            str,
+        )"""
+        @test fmt(str_) == str
+
+        str_ = """
+        y = similar([
+            1
+            2
+            3
+        ], (4, 5))"""
+        str = """
+        y = similar(
+            [
+                1
+                2
+                3
+            ],
+            (4, 5),
+        )"""
+        @test fmt(str_) == str
+
+        str_ = """
+        y = similar(T[
+            1
+            2
+            3
+        ], (4, 5))"""
+        str = """
+        y = similar(
+            T[
+                1
+                2
+                3
+            ],
+            (4, 5),
+        )"""
+        @test fmt(str_) == str
+
+
+    end
+
 end
