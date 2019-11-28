@@ -1663,6 +1663,23 @@ end
         @test fmt(str) == str
         @test fmt(str, 4, 1) == str
 
+        str = """foo(r"hello"x)"""
+        @test fmt(str, 4, 1) == str
+
+        str = """foo(r`hello`x)"""
+        @test fmt(str, 4, 1) == str
+
+        str = """foo(r\"""hello\"""x)"""
+        @test fmt(str, 4, 1) == str
+
+        str = """foo(r```hello```x)"""
+        @test fmt(str, 4, 1) == str
+
+        str = """foo(\"""hello\""")"""
+        @test fmt(str, 4, 1) == str
+
+        str = """foo(```hello```)"""
+        @test fmt(str, 4, 1) == str
     end
 
     @testset "comments" begin

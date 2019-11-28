@@ -1270,7 +1270,7 @@ function p_kw(x, s)
     t
 end
 
-is_str(x) = is_str_or_cmd(x.kind) || x.typ === CSTParser.StringH
+is_str(x) = is_str_or_cmd(x.kind) || is_str_or_cmd(x.typ)
 
 is_iterable(x) =
     x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
