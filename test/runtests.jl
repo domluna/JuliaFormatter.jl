@@ -3696,6 +3696,32 @@ some_function(
           end for x in xs
          )"""
         @test fmt(str_) == str
+
+        str = """
+        let n = try
+                ..
+            catch
+                ..
+            end
+            ..
+        end""" 
+        @test fmt(str) == str
+
+        str = """
+        let n = let
+                ..
+            end
+            ..
+        end""" 
+        @test fmt(str) == str
+
+        str = """
+        let n = begin
+                ..
+            end
+            ..
+        end""" 
+        @test fmt(str) == str
     end
 
 end
