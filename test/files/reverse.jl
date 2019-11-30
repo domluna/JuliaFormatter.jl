@@ -286,11 +286,11 @@ function adjoint(pr::Primal)
         grads = Dict()
         grad(x, x̄) = push!(get!(grads, x, []), x̄)
         grad(x) = xaccum(rb, get(grads, x, [])...)
-    # Backprop through (successor) branch arguments
+        # Backprop through (successor) branch arguments
         for i = 1:length(sigs[b.id])
             grad(sigs[b.id][i], arguments(rb)[i])
         end
-    # Backprop through statements
+        # Backprop through statements
         for v in reverse(keys(b))
             ex = b[v].expr
             if haskey(pr.pullbacks, v)
