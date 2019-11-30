@@ -255,17 +255,15 @@ function format_text(
 
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_leaf(io, Notcode(1, t.startline - 1), s)
+        format_check(io, Notcode(1, t.startline - 1), s)
         print_leaf(io, Newline(), s)
     end
 
     print_tree(io, t, s)
 
-    # @info "" x.typ
-
     if t.endline < length(s.doc.ranges)
         print_leaf(io, Newline(), s)
-        print_leaf(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+        format_check(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
     end
 
     text = String(take!(io))

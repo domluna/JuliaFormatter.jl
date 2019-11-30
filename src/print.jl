@@ -1,6 +1,5 @@
-function format_check(io::IOBuffer, x::PTree, s::State; pindent::Int=0)
+function format_check(io::IOBuffer, x::PTree, s::State)
     if length(s.doc.format_skips) == 0
-        x.indent = pindent + s.indent_size
         print_notcode(io, x, s)
         return
     end
@@ -12,14 +11,14 @@ function format_check(io::IOBuffer, x::PTree, s::State; pindent::Int=0)
         # weird corner case where off and on toggle
         # are in the same comment block
         x.endline = skip[1]
-        print_notcode(io, x, s)
+        print_notcode(io, x, s, fmttag=true)
         write(io, skip[3])
         x.startline = skip[2]
         x.endline = skip[2]
-        print_notcode(io, x, s)
+        print_notcode(io, x, s, fmttag=true)
     elseif s.on && skip[1] in line_range
         x.endline = skip[1]
-        print_notcode(io, x, s)
+        print_notcode(io, x, s, fmttag=true)
         write(io, skip[3])
         s.on = false
     elseif !s.on && skip[2] in line_range
@@ -29,17 +28,16 @@ function format_check(io::IOBuffer, x::PTree, s::State; pindent::Int=0)
         # prior to in the NOTCODE node prior to 
         # "format: on" will be reprinted
         x.startline = skip[2]
-        print_notcode(io, x, s)
+        print_notcode(io, x, s, fmttag=true)
         # previous NEWLINE node won't be printed
     else
-        x.indent = pindent + s.indent_size
         print_notcode(io, x, s)
     end
 end
 
-function print_leaf(io::IOBuffer, x::PTree, s::State; pindent=0)
+function print_leaf(io::IOBuffer, x::PTree, s::State)
     if x.typ === NOTCODE
-        format_check(io, x, s, pindent=pindent)
+        format_check(io, x, s)
     elseif x.typ === INLINECOMMENT
         print_inlinecomment(io, x, s)
     else
@@ -48,20 +46,23 @@ function print_leaf(io::IOBuffer, x::PTree, s::State; pindent=0)
     s.line_offset += length(x)
 end
 
-function print_tree(io::IOBuffer, x::PTree, s::State)
-    if is_leaf(x)
-        @info "HERE" x
-        print_leaf(io, x, s)
-        return
-    end
-    print_tree(io, x.nodes, s, x.indent)
+function print_tree(io::IOBuffer, x::PTree, s::State) 
+    nc_indent = x.indent
+    # if x.typ === CSTParser.Block || x.typ === CSTParser.Begin
+    #     nc_indent += s.indent_size
+    # end
+    print_tree(io, x.nodes, s, x.indent, nc_indent)
 end
 
-function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
+function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int, nc_indent::Int)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
+        if n.typ === NOTCODE
+            n.indent = nc_indent
+        end
+
         if is_leaf(n)
-            print_leaf(io, n, s, pindent=indent)
+            print_leaf(io, n, s)
         elseif n.typ === CSTParser.StringH
             print_stringh(io, n, s)
         else
@@ -96,11 +97,16 @@ function print_stringh(io::IOBuffer, x::PTree, s::State)
     print_tree(io, x, s)
 end
 
-function print_notcode(io::IOBuffer, x::PTree, s::State)
+function print_notcode(io::IOBuffer, x::PTree, s::State; fmttag=false)
     s.on || return
+    ws = x.indent
     for l = x.startline:x.endline
-        ws, v = get(s.doc.comments, l, (0, "\n"))
-        # ws = x.indent
+        # ws, v = get(s.doc.comments, l, (0, "\n"))
+        if fmttag
+            ws, v = get(s.doc.comments, l, (0, "\n"))
+        else
+            _, v = get(s.doc.comments, l, (0, "\n"))
+        end
         v == "" && continue
         v == "\n" && (ws = 0)
         if l == x.endline && v[end] == '\n'
