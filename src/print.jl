@@ -1,5 +1,6 @@
-function format_check(io::IOBuffer, x::PTree, s::State)
+function format_check(io::IOBuffer, x::PTree, s::State; pindent::Int=0)
     if length(s.doc.format_skips) == 0
+        x.indent = pindent + s.indent_size
         print_notcode(io, x, s)
         return
     end
@@ -31,13 +32,14 @@ function format_check(io::IOBuffer, x::PTree, s::State)
         print_notcode(io, x, s)
         # previous NEWLINE node won't be printed
     else
+        x.indent = pindent + s.indent_size
         print_notcode(io, x, s)
     end
 end
 
-function print_leaf(io::IOBuffer, x::PTree, s::State)
+function print_leaf(io::IOBuffer, x::PTree, s::State; pindent=0)
     if x.typ === NOTCODE
-        format_check(io, x, s)
+        format_check(io, x, s, pindent=pindent)
     elseif x.typ === INLINECOMMENT
         print_inlinecomment(io, x, s)
     else
@@ -48,6 +50,7 @@ end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
     if is_leaf(x)
+        @info "HERE" x
         print_leaf(io, x, s)
         return
     end
@@ -58,7 +61,7 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if is_leaf(n)
-            print_leaf(io, n, s)
+            print_leaf(io, n, s, pindent=indent)
         elseif n.typ === CSTParser.StringH
             print_stringh(io, n, s)
         else
@@ -97,6 +100,7 @@ function print_notcode(io::IOBuffer, x::PTree, s::State)
     s.on || return
     for l = x.startline:x.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
+        # ws = x.indent
         v == "" && continue
         v == "\n" && (ws = 0)
         if l == x.endline && v[end] == '\n'

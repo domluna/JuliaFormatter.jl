@@ -255,16 +255,18 @@ function format_text(
 
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, Notcode(1, t.startline - 1), s)
-        print_tree(io, Newline(), s)
-    end
-
-    if t.endline < length(s.doc.ranges)
-        add_node!(t, Newline(), s)
-        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+        print_leaf(io, Notcode(1, t.startline - 1), s)
+        print_leaf(io, Newline(), s)
     end
 
     print_tree(io, t, s)
+
+    # @info "" x.typ
+
+    if t.endline < length(s.doc.ranges)
+        print_leaf(io, Newline(), s)
+        print_leaf(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+    end
 
     text = String(take!(io))
     text = normalize_line_ending(text)
