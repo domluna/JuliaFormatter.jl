@@ -174,7 +174,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         end
         return
     elseif n.typ === NOTCODE 
-        n.indent = t.indent
+        n.indent = s.indent
         push!(t.nodes, n)
         return
     elseif n.typ === INLINECOMMENT
@@ -189,7 +189,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     end
 
     if n.typ === CSTParser.Block && length(n) == 0
-        # @info "" t[1] t.indent n.indent
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
@@ -1099,7 +1098,7 @@ end
 function p_try(x, s)
     t = PTree(x, nspaces(s))
     for a in x.args
-        if a.fullspan == 0
+        if a.fullspan == 0 && a.typ !== CSTParser.Block
         elseif a.typ === CSTParser.KEYWORD
             add_node!(t, pretty(a, s), s, max_padding = 0)
         elseif a.typ === CSTParser.Block

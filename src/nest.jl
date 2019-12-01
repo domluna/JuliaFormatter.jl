@@ -72,7 +72,9 @@ end
 function dedent!(x::PTree, s::State)
     if is_leaf(x)
         s.line_offset += length(x)
-        is_closer(x) && (x.indent -= s.indent_size)
+        if is_closer(x) || x.typ === NOTCODE
+            x.indent -= s.indent_size
+        end
         return
     end
     x.typ === CSTParser.ConditionalOpCall && return
@@ -479,6 +481,12 @@ function n_binarycall!(x, s)
         nest!(x[1], s)
         for n in x[2:i1]
             nest!(n, s)
+        end
+
+        for n in x[2:i2]
+            if n.typ === NOTCODE
+                n.indent = x.indent
+            end
         end
 
         # Undo nest if possible
