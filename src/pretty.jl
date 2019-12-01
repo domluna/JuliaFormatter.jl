@@ -101,6 +101,11 @@ function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
     f(p)
 end
 
+function contains_comment(pt::PTree) 
+    is_leaf(pt) && return false
+    findfirst(n -> n.typ === NOTCODE || n.typ === INLINECOMMENT, pt.nodes) !== nothing
+end
+
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(x::CSTParser.EXPR)
@@ -237,7 +242,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
-            # @info "adding notcode" s.indent t.indent n.indent
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
             add_node!(t, Newline(force_nest = true), s)
         elseif !join_lines

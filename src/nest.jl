@@ -405,8 +405,6 @@ function n_condcall!(x, s)
                 nest!(n, s)
             elseif n.typ === NEWLINE
                 s.line_offset = x.indent
-            elseif n.typ === NOTCODE
-                n.indent = x.indent
             else
                 nest!(n, s)
             end
@@ -451,8 +449,9 @@ function n_binarycall!(x, s)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_margin = s.line_offset + length(x) + x.extra_margin
+    arg2 = x[end]
     # @info "ENTERING" x.typ x.extra_margin s.line_offset length(x) idxs x.ref[][2]
-    if length(idxs) == 2 && (line_margin > s.margin || x.force_nest)
+    if length(idxs) == 2 && (line_margin > s.margin || x.force_nest || arg2.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -472,8 +471,8 @@ function n_binarycall!(x, s)
         end
 
         # arg2
-        x[end].extra_margin = x.extra_margin
-        nest!(x[end], s)
+        arg2.extra_margin = x.extra_margin
+        nest!(arg2, s)
 
         # "arg1 op" arg2
         s.line_offset = line_offset
@@ -485,19 +484,15 @@ function n_binarycall!(x, s)
             nest!(n, s)
         end
 
-        for n in x[i1:i2]
-            if n.typ === NOTCODE
-                n.indent = x.indent
-            end
-        end
-
         # Undo nest if possible
-        if !x.force_nest
-            arg2 = x[end]
+        if !x.force_nest && !contains_comment(arg2)
             arg2.typ === CSTParser.Block && (arg2 = arg2[1])
             cst = arg2.ref[]
 
             line_margin = s.line_offset
+
+            # if arg2.typ === CSTParser.BinaryOpCall && arg2.force_nest
+            #     line_margin += 1000
             if (
                 arg2.typ === CSTParser.BinaryOpCall &&
                 (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)

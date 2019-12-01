@@ -47,15 +47,21 @@ function print_leaf(io::IOBuffer, x::PTree, s::State)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State)
-    print_tree(io, x.nodes, s, x.indent)
+    notcode_indent = -1
+    if x.typ === CSTParser.BinaryOpCall || x.typ === CSTParser.ConditionalOpCall
+        notcode_indent = x.indent
+    end
+    print_tree(io, x.nodes, s, x.indent, notcode_indent=notcode_indent)
 end
 
-function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
+function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int; notcode_indent=-1)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if n.typ === NOTCODE
-            # @info "" i n.typ n.val n.startline n.endline  length(nodes)
-            if i + 1 < length(nodes) && is_end(nodes[i+2])
+            # @info "" i n.typ n.val n.startline n.endline  length(nodes) n.indent indent
+            if notcode_indent > -1
+                n.indent = notcode_indent
+            elseif i + 1 < length(nodes) && is_end(nodes[i+2])
                 n.indent += s.indent_size
             elseif i + 1 < length(nodes) && (
                 nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin

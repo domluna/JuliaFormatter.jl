@@ -1866,22 +1866,41 @@ end
         @test fmt(str) == str
 
         str = """
-        A ? # foo
-        # comment 1
+        foo = A ?
+            # comment 1
 
-        B : C"""
+            B : C"""
         @test fmt(str) == str
+        str_ = """
+        foo =
+           A ?
+           # comment 1
+
+           B :
+           C"""
+        @test fmt(str, 3, 1) == str_
 
         str = """
         begin
-            var = a +
-                  # comment
-                  b
+            var =
+                a +
+                # comment
+                b
         end
         """
         @test fmt(str) == str
 
-        str = """
+        str_ = """
+        begin
+            var =
+                a +
+                # comment
+                b
+        end
+        """
+        @test fmt(str,4,1) == str_
+
+        str_ = """
         begin
             var = a +  # inline
                   # comment
@@ -1889,15 +1908,31 @@ end
                   b
         end
         """
-        @test fmt(str) == str
-
         str = """
+        begin
+            var =
+                a +  # inline
+                # comment
+
+                b
+        end
+        """
+        @test fmt(str_) == str
+
+        str_ = """
         begin
             var = a +  # inline
                   b
         end
         """
-        @test fmt(str) == str
+        str = """
+        begin
+          var =
+            a +  # inline
+            b
+        end
+        """
+        @test fmt(str_, 2, 92) == str
 
         str = """
         foo() = 10 where {
@@ -2067,6 +2102,15 @@ end
         end
         #comment
         """
+        @test fmt(str) == str
+
+        str = """
+        foo = [
+            # comment
+            1,
+            2,
+            3,
+        ]"""
         @test fmt(str) == str
 
     end
