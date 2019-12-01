@@ -52,8 +52,8 @@ TrailingSemicolon() =
     PTree(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
 Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
-Notcode(startline, endline; indent=0) =
-    PTree(NOTCODE, startline, endline, indent, 0, "", nothing, nothing, false, 0)
+Notcode(startline, endline) =
+    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
 InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
 
 Base.length(pt::PTree) = pt.len
@@ -141,7 +141,6 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
-                # @info "found semicolon" l
                 n.startline = l
                 n.endline = l
                 break
@@ -174,7 +173,11 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             push!(t.nodes, n)
         end
         return
-    elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
+    elseif n.typ === NOTCODE 
+        n.indent = t.indent
+        push!(t.nodes, n)
+        return
+    elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
     elseif n.typ isa PLeaf
@@ -186,6 +189,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     end
 
     if n.typ === CSTParser.Block && length(n) == 0
+        # @info "" t[1] t.indent n.indent
+        push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
         if n_args(t.ref[]) == n_args(n.ref[])
@@ -233,7 +238,8 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
-            add_node!(t, Notcode(notcode_startline, notcode_endline, indent=s.indent), s)
+            # @info "adding notcode" s.indent t.indent n.indent
+            add_node!(t, Notcode(notcode_startline, notcode_endline), s)
             add_node!(t, Newline(force_nest = true), s)
         elseif !join_lines
             hascomment(s.doc, current_line) && add_node!(t, InlineComment(current_line), s)

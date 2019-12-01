@@ -47,18 +47,21 @@ function print_leaf(io::IOBuffer, x::PTree, s::State)
 end
 
 function print_tree(io::IOBuffer, x::PTree, s::State) 
-    nc_indent = x.indent
-    # if x.typ === CSTParser.Block || x.typ === CSTParser.Begin
-    #     nc_indent += s.indent_size
-    # end
-    print_tree(io, x.nodes, s, x.indent, nc_indent)
+    print_tree(io, x.nodes, s, x.indent)
 end
 
-function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int, nc_indent::Int)
+function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if n.typ === NOTCODE
-            n.indent = nc_indent
+            # @info "" i n.typ n.val n.startline n.endline  length(nodes)
+            if i + 1 < length(nodes) && is_end(nodes[i+2])
+                n.indent +=  s.indent_size
+            elseif i + 1 < length(nodes) && (nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin)
+                n.indent = nodes[i+2].indent
+            elseif i > 2 && (nodes[i-2].typ === CSTParser.Block || nodes[i-2].typ === CSTParser.Begin)
+                n.indent = nodes[i-2].indent
+            end
         end
 
         if is_leaf(n)
@@ -99,9 +102,8 @@ end
 
 function print_notcode(io::IOBuffer, x::PTree, s::State; fmttag=false)
     s.on || return
-    ws = x.indent
     for l = x.startline:x.endline
-        # ws, v = get(s.doc.comments, l, (0, "\n"))
+        ws = x.indent
         if fmttag
             ws, v = get(s.doc.comments, l, (0, "\n"))
         else
