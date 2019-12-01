@@ -173,7 +173,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
             push!(t.nodes, n)
         end
         return
-    elseif n.typ === NOTCODE 
+    elseif n.typ === NOTCODE
         n.indent = s.indent
         push!(t.nodes, n)
         return
@@ -1736,7 +1736,7 @@ function p_vcat(x, s)
             if i != length(x) - 1
                 has_semicolon(s.doc, n.startline) && add_node!(t, TrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
-            # Keep trailing semicolon if there's only one arg
+                # Keep trailing semicolon if there's only one arg
             elseif n_args(x) == 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(0), s)

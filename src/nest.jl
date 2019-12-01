@@ -405,6 +405,8 @@ function n_condcall!(x, s)
                 nest!(n, s)
             elseif n.typ === NEWLINE
                 s.line_offset = x.indent
+            elseif n.typ === NOTCODE
+                n.indent = x.indent
             else
                 nest!(n, s)
             end
@@ -483,7 +485,7 @@ function n_binarycall!(x, s)
             nest!(n, s)
         end
 
-        for n in x[2:i2]
+        for n in x[i1:i2]
             if n.typ === NOTCODE
                 n.indent = x.indent
             end

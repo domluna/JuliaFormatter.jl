@@ -116,8 +116,8 @@ function Document(text::AbstractString)
             if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
                 push!(stack, t.startpos[1])
                 format_on = false
-            # If "#! format: off" has not been seen
-            # "#! format: on" is treated as a normal comment.
+                # If "#! format: off" has not been seen
+                # "#! format: on" is treated as a normal comment.
             elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
                 idx1 = findfirst(c -> c == '\n', str)
                 idx2 = findlast(c -> c == '\n', str)

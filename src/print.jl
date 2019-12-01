@@ -11,14 +11,14 @@ function format_check(io::IOBuffer, x::PTree, s::State)
         # weird corner case where off and on toggle
         # are in the same comment block
         x.endline = skip[1]
-        print_notcode(io, x, s, fmttag=true)
+        print_notcode(io, x, s, fmttag = true)
         write(io, skip[3])
         x.startline = skip[2]
         x.endline = skip[2]
-        print_notcode(io, x, s, fmttag=true)
+        print_notcode(io, x, s, fmttag = true)
     elseif s.on && skip[1] in line_range
         x.endline = skip[1]
-        print_notcode(io, x, s, fmttag=true)
+        print_notcode(io, x, s, fmttag = true)
         write(io, skip[3])
         s.on = false
     elseif !s.on && skip[2] in line_range
@@ -28,7 +28,7 @@ function format_check(io::IOBuffer, x::PTree, s::State)
         # prior to in the NOTCODE node prior to 
         # "format: on" will be reprinted
         x.startline = skip[2]
-        print_notcode(io, x, s, fmttag=true)
+        print_notcode(io, x, s, fmttag = true)
         # previous NEWLINE node won't be printed
     else
         print_notcode(io, x, s)
@@ -46,7 +46,7 @@ function print_leaf(io::IOBuffer, x::PTree, s::State)
     s.line_offset += length(x)
 end
 
-function print_tree(io::IOBuffer, x::PTree, s::State) 
+function print_tree(io::IOBuffer, x::PTree, s::State)
     print_tree(io, x.nodes, s, x.indent)
 end
 
@@ -56,10 +56,14 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
         if n.typ === NOTCODE
             # @info "" i n.typ n.val n.startline n.endline  length(nodes)
             if i + 1 < length(nodes) && is_end(nodes[i+2])
-                n.indent +=  s.indent_size
-            elseif i + 1 < length(nodes) && (nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin)
+                n.indent += s.indent_size
+            elseif i + 1 < length(nodes) && (
+                nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin
+            )
                 n.indent = nodes[i+2].indent
-            elseif i > 2 && (nodes[i-2].typ === CSTParser.Block || nodes[i-2].typ === CSTParser.Begin)
+            elseif i > 2 && (
+                nodes[i-2].typ === CSTParser.Block || nodes[i-2].typ === CSTParser.Begin
+            )
                 n.indent = nodes[i-2].indent
             end
         end
@@ -100,7 +104,7 @@ function print_stringh(io::IOBuffer, x::PTree, s::State)
     print_tree(io, x, s)
 end
 
-function print_notcode(io::IOBuffer, x::PTree, s::State; fmttag=false)
+function print_notcode(io::IOBuffer, x::PTree, s::State; fmttag = false)
     s.on || return
     for l = x.startline:x.endline
         ws = x.indent
