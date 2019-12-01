@@ -80,6 +80,7 @@ function dedent!(x::PTree, s::State)
 
     # dedent
     x.indent -= s.indent_size
+    x.force_nest && return
 
     nl_inds = findall(n -> n.typ === NEWLINE && !n.force_nest, x.nodes)
     length(nl_inds) > 0 || return
