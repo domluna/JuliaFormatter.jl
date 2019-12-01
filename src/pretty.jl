@@ -214,7 +214,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
         notcode_endline = n.startline - 1
         nt = t.nodes[end].typ
 
-        if notcode_startline <= notcode_endline && n.typ !== CSTParser.LITERAL
+        if notcode_startline <= notcode_endline
             # If there are comments in between node elements
             # nesting is forced in an effort to preserve them.
             t.force_nest = true
