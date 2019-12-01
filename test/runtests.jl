@@ -2034,6 +2034,15 @@ end
         """
         @test fmt(str) == str
 
+        str = """
+        foo = [
+            # comment
+            1,
+            2,
+            3,
+        ]"""
+        @test fmt(str) == str
+
     end
 
     @testset "pretty" begin
