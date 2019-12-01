@@ -1,7 +1,7 @@
 module JuliaFormatter
 
 using CSTParser
-using CSTParser.Tokenize
+using Tokenize
 
 export format, format_text, format_file, format_dir
 

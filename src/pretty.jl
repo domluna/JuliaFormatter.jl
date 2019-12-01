@@ -131,27 +131,6 @@ function get_args(args::Vector{CSTParser.EXPR})
     args0
 end
 
-function get_args(x::PTree)
-    is_iterable(x) || error("get_args requires an iterable PTree type")
-    sidx = findfirst(is_opener, x.nodes)
-    sidx === nothing && (sidx = 1)
-    args = PTree[]
-    for i = sidx:length(x.nodes)
-        arg = x.nodes[i]
-        arg.typ === CSTParser.PUNCTUATION && continue
-        arg.typ isa PLeaf && continue
-        if arg.typ === CSTParser.Parameters
-            for j = 1:length(arg.nodes)
-                parg = arg.nodes[j]
-                push!(args, parg)
-            end
-        else
-            push!(args, arg)
-        end
-    end
-    args
-end
-
 n_args(x) = length(get_args(x))
 
 function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
