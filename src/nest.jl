@@ -193,10 +193,13 @@ function n_import!(x, s)
     idx = findfirst(n -> n.typ === PLACEHOLDER, x.nodes)
     if idx !== nothing && (line_margin > s.margin || x.force_nest)
         x.indent += s.indent_size
-        if x.indent + sum(length.(x[idx+1:end])) <= s.margin
-            x[idx] = Newline(length = x[idx].len)
-            walk(reset_line_offset!, x, s)
-            return
+
+        if !x.force_nest
+            if x.indent + sum(length.(x[idx+1:end])) <= s.margin
+                x[idx] = Newline(length = x[idx].len)
+                walk(reset_line_offset!, x, s)
+                return
+            end
         end
 
         for (i, n) in enumerate(x.nodes)
