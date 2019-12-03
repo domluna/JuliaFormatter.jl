@@ -154,6 +154,12 @@ function Document(text::AbstractString)
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 
+Base.@kwdef struct Options
+    always_for_in::Bool = false
+    whitespace_typedefs::Bool = false
+    whitespace_ops_in_indices::Bool = false
+end
+
 mutable struct State
     doc::Document
     indent_size::Int
@@ -161,13 +167,12 @@ mutable struct State
     offset::Int
     line_offset::Int
     margin::Int
-    always_for_in::Bool
-    # if true will output the formatted text
+    # If true will output the formatted text
     # otherwise will output the current text
     on::Bool
+    opts::Options
 end
-State(doc, indent_size, margin; always_for_in = false) =
-    State(doc, indent_size, 0, 1, 0, margin, always_for_in, true)
+State(doc, indent_size, margin, opts) = State(doc, indent_size, 0, 1, 0, margin, true, opts)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
@@ -210,6 +215,8 @@ function format_text(
     indent::Int = 4,
     margin::Int = 92,
     always_for_in::Bool = false,
+    whitespace_typedefs::Bool = false,
+    whitespace_ops_in_indices::Bool = false,
 )
     isempty(text) && return text
 
@@ -219,8 +226,12 @@ function format_text(
     # no actual code
     x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
 
-    d = Document(text)
-    s = State(d, indent, margin, always_for_in = always_for_in)
+    opts = Options(
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+    )
+    s = State(Document(text), indent, margin, opts)
     t = pretty(x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
     nest!(t, s)

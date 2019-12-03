@@ -2,21 +2,41 @@ using JuliaFormatter
 using CSTParser
 using Test
 
-fmt1(s, i = 4, m = 80, always_for_in = false) =
-    JuliaFormatter.format_text(s, indent = i, margin = m, always_for_in = always_for_in)
+fmt1(
+    s,
+    i = 4,
+    m = 80,
+    always_for_in = false,
+    whitespace_typedefs = false,
+    whitespace_ops_in_indices = false,
+) = JuliaFormatter.format_text(
+    s,
+    indent = i,
+    margin = m,
+    always_for_in = always_for_in,
+    whitespace_typedefs = whitespace_typedefs,
+    whitespace_ops_in_indices = whitespace_ops_in_indices,
+)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(s; i = 4, m = 80, always_for_in = false)
-    s1 = fmt1(s, i, m, always_for_in)
-    fmt1(s1, i, m, always_for_in)
+function fmt(
+    s;
+    i = 4,
+    m = 80,
+    always_for_in = false,
+    whitespace_typedefs = false,
+    whitespace_ops_in_indices = false,
+)
+    s1 = fmt1(s, i, m, always_for_in, whitespace_typedefs, whitespace_ops_in_indices)
+    fmt1(s1, i, m, always_for_in, whitespace_typedefs, whitespace_ops_in_indices)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s, i, m, false)
+fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
 
 function run_pretty(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width)
+    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(x, s)
     t
@@ -24,7 +44,7 @@ end
 
 function run_nest(text::String, print_width::Int)
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width)
+    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(x, s)
     JuliaFormatter.nest!(t, s)
@@ -3866,6 +3886,64 @@ some_function(
         @test fmt(str_) == str
 
 
+    end
+
+    @testset "whitespace typedefs option" begin
+        str_ = "Foo{A,B,C}"
+        str = "Foo{A, B, C}"
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+            a::A
+        end"""
+        str = """
+        struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
+            a::A
+        end"""
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
+            body
+        end
+        """
+        str = """
+        function foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z}
+            body
+        end
+        """
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
+        str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
+        @test fmt(str_, whitespace_typedefs = true) == str
+    end
+
+    @testset "whitespace ops in indices option" begin
+        str = "arr[1 + 2]"
+        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(1 + 2)]"
+        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[1:2*num_source*num_dump-1]"
+        str = "arr[1:(2 * num_source * num_dump - 1)]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[2*num_source*num_dump-1:1]"
+        str = "arr[(2 * num_source * num_dump - 1):1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(a + b):c]"
+        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[a in b]"
+        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "a:b+c:d-e"
+        str = "a:(b + c):(d - e)"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
     end
 
 end
