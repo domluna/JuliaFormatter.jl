@@ -1066,23 +1066,22 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do (
-                subproblem1,
-                subproblem2,
-                subproblem3,
-                subproblem4,
-                subproblem5,
-                subproblem6,
-                subproblem7,
-                subproblem8,
-            )
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do (
+            subproblem1,
+            subproblem2,
+            subproblem3,
+            subproblem4,
+            subproblem5,
+            subproblem6,
+            subproblem7,
+            subproblem8,
+        )
+            body
+        end"""
         @test fmt(str_) == str
 
         str_ = """
@@ -1090,14 +1089,13 @@ end
             body
         end"""
         str = """
-        model =
-            SDDP.LinearPolicyGraph(
-                stages = 2,
-                lower_bound = 1,
-                direct_mode = false,
-            ) do subproblem1, subproblem2
-                body
-            end"""
+        model = SDDP.LinearPolicyGraph(
+            stages = 2,
+            lower_bound = 1,
+            direct_mode = false,
+        ) do subproblem1, subproblem2
+            body
+        end"""
         @test fmt(str_) == str
 
     end

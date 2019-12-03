@@ -494,6 +494,9 @@ function n_binarycall!(x, s)
             ) || arg2.typ === CSTParser.UnaryOpCall ||
                arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison
                 line_margin += length(x[end])
+            elseif arg2.typ === CSTParser.Do && is_iterable(arg2[1])
+                rw, _ = length_to(x, [NEWLINE], start = i2 + 1)
+                line_margin += rw
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)
                 if idx === nothing
