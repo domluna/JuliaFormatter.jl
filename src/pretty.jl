@@ -58,6 +58,7 @@ InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothin
 
 Base.length(pt::PTree) = pt.len
 
+is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
 is_leaf(pt::PTree) = pt.nodes === nothing
 empty_start(pt::PTree) = pt.startline == 1 && pt.endline == 1 && pt.val == ""
 
@@ -317,7 +318,6 @@ is_opener(x::CSTParser.EXPR) =
     x.kind === Tokens.LBRACE || x.kind === Tokens.LPAREN || x.kind === Tokens.LSQUARE
 
 function pretty(x::CSTParser.EXPR, s::State)
-    # @debug "" x.typ x.args
     if x.typ === CSTParser.IDENTIFIER
         return p_identifier(x, s)
     elseif x.typ === CSTParser.OPERATOR
@@ -1039,7 +1039,7 @@ function p_loop(x, s)
     add_node!(t, pretty(x.args[1], s), s)
     add_node!(t, Whitespace(1), s)
     if x.args[1].kind === Tokens.FOR
-        eq_to_in_normalization!(x.args[2], s.always_for_in)
+        eq_to_in_normalization!(x.args[2], s.opts.always_for_in)
     end
     if x.args[2].typ === CSTParser.Block
         add_node!(t, p_block(x.args[2], s, join_body = true), s, join_lines = true)
@@ -1199,13 +1199,16 @@ end
 # ChainOpCall/Comparison
 function p_chaincall(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
+    nws = nospace ? 0 : 1
     for (i, a) in enumerate(x)
         n = pretty(a, s)
         if a.typ === CSTParser.OPERATOR
             !nospace && add_node!(t, Whitespace(1), s)
             add_node!(t, n, s, join_lines = true)
-            if !(nospace && nonest)
-                add_node!(t, Placeholder(1), s)
+            if nonest
+                add_node!(t, Whitespace(nws), s)
+            else
+                add_node!(t, Placeholder(nws), s)
             end
         elseif i == length(x) - 1 && is_punc(a) && is_punc(x.args[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -1219,13 +1222,27 @@ end
 # ColonOpCall
 function p_coloncall(x, s)
     t = PTree(x, nspaces(s))
+    nospace = !s.opts.whitespace_ops_in_indices
     for a in x
         if a.typ === CSTParser.BinaryOpCall
-            n = p_binarycall(a, s, nonest = true, nospace = true)
+            n = p_binarycall(a, s, nonest = true, nospace = nospace)
+        elseif a.typ === CSTParser.InvisBrackets
+            n = p_invisbrackets(a, s, nonest = true, nospace = nospace)
+        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+            n = p_chaincall(a, s, nonest = true, nospace = nospace)
         else
             n = pretty(a, s)
         end
-        add_node!(t, n, s, join_lines = true)
+
+        if s.opts.whitespace_ops_in_indices && !is_leaf(n) && !is_iterable(n)
+            paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+            add_node!(t, paren, s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
+            paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+            add_node!(t, paren, s, join_lines = true)
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
     end
     t
 end
@@ -1283,22 +1300,35 @@ end
 # BinaryOpCall
 function p_binarycall(x, s; nonest = false, nospace = false)
     t = PTree(x, nspaces(s))
-    op = x.args[2]
+    op = x[2]
     nonest = nonest || op.kind === Tokens.COLON
-    if x.parent.typ === CSTParser.Curly && op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE)
+    if x.parent.typ === CSTParser.Curly &&
+       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE) && !s.opts.whitespace_typedefs
         nospace = true
     elseif op.kind === Tokens.COLON
         nospace = true
     end
+    nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
 
-    if x.args[1].typ === CSTParser.BinaryOpCall
-        add_node!(t, p_binarycall(x.args[1], s, nonest = nonest, nospace = nospace), s)
-    elseif x.args[1].typ === CSTParser.InvisBrackets
-        add_node!(t, p_invisbrackets(x.args[1], s, nonest = nonest, nospace = nospace), s)
-    elseif x.args[1].typ === CSTParser.ChainOpCall
-        add_node!(t, p_chaincall(x.args[1], s, nonest = nonest, nospace = nospace), s)
+    if x[1].typ === CSTParser.BinaryOpCall
+        n = p_binarycall(x[1], s, nonest = nonest, nospace = nospace_args)
+    elseif x[1].typ === CSTParser.InvisBrackets
+        n = p_invisbrackets(x[1], s, nonest = nonest, nospace = nospace_args)
+    elseif x[1].typ === CSTParser.ChainOpCall || x[1].typ === CSTParser.Comparison
+        n = p_chaincall(x[1], s, nonest = nonest, nospace = nospace_args)
     else
-        add_node!(t, pretty(x.args[1], s), s)
+        n = pretty(x[1], s)
+    end
+
+    if op.kind === Tokens.COLON &&
+       s.opts.whitespace_ops_in_indices && !is_leaf(x[1]) && !is_iterable(x[1])
+        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        add_node!(t, paren, s)
+        add_node!(t, n, s, join_lines = true)
+        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        add_node!(t, paren, s, join_lines = true)
+    else
+        add_node!(t, n, s)
     end
 
     narg2 = nest_arg2(x)
@@ -1306,7 +1336,7 @@ function p_binarycall(x, s; nonest = false, nospace = false)
     nest = (nestable(x) && !nonest) || narg2
     # @info "" nestable(x) !nonest narg2 nest x[2]
 
-    if op.fullspan == 0 && x.args[3].typ === CSTParser.IDENTIFIER
+    if op.fullspan == 0 && x[3].typ === CSTParser.IDENTIFIER
         # do nothing
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
@@ -1326,22 +1356,32 @@ function p_binarycall(x, s; nonest = false, nospace = false)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     end
 
-
-    if x.args[3].typ === CSTParser.BinaryOpCall
-        n = p_binarycall(x.args[3], s, nonest = nonest, nospace = nospace)
-    elseif x.args[3].typ === CSTParser.InvisBrackets
-        n = p_invisbrackets(x.args[3], s, nonest = nonest, nospace = nospace)
-    elseif x.args[3].typ === CSTParser.ChainOpCall
-        n = p_chaincall(x.args[3], s, nonest = nonest, nospace = nospace)
+    if x[3].typ === CSTParser.BinaryOpCall
+        n = p_binarycall(x[3], s, nonest = nonest, nospace = nospace_args)
+    elseif x[3].typ === CSTParser.InvisBrackets
+        n = p_invisbrackets(x[3], s, nonest = nonest, nospace = nospace_args)
+    elseif x[3].typ === CSTParser.ChainOpCall || x[3].typ === CSTParser.Comparison
+        n = p_chaincall(x[3], s, nonest = nonest, nospace = nospace_args)
     else
-        n = pretty(x.args[3], s)
+        n = pretty(x[3], s)
     end
-    add_node!(t, n, s, join_lines = true)
+
+    if op.kind === Tokens.COLON &&
+       s.opts.whitespace_ops_in_indices && !is_leaf(x[3]) && !is_iterable(x[3])
+        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        add_node!(t, paren, s, join_lines = true)
+        add_node!(t, n, s, join_lines = true)
+        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        add_node!(t, paren, s, join_lines = true)
+    else
+        add_node!(t, n, s, join_lines = true)
+    end
 
     if nest
         # for indent, will be converted to `indent_size` if needed
         insert!(t.nodes, length(t.nodes), Placeholder(0))
     end
+
     t
 end
 
@@ -1373,6 +1413,7 @@ function p_wherecall(x, s)
         join_lines = true,
     )
 
+    nws = s.opts.whitespace_typedefs ? 1 : 0
     # @debug "" nest in_braces x.args[3].val == "{" x.args[end].val
     for (i, a) in enumerate(x.args[3:end])
         if is_opener(a) && nest
@@ -1386,9 +1427,14 @@ function p_wherecall(x, s)
             s.indent -= s.indent_size
         elseif CSTParser.is_comma(a) && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            add_node!(t, Placeholder(nws), s)
         elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(t, p_binarycall(a, s, nospace = true), s, join_lines = true)
+            add_node!(
+                t,
+                p_binarycall(a, s, nospace = !s.opts.whitespace_typedefs),
+                s,
+                join_lines = true,
+            )
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
         end
@@ -1435,6 +1481,7 @@ function p_curly(x, s)
     args = get_args(x)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(x[1]))
 
+    nws = s.opts.whitespace_typedefs ? 1 : 0
     if nest
         add_node!(t, Placeholder(0), s)
     end
@@ -1446,7 +1493,7 @@ function p_curly(x, s)
             add_node!(t, pretty(a, s), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(x) - 3 && !is_punc(x.args[i+3])
             add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            add_node!(t, Placeholder(nws), s)
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
         end
@@ -1632,6 +1679,7 @@ end
 function p_ref(x, s)
     t = PTree(x, nspaces(s))
     nest = length(x) > 5 && !(length(x) == 5 && unnestable_arg(x[3]))
+    nospace = !s.opts.whitespace_ops_in_indices
     for (i, a) in enumerate(x)
         if is_closer(a) && nest
             add_node!(t, TrailingComma(), s)
@@ -1646,14 +1694,14 @@ function p_ref(x, s)
         elseif a.typ === CSTParser.BinaryOpCall
             add_node!(
                 t,
-                p_binarycall(a, s, nonest = true, nospace = true),
+                p_binarycall(a, s, nonest = true, nospace = nospace),
                 s,
                 join_lines = true,
             )
         elseif a.typ === CSTParser.InvisBrackets
             add_node!(
                 t,
-                p_invisbrackets(a, s, nonest = true, nospace = true),
+                p_invisbrackets(a, s, nonest = true, nospace = nospace),
                 s,
                 join_lines = true,
             )
@@ -1758,7 +1806,7 @@ function p_gen(x, s)
             add_node!(t, Whitespace(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(x)
-                    eq_to_in_normalization!(x.args[j], s.always_for_in)
+                    eq_to_in_normalization!(x.args[j], s.opts.always_for_in)
                 end
             end
         elseif a.typ === CSTParser.BinaryOpCall
