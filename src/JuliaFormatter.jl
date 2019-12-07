@@ -111,14 +111,14 @@ function Document(text::AbstractString)
                 comments[line] = (ws, cs[idx:end])
             end
 
-            # There should not be more than 1
-            # "off" tag on the stack at a time.
             if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
+                # There should not be more than 1
+                # "off" tag on the stack at a time.
                 push!(stack, t.startpos[1])
                 format_on = false
+            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
                 # If "#! format: off" has not been seen
                 # "#! format: on" is treated as a normal comment.
-            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
                 idx1 = findfirst(c -> c == '\n', str)
                 idx2 = findlast(c -> c == '\n', str)
                 str = str[idx1:idx2]
