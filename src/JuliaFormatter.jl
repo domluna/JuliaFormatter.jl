@@ -198,17 +198,31 @@ include("print.jl")
         indent::Int = 4,
         margin::Int = 92,
         always_for_in::Bool = false,
-    ) :: String
+        whitespace_typedefs::Bool = false,
+        whitespace_ops_in_indices::Bool = false,
+    )::String
 
 Formats a Julia source passed in as a string, returning the formatted
-code as another string. The formatting options are:
+code as another string.
 
-- `indent` which defaults to 4 spaces
-- `margin` which defaults to 92 columns
+### Formatting Options
+
+`indent` - the number of spaces used for an indentation.
+
+`margin` - the maximum length of a line. Code exceeding this margin will be formatted
+across multiple lines.
 
 If `always_for_in` is true `=` is always replaced with `in` if part of a
 `for` loop condition.  For example, `for i = 1:10` will be transformed
 to `for i in 1:10`.
+
+If `whitespace_typedefs` is true, whitespace is added for type definitions.
+Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+
+If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
+in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
+if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 """
 function format_text(
     text::AbstractString;
@@ -263,19 +277,18 @@ end
 """
     format_file(
         filename::AbstractString;
-        indent::Integer = 4,
-        margin::Integer = 92,
         overwrite::Bool = true,
         verbose::Bool = false,
+        indent::Integer = 4,
+        margin::Integer = 92,
         always_for_in::Bool = false,
+        whitespace_typedefs::Bool = false,
+        whitespace_ops_in_indices::Bool = false,
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
 
-The formatting options are:
-
-- `indent` which defaults to 4 spaces
-- `margin` which defaults to 92 columns
+### File Options
 
 If `overwrite` is `true` the file will be reformatted in place, overwriting
 the existing file; if it is `false`, the formatted version of `foo.jl` will
@@ -284,25 +297,49 @@ be written to `foo_fmt.jl` instead.
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
 
+### Formatting Options
+
+`indent` - the number of spaces used for an indentation.
+
+`margin` - the maximum length of a line. Code exceeding this margin will be formatted
+across multiple lines.
+
 If `always_for_in` is true `=` is always replaced with `in` if part of a
 `for` loop condition.  For example, `for i = 1:10` will be transformed
 to `for i in 1:10`.
+
+If `whitespace_typedefs` is true, whitespace is added for type definitions.
+Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+
+If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
+in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
+if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 """
 function format_file(
     filename::AbstractString;
-    indent::Integer = 4,
-    margin::Integer = 92,
     overwrite::Bool = true,
     verbose::Bool = false,
+    indent::Integer = 4,
+    margin::Integer = 92,
     always_for_in::Bool = false,
+    whitespace_typedefs::Bool = false,
+    whitespace_ops_in_indices::Bool = false,
 )
     path, ext = splitext(filename)
     if ext != ".jl"
         error("$filename must be a Julia (.jl) source file")
     end
-    verbose && println("Formatting $filename with indent = $indent, margin = $margin")
+    verbose && println("Formatting $filename")
     str = String(read(filename))
-    str = format_text(str, indent = indent, margin = margin, always_for_in = always_for_in)
+    str = format_text(
+        str,
+        indent = indent,
+        margin = margin,
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+    )
     str = replace(str, r"\n*$" => "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
