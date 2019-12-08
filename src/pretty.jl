@@ -1403,8 +1403,8 @@ function p_wherecall(x, s)
     # nest = length(args) > 0 && !(length(CSTParser.get_where_params(x)) == 1 && unnestable_arg(x[1]))
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
-        !CSTParser.is_lbrace(x.args[3]) &&
-        x.parent.typ !== CSTParser.Curly && x.args[3].typ !== CSTParser.Curly
+        !CSTParser.is_lbrace(x[3]) && x.parent.typ !== CSTParser.Curly &&
+        x[3].typ !== CSTParser.Curly && x[3].typ !== CSTParser.BracesCat
 
     add_braces && add_node!(
         t,
@@ -1466,10 +1466,11 @@ function p_condcall(x, s)
 end
 
 # UnaryOpCall
-function p_unarycall(x, s)
+function p_unarycall(x, s; nospace = true)
     t = PTree(x, nspaces(s))
-    add_node!(t, pretty(x.args[1], s), s)
-    add_node!(t, pretty(x.args[2], s), s, join_lines = true)
+    add_node!(t, pretty(x[1], s), s)
+    !nospace && add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(x[2], s), s, join_lines = true)
     t
 end
 
@@ -1765,12 +1766,24 @@ end
 # Row
 function p_row(x, s)
     t = PTree(x, nspaces(s))
+
+    # Currently {A <:B} is parsed as a Row type with elements A and <:B
+    # instead of a BinaryOpCall A <: B, which is inconsistent with Meta.parse.
+    #
+    # This is used to overcome that current limitation.
+    in_braces = x.parent === nothing ? false : x.parent.typ === CSTParser.BracesCat
+    nospace = !s.opts.whitespace_typedefs
+
     for (i, a) in enumerate(x)
-        if i < length(x)
+        if in_braces && i < length(x) && x[i+1].typ === CSTParser.UnaryOpCall
             add_node!(t, pretty(a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+            add_node!(t, Whitespace(nospace ? 0 : 1), s)
+        elseif in_braces && a.typ === CSTParser.UnaryOpCall
+            add_node!(t, p_unarycall(a, s, nospace = nospace), s, join_lines = true)
+            i < length(x) && add_node!(t, Whitespace(1), s)
         else
             add_node!(t, pretty(a, s), s, join_lines = true)
+            i < length(x) && add_node!(t, Whitespace(1), s)
         end
     end
     t

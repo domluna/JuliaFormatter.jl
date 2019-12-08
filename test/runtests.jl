@@ -3944,4 +3944,13 @@ some_function(
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
     end
 
+    @testset "BracesCat / Issue 150" begin
+        str_ = "const SymReg{B,MT} = ArrayReg{B,Basic,MT} where {MT <:AbstractMatrix{Basic}}"
+        str = "const SymReg{B,MT} = ArrayReg{B,Basic,MT} where {MT<:AbstractMatrix{Basic}}"
+        @test fmt(str_, whitespace_typedefs = false) == str
+
+        str = "const SymReg{B, MT} = ArrayReg{B, Basic, MT} where {MT <: AbstractMatrix{Basic}}"
+        @test fmt(str_, whitespace_typedefs = true) == str
+    end
+
 end
