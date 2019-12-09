@@ -438,6 +438,10 @@ function n_condcall!(x, s)
 end
 
 
+function no_unnest(x::PTree)
+    x.typ === CSTParser.BinaryOpCall && contains_comment(x) && return true
+    false
+end
 
 # arg1 op arg2
 #
@@ -450,6 +454,7 @@ function n_binarycall!(x, s)
     idxs = findall(n -> n.typ === PLACEHOLDER, x.nodes)
     line_margin = s.line_offset + length(x) + x.extra_margin
     arg2 = x[end]
+    arg2.typ === CSTParser.Block && (arg2 = arg2[1])
     # @info "ENTERING" x.typ x.extra_margin s.line_offset length(x) idxs x.ref[][2]
     if length(idxs) == 2 && (line_margin > s.margin || x.force_nest || arg2.force_nest)
         line_offset = s.line_offset
@@ -471,8 +476,8 @@ function n_binarycall!(x, s)
         end
 
         # arg2
-        arg2.extra_margin = x.extra_margin
-        nest!(arg2, s)
+        x[end].extra_margin = x.extra_margin
+        nest!(x[end], s)
 
         # "arg1 op" arg2
         s.line_offset = line_offset
@@ -485,14 +490,10 @@ function n_binarycall!(x, s)
         end
 
         # Undo nest if possible
-        if !x.force_nest && !contains_comment(arg2)
-            arg2.typ === CSTParser.Block && (arg2 = arg2[1])
+        if !x.force_nest && !no_unnest(arg2)
             cst = arg2.ref[]
-
             line_margin = s.line_offset
 
-            # if arg2.typ === CSTParser.BinaryOpCall && arg2.force_nest
-            #     line_margin += 1000
             if (
                 arg2.typ === CSTParser.BinaryOpCall &&
                 (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)

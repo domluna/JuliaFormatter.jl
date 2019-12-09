@@ -103,7 +103,7 @@ end
 
 function contains_comment(pt::PTree) 
     is_leaf(pt) && return false
-    findfirst(n -> n.typ === NOTCODE || n.typ === INLINECOMMENT, pt.nodes) !== nothing
+    findfirst(is_comment, pt.nodes) !== nothing
 end
 
 # TODO: Remove once this is fixed in CSTParser.

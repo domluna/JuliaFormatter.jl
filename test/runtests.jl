@@ -1866,6 +1866,21 @@ end
         @test fmt(str) == str
 
         str = """
+        foo() = A ?
+            # comment 1
+
+            B : C"""
+        @test fmt(str) == str
+        str_ = """
+        foo() =
+           A ?
+           # comment 1
+
+           B :
+           C"""
+        @test fmt(str, 3, 1) == str_
+
+        str = """
         foo = A ?
             # comment 1
 
@@ -1890,15 +1905,15 @@ end
         """
         @test fmt(str) == str
 
-        str_ = """
+        str = """
         begin
-            var =
+            var() =
                 a +
                 # comment
                 b
         end
         """
-        @test fmt(str,4,1) == str_
+        @test fmt(str) == str
 
         str_ = """
         begin
