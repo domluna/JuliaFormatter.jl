@@ -51,10 +51,16 @@ function print_tree(io::IOBuffer, x::PTree, s::State)
     if x.typ === CSTParser.BinaryOpCall || x.typ === CSTParser.ConditionalOpCall
         notcode_indent = x.indent
     end
-    print_tree(io, x.nodes, s, x.indent, notcode_indent=notcode_indent)
+    print_tree(io, x.nodes, s, x.indent, notcode_indent = notcode_indent)
 end
 
-function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int; notcode_indent=-1)
+function print_tree(
+    io::IOBuffer,
+    nodes::Vector{PTree},
+    s::State,
+    indent::Int;
+    notcode_indent = -1,
+)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if n.typ === NOTCODE

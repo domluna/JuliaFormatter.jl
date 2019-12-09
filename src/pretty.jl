@@ -101,7 +101,7 @@ function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
     f(p)
 end
 
-function contains_comment(pt::PTree) 
+function contains_comment(pt::PTree)
     is_leaf(pt) && return false
     findfirst(is_comment, pt.nodes) !== nothing
 end
