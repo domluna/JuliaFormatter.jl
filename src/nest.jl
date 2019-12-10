@@ -114,62 +114,66 @@ function nest!(fst::FST, s::State)
     if fst.typ === CSTParser.Import
         n_import!(fst, s)
     elseif fst.typ === CSTParser.Export
-        n_import!(fst, s)
+        n_export!(fst, s)
     elseif fst.typ === CSTParser.Using
-        n_import!(fst, s)
+        n_using!(fst, s)
     elseif fst.typ === CSTParser.WhereOpCall
-        n_wherecall!(fst, s)
+        n_whereopcall!(fst, s)
     elseif fst.typ === CSTParser.ConditionalOpCall
-        n_condcall!(fst, s)
+        n_conditionalopcall!(fst, s)
     elseif fst.typ === CSTParser.BinaryOpCall
-        n_binarycall!(fst, s)
+        n_binaryopcall!(fst, s)
     elseif fst.typ === CSTParser.Curly
-        n_call!(fst, s)
+        n_curly!(fst, s)
     elseif fst.typ === CSTParser.Call
         n_call!(fst, s)
     elseif fst.typ === CSTParser.MacroCall
-        n_call!(fst, s)
+        n_macrocall!(fst, s)
     elseif fst.typ === CSTParser.Ref
-        n_call!(fst, s)
+        n_ref!(fst, s)
     elseif fst.typ === CSTParser.TypedVcat
-        n_call!(fst, s)
+        n_typedvcat!(fst, s)
     elseif fst.typ === CSTParser.TupleH
-        n_tuple!(fst, s)
+        n_tupleh!(fst, s)
     elseif fst.typ === CSTParser.Vect
-        n_tuple!(fst, s)
+        n_vect!(fst, s)
     elseif fst.typ === CSTParser.Vcat
-        n_tuple!(fst, s)
+        n_vcat!(fst, s)
     elseif fst.typ === CSTParser.Parameters
-        n_tuple!(fst, s)
+        n_parameters!(fst, s)
     elseif fst.typ === CSTParser.Braces
-        n_tuple!(fst, s)
+        n_braces!(fst, s)
     elseif fst.typ === CSTParser.InvisBrackets
-        n_tuple!(fst, s)
+        n_invisbrackets!(fst, s)
     elseif fst.typ === CSTParser.Comprehension
-        n_tuple!(fst, s)
+        n_comphrehension!(fst, s)
     elseif fst.typ === CSTParser.Do
         n_do!(fst, s)
     elseif fst.typ === CSTParser.Generator
-        n_gen!(fst, s)
+        n_generator!(fst, s)
     elseif fst.typ === CSTParser.Filter
-        n_gen!(fst, s)
+        n_filter!(fst, s)
     elseif fst.typ === CSTParser.Block
         n_block!(fst, s)
     elseif fst.typ === CSTParser.ChainOpCall
-        n_block!(fst, s)
+        n_chainopcall!(fst, s)
     elseif fst.typ === CSTParser.Comparison
-        n_block!(fst, s)
+        n_comparison!(fst, s)
     elseif fst.typ === CSTParser.For
         n_for!(fst, s)
     elseif fst.typ === CSTParser.Let
-        n_for!(fst, s)
+        n_let!(fst, s)
     elseif fst.typ === CSTParser.UnaryOpCall && fst[2].typ === CSTParser.OPERATOR
-        fst[1].extra_margin = fst.extra_margin + length(fst[2])
-        nest!(fst[1], s)
-        nest!(fst[2], s)
+        n_unaryopcall!(fst, s)
     else
         nest!(fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
+end
+
+function n_unaryopcall!(fst::FST, s::State)
+    fst[1].extra_margin = fst.extra_margin + length(fst[2])
+    nest!(fst[1], s)
+    nest!(fst[2], s)
 end
 
 function n_do!(fst::FST, s::State)
@@ -214,8 +218,11 @@ function n_import!(fst::FST, s::State)
         nest!(fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
+n_export!(fst::FST, s::State) = n_import!(fst, s)
+n_using!(fst::FST, s::State) = n_import!(fst, s)
+n_importall!(fst::FST, s::State) = n_import!(fst, s)
 
-function n_tuple!(fst::FST, s::State)
+function n_tupleh!(fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
@@ -264,6 +271,12 @@ function n_tuple!(fst::FST, s::State)
         nest!(fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
+n_vect!(fst::FST, s::State) = n_tupleh!(fst, s)
+n_vcat!(fst::FST, s::State) = n_tupleh!(fst, s)
+n_braces!(fst::FST, s::State) = n_tupleh!(fst, s)
+n_parameters!(fst::FST, s::State) = n_tupleh!(fst, s)
+n_invisbrackets!(fst::FST, s::State) = n_tupleh!(fst, s)
+n_comphrehension!(fst::FST, s::State) = n_tupleh!(fst, s)
 
 
 function n_call!(fst::FST, s::State)
@@ -310,9 +323,12 @@ function n_call!(fst::FST, s::State)
         nest!(fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
+n_curly!(fst::FST, s::State) = n_call!(fst, s)
+n_macrocall!(fst::FST, s::State) = n_call!(fst, s)
+n_ref!(fst::FST, s::State) = n_call!(fst, s)
+n_typedvcat!(fst::FST, s::State) = n_call!(fst, s)
 
-# "A where B"
-function n_wherecall!(fst::FST, s::State)
+function n_whereopcall!(fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # @info "" s.line_offset fst.typ line_margin fst.extra_margin length(fst) fst.force_nest line_margin > s.margin
     if line_margin > s.margin || fst.force_nest
@@ -371,7 +387,7 @@ function n_wherecall!(fst::FST, s::State)
     end
 end
 
-function n_condcall!(fst::FST, s::State)
+function n_conditionalopcall!(fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # @info "ENTERING" fst.typ s.line_offset line_margin fst.force_nest
     if line_margin > s.margin || fst.force_nest
@@ -441,7 +457,7 @@ end
 #
 # arg1 op
 # arg2
-function n_binarycall!(fst::FST, s::State)
+function n_binaryopcall!(fst::FST, s::State)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -592,6 +608,7 @@ function n_for!(fst::FST, s::State)
         res == (0, "") && deleteat!(fst.nodes, idx - 1)
     end
 end
+n_let!(fst::FST, s::State) = n_for!(fst, s)
 
 function n_block!(fst::FST, s::State; custom_indent = 0)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -630,5 +647,7 @@ function n_block!(fst::FST, s::State; custom_indent = 0)
         nest!(fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-
-n_gen!(fst::FST, s::State) = n_block!(fst, s, custom_indent = fst.indent)
+n_generator!(fst::FST, s::State) = n_block!(fst, s, custom_indent = fst.indent)
+n_filter!(fst::FST, s::State) = n_block!(fst, s, custom_indent = fst.indent)
+n_comparison!(fst::FST, s::State) = n_block!(fst, s)
+n_chainopcall!(fst::FST, s::State) = n_block!(fst, s)
