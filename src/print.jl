@@ -1,24 +1,24 @@
-function format_check(io::IOBuffer, x::PTree, s::State)
+function format_check(io::IOBuffer, fst::FST, s::State)
     if length(s.doc.format_skips) == 0
-        print_notcode(io, x, s)
+        print_notcode(io, fst, s)
         return
     end
 
     skip = s.doc.format_skips[1]
-    line_range = x.startline:x.endline
+    line_range = fst.startline:fst.endline
 
     if s.on && skip[1] in line_range && skip[2] in line_range
         # weird corner case where off and on toggle
         # are in the same comment block
-        x.endline = skip[1]
-        print_notcode(io, x, s)
+        fst.endline = skip[1]
+        print_notcode(io, fst, s)
         write(io, skip[3])
-        x.startline = skip[2]
-        x.endline = skip[2]
-        print_notcode(io, x, s)
+        fst.startline = skip[2]
+        fst.endline = skip[2]
+        print_notcode(io, fst, s)
     elseif s.on && skip[1] in line_range
-        x.endline = skip[1]
-        print_notcode(io, x, s)
+        fst.endline = skip[1]
+        print_notcode(io, fst, s)
         write(io, skip[3])
         s.on = false
     elseif !s.on && skip[2] in line_range
@@ -27,34 +27,34 @@ function format_check(io::IOBuffer, x::PTree, s::State)
         # change the startline, otherwise lines
         # prior to in the NOTCODE node prior to 
         # "format: on" will be reprinted
-        x.startline = skip[2]
-        print_notcode(io, x, s)
+        fst.startline = skip[2]
+        print_notcode(io, fst, s)
         # previous NEWLINE node won't be printed
     else
-        print_notcode(io, x, s)
+        print_notcode(io, fst, s)
     end
 end
 
-function print_leaf(io::IOBuffer, x::PTree, s::State)
-    if x.typ === NOTCODE
-        format_check(io, x, s)
-    elseif x.typ === INLINECOMMENT
-        print_inlinecomment(io, x, s)
+function print_leaf(io::IOBuffer, fst::FST, s::State)
+    if fst.typ === NOTCODE
+        format_check(io, fst, s)
+    elseif fst.typ === INLINECOMMENT
+        print_inlinecomment(io, fst, s)
     else
-        s.on && write(io, x.val)
+        s.on && write(io, fst.val)
     end
-    s.line_offset += length(x)
+    s.line_offset += length(fst)
 end
 
-function print_tree(io::IOBuffer, x::PTree, s::State)
-    if is_leaf(x)
-        print_leaf(io, x, s)
+function print_tree(io::IOBuffer, fst::FST, s::State)
+    if is_leaf(fst)
+        print_leaf(io, fst, s)
         return
     end
-    print_tree(io, x.nodes, s, x.indent)
+    print_tree(io, fst.nodes, s, fst.indent)
 end
 
-function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
+function print_tree(io::IOBuffer, nodes::Vector{FST}, s::State, indent::Int)
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if is_leaf(n)
@@ -78,41 +78,41 @@ function print_tree(io::IOBuffer, nodes::Vector{PTree}, s::State, indent::Int)
     end
 end
 
-function print_stringh(io::IOBuffer, x::PTree, s::State)
+function print_stringh(io::IOBuffer, fst::FST, s::State)
     # The indent of StringH is set to the the offset
     # of when the quote is first encountered in the source file.
 
     # This difference notes if there is a change due to nesting.
-    diff = x.indent + 1 - s.line_offset
-    # @info "" length(x) s.line_offset
+    diff = fst.indent + 1 - s.line_offset
+    # @info "" length(fst) s.line_offset
 
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference
     # +1 since the character is 1 space after the indent
-    x.indent = max(x[1].indent + 1 - diff, 0)
-    print_tree(io, x, s)
+    fst.indent = max(fst[1].indent + 1 - diff, 0)
+    print_tree(io, fst, s)
 end
 
-function print_notcode(io::IOBuffer, x::PTree, s::State)
+function print_notcode(io::IOBuffer, fst::FST, s::State)
     s.on || return
-    for l = x.startline:x.endline
+    for l = fst.startline:fst.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
         v == "" && continue
         v == "\n" && (ws = 0)
-        if l == x.endline && v[end] == '\n'
+        if l == fst.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end
         ws > 0 && write(io, repeat(" ", ws))
         write(io, v)
-        if l != x.endline && v[end] != '\n'
+        if l != fst.endline && v[end] != '\n'
             write(io, "\n")
         end
     end
 end
 
-function print_inlinecomment(io::IOBuffer, x::PTree, s::State)
+function print_inlinecomment(io::IOBuffer, fst::FST, s::State)
     s.on || return
-    ws, v = get(s.doc.comments, x.startline, (0, ""))
+    ws, v = get(s.doc.comments, fst.startline, (0, ""))
     isempty(v) && return
     v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
     ws > 0 && write(io, repeat(" ", ws))

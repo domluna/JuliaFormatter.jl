@@ -12,62 +12,60 @@
     TRAILINGSEMICOLON,
 )
 
-mutable struct PTree
+# Formatted Syntax Tree
+mutable struct FST
     typ::Union{CSTParser.Head,PLeaf}
     startline::Int
     endline::Int
     indent::Int
     len::Int
     val::Union{Nothing,AbstractString}
-    nodes::Union{Nothing,Vector{PTree}}
+    nodes::Union{Nothing,Vector{FST}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
     force_nest::Bool
     extra_margin::Int
 end
 
-PTree(cst::CSTParser.EXPR, indent::Integer) =
-    PTree(cst.typ, -1, -1, indent, 0, nothing, PTree[], Ref(cst), false, 0)
+FST(cst::CSTParser.EXPR, indent::Integer) =
+    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), false, 0)
 
-function PTree(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
-    PTree(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
+function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
+    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
 end
 
-function PTree(cst::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    PTree(cst, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
+function FST(cst::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
+    FST(cst, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
 end
 
-function Base.setindex!(pt::PTree, node::PTree, ind::Int)
-    # pt.len = pt.len - pt.nodes[ind].len + node.len
-    pt.nodes[ind] = node
-end
-Base.getindex(pt::PTree, inds...) = pt.nodes[inds...]
-Base.lastindex(pt::PTree) = length(pt.nodes)
+Base.setindex!(fst::FST, node::FST, ind::Int) = fst.nodes[ind] = node
+Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
+Base.lastindex(fst::FST) = length(fst.nodes)
 
 
 Newline(; length = 0, force_nest = false) =
-    PTree(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
-Semicolon() = PTree(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-TrailingComma() = PTree(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
+Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
 TrailingSemicolon() =
-    PTree(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-Whitespace(n) = PTree(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
-Placeholder(n) = PTree(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
+Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 Notcode(startline, endline) =
-    PTree(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
-InlineComment(line) = PTree(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
+InlineComment(line) = FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
 
-Base.length(pt::PTree) = pt.len
+Base.length(fst::FST) = fst.len
 
 is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
-is_leaf(pt::PTree) = pt.nodes === nothing
-empty_start(pt::PTree) = pt.startline == 1 && pt.endline == 1 && pt.val == ""
+is_leaf(fst::FST) = fst.nodes === nothing
+empty_start(fst::FST) = fst.startline == 1 && fst.endline == 1 && fst.val == ""
 
 is_punc(x) = CSTParser.ispunctuation(x)
 is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 is_colon(x) = x.typ === CSTParser.OPERATOR && x.val == ":"
-is_comma(pt::PTree) =
-    (pt.typ === CSTParser.PUNCTUATION && pt.val == ",") || pt.typ === TRAILINGCOMMA
-is_comment(pt::PTree) = pt.typ === INLINECOMMENT || pt.typ === NOTCODE
+is_comma(fst::FST) =
+    (fst.typ === CSTParser.PUNCTUATION && fst.val == ",") || fst.typ === TRAILINGCOMMA
+is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
 is_colon_op(x) =
     (x.typ === CSTParser.BinaryOpCall && x[2].kind === Tokens.COLON) ||
@@ -77,15 +75,15 @@ is_lazy_op(x) =
     x.typ === CSTParser.BinaryOpCall &&
     (x[2].kind === Tokens.LAZY_OR || x[2].kind === Tokens.LAZY_AND)
 
-function is_multiline(pt::PTree)
-    pt.typ === CSTParser.StringH && return true
-    if pt.typ === CSTParser.x_Str && pt[2].typ === CSTParser.StringH
+function is_multiline(fst::FST)
+    fst.typ === CSTParser.StringH && return true
+    if fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringH
         return true
-    elseif pt.typ === CSTParser.x_Cmd && pt[2].typ === CSTParser.StringH
+    elseif fst.typ === CSTParser.x_Cmd && fst[2].typ === CSTParser.StringH
         return true
-    elseif pt.typ === CSTParser.Vcat && pt.endline > pt.startline
+    elseif fst.typ === CSTParser.Vcat && fst.endline > fst.startline
         return true
-    elseif pt.typ === CSTParser.TypedVcat && pt.endline > pt.startline
+    elseif fst.typ === CSTParser.TypedVcat && fst.endline > fst.startline
         return true
     end
     false
@@ -134,7 +132,7 @@ end
 
 n_args(x) = length(get_args(x))
 
-function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding = -1)
+function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
         loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
@@ -281,7 +279,7 @@ function add_node!(t::PTree, n::PTree, s::State; join_lines = false, max_padding
     nothing
 end
 
-function is_prev_newline(x::PTree)
+function is_prev_newline(x::FST)
     if x.typ === NEWLINE
         return true
     elseif is_leaf(x) || length(x.nodes) == 0
@@ -291,11 +289,11 @@ function is_prev_newline(x::PTree)
 end
 
 """
-    `length_to(x::PTree, ntyps; start::Int = 1)`
+    `length_to(x::FST, ntyps; start::Int = 1)`
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-function length_to(x::PTree, ntyps::Vector; start::Int = 1)
+function length_to(x::FST, ntyps::Vector; start::Int = 1)
     x.typ in ntyps && return 0, true
     is_leaf(x) && return length(x), false
     len = 0
@@ -307,12 +305,12 @@ function length_to(x::PTree, ntyps::Vector; start::Int = 1)
     return len, false
 end
 
-is_closer(x::PTree) =
+is_closer(x::FST) =
     x.typ === CSTParser.PUNCTUATION && (x.val == "}" || x.val == ")" || x.val == "]")
 is_closer(x::CSTParser.EXPR) =
     x.kind === Tokens.RBRACE || x.kind === Tokens.RPAREN || x.kind === Tokens.RSQUARE
 
-is_opener(x::PTree) =
+is_opener(x::FST) =
     x.typ === CSTParser.PUNCTUATION && (x.val == "{" || x.val == "(" || x.val == "[")
 is_opener(x::CSTParser.EXPR) =
     x.kind === Tokens.LBRACE || x.kind === Tokens.LPAREN || x.kind === Tokens.LSQUARE
@@ -434,7 +432,7 @@ function pretty(cst::CSTParser.EXPR, s::State)
         return p_gen(cst, s)
     end
 
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     is_fileh = cst.typ === CSTParser.FileH
     for a in cst
         if a.kind === Tokens.NOTHING
@@ -456,14 +454,14 @@ end
 function p_identifier(cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
-    PTree(cst, loc[1], loc[1], cst.val)
+    FST(cst, loc[1], loc[1], cst.val)
 end
 
 function p_operator(cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
     s.offset += cst.fullspan
-    PTree(cst, loc[1], loc[1], val)
+    FST(cst, loc[1], loc[1], val)
 end
 
 function p_keyword(cst::CSTParser.EXPR, s::State)
@@ -501,7 +499,7 @@ function p_keyword(cst::CSTParser.EXPR, s::State)
         cst.kind === Tokens.TRY ? "try" :
         cst.kind === Tokens.USING ? "using" : cst.kind === Tokens.WHILE ? "while" : ""
     s.offset += cst.fullspan
-    PTree(cst, loc[1], loc[1], val)
+    FST(cst, loc[1], loc[1], val)
 end
 
 function p_punctuation(cst::CSTParser.EXPR, s::State)
@@ -516,7 +514,7 @@ function p_punctuation(cst::CSTParser.EXPR, s::State)
         cst.kind === Tokens.SEMICOLON ? ";" :
         cst.kind === Tokens.AT_SIGN ? "@" : cst.kind === Tokens.DOT ? "." : ""
     s.offset += cst.fullspan
-    PTree(cst, loc[1], loc[1], val)
+    FST(cst, loc[1], loc[1], val)
 end
 
 function p_literal(cst::CSTParser.EXPR, s::State)
@@ -530,7 +528,7 @@ function p_literal(cst::CSTParser.EXPR, s::State)
             val = '0' * val
         end
         s.offset += cst.fullspan
-        return PTree(cst, loc[1], loc[1], val)
+        return FST(cst, loc[1], loc[1], val)
     end
 
     # Strings are unescaped by CSTParser
@@ -545,7 +543,7 @@ function p_literal(cst::CSTParser.EXPR, s::State)
     if str_info === nothing &&
        (cst.parent.typ === CSTParser.x_Str || cst.parent.typ === CSTParser.x_Cmd)
         s.offset += cst.fullspan
-        return PTree(cst, loc[1], loc[1], cst.val)
+        return FST(cst, loc[1], loc[1], cst.val)
     end
 
     startline, endline, str = str_info
@@ -556,7 +554,7 @@ function p_literal(cst::CSTParser.EXPR, s::State)
     lines = split(str, "\n")
 
     if length(lines) == 1
-        return PTree(cst, loc[1], loc[1], lines[1])
+        return FST(cst, loc[1], loc[1], lines[1])
     end
 
     sidx = loc[2]
@@ -569,11 +567,11 @@ function p_literal(cst::CSTParser.EXPR, s::State)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, PTree[], Ref(cst), false, 0)
+    t = FST(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, FST[], Ref(cst), false, 0)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(
+        tt = FST(
             CSTParser.LITERAL,
             ln,
             ln,
@@ -600,7 +598,7 @@ function p_stringh(cst::CSTParser.EXPR, s::State)
     lines = split(str, "\n")
 
     if length(lines) == 1
-        t = PTree(cst, startline, startline, lines[1])
+        t = FST(cst, startline, startline, lines[1])
         t.typ = CSTParser.LITERAL
         return t
     end
@@ -615,11 +613,11 @@ function p_stringh(cst::CSTParser.EXPR, s::State)
 
     # @debug "" lines x.val loc loc[2] sidx
 
-    t = PTree(cst, loc[2] - 1)
+    t = FST(cst, loc[2] - 1)
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        tt = PTree(
+        tt = FST(
             CSTParser.LITERAL,
             ln,
             ln,
@@ -639,7 +637,7 @@ end
 
 # MacroCall
 function p_macrocall(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     if cst[1].typ === CSTParser.GlobalRefDoc
         # cst[1] is empty and fullspan is 0 so we can skip it
         if cst[2].typ === CSTParser.LITERAL
@@ -699,7 +697,7 @@ end
 # Block
 # length Block is the length of the longest expr
 function p_block(cst::CSTParser.EXPR, s::State; ignore_single_line = false, from_quote = false, join_body = false)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     single_line = ignore_single_line ? false :
         cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]
 
@@ -746,7 +744,7 @@ end
 
 # Abstract
 function p_abstract(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -759,7 +757,7 @@ end
 
 # Primitive
 function p_primitive(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -774,7 +772,7 @@ end
 
 # FunctionDef/Macro
 function p_function(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -804,7 +802,7 @@ end
 
 # Struct
 function p_struct(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -827,7 +825,7 @@ end
 
 # Mutable
 function p_mutable(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -852,7 +850,7 @@ end
 
 # ModuleH/BareModule
 function p_module(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -868,7 +866,7 @@ end
 
 # Const/Local/Global/Return
 function p_vardef(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     if cst[2].fullspan != 0
         for a in cst.args[2:end]
@@ -881,7 +879,7 @@ end
 
 # TopLevel
 function p_toplevel(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     for a in cst.args
         if a.kind === Tokens.NOTHING
             s.offset += a.fullspan
@@ -895,7 +893,7 @@ end
 
 # Begin
 function p_begin(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     if cst[2].fullspan == 0
         add_node!(t, Whitespace(1), s)
@@ -916,7 +914,7 @@ end
 
 # Quote
 function p_quote(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     if cst[1].typ === CSTParser.KEYWORD && cst[1].kind === Tokens.QUOTE
         add_node!(t, pretty(cst[1], s), s)
         if cst[2].fullspan == 0
@@ -953,7 +951,7 @@ end
 #     body
 # end
 function p_let(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     if length(cst.args) > 3
         add_node!(t, Whitespace(1), s)
@@ -1032,7 +1030,7 @@ end
 
 # For/While
 function p_loop(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     if cst[1].kind === Tokens.FOR
@@ -1064,7 +1062,7 @@ end
 
 # Do
 function p_do(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -1088,7 +1086,7 @@ end
 
 # Try
 function p_try(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     for a in cst.args
         if a.fullspan == 0
         elseif a.typ === CSTParser.KEYWORD
@@ -1116,7 +1114,7 @@ end
 
 # If
 function p_if(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     if cst[1].typ === CSTParser.KEYWORD && cst[1].kind === Tokens.IF
         add_node!(t, pretty(cst[1], s), s)
         add_node!(t, Whitespace(1), s)
@@ -1195,7 +1193,7 @@ end
 
 # ChainOpCall/Comparison
 function p_chaincall(cst::CSTParser.EXPR, s::State; nonest = false, nospace = false)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
         n = pretty(a, s)
@@ -1218,7 +1216,7 @@ end
 
 # ColonOpCall
 function p_coloncall(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
     for a in cst
         if a.typ === CSTParser.BinaryOpCall
@@ -1232,10 +1230,10 @@ function p_coloncall(cst::CSTParser.EXPR, s::State)
         end
 
         if s.opts.whitespace_ops_in_indices && !is_leaf(n) && !is_iterable(n)
-            paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+            paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
             add_node!(t, paren, s, join_lines = true)
             add_node!(t, n, s, join_lines = true)
-            paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+            paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
             add_node!(t, paren, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
@@ -1246,7 +1244,7 @@ end
 
 # Kw
 function p_kw(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     for a in cst
         if a.kind === Tokens.EQ
             add_node!(t, Whitespace(1), s)
@@ -1261,7 +1259,7 @@ end
 
 is_str(cst::CSTParser.EXPR) = is_str_or_cmd(cst.kind) || is_str_or_cmd(cst.typ)
 
-is_iterable(x::Union{CSTParser.EXPR,PTree}) =
+is_iterable(x::Union{CSTParser.EXPR,FST}) =
     x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
     x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
     x.typ === CSTParser.Curly || x.typ === CSTParser.Comprehension ||
@@ -1296,7 +1294,7 @@ end
 
 # BinaryOpCall
 function p_binarycall(cst::CSTParser.EXPR, s::State; nonest = false, nospace = false)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     op = cst[2]
     nonest = nonest || op.kind === Tokens.COLON
     if cst.parent.typ === CSTParser.Curly &&
@@ -1319,10 +1317,10 @@ function p_binarycall(cst::CSTParser.EXPR, s::State; nonest = false, nospace = f
 
     if op.kind === Tokens.COLON &&
        s.opts.whitespace_ops_in_indices && !is_leaf(cst[1]) && !is_iterable(cst[1])
-        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
-        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s)
@@ -1365,10 +1363,10 @@ function p_binarycall(cst::CSTParser.EXPR, s::State; nonest = false, nospace = f
 
     if op.kind === Tokens.COLON &&
        s.opts.whitespace_ops_in_indices && !is_leaf(cst[3]) && !is_iterable(cst[3])
-        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
         add_node!(t, n, s, join_lines = true)
-        paren = PTree(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s, join_lines = true)
@@ -1385,7 +1383,7 @@ end
 # WhereOpCall
 # A where B
 function p_wherecall(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
 
     add_node!(t, Whitespace(1), s)
@@ -1405,7 +1403,7 @@ function p_wherecall(cst::CSTParser.EXPR, s::State)
 
     add_braces && add_node!(
         t,
-        PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "{"),
+        FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{"),
         s,
         join_lines = true,
     )
@@ -1438,7 +1436,7 @@ function p_wherecall(cst::CSTParser.EXPR, s::State)
     end
     add_braces && add_node!(
         t,
-        PTree(CSTParser.PUNCTUATION, t.endline, t.endline, "}"),
+        FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}"),
         s,
         join_lines = true,
     )
@@ -1447,7 +1445,7 @@ end
 
 # Conditional
 function p_condcall(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -1464,7 +1462,7 @@ end
 
 # UnaryOpCall
 function p_unarycall(cst::CSTParser.EXPR, s::State; nospace = true)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     !nospace && add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
@@ -1472,7 +1470,7 @@ function p_unarycall(cst::CSTParser.EXPR, s::State; nospace = true)
 end
 
 function p_curly(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
 
@@ -1500,7 +1498,7 @@ function p_curly(cst::CSTParser.EXPR, s::State)
 end
 
 function p_call(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, pretty(cst[2], s), s, join_lines = true)
 
@@ -1528,7 +1526,7 @@ end
 
 # InvisBrackets
 function p_invisbrackets(cst::CSTParser.EXPR, s::State; nonest = false, nospace = false)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest
     # @info "nest invis" nonest
 
@@ -1566,7 +1564,7 @@ end
 
 # TupleH
 function p_tuple(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
 
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
@@ -1592,7 +1590,7 @@ end
 
 # Braces
 function p_braces(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_arg(cst[2]))
 
     for (i, a) in enumerate(cst)
@@ -1616,7 +1614,7 @@ end
 
 # Vect
 function p_vect(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_arg(cst[2]))
 
     for (i, a) in enumerate(cst)
@@ -1641,7 +1639,7 @@ end
 
 # Parameters
 function p_params(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(a, s)
         if i == length(cst) && CSTParser.is_comma(a)
@@ -1658,7 +1656,7 @@ end
 
 # Import, Export, Using, ImportAll
 function p_import(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     add_node!(t, pretty(cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
@@ -1675,7 +1673,7 @@ end
 
 # Ref
 function p_ref(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     nest = length(cst) > 5 && !(length(cst) == 5 && unnestable_arg(cst[3]))
     nospace = !s.opts.whitespace_ops_in_indices
     for (i, a) in enumerate(cst)
@@ -1712,7 +1710,7 @@ end
 
 # Vcat/TypedVcat
 function p_vcat(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     st = cst.typ === CSTParser.Vcat ? 1 : 2
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
@@ -1747,7 +1745,7 @@ end
 
 # Hcat/TypedHcat
 function p_hcat(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     st = cst.typ === CSTParser.Hcat ? 1 : 2
     for (i, a) in enumerate(cst)
         if i > st && i < length(cst) - 1
@@ -1762,7 +1760,7 @@ end
 
 # Row
 function p_row(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
 
     # Currently {A <:B} is parsed as a Row type with elements A and <:B
     # instead of a BinaryOpCall A <: B, which is inconsistent with Meta.parse.
@@ -1788,7 +1786,7 @@ end
 
 # Generator/Filter
 function p_gen(cst::CSTParser.EXPR, s::State)
-    t = PTree(cst, nspaces(s))
+    t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         if a.typ === CSTParser.KEYWORD
             if a.kind === Tokens.FOR && parent_is(
