@@ -1223,7 +1223,8 @@ function p_chainopcall(cst::CSTParser.EXPR, s::State; nonest = false, nospace = 
     end
     t
 end
-p_comparison(cst::CSTParser.EXPR, s::State; nonest = false, nospace = false) = p_chainopcall(cst, s, nonest=nonest, nospace=nospace)
+p_comparison(cst::CSTParser.EXPR, s::State; nonest = false, nospace = false) =
+    p_chainopcall(cst, s, nonest = nonest, nospace = nospace)
 
 # ColonOpCall
 function p_colonopcall(cst::CSTParser.EXPR, s::State)
