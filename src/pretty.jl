@@ -46,8 +46,7 @@ Newline(; length = 0, force_nest = false) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
 Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
 TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
-TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+TrailingSemicolon() = FST(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
 Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 Notcode(startline, endline) =
@@ -102,8 +101,8 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
-    if cst.typ === CSTParser.MacroCall ||
-       cst.typ === CSTParser.TypedVcat || cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly
+    if cst.typ === CSTParser.MacroCall || cst.typ === CSTParser.TypedVcat ||
+       cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly
         return get_args(cst.args[2:end])
     elseif cst.typ === CSTParser.Parameters || cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat || cst.typ === CSTParser.TupleH ||
@@ -696,7 +695,13 @@ end
 
 # Block
 # length Block is the length of the longest expr
-function p_block(cst::CSTParser.EXPR, s::State; ignore_single_line = false, from_quote = false, join_body = false)
+function p_block(
+    cst::CSTParser.EXPR,
+    s::State;
+    ignore_single_line = false,
+    from_quote = false,
+    join_body = false,
+)
     t = FST(cst, nspaces(s))
     single_line = ignore_single_line ? false :
         cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]

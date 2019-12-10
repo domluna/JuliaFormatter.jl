@@ -60,7 +60,7 @@ There is also a command-line tool `bin/format.jl` which can be invoked with `-i`
 
 ### Pass 1: Prettify
 
-The CST is "prettified", creating a `PTree`. The printing output of a `PTree` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code; expressions will be attempted to be placed on a single line.
+The CST is "prettified", creating a `FST` (Formatted Syntax Tree). The printing output of a `FST` is a canonical representation of the code removing unnecessary whitespace and joining or separating lines of code; expressions will be attempted to be placed on a single line.
 
 Example:
 
@@ -162,7 +162,7 @@ S <: Union{
 }
 ```
 
-If a comment is detected inside the `PTree` it nesting will be forced. For example:
+If a comment is detected inside the `FST` it nesting will be forced. For example:
 
 ```julia
 var = foo(
@@ -183,7 +183,7 @@ var = foo(
 
 ### Part 3: Printing
 
-Finally, the `PTree` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
+Finally, the `FST` is printed to an `IOBuffer`. Prior to returning the formatted text a final validity
 check is performed.
 
 ## Skipping Formatting

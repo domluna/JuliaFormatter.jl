@@ -10,7 +10,7 @@
 
 Normalizes the `.jl` file into a canonical format. All unnecessary whitespace is removed, code is properly indented, and everything which can fit on a single line, does.
 
-This stage creates a `PTree`.
+This stage creates an initial `FST` (Formatted Syntax Tree).
 
 **(all examples assume indentation of 4 spaces)**
 
@@ -102,7 +102,7 @@ list[a+b]
 
 Lines going over the maximum margin are split into multiple lines such that they fit inside the margin.
 
-This stage mutates the `PTree` generated from *prettification*.
+This stage mutates the `FST` generated from *prettification*.
 
 Most expressions are nested left to right with the exception of binary operations and conditionals which are nested right to left.
 
@@ -214,4 +214,4 @@ var = foo(
 
 ## Print
 
-This stage prints the mutated `PTree`.
+This stage prints the mutated `FST`.
