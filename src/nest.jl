@@ -1,8 +1,8 @@
 # Nest
 #
 # If the line exceeds the print width it will be nested.
-# 
-# This is done by replacing `PLACEHOLDER` nodes with `NEWLINE` 
+#
+# This is done by replacing `PLACEHOLDER` nodes with `NEWLINE`
 # nodes and updating the PTree's indent.
 #
 # `extra_margin` provides additional width to consider from
@@ -116,8 +116,6 @@ function nest!(x::PTree, s::State)
     elseif x.typ === CSTParser.Export
         n_import!(x, s)
     elseif x.typ === CSTParser.Using
-        n_import!(x, s)
-    elseif x.typ === CSTParser.ImportAll
         n_import!(x, s)
     elseif x.typ === CSTParser.WhereOpCall
         n_wherecall!(x, s)

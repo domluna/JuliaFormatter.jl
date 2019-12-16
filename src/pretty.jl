@@ -410,8 +410,6 @@ function pretty(x::CSTParser.EXPR, s::State)
         return p_vardef(x, s)
     elseif x.typ === CSTParser.Import
         return p_import(x, s)
-    elseif x.typ === CSTParser.ImportAll
-        return p_import(x, s)
     elseif x.typ === CSTParser.Export
         return p_import(x, s)
     elseif x.typ === CSTParser.Using
@@ -489,7 +487,6 @@ function p_keyword(x, s)
         x.kind === Tokens.FUNCTION ? "function" :
         x.kind === Tokens.GLOBAL ? "global" :
         x.kind === Tokens.IMPORT ? "import" :
-        x.kind === Tokens.IMPORTALL ? "importall" :
         x.kind === Tokens.LET ? "let" :
         x.kind === Tokens.LOCAL ? "local" :
         x.kind === Tokens.MACRO ? "macro" :
