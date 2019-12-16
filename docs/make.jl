@@ -6,7 +6,9 @@ makedocs(
     modules = [JuliaFormatter],
     pages = [
         "Introduction" => "index.md",
+        "How It Works" => "how_it_works.md",
         "Code Style" => "style.md",
+        "Skipping Formatting" => "skipping_formatting.md",
         "Syntax Transforms" => "transforms.md",
     ],
 )

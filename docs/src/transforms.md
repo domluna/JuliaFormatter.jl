@@ -8,18 +8,18 @@ Alternative to the above - setting `always_for_in` to `true`, i.e. `format_text(
 
 ## Trailing Commas
 
-If an iterable expression is nested a trailing comma is added to the last argument. The trailing comma is removed if the expressions is unnested:
+If the node is _iterable_, for example a function call or list and is nested, a trailing comma is added to the last argument. The trailing comma is removed if unnested:
 
 
 ```julia
-f(a, b, c)
+func(a, b, c)
 
 ->
 
-f(
-  a,
-  b,
-  c,
+func(
+    a,
+    b,
+    c,
 )
 ```
 
@@ -27,16 +27,16 @@ See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/44) for mor
 
 ## Trailing Semicolons
 
-If a matrix expression is nested the semicolons are removed.
+If a matrix node is nested the semicolons are removed.
 
 ```julia
-[1 0; 0 1]
+A = [1 0; 0 1]
 
 ->
 
-[
- 1 0
- 0 1
+A = [
+    1 0
+    0 1
 ]
 ```
 
