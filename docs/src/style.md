@@ -1,23 +1,13 @@
 # Style
 
-`JuliaFormatter` consists of 3 stages:
+This is meant to give an impression of how the ouput of a formatted file looks like.
+Additional examples can be found in the [test files](https://github.com/domluna/JuliaFormatter.jl/tree/master/test/files).
 
-1. Prettify
-2. Nest
-3. Print
+## Initial `FST`
 
-## Prettify
+> All examples assume indentation of **4 spaces**
 
-Normalizes the `.jl` file into a canonical format. All unnecessary whitespace is removed, code is properly indented, and everything which can fit on a single line, does.
-
-This stage creates an initial `FST` (Formatted Syntax Tree).
-
-**(all examples assume indentation of 4 spaces)**
-
-Examples:
-
-Functions, macros, structs with no arguments are placed on a single line.
-This also applies to abstract and primitive types.
+Functions, macros, structs with no arguments are placed on a single line:
 
 ```julia
 function  foo
@@ -28,7 +18,19 @@ function  foo
 function foo end
 ```
 
-Functions calls `foo(args)`, tuples `(args)`, arrays `[args]`, braces `{args}`, struct or where definitions `Foo{args}` are placed on a single line. Unless the arguments are surrounded by `{}` each argument is separated by a single space.
+This also applies to abstract and primitive types:
+
+```julia
+abstract type
+AbstractFoo
+end
+
+->
+
+abstract type AbstractFoo end
+```
+
+Functions calls `foo(args...)`, tuples `(args...)`, arrays `[args...]`, braces `{args...}`, struct or where definitions `Foo{args...}` are placed on a single line. This applies to any code which has opening and closing punctuation: `(...)`, `{...}`, `[...]`.
 
 ```julia
 f(
@@ -40,13 +42,27 @@ a,b
 f(a, b, c)
 ```
 
-Blocks and their bodies are properly indented.
+By default type definitions have no whitespace after commas:
+
+```julia
+Foo{
+a,b
+,c }
+
+->
+
+Foo{a,b,c}
+```
+
+
+Blocks and their bodies are spread across multiple lines properly indented.
+
+Example 1:
 
 ```julia
 begin
   a
-    b
-c
+    b; c
        end
 
 ->
@@ -56,9 +72,11 @@ begin
     b
     c
 end
+```
 
-# ---
+Example 2:
 
+```julia
 struct Foo{A, B}
  a::A
   b::B
@@ -72,7 +90,11 @@ struct Foo{A,B}
 end
 ```
 
-Binary calls are placed on a single line. The vast majority of operators and arguments are separated by a single space with the exception of colons and operations inside an indexing expression.
+Binary calls are placed on a single line and separated by whitespace. 
+The exception to this are colon operations and operations inside an indexing expression. The latter
+being optional.
+
+Example 1:
 
 ```julia
 a+b
@@ -80,17 +102,21 @@ a+b
 -> 
 
 a + b
+```
 
-# ---
+Example 2:
 
+```julia
 a : a : c
 
 ->
 
 a:b:c
+```
 
-# ---
+Example 3:
 
+```julia
 list[a + b]
 
 ->
@@ -98,17 +124,22 @@ list[a + b]
 list[a+b]
 ```
 
-## Nesting
+Conditionals are placed on a single line and separated by whitespace. 
 
-Lines going over the maximum margin are split into multiple lines such that they fit inside the margin.
+```julia
+cond1 ?
+expr1 :     expr2
 
-This stage mutates the `FST` generated from *prettification*.
+->
 
-Most expressions are nested left to right with the exception of binary operations and conditionals which are nested right to left.
+cond1 ? expr1 : expr2
+```
 
+## Nesting `FST`
 
-Examples:
+Binary operations and conditionals are nested back-to-front.
 
+Example 1:
 
 ```julia
 arg1 + arg2
@@ -117,9 +148,11 @@ arg1 + arg2
 
 arg1 + 
 arg2
+```
 
-# ---
+Example 2:
 
+```julia
 cond ? e1 : e2
 
 ->
@@ -134,7 +167,7 @@ e1 :
 e2
 ```
 
-Short function definitions and certain blocks - `for`, `while`, `do`, `try`, `if`, or `let` with arguments are initially nested such that the RHS (after `=`) is placed on the next line.
+If nesting is required for a `=` binary operation, the RHS is placed on the following line.
 
 ```julia
 foo() = body
@@ -143,42 +176,13 @@ foo() = body
 
 foo() =
     body
-
-# ---
-
-foo = if this_is_a_condition
-  a
-else
-  b
-end
-
-->
-
-foo =
-    if this_is_a_condition
-        a
-    catch e
-        b
-    end
 ```
 
-Function Calls `f(...)` (also applies to `F{}`, `{}`, `()`, `[]`)
+All arguments of a function call (applies to any opening/closing punctuation type) are nested
+if the expression exceeds the margin. The arguments are indented one level. 
 
-The arguments are indented. The arguments will never pass the initial opening punctuation, i.e. `(` by more than a single space. If a comment is detected in between arguments nesting will be forced.
 
 ```julia
-f(arg1, arg2, arg3)
-
-->
-
-f(
-  arg1,
-  arg2,
-  arg3,
-)
-
-# ---
-
 function longfunctionname_that_is_long(lots, of, args, even, more, args)
     body
 end
@@ -195,9 +199,43 @@ function longfunctionname_that_is_long(
 )
     body
 end
+```
 
-# ---
+With `where` operations (`A where B`), `A` is nested prior to `B`.
 
+```julia
+function f(arg1::A, key1 = val1; key2 = val2) where {A,B,C}
+    body
+end
+
+->
+
+function f(
+    arg1::A,
+    key1 = val1;
+    key2 = val2,
+) where {A,B,C}
+    body
+end
+
+-> 
+
+function f(
+    arg1::A,
+    key1 = val1;
+    key2 = val2,
+) where {
+    A,
+    B,
+    C,
+}
+    body
+end
+```
+
+If a comment is detected inside of an expression, that expression is automatically nested:
+
+```julia
 var = foo(
     a, b, # comment
     c,
@@ -212,6 +250,66 @@ var = foo(
 )
 ```
 
-## Print
+## Unnesting `FST`
 
-This stage prints the mutated `FST`.
+In certain cases it's desirable to unnest parts of a `FST`.
+
+Example 1:
+
+```julia
+# short function def
+function foo(arg1, arg2, arg3) = body
+
+-> 
+
+function foo(arg1, arg2, arg3) =
+    body
+
+->
+
+function foo(
+    arg1,
+    arg2,
+    arg3,
+) =
+    body
+
+# If the margin allows it, `body` will be joined back
+# with the previous line.
+
+function foo(
+    arg1,
+    arg2,
+    arg3,
+) = body
+```
+
+Example 2:
+
+```julia
+var = funccall(arg1, arg2, arg3)
+
+-> 
+
+var =
+    funccall(arg1, arg2, arg3)
+
+->
+
+var =
+    funccall(
+        arg1,
+        arg2,
+        arg3,
+    )
+
+# If the margin allows it, the RHS will be joined back
+# with the previous line.
+
+var = funccall(
+    arg1,
+    arg2,
+    arg3,
+)
+```
+
