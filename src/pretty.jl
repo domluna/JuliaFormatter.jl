@@ -278,13 +278,13 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     nothing
 end
 
-function is_prev_newline(x::FST)
-    if x.typ === NEWLINE
+function is_prev_newline(fst::FST)
+    if fst.typ === NEWLINE
         return true
-    elseif is_leaf(x) || length(x.nodes) == 0
+    elseif is_leaf(x) || length(fst.nodes) == 0
         return false
     end
-    is_prev_newline(x.nodes[end])
+    is_prev_newline(fst[end])
 end
 
 """
@@ -292,27 +292,27 @@ end
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-function length_to(x::FST, ntyps::Vector; start::Int = 1)
-    x.typ in ntyps && return 0, true
+function length_to(fst::FST, ntyps::Vector; start::Int = 1)
+    fst.typ in ntyps && return 0, true
     is_leaf(x) && return length(x), false
     len = 0
-    for i = start:length(x.nodes)
-        l, found = length_to(x.nodes[i], ntyps)
+    for i = start:length(fst.nodes)
+        l, found = length_to(fst.nodes[i], ntyps)
         len += l
         found && return len, found
     end
     return len, false
 end
 
-is_closer(x::FST) =
-    x.typ === CSTParser.PUNCTUATION && (x.val == "}" || x.val == ")" || x.val == "]")
-is_closer(x::CSTParser.EXPR) =
-    x.kind === Tokens.RBRACE || x.kind === Tokens.RPAREN || x.kind === Tokens.RSQUARE
+is_closer(fst::FST) =
+    fst.typ === CSTParser.PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
+is_closer(cst::CSTParser.EXPR) =
+    cst.kind === Tokens.RBRACE || cst.kind === Tokens.RPAREN || cst.kind === Tokens.RSQUARE
 
-is_opener(x::FST) =
-    x.typ === CSTParser.PUNCTUATION && (x.val == "{" || x.val == "(" || x.val == "[")
-is_opener(x::CSTParser.EXPR) =
-    x.kind === Tokens.LBRACE || x.kind === Tokens.LPAREN || x.kind === Tokens.LSQUARE
+is_opener(fst::FST) =
+    fst.typ === CSTParser.PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
+is_opener(cst::CSTParser.EXPR) =
+    cst.kind === Tokens.LBRACE || cst.kind === Tokens.LPAREN || cst.kind === Tokens.LSQUARE
 
 function pretty(cst::CSTParser.EXPR, s::State)
     if cst.typ === CSTParser.IDENTIFIER
@@ -564,7 +564,7 @@ function p_literal(cst::CSTParser.EXPR, s::State)
         end
     end
 
-    # @debug "" lines x.val loc loc[2] sidx
+    # @debug "" lines cst.val loc loc[2] sidx
 
     t = FST(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, FST[], Ref(cst), false, 0)
     for (i, l) in enumerate(lines)
@@ -610,7 +610,7 @@ function p_stringh(cst::CSTParser.EXPR, s::State)
         end
     end
 
-    # @debug "" lines x.val loc loc[2] sidx
+    # @debug "" lines cst.val loc loc[2] sidx
 
     t = FST(cst, loc[2] - 1)
     for (i, l) in enumerate(lines)
