@@ -281,7 +281,7 @@ end
 function is_prev_newline(fst::FST)
     if fst.typ === NEWLINE
         return true
-    elseif is_leaf(x) || length(fst.nodes) == 0
+    elseif is_leaf(fst) || length(fst.nodes) == 0
         return false
     end
     is_prev_newline(fst[end])
@@ -294,7 +294,7 @@ Returns the length to any node type in `ntyps` based off the `start` index.
 """
 function length_to(fst::FST, ntyps::Vector; start::Int = 1)
     fst.typ in ntyps && return 0, true
-    is_leaf(x) && return length(x), false
+    is_leaf(fst) && return length(fst), false
     len = 0
     for i = start:length(fst.nodes)
         l, found = length_to(fst.nodes[i], ntyps)
