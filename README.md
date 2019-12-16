@@ -21,6 +21,8 @@ julia> using JuliaFormatter
 julia> format(".")
 ```
 
+[Use With Github Actions](https://github.com/julia-actions/julia-format)
+
 ## Usage
 
 `JuliaFormatter` exports `format_text`, `format_file` and `format`:
