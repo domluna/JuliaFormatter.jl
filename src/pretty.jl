@@ -305,12 +305,14 @@ function length_to(fst::FST, ntyps::Vector; start::Int = 1)
 end
 
 is_closer(fst::FST) =
-    fst.typ === CSTParser.PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
+    fst.typ === CSTParser.PUNCTUATION &&
+    (fst.val == "}" || fst.val == ")" || fst.val == "]")
 is_closer(cst::CSTParser.EXPR) =
     cst.kind === Tokens.RBRACE || cst.kind === Tokens.RPAREN || cst.kind === Tokens.RSQUARE
 
 is_opener(fst::FST) =
-    fst.typ === CSTParser.PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
+    fst.typ === CSTParser.PUNCTUATION &&
+    (fst.val == "{" || fst.val == "(" || fst.val == "[")
 is_opener(cst::CSTParser.EXPR) =
     cst.kind === Tokens.LBRACE || cst.kind === Tokens.LPAREN || cst.kind === Tokens.LSQUARE
 
