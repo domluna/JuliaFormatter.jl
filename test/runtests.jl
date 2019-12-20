@@ -633,8 +633,8 @@ end
         str = """
         foo =
           let var1 = value1,
-              var2,
-              var3 = value3
+            var2,
+            var3 = value3
 
             body
           end"""
@@ -644,14 +644,14 @@ end
         str = """
         foo =
           let var1 =
-                value1,
-              var2,
-              var3 =
-                value3
+              value1,
+            var2,
+            var3 =
+              value3
 
             body
           end"""
-        @test fmt(str_, 2, 19) == str
+        @test fmt(str_, 2, 17) == str
         @test fmt(str_, 2, 1) == str
 
         str_ = """
@@ -1678,8 +1678,17 @@ end
             before downloading the $database_name database.
             \"""))
         end"""
+        str_ = raw"""
+        if free <
+           min_space
+            throw(ErrorException(\"""
+            Free space: \$free Gb
+            Please make sure to have at least \$min_space Gb of free disk space
+            before downloading the $database_name database.
+            \"""))
+        end"""
         @test fmt(str) == str
-        @test fmt(str, 4, 1) == str
+        @test fmt(str, 4, 1) == str_
 
         str = """foo(r"hello"x)"""
         @test fmt(str, 4, 1) == str
@@ -2203,7 +2212,8 @@ end
                          e8
                      end
                  end"""
-        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) == str
+        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) ==
+              str
 
         str = """if cond1
                      e1
@@ -3414,9 +3424,12 @@ end
         @test fmt(str_) == str
 
         str_ = """
-        for a in x,
-            b in y,
-            c in z
+        for a in
+            x,
+            b in
+            y,
+            c in
+            z
 
             body
         end"""
@@ -3464,6 +3477,55 @@ end
             body
         end"""
         @test fmt(str) == str
+
+
+        # issue 155
+        str_ = raw"""
+        @testset begin
+            @testset "some long title $label1 $label2" for (
+                                                               label1,
+                                                               x1,
+                                                           ) in [
+                                                               (
+                                                                   "label-1-1",
+                                                                   medium_sized_expression,
+                                                               ),
+                                                               (
+                                                                   "label-1-2",
+                                                                   medium_sized_expression,
+                                                               ),
+                                                           ],
+                                                           (
+                                                               label2,
+                                                               x2,
+                                                           ) in [
+                                                               (
+                                                                   "label-2-1",
+                                                                   medium_sized_expression,
+                                                               ),
+                                                               (
+                                                                   "label-2-2",
+                                                                   medium_sized_expression,
+                                                               ),
+                                                           ]
+
+                @test x1 == x2
+            end
+        end"""
+        str = raw"""@testset begin
+            @testset "some long title $label1 $label2" for (label1, x1) in [
+                    ("label-1-1", medium_sized_expression),
+                    ("label-1-2", medium_sized_expression),
+                ],
+                (label2, x2) in [
+                    ("label-2-1", medium_sized_expression),
+                    ("label-2-2", medium_sized_expression),
+                ]
+
+                @test x1 == x2
+            end
+        end"""
+        @test fmt(str_) == str
     end
 
     @testset "single newline at end of file" begin

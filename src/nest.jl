@@ -10,9 +10,9 @@
 #
 # Example:
 #
-#     arg1 op arg2
+#     LHS op RHS
 #
-# the length of " op" will be considered when nesting arg1
+# the length of " op" will be considered when nesting LHS
 
 # unnest, converts newlines to whitespace
 unnest!(fst::FST, ind::Int) = fst[ind] = Whitespace(fst[ind].len)
@@ -451,12 +451,12 @@ end
 
 
 
-# arg1 op arg2
+# lhs op rhs
 #
 # nest in order of
 #
-# arg1 op
-# arg2
+# lhs op
+# lhs
 function n_binaryopcall!(fst::FST, s::State)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -481,11 +481,11 @@ function n_binaryopcall!(fst::FST, s::State)
             fst.indent = s.line_offset
         end
 
-        # arg2
+        # RHS
         fst[end].extra_margin = fst.extra_margin
         nest!(fst[end], s)
 
-        # "arg1 op" arg2
+        # "lhs op" rhs
         s.line_offset = line_offset
 
         # extra margin for " op"
@@ -497,38 +497,38 @@ function n_binaryopcall!(fst::FST, s::State)
 
         # Undo nest if possible
         if !fst.force_nest
-            arg2 = fst[end]
-            arg2.typ === CSTParser.Block && (arg2 = arg2[1])
-            cst = arg2.ref[]
+            rhs = fst[end]
+            rhs.typ === CSTParser.Block && (rhs = rhs[1])
+            cst = rhs.ref[]
 
             line_margin = s.line_offset
             if (
-                arg2.typ === CSTParser.BinaryOpCall &&
+                rhs.typ === CSTParser.BinaryOpCall &&
                 (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)
-            ) || arg2.typ === CSTParser.UnaryOpCall ||
-               arg2.typ === CSTParser.ChainOpCall || arg2.typ === CSTParser.Comparison
+            ) || rhs.typ === CSTParser.UnaryOpCall ||
+               rhs.typ === CSTParser.ChainOpCall || rhs.typ === CSTParser.Comparison
                 line_margin += length(fst[end])
-            elseif arg2.typ === CSTParser.Do && is_iterable(arg2[1])
+            elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
                 line_margin += rw
             elseif is_block(cst)
-                idx = findfirst(n -> n.typ === NEWLINE, arg2.nodes)
+                idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
                 if idx === nothing
                     line_margin += length(fst[end])
                 else
-                    line_margin += sum(length.(arg2[1:idx-1]))
+                    line_margin += sum(length.(rhs[1:idx-1]))
                 end
             else
                 rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
                 line_margin += rw
             end
 
-            # @info "" arg2.typ indent_nest s.line_offset line_margin fst.extra_margin length(fst[end])
+            # @info "" rhs.typ indent_nest s.line_offset line_margin fst.extra_margin length(fst[end])
             if line_margin + fst.extra_margin <= s.margin
                 fst[i1] = Whitespace(1)
                 if indent_nest
                     fst[i2] = Whitespace(0)
-                    walk(dedent!, arg2, s)
+                    walk(dedent!, rhs, s)
                 end
             end
         end
@@ -546,19 +546,19 @@ function n_binaryopcall!(fst::FST, s::State)
         # CSTParser.BinaryOpCall
         #  - CSTParser.WhereOpCall
         #  - OP
-        #  - arg2
+        #  - rhs
         #
         # It's parsed as:
         #
         # CSTParser.BinaryOpCall
         #  - CSTParser.BinaryOpCall
-        #   - arg1
+        #   - lhs
         #   - OP
         #   - CSTParser.WhereOpCall
         #    - R
         #    - ...
         #  - OP
-        #  - arg2
+        #  - rhs
         #
         # The result being extra width is trickier to deal with.
         idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, fst.nodes)
@@ -616,8 +616,8 @@ function n_block!(fst::FST, s::State; custom_indent = 0)
     # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
-
-        fst.indent = custom_indent > 0 ? custom_indent : s.line_offset
+        custom_indent > 0 && (fst.indent = custom_indent)
+        # @info "" fst.indent
 
         # @info "DURING" fst.indent s.line_offset fst.typ
         for (i, n) in enumerate(fst.nodes)

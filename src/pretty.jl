@@ -1020,16 +1020,16 @@ end
 function eq_to_in_normalization!(cst::CSTParser.EXPR, always_for_in::Bool)
     if cst.typ === CSTParser.BinaryOpCall
         op = cst[2]
-        arg2 = cst[3]
+        rhs = cst[3]
 
         if always_for_in
             cst[2].kind = Tokens.IN
             return
         end
 
-        if op.kind === Tokens.EQ && !is_colon_op(arg2)
+        if op.kind === Tokens.EQ && !is_colon_op(rhs)
             cst[2].kind = Tokens.IN
-        elseif op.kind === Tokens.IN && is_colon_op(arg2)
+        elseif op.kind === Tokens.IN && is_colon_op(rhs)
             cst[2].kind = Tokens.EQ
         end
     elseif cst.typ === CSTParser.Block || cst.typ === CSTParser.InvisBrackets
@@ -1048,7 +1048,9 @@ function p_for(cst::CSTParser.EXPR, s::State)
         eq_to_in_normalization!(cst[2], s.opts.always_for_in)
     end
     if cst[2].typ === CSTParser.Block
+        s.indent += s.indent_size
         add_node!(t, p_block(cst[2], s, join_body = true), s, join_lines = true)
+        s.indent -= s.indent_size
     else
         add_node!(t, pretty(cst[2], s), s, join_lines = true)
     end
@@ -1292,16 +1294,15 @@ unnestable_arg(cst::CSTParser.EXPR) =
 
 function nestable(cst::CSTParser.EXPR)
     CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return true
-    nest_assignment(cst) && !is_str(cst[3]) && return true
-    CSTParser.precedence(cst[2]) in (1, 6) && return false
+    nest_assignment(cst) && return !is_str(cst[3])
     true
 end
 
-function nest_arg2(cst::CSTParser.EXPR)
+function nest_rhs(cst::CSTParser.EXPR)::Bool
     if CSTParser.defines_function(cst)
-        arg2 = cst[3]
-        arg2.typ === CSTParser.Block && (arg2 = arg2[1])
-        return is_block(arg2)
+        rhs = cst[3]
+        rhs.typ === CSTParser.Block && (rhs = rhs[1])
+        return is_block(rhs)
     end
     false
 end
@@ -1340,10 +1341,10 @@ function p_binaryopcall(cst::CSTParser.EXPR, s::State; nonest = false, nospace =
         add_node!(t, n, s)
     end
 
-    narg2 = nest_arg2(cst)
-    narg2 && (t.force_nest = true)
-    nest = (nestable(cst) && !nonest) || narg2
-    # @info "" nestable(cst) !nonest narg2 nest cst[2]
+    nrhs = nest_rhs(cst)
+    nrhs && (t.force_nest = true)
+    nest = (nestable(cst) && !nonest) || nrhs
+    # @info "" nestable(cst) !nonest nrhs nest cst[2]
 
     if op.fullspan == 0 && cst[3].typ === CSTParser.IDENTIFIER
         # do nothing
