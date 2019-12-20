@@ -616,9 +616,7 @@ function n_block!(fst::FST, s::State; custom_indent = 0)
     # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
-
-        # fst.indent = custom_indent > 0 ? custom_indent : s.line_offset
-        fst.indent = custom_indent > 0 ? custom_indent : fst.indent
+        custom_indent > 0 && (fst.indent = custom_indent)
         # @info "" fst.indent
 
         # @info "DURING" fst.indent s.line_offset fst.typ
