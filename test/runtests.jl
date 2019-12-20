@@ -2212,7 +2212,8 @@ end
                          e8
                      end
                  end"""
-        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) == str
+        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) ==
+              str
 
         str = """if cond1
                      e1
