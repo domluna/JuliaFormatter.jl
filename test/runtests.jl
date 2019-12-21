@@ -1553,6 +1553,34 @@ end
             20
         end"""
         @test fmt(str) == str
+
+        #
+        # Issue 157
+        str = raw"""
+        @doc \"""
+           foo()
+        \"""
+        foo() = bar()"""
+        @test fmt(str) == str
+
+        str = raw"""
+        @doc doc\"""
+           foo()
+        \"""
+        foo() = bar()"""
+        @test fmt(str) == str
+
+        str = raw"""@doc "doc for foo" foo"""
+        @test fmt(str) == str
+
+        str = raw"""@doc \"""doc for foo\""" foo"""
+        @test fmt(str) == str
+
+        str = raw"""@doc doc\"""doc for foo\""" foo()"""
+        @test fmt(str) == str
+
+        str = raw"""@doc foo"""
+        @test fmt(str) == str
     end
 
     @testset "strings" begin
