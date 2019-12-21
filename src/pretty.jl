@@ -648,6 +648,15 @@ function p_macrocall(cst::CSTParser.EXPR, s::State)
         end
         add_node!(t, pretty(cst[3], s), s, max_padding = 0)
         return t
+    elseif cst[1].typ === CSTParser.MacroName && cst[1][2].val == "doc" && is_str(cst[2])
+        add_node!(t, pretty(cst[1], s), s)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(cst[2], s), s, join_lines = true)
+        n = pretty(cst[3], s)
+        join_lines = t.endline == n.startline
+        join_lines && add_node!(t, Whitespace(1), s)
+        add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
+        return t
     end
 
     args = get_args(cst)
