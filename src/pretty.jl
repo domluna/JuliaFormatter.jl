@@ -233,7 +233,9 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
             add_node!(t, Newline(force_nest = true), s)
         elseif !join_lines
-            hascomment(s.doc, current_line) && add_node!(t, InlineComment(current_line), s)
+            if hascomment(s.doc, current_line) && current_line != n.startline
+                add_node!(t, InlineComment(current_line), s)
+            end
             add_node!(t, Newline(force_nest = true), s)
         elseif nt === PLACEHOLDER &&
                current_line != n.startline && hascomment(s.doc, current_line)
