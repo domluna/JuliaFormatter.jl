@@ -2098,6 +2098,23 @@ end
         ]"""
         @test fmt(str) == str
 
+        # issue 152
+        str = """
+        try
+        catch
+        end   # comment"""
+        str_ = """try; catch;  end   # comment"""
+        @test fmt(str_) == str
+
+        str = """
+        try
+        catch
+        end   # comment
+        a = 10"""
+        str_ = """
+        try; catch;  end   # comment
+        a = 10"""
+        @test fmt(str_) == str
     end
 
     @testset "pretty" begin
