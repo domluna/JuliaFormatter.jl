@@ -1581,6 +1581,20 @@ end
 
         str = raw"""@doc foo"""
         @test fmt(str) == str
+
+        # issue 160
+        str = """
+        module MyModule
+
+        import Markdown: @doc_str
+
+        @doc doc\"""
+            foo()
+        \"""
+        foo() = bar()
+
+        end # module"""
+        @test fmt(str) == str
     end
 
     @testset "strings" begin
