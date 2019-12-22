@@ -2178,7 +2178,7 @@ end
             3,
         ]"""
         @test fmt(str) == str
-        
+
         # issue 152
         str = """
         try
