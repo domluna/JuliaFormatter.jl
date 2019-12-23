@@ -1768,6 +1768,7 @@ end
                 # comment 4
                 # comment 5
                 a = 10
+                # comment 6
             end
 
         end
@@ -1793,6 +1794,7 @@ end
         # comment 4
         # comment 5
         a = 10
+        # comment 6
         end
 
         end
@@ -1804,22 +1806,22 @@ end
         # comment 1
         begin
 
-        # comment 2
-        # comment 3
+            # comment 2
+            # comment 3
 
             begin
 
 
 
-        # comment 4
-        # comment 5
+                # comment 4
+                # comment 5
                 a = 10
+                # comment 6
             end
 
         end
 
         end"""
-
         @test fmt(str_) == str
 
         str = "# comment 0\n\n\n\n\na = 1\n\n# comment 1\n\n\n\n\nb = 2\n\n\nc = 3\n\n# comment 2\n\n"
@@ -1909,98 +1911,124 @@ end
 
         str = """
         A ? B :
-         # comment
+        # comment
 
         C"""
         @test fmt(str) == str
 
         str = """
-        A ? # foo
-        # comment 1
+        foo() = A ?
+            # comment 1
 
-        B : C"""
+            B : C"""
         @test fmt(str) == str
+        str_ = """
+        foo() =
+           A ?
+           # comment 1
+
+           B :
+           C"""
+        @test fmt(str, 3, 1) == str_
+
+        str = """
+        foo = A ?
+            # comment 1
+
+            B : C"""
+        @test fmt(str) == str
+        str_ = """
+        foo =
+           A ?
+           # comment 1
+
+           B :
+           C"""
+        @test fmt(str, 3, 1) == str_
 
         str = """
         begin
-            var = a +
+            var =
+                a +
                 # comment
-                  b
+                b
         end
         """
         @test fmt(str) == str
 
         str = """
         begin
-            var = a +  # inline
-            # comment
-
-                  b
-        end
-        """
-        @test fmt(str) == str
-
-        str = """
-        begin
-            var = a +  # inline
-                  b
+            var() =
+                a +
+                # comment
+                b
         end
         """
         @test fmt(str) == str
 
         str_ = """
+        begin
+            var = a +  # inline
+                  # comment
+
+                  b
+        end
+        """
+        str = """
+        begin
+            var =
+                a +  # inline
+                # comment
+
+                b
+        end
+        """
+        @test fmt(str_) == str
+
+        str_ = """
+        begin
+            var = a +  # inline
+                  b
+        end
+        """
+        str = """
+        begin
+          var =
+            a +  # inline
+            b
+        end
+        """
+        @test fmt(str_, 2, 92) == str
+
+        str = """
         foo() = 10 where {
             # comment
             A,
-                # comment
-            B
             # comment
-        }"""
-        str = """
-        foo() = 10 where {
-            # comment
-            A,
-                # comment
             B,
             # comment
         }"""
-        @test fmt(str_) == str
+        @test fmt(str) == str
 
-        str_ = """
-        foo() = 10 where Foo{
-            # comment
-            A,
-                # comment
-            B
-            # comment
-        }"""
         str = """
         foo() = 10 where Foo{
             # comment
             A,
-                # comment
+            # comment
             B,
             # comment
         }"""
-        @test fmt(str_) == str
+        @test fmt(str) == str
 
-        str_ = """
-        foo() = Foo(
-            # comment
-            A,
-                # comment
-            B
-            # comment
-        )"""
         str = """
         foo() = Foo(
             # comment
             A,
-                # comment
+            # comment
             B,
             # comment
         )"""
-        @test fmt(str_) == str
+        @test fmt(str) == str
 
         str = """
         foo(
@@ -2062,7 +2090,6 @@ end
         #  ;
         # ]"""
         # @test fmt(str_) == str
-        #
 
         # Issue #51
         # NOTE: `str_` has extra whitespace after
@@ -2070,20 +2097,22 @@ end
         str_ = "begin \n # comment\n end"
         str = """
         begin
-         # comment
+          # comment
         end"""
-        @test fmt(str_) == str
+        @test fmt(str_, 2, 92) == str
 
-        str_ = "try \n # comment\n catch \n # comment\n finally \n # comment\n end"
+        str_ = "try \n # comment\n catch e\n # comment\nbody\n # comment\n finally \n # comment\n end"
         str = """
         try
-         # comment
-        catch
-         # comment
+              # comment
+        catch e
+              # comment
+              body
+              # comment
         finally
-         # comment
+              # comment
         end"""
-        @test fmt(str_) == str
+        @test fmt(str_, 6, 92) == str
 
         str = """a = "hello ##" # # # α"""
         @test fmt(str) == str
@@ -2100,6 +2129,44 @@ end
         α
         =#
         x = 1
+        """
+        @test fmt(str) == str
+
+        str = """
+        # comments
+        # before
+        # code
+
+        #comment
+        if a
+            #comment
+        elseif b
+            #comment
+        elseif c
+            #comment
+            if aa
+                #comment
+            elseif bb
+                #comment
+                #comment
+            else
+                #comment
+            end
+            #comment
+        elseif cc
+            #comment
+        elseif dd
+            #comment
+            if aaa
+                #comment
+            elseif bbb
+                #comment
+            else
+                #comment
+            end
+            #comment
+        end
+        #comment
         """
         @test fmt(str) == str
 

@@ -111,14 +111,14 @@ function Document(text::AbstractString)
                 comments[line] = (ws, cs[idx:end])
             end
 
-            # There should not be more than 1
-            # "off" tag on the stack at a time.
             if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
+                # There should not be more than 1
+                # "off" tag on the stack at a time.
                 push!(stack, t.startpos[1])
                 format_on = false
-            # If "#! format: off" has not been seen
-            # "#! format: on" is treated as a normal comment.
             elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
+                # If "#! format: off" has not been seen
+                # "#! format: on" is treated as a normal comment.
                 idx1 = findfirst(c -> c == '\n', str)
                 idx2 = findlast(c -> c == '\n', str)
                 str = str[idx1:idx2]
@@ -255,16 +255,16 @@ function format_text(
 
     # Print comments and whitespace before code.
     if t.startline > 1
-        print_tree(io, Notcode(1, t.startline - 1), s)
-        print_tree(io, Newline(), s)
-    end
-
-    if t.endline < length(s.doc.ranges)
-        add_node!(t, Newline(), s)
-        add_node!(t, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+        format_check(io, Notcode(1, t.startline - 1), s)
+        print_leaf(io, Newline(), s)
     end
 
     print_tree(io, t, s)
+
+    if t.endline < length(s.doc.ranges)
+        print_leaf(io, Newline(), s)
+        format_check(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+    end
 
     text = String(take!(io))
     text = normalize_line_ending(text)

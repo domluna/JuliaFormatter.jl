@@ -10,6 +10,7 @@ makedocs(
         "Code Style" => "style.md",
         "Skipping Formatting" => "skipping_formatting.md",
         "Syntax Transforms" => "transforms.md",
+        "API Reference" => "api.md",
     ],
 )
 

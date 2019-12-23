@@ -72,7 +72,9 @@ end
 function dedent!(fst::FST, s::State)
     if is_leaf(fst)
         s.line_offset += length(fst)
-        is_closer(fst) && (fst.indent -= s.indent_size)
+        if is_closer(fst) || fst.typ === NOTCODE
+            fst.indent -= s.indent_size
+        end
         return
     end
     fst.typ === CSTParser.ConditionalOpCall && return
@@ -450,6 +452,7 @@ function n_conditionalopcall!(fst::FST, s::State)
 end
 
 
+no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
 
 # lhs op rhs
 #
@@ -461,8 +464,10 @@ function n_binaryopcall!(fst::FST, s::State)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    rhs = fst[end]
+    rhs.typ === CSTParser.Block && (rhs = rhs[1])
     # @info "ENTERING" fst.typ fst.extra_margin s.line_offset length(fst) idxs fst.ref[][2]
-    if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest)
+    if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest || rhs.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -481,7 +486,7 @@ function n_binaryopcall!(fst::FST, s::State)
             fst.indent = s.line_offset
         end
 
-        # RHS
+        # rhs
         fst[end].extra_margin = fst.extra_margin
         nest!(fst[end], s)
 
@@ -496,12 +501,10 @@ function n_binaryopcall!(fst::FST, s::State)
         end
 
         # Undo nest if possible
-        if !fst.force_nest
-            rhs = fst[end]
-            rhs.typ === CSTParser.Block && (rhs = rhs[1])
+        if !fst.force_nest && !no_unnest(rhs)
             cst = rhs.ref[]
-
             line_margin = s.line_offset
+
             if (
                 rhs.typ === CSTParser.BinaryOpCall &&
                 (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)

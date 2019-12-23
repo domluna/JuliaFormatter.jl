@@ -98,6 +98,11 @@ function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
     f(p)
 end
 
+function contains_comment(fst::FST)
+    is_leaf(fst) && return false
+    findfirst(is_comment, fst.nodes) !== nothing
+end
+
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
@@ -138,7 +143,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
-                # @info "found semicolon" l
                 n.startline = l
                 n.endline = l
                 break
@@ -171,7 +175,11 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             push!(t.nodes, n)
         end
         return
-    elseif n.typ === NOTCODE || n.typ === INLINECOMMENT
+    elseif n.typ === NOTCODE
+        n.indent = s.indent
+        push!(t.nodes, n)
+        return
+    elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
     elseif n.typ isa PLeaf
@@ -183,6 +191,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     end
 
     if n.typ === CSTParser.Block && length(n) == 0
+        push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
         if n_args(t.ref[]) == n_args(n.ref[])
@@ -1114,7 +1123,7 @@ end
 function p_try(cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for a in cst.args
-        if a.fullspan == 0
+        if a.fullspan == 0 && a.typ !== CSTParser.Block
         elseif a.typ === CSTParser.KEYWORD
             add_node!(t, pretty(a, s), s, max_padding = 0)
         elseif a.typ === CSTParser.Block
@@ -1758,7 +1767,7 @@ function p_vcat(cst::CSTParser.EXPR, s::State)
             if i != length(cst) - 1
                 has_semicolon(s.doc, n.startline) && add_node!(t, TrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
-            # Keep trailing semicolon if there's only one arg
+                # Keep trailing semicolon if there's only one arg
             elseif n_args(cst) == 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(0), s)
