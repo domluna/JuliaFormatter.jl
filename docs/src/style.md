@@ -90,9 +90,9 @@ struct Foo{A,B}
 end
 ```
 
-Binary calls are placed on a single line and separated by whitespace. 
-The exception to this are colon operations and operations inside an indexing expression. The latter
-being optional.
+Binary calls are placed on a single line and separated by whitespace.
+The exception to this are colon operations and operations inside an indexing expression.
+The latter being optional.
 
 Example 1:
 
@@ -133,6 +133,36 @@ expr1 :     expr2
 ->
 
 cond1 ? expr1 : expr2
+```
+
+Comments are aligned to surrounding code blocks.
+
+```julia
+# comment
+if a
+# comment
+elseif b
+# comment
+elseif c
+# comment
+else
+# comment
+end
+# comment
+
+->
+
+# comment
+if a
+    # comment
+elseif b
+    # comment
+elseif c
+    # comment
+else
+    # comment
+end
+# comment
 ```
 
 ## Nesting `FST`
