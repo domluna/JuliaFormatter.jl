@@ -35,10 +35,25 @@ function format_check(io::IOBuffer, fst::FST, s::State)
     end
 end
 
+# function print_leaf(io::IOBuffer, fst::FST{T}, s::State) where T <: Union{AbstractCSTLeaf,AbstractFormatLeaf}
+#     s.on && write(io, fst.val)
+#     s.line_offset += length(fst)
+# end
+#
+# function print_leaf(io::IOBuffer, fst::FST{NOTCODE}, s::State)
+#     format_check(io, fst, s)
+#     s.line_offset += length(fst)
+# end
+#
+# function print_leaf(io::IOBuffer, fst::FST{INLINECOMMENT}, s::State)
+#     print_inlinecomment(io, fst, s)
+#     s.line_offset += length(fst)
+# end
+
 function print_leaf(io::IOBuffer, fst::FST, s::State)
-    if fst.typ === NOTCODE
+    if fst isa FST{NOTCODE}
         format_check(io, fst, s)
-    elseif fst.typ === INLINECOMMENT
+    elseif fst isa FST{INLINECOMMENT}
         print_inlinecomment(io, fst, s)
     else
         s.on && write(io, fst.val)
@@ -48,7 +63,7 @@ end
 
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
-    if fst.typ === CSTParser.BinaryOpCall || fst.typ === CSTParser.ConditionalOpCall
+    if fst isa FST{Binaryopcall} || fst isa FST{Conditionalopcall}
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)
@@ -63,34 +78,31 @@ function print_tree(
 )
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
-        if n.typ === NOTCODE
-            # @info "" i n.typ n.val n.startline n.endline  length(nodes) n.indent indent
+        if n isa FST{NOTCODE}
+            # @info "" i typeof(n) n.val n.startline n.endline  length(nodes) n.indent indent
             if notcode_indent > -1
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
                 n.indent += s.indent_size
-            elseif i + 1 < length(nodes) && (
-                nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin
-            )
+            elseif i + 1 < length(nodes) &&
+                   (nodes[i+2] isa FST{Block} || nodes[i+2] isa FST{Begin})
                 n.indent = nodes[i+2].indent
-            elseif i > 2 && (
-                nodes[i-2].typ === CSTParser.Block || nodes[i-2].typ === CSTParser.Begin
-            )
+            elseif i > 2 && (nodes[i-2] isa FST{Block} || nodes[i-2] isa FST{Begin})
                 n.indent = nodes[i-2].indent
             end
         end
 
         if is_leaf(n)
             print_leaf(io, n, s)
-        elseif n.typ === CSTParser.StringH
+        elseif n isa FST{StringFN}
             print_stringh(io, n, s)
         else
             print_tree(io, n, s)
         end
 
-        if n.typ === NEWLINE && s.on && i < length(nodes)
+        if n isa FST{NEWLINE} && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
-               nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
+               nodes[i+1] isa FST{Block} || nodes[i+1] isa FST{Begin}
                 write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
@@ -101,7 +113,7 @@ function print_tree(
     end
 end
 
-function print_stringh(io::IOBuffer, fst::FST, s::State)
+function print_stringh(io::IOBuffer, fst::FST{StringFN}, s::State)
     # The indent of StringH is set to the the offset
     # of when the quote is first encountered in the source file.
 

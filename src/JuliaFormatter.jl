@@ -188,9 +188,19 @@ State(doc, indent_size, margin, opts) = State(doc, indent_size, 0, 1, 0, margin,
 end
 @inline cursor_loc(s::State) = cursor_loc(s, s.offset)
 
+abstract type AbstractStyle end
+
+struct DefaultStyle <: AbstractStyle
+    innerstyle::Union{Nothing,AbstractStyle}
+end
+DefaultStyle() = DefaultStyle(nothing)
+
+@inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
+
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
+include("styles/yas.jl")
 
 """
     format_text(
@@ -231,6 +241,7 @@ function format_text(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
 
@@ -246,9 +257,9 @@ function format_text(
         whitespace_ops_in_indices = whitespace_ops_in_indices,
     )
     s = State(Document(text), indent, margin, opts)
-    t = pretty(x, s)
-    hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
-    nest!(t, s)
+    t = pretty(style, x, s)
+    hascomment(s.doc, t.endline) && add_node!(t, InlineComment(t.endline), s)
+    nest!(style, t, s)
 
     s.line_offset = 0
     io = IOBuffer()
