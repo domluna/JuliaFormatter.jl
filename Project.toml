@@ -9,6 +9,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
-CSTParser = "^1.0.0"
+CSTParser = ">= 1.0.0"
 Tokenize = "^0.5.5"
 julia = "1"
