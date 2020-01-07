@@ -341,8 +341,7 @@ function format_file(
         whitespace_ops_in_indices = whitespace_ops_in_indices,
     )
     str = replace(str, r"\n*$" => "\n")
-    overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
-    nothing
+    overwrite ? write(filename, str) : return str
 end
 
 if VERSION < v"1.1.0"
