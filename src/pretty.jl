@@ -698,19 +698,21 @@ function p_macrocall(cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif a.fullspan - a.span > 0
-            if has_closer && i < length(cst) - 1
+            if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if cst[i+1].typ !== CSTParser.Parameters
+                if cst[i+1].typ !== CSTParser.Parameters && i < length(cst) - 1
                     add_node!(t, Whitespace(1), s)
                 end
-            elseif !has_closer && i < length(cst)
-                add_node!(t, n, s, join_lines = true)
-                add_node!(t, Whitespace(1), s)
             else
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s, join_lines = true, max_padding = 0)
+                i < length(cst) && add_node!(t, Whitespace(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            if has_closer
+                add_node!(t, n, s, join_lines = true)
+            else
+                add_node!(t, n, s, join_lines = true, max_padding = 0)
+            end
         end
     end
     t

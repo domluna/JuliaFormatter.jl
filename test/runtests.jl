@@ -937,6 +937,21 @@ end
         @test fmt(str, 4, 1) == str
     end
 
+    @testset "macro block" begin
+        str = raw"""
+        @spawn begin
+            acc = acc′′
+            for _ in _
+                a
+                b
+                ccc = dddd(ee, fff, gggggggggggg)
+            end
+            return
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 41
+    end
+
     @testset "begin" begin
         str = """
         begin
