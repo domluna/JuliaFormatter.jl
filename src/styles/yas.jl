@@ -12,22 +12,7 @@ yasformat(s::AbstractString; kwargs...) = format_text(
     style = YASStyle(),
 )
 
-pretty(style::YASStyle, cst::CSTParser.EXPR, s::State; kwargs...) =
-    pretty(style, nodetype(cst), cst, s; kwargs...)
-pretty(
-    style::YASStyle,
-    node::T,
-    cst::CSTParser.EXPR,
-    s::State;
-    kwargs...,
-) where {T<:AbstractFormatNode} = pretty(DefaultStyle(style), node, cst, s; kwargs...)
-
-function nestable(::YASStyle, cst::CSTParser.EXPR)
-    # CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return true
-    return false
-    # nest_assignment(cst) && return false
-    # true
-end
+nestable(::YASStyle, cst::CSTParser.EXPR) = false
 
 function pretty(style::YASStyle, ::Kw, cst::CSTParser.EXPR, s::State)
     t = FST{Kw}(cst, nspaces(s))
@@ -155,11 +140,6 @@ end
 #
 # Nesting
 #
-
-nest!(style::YASStyle, fst::FST{T}, s::State) where {T<:AbstractFormatNode} =
-    nest!(DefaultStyle(style), fst, s)
-nest!(style::YASStyle, nodes::Vector{FST}, s::State, indent::Int; kwargs...) =
-    nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
 
 function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
     margin = s.line_offset

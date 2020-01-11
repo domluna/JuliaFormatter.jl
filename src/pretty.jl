@@ -479,9 +479,10 @@ function length_to(fst::FST, ntyps::Vector; start::Int = 1)
 end
 
 
-pretty(style::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...) =
-    pretty(style, nodetype(cst), cst, s; kwargs...)
-function pretty(
+pretty(style::AbstractStyle, node::T, cst::CSTParser.EXPR, s::State; kwargs...) where T <: AbstractFormatNode = pretty(DefaultStyle(style), node, cst, s; kwargs...)
+pretty(style::AbstractStyle, cst::CSTParser.EXPR, s::State; kwargs...) = pretty(style, nodetype(cst), cst, s; kwargs...)
+
+@inline function pretty(
     style::DefaultStyle,
     ::T,
     cst::CSTParser.EXPR,
@@ -498,7 +499,7 @@ function pretty(
     t
 end
 
-function pretty(style::DefaultStyle, ::FileFN, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::FileFN, cst::CSTParser.EXPR, s::State)
     t = FST{FileFN}(cst, nspaces(s))
     for a in cst
         if a.kind === Tokens.NOTHING
@@ -510,15 +511,14 @@ function pretty(style::DefaultStyle, ::FileFN, cst::CSTParser.EXPR, s::State)
     t
 end
 
-
-function pretty(style::DefaultStyle, ::Identifier, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::Identifier, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     FST{Identifier}(cst, loc[1], loc[1], cst.val)
 end
 
-function pretty(style::DefaultStyle, ::Operator, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::Operator, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
@@ -526,7 +526,7 @@ function pretty(style::DefaultStyle, ::Operator, cst::CSTParser.EXPR, s::State)
     FST{Operator}(cst, loc[1], loc[1], val)
 end
 
-function pretty(style::DefaultStyle, ::Keyword, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::Keyword, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     val = cst.kind === Tokens.ABSTRACT ? "abstract" :
@@ -565,7 +565,7 @@ function pretty(style::DefaultStyle, ::Keyword, cst::CSTParser.EXPR, s::State)
     FST{Keyword}(cst, loc[1], loc[1], val)
 end
 
-function pretty(style::DefaultStyle, ::Punctuation, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::Punctuation, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     val = cst.kind === Tokens.LPAREN ? "(" :
@@ -581,7 +581,7 @@ function pretty(style::DefaultStyle, ::Punctuation, cst::CSTParser.EXPR, s::Stat
     FST{Punctuation}(cst, loc[1], loc[1], val)
 end
 
-function pretty(style::DefaultStyle, ::Literal, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::Literal, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst.kind)
@@ -649,7 +649,7 @@ function pretty(style::DefaultStyle, ::Literal, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function pretty(style::DefaultStyle, ::StringFN, cst::CSTParser.EXPR, s::State)
+@inline function pretty(style::DefaultStyle, ::StringFN, cst::CSTParser.EXPR, s::State)
     style = getstyle(style)
     loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]

@@ -89,6 +89,10 @@ function dedent!(fst::FST, s::State)
     unnest!(fst, nl_inds)
 end
 
+nest!(style::AbstractStyle, fst::FST, s::State) = nest!(DefaultStyle(style), fst, s)
+nest!(style::AbstractStyle, nodes::Vector{FST}, s::State, indent::Int; kwargs...) =
+    nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
+
 function nest!(
     style::DefaultStyle,
     nodes::Vector{FST},
@@ -110,8 +114,11 @@ function nest!(
         end
     end
 end
+
+
 nest!(style::DefaultStyle, fst::FST, s::State) =
     nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+
 nest!(
     ::DefaultStyle,
     fst::FST{T},
