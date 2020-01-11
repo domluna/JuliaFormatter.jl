@@ -479,8 +479,15 @@ function length_to(fst::FST, ntyps::Vector; start::Int = 1)
 end
 
 
-pretty(style::AbstractStyle, node::T, cst::CSTParser.EXPR, s::State; kwargs...) where T <: AbstractFormatNode = pretty(DefaultStyle(style), node, cst, s; kwargs...)
-pretty(style::AbstractStyle, cst::CSTParser.EXPR, s::State; kwargs...) = pretty(style, nodetype(cst), cst, s; kwargs...)
+pretty(
+    style::AbstractStyle,
+    node::T,
+    cst::CSTParser.EXPR,
+    s::State;
+    kwargs...,
+) where {T<:AbstractFormatNode} = pretty(DefaultStyle(style), node, cst, s; kwargs...)
+pretty(style::AbstractStyle, cst::CSTParser.EXPR, s::State; kwargs...) =
+    pretty(style, nodetype(cst), cst, s; kwargs...)
 
 @inline function pretty(
     style::DefaultStyle,
