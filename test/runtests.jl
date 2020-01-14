@@ -1,4 +1,5 @@
 using JuliaFormatter
+using JuliaFormatter: DefaultStyle
 using CSTParser
 using Test
 
@@ -34,20 +35,20 @@ end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
 
-function run_pretty(text::String, print_width::Int)
+function run_pretty(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
-    t = JuliaFormatter.pretty(x, s)
+    t = JuliaFormatter.pretty(style, x, s)
     t
 end
 
-function run_nest(text::String, print_width::Int)
+function run_nest(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
-    t = JuliaFormatter.pretty(x, s)
-    JuliaFormatter.nest!(t, s)
+    t = JuliaFormatter.pretty(style, x, s)
+    JuliaFormatter.nest!(style, t, s)
     s
 end
 
