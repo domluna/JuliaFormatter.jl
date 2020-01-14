@@ -93,7 +93,13 @@ function dedent!(fst::FST, s::State)
     unnest!(fst, nl_inds)
 end
 
-function nest!(ds::DefaultStyle, nodes::Vector{FST}, s::State, indent::Int; extra_margin = 0)
+function nest!(
+    ds::DefaultStyle,
+    nodes::Vector{FST},
+    s::State,
+    indent::Int;
+    extra_margin = 0,
+)
     style = getstyle(ds)
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE && nodes[i+1].typ === CSTParser.Block
@@ -108,7 +114,14 @@ function nest!(ds::DefaultStyle, nodes::Vector{FST}, s::State, indent::Int; extr
         end
     end
 end
-nest!(style::S, nodes::Vector{FST}, s::State, indent::Int; extra_margin = 0) where S <: AbstractStyle = nest!(DefaultStyle(style), nodes, s, indent, extra_margin = extra_margin)
+nest!(
+    style::S,
+    nodes::Vector{FST},
+    s::State,
+    indent::Int;
+    extra_margin = 0,
+) where {S<:AbstractStyle} =
+    nest!(DefaultStyle(style), nodes, s, indent, extra_margin = extra_margin)
 
 function nest!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -175,7 +188,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-nest!(style::S, fst::FST, s::State) where S <: AbstractStyle= nest!(DefaultStyle(style), fst, s)
+nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    nest!(DefaultStyle(style), fst, s)
 
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -183,7 +197,8 @@ function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     nest!(style, fst[1], s)
     nest!(style, fst[2], s)
 end
-n_unaryopcall!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_unaryopcall!(DefaultStyle(style), fst, s)
+n_unaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_unaryopcall!(DefaultStyle(style), fst, s)
 
 function n_do!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -197,7 +212,8 @@ function n_do!(ds::DefaultStyle, fst::FST, s::State)
     nest!(style, fst[1], s)
     nest!(style, fst[2:end], s, fst.indent, extra_margin = fst.extra_margin)
 end
-n_do!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_do!(DefaultStyle(style), fst, s)
+n_do!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_do!(DefaultStyle(style), fst, s)
 
 
 # Import,Using,Export
@@ -230,13 +246,16 @@ function n_import!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_import!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_import!(DefaultStyle(style), fst, s)
+n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_import!(DefaultStyle(style), fst, s)
 
 @inline n_export!(ds::DefaultStyle, fst::FST, s::State) = n_import!(ds, fst, s)
-n_export!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_export!(DefaultStyle(style), fst, s)
+n_export!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_export!(DefaultStyle(style), fst, s)
 
 @inline n_using!(ds::DefaultStyle, fst::FST, s::State) = n_import!(ds, fst, s)
-n_using!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_using!(DefaultStyle(style), fst, s)
+n_using!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_using!(DefaultStyle(style), fst, s)
 
 function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -288,25 +307,32 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
-n_tupleh!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_tupleh!(DefaultStyle(style), fst, s)
+n_tupleh!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_tupleh!(DefaultStyle(style), fst, s)
 
 @inline n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_vect!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_vect!(DefaultStyle(style), fst, s)
+n_vect!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_vect!(DefaultStyle(style), fst, s)
 
 @inline n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_vcat!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_vcat!(DefaultStyle(style), fst, s)
+n_vcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_vcat!(DefaultStyle(style), fst, s)
 
 @inline n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_braces!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_braces!(DefaultStyle(style), fst, s)
+n_braces!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_braces!(DefaultStyle(style), fst, s)
 
 @inline n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_parameters!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_parameters!(DefaultStyle(style), fst, s)
+n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_parameters!(DefaultStyle(style), fst, s)
 
 @inline n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_invisbrackets!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_invisbrackets!(DefaultStyle(style), fst, s)
+n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_invisbrackets!(DefaultStyle(style), fst, s)
 
 @inline n_comprehension!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_comprehension!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_comprehension!(DefaultStyle(style), fst, s)
+n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_comprehension!(DefaultStyle(style), fst, s)
 
 
 function n_call!(ds::DefaultStyle, fst::FST, s::State)
@@ -354,19 +380,24 @@ function n_call!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
-n_call!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_call!(DefaultStyle(style), fst, s)
+n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_call!(DefaultStyle(style), fst, s)
 
 @inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_curly!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_curly!(DefaultStyle(style), fst, s)
+n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_curly!(DefaultStyle(style), fst, s)
 
 @inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_macrocall!(style::S, fst::FST, s::State) where S <: AbstractStyle =n_macrocall!(DefaultStyle(style), fst, s)
+n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_macrocall!(DefaultStyle(style), fst, s)
 
 @inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_ref!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_ref!(DefaultStyle(style), fst, s)
+n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_ref!(DefaultStyle(style), fst, s)
 
 @inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_typedvcat!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_typedvcat!(DefaultStyle(style), fst, s)
+n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_typedvcat!(DefaultStyle(style), fst, s)
 
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -427,7 +458,8 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_whereopcall!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_whereopcall!(DefaultStyle(style), fst, s)
+n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_whereopcall!(DefaultStyle(style), fst, s)
 
 function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -491,7 +523,8 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_conditionalopcall!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_conditionalopcall!(DefaultStyle(style), fst, s)
+n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_conditionalopcall!(DefaultStyle(style), fst, s)
 
 no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
 
@@ -633,7 +666,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
     end
 end
-n_binaryopcall!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_binaryopcall!(DefaultStyle(style), fst, s)
+n_binaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_binaryopcall!(DefaultStyle(style), fst, s)
 
 function n_for!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -655,10 +689,12 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State)
         res == (0, "") && deleteat!(fst.nodes, idx - 1)
     end
 end
-n_for!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_for!(DefaultStyle(style), fst, s)
+n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_for!(DefaultStyle(style), fst, s)
 
 @inline n_let!(ds::DefaultStyle, fst::FST, s::State) = n_for!(ds, fst, s)
-n_let!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_let!(DefaultStyle(style), fst, s)
+n_let!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_let!(DefaultStyle(style), fst, s)
 
 function n_block!(ds::DefaultStyle, fst::FST, s::State; custom_indent = 0)
     style = getstyle(ds)
@@ -698,16 +734,23 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; custom_indent = 0)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_block!(style::S, fst::FST, s::State; custom_indent = 0) where S <: AbstractStyle = n_block!(DefaultStyle(style), fst, s, custom_indent = custom_indent)
+n_block!(style::S, fst::FST, s::State; custom_indent = 0) where {S<:AbstractStyle} =
+    n_block!(DefaultStyle(style), fst, s, custom_indent = custom_indent)
 
-@inline n_generator!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s, custom_indent = fst.indent)
-n_generator!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_generator!(DefaultStyle(style), fst, s)
+@inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
+    n_block!(ds, fst, s, custom_indent = fst.indent)
+n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_generator!(DefaultStyle(style), fst, s)
 
-@inline n_filter!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s, custom_indent = fst.indent)
-n_filter!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_filter!(DefaultStyle(style), fst, s)
+@inline n_filter!(ds::DefaultStyle, fst::FST, s::State) =
+    n_block!(ds, fst, s, custom_indent = fst.indent)
+n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_filter!(DefaultStyle(style), fst, s)
 
 @inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
-n_comparison!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_comparison!(DefaultStyle(style), fst, s)
+n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_comparison!(DefaultStyle(style), fst, s)
 
 @inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
-n_chainopcall!(style::S, fst::FST, s::State) where S <: AbstractStyle = n_chainopcall!(DefaultStyle(style), fst, s)
+n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_chainopcall!(DefaultStyle(style), fst, s)

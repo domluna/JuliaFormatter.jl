@@ -242,7 +242,7 @@ function format_text(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
-        style::AbstractStyle = DefaultStyle(),
+    style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
 

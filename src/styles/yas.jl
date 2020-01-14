@@ -22,11 +22,7 @@ function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_curly(
-    ys::YASStyle,
-    cst::CSTParser.EXPR,
-    s::State,
-)
+function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ys, a, s)
@@ -44,11 +40,7 @@ function p_curly(
 end
 @inline p_braces(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_curly(ys, cst, s)
 
-function p_call(
-    ys::YASStyle,
-    cst::CSTParser.EXPR,
-    s::State,
-)
+function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
@@ -110,11 +102,7 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_generator(
-    ys::YASStyle,
-    cst::CSTParser.EXPR,
-    s::State,
-) 
+function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nonest = true) :
@@ -184,11 +172,7 @@ end
 @inline n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
-function n_tupleh!(
-    ys::YASStyle,
-    fst::FST,
-    s::State,
-)
+function n_tupleh!(ys::YASStyle, fst::FST, s::State)
     line_offset = s.line_offset
     fst.typ !== CSTParser.Parameters && (fst.indent = line_offset)
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
@@ -234,4 +218,4 @@ end
 n_whereopcall!(ys::YASStyle, fst::FST, s::State) =
     nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
 n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
-n_block!(DefaultStyle(ys), fst, s, custom_indent = s.line_offset)
+    n_block!(DefaultStyle(ys), fst, s, custom_indent = s.line_offset)

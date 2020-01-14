@@ -35,7 +35,7 @@ end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
 
-function run_pretty(text::String, print_width::Int; style=DefaultStyle())
+function run_pretty(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
@@ -43,7 +43,7 @@ function run_pretty(text::String, print_width::Int; style=DefaultStyle())
     t
 end
 
-function run_nest(text::String, print_width::Int; style=DefaultStyle())
+function run_nest(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
     x = CSTParser.parse(text, true)
