@@ -200,6 +200,7 @@ DefaultStyle() = DefaultStyle(nothing)
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
+include("styles/yas.jl")
 
 """
     format_text(
@@ -241,6 +242,7 @@ function format_text(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+        style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
 
