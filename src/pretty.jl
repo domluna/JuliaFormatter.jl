@@ -175,7 +175,7 @@ function FST{T}(
     startline::Integer,
     endline::Integer,
     val::AbstractString,
-) where {T<:Union{AbstractFormatNode,AbstractCSTLeaf}}
+) where {T<:AbstractCSTLeaf}
     FST{T}(startline, endline, 0, length(val), val, nothing, nothing, false, 0)
 end
 
