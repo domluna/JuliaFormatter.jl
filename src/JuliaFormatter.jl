@@ -339,7 +339,8 @@ function format_file(
     whitespace_ops_in_indices::Bool = false,
 )
     path, ext = splitext(filename)
-    if ext != ".jl"
+    shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
+    if ext != ".jl" && match(shebang_pattern, readline(filename)) === nothing
         error("$filename must be a Julia (.jl) source file")
     end
     verbose && println("Formatting $filename")
