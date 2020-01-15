@@ -730,7 +730,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif a.fullspan - a.span > 0
             if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if cst[i+1].typ !== CSTParser.Parameters && i < length(cst) - 1
+                if i < length(cst) - 1 && cst[i+1].typ !== CSTParser.Parameters
                     add_node!(t, Whitespace(1), s)
                 end
             else
