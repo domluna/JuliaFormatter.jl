@@ -935,6 +935,9 @@ end
             b
         )"""
         @test fmt(str, 4, 1) == str
+
+        str = """@warn("Text")"""
+        @test fmt(str) == str
     end
 
     @testset "macro block" begin
