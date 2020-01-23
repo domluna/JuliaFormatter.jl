@@ -89,3 +89,11 @@ If `whitespace_ops_in_indices` is true, whitespace is added for binary operation
 in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
 if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+
+### Editor Plugins
+
+For integration with other editors:
+
+- [Atom](https://github.com/JunoLab/Atom.jl)
+- [VSCode](https://github.com/singularitti/vscode-julia-formatter/)
+- [Vim](https://github.com/kdheepak/JuliaFormatter.vim)
