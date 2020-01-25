@@ -1440,12 +1440,14 @@ is_iterable(x::Union{CSTParser.EXPR,FST}) =
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 is_block(cst::CSTParser.EXPR) =
-    cst.typ === CSTParser.If || cst.typ === CSTParser.Do || cst.typ === CSTParser.Try || cst.typ === CSTParser.Begin ||
-    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let || (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE)
+    cst.typ === CSTParser.If ||
+    cst.typ === CSTParser.Do || cst.typ === CSTParser.Try || cst.typ === CSTParser.Begin ||
+    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let ||
+    (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE)
 
 nest_block(cst::CSTParser.EXPR) =
     cst.typ === CSTParser.If || cst.typ === CSTParser.Do || cst.typ === CSTParser.Try ||
-    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let 
+    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let
 
 nest_assignment(cst::CSTParser.EXPR) = CSTParser.precedence(cst[2].kind) == 1
 
@@ -1751,7 +1753,7 @@ function p_invisbrackets(
         t.force_nest = true
     elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
         t.force_nest = true
-            end
+    end
 
     for (i, a) in enumerate(cst)
         if a.typ === CSTParser.Block
