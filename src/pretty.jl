@@ -1029,7 +1029,7 @@ p_begin(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_quote(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    if cst[1].typ === CSTParser.KEYWORD && cst[1].kind === Tokens.QUOTE
+    if cst[1].kind === Tokens.QUOTE
         add_node!(t, pretty(style, cst[1], s), s)
         if cst[2].fullspan == 0
             add_node!(t, Whitespace(1), s)
@@ -1440,6 +1440,12 @@ is_iterable(x::Union{CSTParser.EXPR,FST}) =
     x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
 
 is_block(cst::CSTParser.EXPR) =
+    cst.typ === CSTParser.If ||
+    cst.typ === CSTParser.Do || cst.typ === CSTParser.Try || cst.typ === CSTParser.Begin ||
+    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let ||
+    (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE)
+
+nest_block(cst::CSTParser.EXPR) =
     cst.typ === CSTParser.If || cst.typ === CSTParser.Do || cst.typ === CSTParser.Try ||
     cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let
 
@@ -1459,7 +1465,7 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     if CSTParser.defines_function(cst)
         rhs = cst[3]
         rhs.typ === CSTParser.Block && (rhs = rhs[1])
-        return is_block(rhs)
+        return nest_block(rhs)
     end
     false
 end
@@ -1741,7 +1747,13 @@ function p_invisbrackets(
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest
-    # @info "nest invis" nonest
+    # @info "nest invis" nest nonest
+
+    if is_block(cst[2])
+        t.force_nest = true
+    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
+        t.force_nest = true
+    end
 
     for (i, a) in enumerate(cst)
         if a.typ === CSTParser.Block

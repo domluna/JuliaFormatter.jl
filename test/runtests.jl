@@ -497,7 +497,7 @@ end
             begin
                 body
             end"""
-        @test fmt(str_) == str_
+        @test fmt(str) == str_
         @test fmt(str_, 4, 1) == str
 
         str_ = """
@@ -509,7 +509,7 @@ end
             quote
                 body
             end"""
-        @test fmt(str_) == str_
+        @test fmt(str) == str_
         @test fmt(str_, 4, 1) == str
 
         str = """foo() = :(Union{})"""
@@ -3951,11 +3951,13 @@ some_function(
 
     @testset "issue 137" begin
         str = """
-        (let x = f() do
-                body
-            end
-            x
-        end for x in xs)"""
+        (
+            let x = f() do
+                    body
+                end
+                x
+            end for x in xs
+        )"""
         str_ = """
         (
                let x = f() do
@@ -3967,12 +3969,14 @@ some_function(
         @test fmt(str_) == str
 
         str = """
-        (let
-            x = f() do
-                body
-            end
-            x
-        end for x in xs)"""
+        (
+            let
+                x = f() do
+                    body
+                end
+                x
+            end for x in xs
+        )"""
         str_ = """
         (
           let
@@ -3980,8 +3984,7 @@ some_function(
                   body
               end
               x
-          end for x in xs
-         )"""
+          end for x in xs)"""
         @test fmt(str_) == str
 
         str = """
@@ -4011,7 +4014,45 @@ some_function(
         @test fmt(str) == str
     end
 
-    @testset "multiline / issue 139" begin
+    @testset "Block inside iterator/array comprehension #170" begin
+        str_ = """
+        ys = ( if p1(x)
+                 f1(x)
+        elseif p2(x)
+            f2(x)
+        else
+            f3(x)
+        end for    x in xs)
+        """
+        str = """
+        ys = (
+            if p1(x)
+                f1(x)
+            elseif p2(x)
+                f2(x)
+            else
+                f3(x)
+            end for x in xs
+        )
+        """
+        @test fmt(str_) == str
+
+        str = """
+        ys = map(xs) do x
+            if p1(x)
+                f1(x)
+            elseif p2(x)
+                f2(x)
+            else
+                f3(x)
+            end
+        end
+        """
+        @test fmt(str) == str
+
+    end
+
+    @testset "multiline / #139" begin
         str_ = """
         m = match(r\"""
                   (
