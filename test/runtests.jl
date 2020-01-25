@@ -497,7 +497,7 @@ end
             begin
                 body
             end"""
-        @test fmt(str_) == str_
+        @test fmt(str) == str_
         @test fmt(str_, 4, 1) == str
 
         str_ = """
