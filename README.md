@@ -6,6 +6,8 @@
 
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 
+![](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
+
 ## Installation
 
 ```julia
