@@ -197,6 +197,7 @@ DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
+include("fst.jl")
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
