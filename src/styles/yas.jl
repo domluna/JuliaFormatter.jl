@@ -10,6 +10,7 @@ yasformat(s::AbstractString; kwargs...) = format_text(
     always_for_in = true,
     whitespace_ops_in_indices = true,
     whitespace_typedefs = false,
+    remove_extra_newlines = true,
     style = YASStyle(),
 )
 
