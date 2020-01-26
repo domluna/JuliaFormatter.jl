@@ -212,6 +212,7 @@ include("styles/yas.jl")
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
+        remove_extra_newlines::Bool = false,
         style::AbstractStyle = DefaultStyle(),
     )::String
 
@@ -233,9 +234,27 @@ If `whitespace_typedefs` is true, whitespace is added for type definitions.
 Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
 If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+
+If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+
+```julia
+a = 1
+
+
+
+b = 2
+```
+
+is rewritten as
+
+```julia
+a = 1
+
+b = 2
+```
 """
 function format_text(
     text::AbstractString;
@@ -317,22 +336,7 @@ to `stdout`.
 
 ### Formatting Options
 
-`indent` - the number of spaces used for an indentation.
-
-`margin` - the maximum length of a line. Code exceeding this margin will be formatted
-across multiple lines.
-
-If `always_for_in` is true `=` is always replaced with `in` if part of a
-`for` loop condition.  For example, `for i = 1:10` will be transformed
-to `for i in 1:10`.
-
-If `whitespace_typedefs` is true, whitespace is added for type definitions.
-Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
-
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
-Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+See `format_text` for description of formatting options.
 """
 function format_file(
     filename::AbstractString;
