@@ -3,7 +3,7 @@ module JuliaFormatter
 using CSTParser
 using Tokenize
 
-export format, format_text, format_file, format_dir
+export format, format_text, format_file
 
 is_str_or_cmd(t::Tokens.Kind) =
     t in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
@@ -158,6 +158,7 @@ Base.@kwdef struct Options
     always_for_in::Bool = false
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
+    remove_extra_newlines::Bool = false
 end
 
 mutable struct State
@@ -211,6 +212,7 @@ include("styles/yas.jl")
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
+        remove_extra_newlines::Bool = false,
         style::AbstractStyle = DefaultStyle(),
     )::String
 
@@ -232,9 +234,27 @@ If `whitespace_typedefs` is true, whitespace is added for type definitions.
 Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
 If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+
+If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+
+```julia
+a = 1
+
+
+
+b = 2
+```
+
+is rewritten as
+
+```julia
+a = 1
+
+b = 2
+```
 """
 function format_text(
     text::AbstractString;
@@ -243,6 +263,7 @@ function format_text(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
@@ -257,6 +278,7 @@ function format_text(
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
@@ -297,6 +319,8 @@ end
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
+        remove_extra_newlines::Bool = false,
+        style::AbstractStyle = DefaultStyle(),
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -312,22 +336,7 @@ to `stdout`.
 
 ### Formatting Options
 
-`indent` - the number of spaces used for an indentation.
-
-`margin` - the maximum length of a line. Code exceeding this margin will be formatted
-across multiple lines.
-
-If `always_for_in` is true `=` is always replaced with `in` if part of a
-`for` loop condition.  For example, `for i = 1:10` will be transformed
-to `for i in 1:10`.
-
-If `whitespace_typedefs` is true, whitespace is added for type definitions.
-Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
-
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
-Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+See `format_text` for description of formatting options.
 """
 function format_file(
     filename::AbstractString;
@@ -338,6 +347,8 @@ function format_file(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
@@ -353,6 +364,8 @@ function format_file(
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        style = style,
     )
     str = replace(str, r"\n*$" => "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
@@ -407,6 +420,8 @@ end
         overwrite::Bool = true,
         verbose::Bool = false,
         always_for_in::Bool = false,
+        remove_extra_newlines = false,
+        style = DefaultStyle(),
     )
 
 Recursively descend into files and directories, formatting and `.jl`

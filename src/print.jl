@@ -119,19 +119,26 @@ end
 function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
     s.on || return
     for l = fst.startline:fst.endline
-        ws = fst.indent
-        if fmttag
-            ws, v = get(s.doc.comments, l, (0, "\n"))
-        else
-            _, v = get(s.doc.comments, l, (0, "\n"))
+        ws, v = get(s.doc.comments, l, (0, "\n"))
+        !fmttag && (ws = fst.indent)
+
+        # If the current newline is followed by another newline
+        # don't print the current newline.
+        if s.opts.remove_extra_newlines
+            _, vn = get(s.doc.comments, l + 1, (0, "\n"))
+            vn == "\n" && v == "\n" && (v = "")
         end
+
         v == "" && continue
         v == "\n" && (ws = 0)
+
         if l == fst.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end
+
         ws > 0 && write(io, repeat(" ", ws))
         write(io, v)
+
         if l != fst.endline && v[end] != '\n'
             write(io, "\n")
         end

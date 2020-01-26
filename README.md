@@ -21,6 +21,12 @@ julia> using JuliaFormatter
 
 # Recursively formats all Julia files in the current directory
 julia> format(".")
+
+# Formats an individual file
+julia> format_file("foo.jl")
+
+# Formats a string (contents of a Julia file)
+julia> format_text(str)
 ```
 
 [Use With Github Actions](https://github.com/julia-actions/julia-format)
@@ -37,6 +43,8 @@ format_text(
     always_for_in = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
 
 format_file(
@@ -48,6 +56,8 @@ format_file(
     always_for_in = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
 
 format(
@@ -59,6 +69,8 @@ format(
     always_for_in = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
 ```
 
@@ -88,9 +100,27 @@ If `whitespace_typedefs` is true, whitespace is added for type definitions.
 Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
 If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
+
+If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+
+```julia
+a = 1
+
+
+
+b = 2
+```
+
+is rewritten as
+
+```julia
+a = 1
+
+b = 2
+```
 
 ### Editor Plugins
 
