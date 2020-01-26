@@ -475,8 +475,21 @@ function p_block(
     end
     t
 end
-p_block(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_block(DefaultStyle(style), cst, s)
+p_block(
+    style::S,
+    cst::CSTParser.EXPR,
+    s::State;
+    ignore_single_line = false,
+    from_quote = false,
+    join_body = false,
+) where {S<:AbstractStyle} = p_block(
+    DefaultStyle(style),
+    cst,
+    s,
+    ignore_single_line = ignore_single_line,
+    from_quote = from_quote,
+    join_body = join_body,
+)
 
 # Abstract
 function p_abstract(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
