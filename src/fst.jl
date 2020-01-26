@@ -226,7 +226,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
             if remove_empty_notcode(t)
                 nest = false
-                for l=notcode_startline:notcode_endline
+                for l = notcode_startline:notcode_endline
                     if hascomment(s.doc, l)
                         nest = true
                         break
@@ -347,36 +347,36 @@ end
 function is_iterable(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.TupleH && return true
     x.typ === CSTParser.Vect && return true
-    x.typ === CSTParser.Vcat && return true 
+    x.typ === CSTParser.Vcat && return true
     x.typ === CSTParser.Braces && return true
     x.typ === CSTParser.Call && return true
     x.typ === CSTParser.Curly && return true
     x.typ === CSTParser.Comprehension && return true
     x.typ === CSTParser.MacroCall && return true
     x.typ === CSTParser.InvisBrackets && return true
-    x.typ === CSTParser.Ref  && return true
+    x.typ === CSTParser.Ref && return true
     x.typ === CSTParser.TypedVcat && return true
     return false
 end
 
 function is_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
-    cst.typ === CSTParser.Do  && return true
-    cst.typ === CSTParser.Try  && return true
-    cst.typ === CSTParser.Begin  && return true
-    cst.typ === CSTParser.For  && return true
-    cst.typ === CSTParser.While  && return true
+    cst.typ === CSTParser.Do && return true
+    cst.typ === CSTParser.Try && return true
+    cst.typ === CSTParser.Begin && return true
+    cst.typ === CSTParser.For && return true
+    cst.typ === CSTParser.While && return true
     cst.typ === CSTParser.Let && return true
     (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
     return false
 end
 
 function nest_block(cst::CSTParser.EXPR)
-    cst.typ === CSTParser.If  && return true
-    cst.typ === CSTParser.Do  && return true
-    cst.typ === CSTParser.Try  && return true
-    cst.typ === CSTParser.For  && return true
-    cst.typ === CSTParser.While  && return true
+    cst.typ === CSTParser.If && return true
+    cst.typ === CSTParser.Do && return true
+    cst.typ === CSTParser.Try && return true
+    cst.typ === CSTParser.For && return true
+    cst.typ === CSTParser.While && return true
     cst.typ === CSTParser.Let && return true
     return false
 end
@@ -393,7 +393,7 @@ end
 nest_assignment(cst::CSTParser.EXPR) = CSTParser.precedence(cst[2].kind) == 1
 
 function unnestable_arg(cst::CSTParser.EXPR)
-    is_iterable(cst) && return true 
+    is_iterable(cst) && return true
     is_str(cst) && return true
     cst.typ === CSTParser.LITERAL && return true
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT) && return true

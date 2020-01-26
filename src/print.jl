@@ -125,7 +125,7 @@ function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
         # If the current newline is followed by another newline
         # don't print the current newline.
         if s.opts.remove_extra_newlines
-            _, vn = get(s.doc.comments, l+1, (0, "\n"))
+            _, vn = get(s.doc.comments, l + 1, (0, "\n"))
             vn == "\n" && v == "\n" && (v = "")
         end
 

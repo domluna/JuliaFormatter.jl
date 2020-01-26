@@ -32,8 +32,24 @@ function fmt(
     whitespace_ops_in_indices = false,
     remove_extra_newlines = false,
 )
-    s1 = fmt1(s, i, m, always_for_in, whitespace_typedefs, whitespace_ops_in_indices, remove_extra_newlines)
-    fmt1(s1, i, m, always_for_in, whitespace_typedefs, whitespace_ops_in_indices, remove_extra_newlines)
+    s1 = fmt1(
+        s,
+        i,
+        m,
+        always_for_in,
+        whitespace_typedefs,
+        whitespace_ops_in_indices,
+        remove_extra_newlines,
+    )
+    fmt1(
+        s1,
+        i,
+        m,
+        always_for_in,
+        whitespace_typedefs,
+        whitespace_ops_in_indices,
+        remove_extra_newlines,
+    )
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
@@ -4262,7 +4278,7 @@ some_function(
 
             d,
         )"""
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
 
         str_ = """
         a = 10
@@ -4295,7 +4311,7 @@ some_function(
 
         # hello
         """
-        @test fmt(str, remove_extra_newlines=true) == str
+        @test fmt(str, remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4307,7 +4323,7 @@ some_function(
             c)"""
         str = """var = func(a, b, c)"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4319,7 +4335,7 @@ some_function(
         c"""
         str = """var = a && b && c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4334,7 +4350,7 @@ some_function(
         c"""
         str = """var = a ? b : c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4349,7 +4365,7 @@ some_function(
         c"""
         str = """var = a + b + c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4364,7 +4380,7 @@ some_function(
         c"""
         str = """var = a == b == c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines=true) == str
+        @test fmt(str_, remove_extra_newlines = true) == str
     end
 
 end

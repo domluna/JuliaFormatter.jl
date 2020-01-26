@@ -259,7 +259,7 @@ function format_text(
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
-    remove_extra_newlines = remove_extra_newlines,
+        remove_extra_newlines = remove_extra_newlines,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
