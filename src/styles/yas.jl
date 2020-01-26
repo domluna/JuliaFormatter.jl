@@ -43,7 +43,6 @@ end
 
 function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
-
     for (i, a) in enumerate(cst)
         n = pretty(ys, a, s)
         if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])

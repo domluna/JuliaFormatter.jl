@@ -158,6 +158,7 @@ Base.@kwdef struct Options
     always_for_in::Bool = false
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
+    remove_extra_newlines::Bool = false
 end
 
 mutable struct State
@@ -243,6 +244,7 @@ function format_text(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
@@ -257,6 +259,7 @@ function format_text(
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
+    remove_extra_newlines = remove_extra_newlines,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
@@ -297,6 +300,8 @@ end
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
+        remove_extra_newlines::Bool = false,
+        style::AbstractStyle = DefaultStyle(),
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -338,6 +343,8 @@ function format_file(
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    style::AbstractStyle = DefaultStyle(),
 )
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
@@ -353,6 +360,8 @@ function format_file(
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        style = style,
     )
     str = replace(str, r"\n*$" => "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
@@ -407,6 +416,8 @@ end
         overwrite::Bool = true,
         verbose::Bool = false,
         always_for_in::Bool = false,
+        remove_extra_newlines = false,
+        style = DefaultStyle(),
     )
 
 Recursively descend into files and directories, formatting and `.jl`

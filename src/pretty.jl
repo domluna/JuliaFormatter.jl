@@ -1101,45 +1101,6 @@ end
 p_kw(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_kw(DefaultStyle(style), cst, s)
 
-@inline is_str(cst::CSTParser.EXPR) = is_str_or_cmd(cst.kind) || is_str_or_cmd(cst.typ)
-
-is_iterable(x::Union{CSTParser.EXPR,FST}) =
-    x.typ === CSTParser.TupleH || x.typ === CSTParser.Vect ||
-    x.typ === CSTParser.Vcat || x.typ === CSTParser.Braces || x.typ === CSTParser.Call ||
-    x.typ === CSTParser.Curly || x.typ === CSTParser.Comprehension ||
-    x.typ === CSTParser.MacroCall || x.typ === CSTParser.InvisBrackets ||
-    x.typ === CSTParser.Ref || x.typ === CSTParser.TypedVcat
-
-is_block(cst::CSTParser.EXPR) =
-    cst.typ === CSTParser.If ||
-    cst.typ === CSTParser.Do || cst.typ === CSTParser.Try || cst.typ === CSTParser.Begin ||
-    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let ||
-    (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE)
-
-nest_block(cst::CSTParser.EXPR) =
-    cst.typ === CSTParser.If || cst.typ === CSTParser.Do || cst.typ === CSTParser.Try ||
-    cst.typ === CSTParser.For || cst.typ === CSTParser.While || cst.typ === CSTParser.Let
-
-nest_assignment(cst::CSTParser.EXPR) = CSTParser.precedence(cst[2].kind) == 1
-
-unnestable_arg(cst::CSTParser.EXPR) =
-    is_iterable(cst) || is_str(cst) || cst.typ === CSTParser.LITERAL ||
-    (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT)
-
-function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
-    CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return true
-    nest_assignment(cst) && return !is_str(cst[3])
-    true
-end
-
-function nest_rhs(cst::CSTParser.EXPR)::Bool
-    if CSTParser.defines_function(cst)
-        rhs = cst[3]
-        rhs.typ === CSTParser.Block && (rhs = rhs[1])
-        return nest_block(rhs)
-    end
-    false
-end
 
 # BinaryOpCall
 function p_binaryopcall(
