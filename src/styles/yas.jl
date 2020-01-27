@@ -1,5 +1,6 @@
+# Experimental
+#
 # YAS style !!!
-# This is a WIP
 
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
@@ -14,7 +15,11 @@ yasformat(s::AbstractString; kwargs...) = format_text(
     style = YASStyle(),
 )
 
-nestable(::YASStyle, cst::CSTParser.EXPR) = false
+function nestable(::YASStyle, cst::CSTParser.EXPR)
+    CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return false
+    nest_assignment(cst) && return false
+    return true
+end
 
 function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
@@ -28,48 +33,75 @@ function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ys, a, s)
-        if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+        if CSTParser.is_comma(a) && i == length(cst) - 1
+            continue
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i == length(cst) - 1
-            # remove trailing comma
-        elseif is_closer(n) || is_opener(n)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         else
-            add_node!(t, n, s, join_lines = t.endline == n.startline)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
 end
 @inline p_braces(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_curly(ys, cst, s)
 
+function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
+    for (i, a) in enumerate(cst)
+        n = pretty(ys, a, s)
+        if CSTParser.is_comma(a) && i + 1 == length(cst)
+            if n_args(cst) == 1 
+                add_node!(t, n, s, join_lines = true)
+            elseif !is_closer(cst[i+1])
+                add_node!(t, n, s, join_lines = true)
+                add_node!(t, Placeholder(1), s)
+            end
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
+
 function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ys, a, s)
-        if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+        if CSTParser.is_comma(a) && i + 1 == length(cst)
+            continue
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i == length(cst) - 1
-            # remove trailing comma
-        elseif is_closer(n) || is_opener(n)
-            add_node!(t, n, s, join_lines = true)
-        elseif n.typ === CSTParser.Parameters
-            join_lines = t.endline == n.startline
-            add_node!(t, n, s, join_lines = join_lines)
+            add_node!(t, Placeholder(1), s)
         else
-            join_lines = t.endline == n.startline
-            if join_lines && !is_opener(t[end])
-                add_node!(t, Whitespace(1), s)
-            end
-            add_node!(t, n, s, join_lines = join_lines)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
 end
 @inline p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
-@inline p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
-@inline p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
+
+
+function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
+    for (i, a) in enumerate(cst)
+        n = pretty(ys, a, s)
+        if i == length(cst) && CSTParser.is_comma(a)
+            # do nothing
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
 
 function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
@@ -88,16 +120,13 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst.args[3:end])
         n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
             pretty(ys, a, s)
-        if is_closer(n) || is_opener(n)
-            add_node!(t, n, s, join_lines = true)
-        elseif CSTParser.is_comma(a) && !is_punc(cst[i+3])
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(t, n, s, join_lines = t.endline == n.startline)
+
+        if CSTParser.is_comma(a) && is_closer(cst[i+1])
         else
-            add_node!(t, n, s, join_lines = t.endline == n.startline)
+            add_node!(t, n, s, join_lines = true)
         end
     end
+
     brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}")
     add_braces && add_node!(t, brace, s, join_lines = true)
     t
@@ -111,7 +140,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         if a.typ === CSTParser.KEYWORD
             add_node!(t, Whitespace(1), s)
             add_node!(t, n, s, join_lines = true)
-            # add_node!(t, Whitespace(1), s)
+            add_node!(t, Placeholder(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(cst)
                     eq_to_in_normalization!(cst[j], s.opts.always_for_in)
@@ -119,10 +148,9 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
-            join_lines = t.endline == n.startline
-            join_lines && add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = join_lines)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -141,7 +169,15 @@ function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
     else
         margin += sum(length.(fst[i+1:idx]))
     end
-    if margin > s.margin || is_comment(fst[i+1])
+    
+    # len, found = length_to(fst, [PLACEHOLDER], start = i + 1)
+    # if found
+    #     margin += len
+    # else
+    #     margin += sum(length.(fst[i+1:end])) + fst.extra_margin
+    # end
+
+    if margin > s.margin || is_comment(fst[i+1]) || is_comment(fst[i-1])
         fst[i] = Newline(length = fst[i].len)
         s.line_offset = fst.indent
     else
@@ -156,6 +192,8 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            nest_if_over_margin!(ys, fst, s, i)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -181,6 +219,8 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            nest_if_over_margin!(ys, fst, s, i)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -217,6 +257,6 @@ end
 @inline n_using!(ys::YASStyle, fst::FST, s::State) = n_import!(ys, fst, s)
 
 n_whereopcall!(ys::YASStyle, fst::FST, s::State) =
-    nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+   nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
 n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ys), fst, s, custom_indent = s.line_offset)
