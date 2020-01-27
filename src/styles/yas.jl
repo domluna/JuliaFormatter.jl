@@ -65,7 +65,7 @@ function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         n = pretty(ys, a, s)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
-            if n_args(cst) == 1 
+            if n_args(cst) == 1
                 add_node!(t, n, s, join_lines = true)
             elseif !is_closer(cst[i+1])
                 add_node!(t, n, s, join_lines = true)
@@ -183,7 +183,7 @@ function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
     else
         margin += sum(length.(fst[i+1:idx]))
     end
-    
+
     # len, found = length_to(fst, [PLACEHOLDER], start = i + 1)
     # if found
     #     margin += len
@@ -271,6 +271,6 @@ end
 @inline n_using!(ys::YASStyle, fst::FST, s::State) = n_import!(ys, fst, s)
 
 n_whereopcall!(ys::YASStyle, fst::FST, s::State) =
-   nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
 n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ys), fst, s, custom_indent = s.line_offset)
