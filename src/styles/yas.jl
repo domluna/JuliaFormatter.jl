@@ -2,6 +2,20 @@
 #
 # YAS style !!!
 
+"""
+    YASStyle
+
+**This style is EXPERIMENTAL !!!**
+
+Formatting style based on https://github.com/jrevels/YASGuide.
+
+Recommended options are:
+
+- `always_for_in` = true,
+- `whitespace_ops_in_indices` = true,
+- `whitespace_typedefs` = false,
+- `remove_extra_newlines` = true,
+"""
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
 
@@ -15,11 +29,11 @@ yasformat(s::AbstractString; kwargs...) = format_text(
     style = YASStyle(),
 )
 
-function nestable(::YASStyle, cst::CSTParser.EXPR)
-    CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return false
-    nest_assignment(cst) && return false
-    return true
-end
+# function nestable(::YASStyle, cst::CSTParser.EXPR)
+#     CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return false
+#     nest_assignment(cst) && return false
+#     return true
+# end
 
 function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))

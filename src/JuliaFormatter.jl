@@ -3,7 +3,7 @@ module JuliaFormatter
 using CSTParser
 using Tokenize
 
-export format, format_text, format_file
+export format, format_text, format_file, DefaultStyle, YASStyle
 
 is_str_or_cmd(t::Tokens.Kind) =
     t in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
@@ -191,6 +191,12 @@ end
 
 abstract type AbstractStyle end
 
+"""
+    DefaultStyle
+
+The default formatting style. See the style section of the documentation
+for more details.
+"""
 struct DefaultStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
