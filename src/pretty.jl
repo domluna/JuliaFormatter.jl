@@ -1234,18 +1234,13 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     nest = length(CSTParser.get_where_params(cst)) > 0
     args = get_args(cst.args[3:end])
-    # nest = length(args) > 0 && !(length(CSTParser.get_where_params(cst)) == 1 && unnestable_arg(cst[1]))
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
         !CSTParser.is_lbrace(cst[3]) && cst.parent.typ !== CSTParser.Curly &&
         cst[3].typ !== CSTParser.Curly && cst[3].typ !== CSTParser.BracesCat
 
-    add_braces && add_node!(
-        t,
-        FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{"),
-        s,
-        join_lines = true,
-    )
+    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
+    add_braces && add_node!(t, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
     # @debug "" nest in_braces cst[3].val == "{" cst.args[end].val
@@ -1273,12 +1268,8 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
-    add_braces && add_node!(
-        t,
-        FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}"),
-        s,
-        join_lines = true,
-    )
+    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}")
+    add_braces && add_node!(t, brace, s, join_lines = true)
     t
 end
 p_whereopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
