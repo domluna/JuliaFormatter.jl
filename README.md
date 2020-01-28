@@ -1,12 +1,16 @@
 # JuliaFormatter.jl
 
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev)
-[![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
+[![Documenter: stable][docs-stable-img]](https://domluna.github.io/JuliaFormatter.jl/stable)
+[![Documenter: dev][docs-dev-img]](https://domluna.github.io/JuliaFormatter.jl/dev)
+[![Build Status][travis-img]](https://travis-ci.org/domluna/JuliaFormatter.jl)
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[travis-img]: https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master
 
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 
-![](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
+![Screencast](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
 
 ## Installation
 
@@ -74,11 +78,16 @@ format(
 )
 ```
 
-The `text` argument to `format_text` is a string containing the code to be formatted; the formatted code is retuned as a new string. The `file` argument to `format_file` is the path of a file to be formatted. The `format` function is either called with a singe string to format if it is a `.jl` file or to recuse into looking for `.jl` files if it is a directory. It can also be called with a collection of such paths to iterate over.
+The `text` argument to `format_text` is a string containing the code to be formatted;
+the formatted code is retuned as a new string.
+The `file` argument to `format_file` is the path of a file to be formatted.
+The `format` function is either called with a single string or a collection of strings,
+in both cases representing filesystem paths. If the path is to a `.jl` file, it formats it;
+if it's a directory, it recurses into it, looking for `.jl` files to format.
 
 ### File Options
 
-If `overwrite` is `true` the file will be reformatted in place, overwriting
+If `overwrite` is `true`, the file will be reformatted in place, overwriting
 the existing file; if it is `false`, the formatted version of `foo.jl` will
 be written to `foo_fmt.jl` instead.
 
@@ -99,8 +108,9 @@ to `for i in 1:10`.
 If `whitespace_typedefs` is true, whitespace is added for type definitions.
 Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+If `whitespace_ops_in_indices` is true, whitespace is added for binary operations in indices.
+Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`.
+Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
 
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
