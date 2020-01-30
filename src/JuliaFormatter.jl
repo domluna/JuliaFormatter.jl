@@ -430,7 +430,7 @@ end
         style = DefaultStyle(),
     )
 
-Recursively descend into files and directories, formatting and `.jl`
+Recursively descend into files and directories, formatting any `.jl`
 files by calling `format_file` on them.
 """
 function format(paths; options...)
