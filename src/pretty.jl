@@ -1395,19 +1395,14 @@ function p_invisbrackets(
         if a.typ === CSTParser.Block
             add_node!(t, pretty(style, a, s, from_quote = true), s, join_lines = true)
         elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(
-                t,
-                pretty(style, a, s, nonest = nonest, nospace = nospace),
-                s,
-                join_lines = true,
-            )
+            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
         elseif a.typ === CSTParser.InvisBrackets
-            add_node!(
-                t,
-                pretty(style, a, s, nonest = nonest, nospace = nospace),
-                s,
-                join_lines = true,
-            )
+            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
+        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
         elseif is_opener(a) && nest
             # @info "opening"
             add_node!(t, pretty(style, a, s), s, join_lines = true)
@@ -1585,19 +1580,14 @@ function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(
-                t,
-                pretty(style, a, s, nonest = true, nospace = nospace),
-                s,
-                join_lines = true,
-            )
+            n = pretty(style, a, s, nonest = true, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
         elseif a.typ === CSTParser.InvisBrackets
-            add_node!(
-                t,
-                pretty(style, a, s, nonest = true, nospace = nospace),
-                s,
-                join_lines = true,
-            )
+            n = pretty(style, a, s, nonest = true, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
+        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+            n = pretty(style, a, s, nonest = true, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end

@@ -4209,6 +4209,14 @@ some_function(
         str_ = "a:b+c:d-e"
         str = "a:(b + c):(d - e)"
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        # issue 180
+        str_ = "s[m+i+1]"
+        str = "s[m+i+1]"
+        @test fmt(str, m = 1) == str
+
+        str = "s[m + i + 1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
     end
 
     @testset "BracesCat / Issue 150" begin
