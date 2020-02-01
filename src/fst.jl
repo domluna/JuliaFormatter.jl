@@ -204,10 +204,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             multi_arg = n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
         end
-        # elseif is_block(cst[2])
-        #     t.force_nest = true
-        # elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
-        #     t.force_nest = true
     end
 
     if length(t.nodes) == 0

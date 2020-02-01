@@ -1521,15 +1521,6 @@ function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     add_node!(t, Placeholder(0), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    # n = pretty(style, cst[2], s)
-    # add_node!(t, n, s, join_lines=true)
-    #
-    # if is_block(cst[2])
-    #     t.force_nest = true
-    # elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
-    #     t.force_nest = true
-    # end
-
     add_node!(t, Placeholder(0), s)
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     t
