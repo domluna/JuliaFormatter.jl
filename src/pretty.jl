@@ -55,6 +55,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_vect(style, cst, s)
     elseif cst.typ === CSTParser.Comprehension
         return p_comprehension(style, cst, s)
+    elseif cst.typ === CSTParser.TypedComprehension
+        return p_typedcomprehension(style, cst, s)
     elseif cst.typ === CSTParser.Braces
         return p_braces(style, cst, s)
     elseif cst.typ === CSTParser.TupleH
@@ -133,13 +135,14 @@ pretty(style::S, cst::CSTParser.EXPR, s::State; kwargs...) where {S<:AbstractSty
     pretty(DefaultStyle(style), cst, s; kwargs...)
 
 function p_fileh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
     t = FST(cst, nspaces(s))
     for a in cst
         if a.kind === Tokens.NOTHING
             s.offset += a.fullspan
             continue
         end
-        add_node!(t, pretty(ds, a, s), s, join_lines = false, max_padding = 0)
+        add_node!(t, pretty(style, a, s), s, join_lines = false, max_padding = 0)
     end
     t
 end
@@ -147,7 +150,6 @@ p_fileh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_fileh(DefaultStyle(style), cst, s)
 
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     FST(cst, loc[1], loc[1], cst.val)
@@ -156,7 +158,6 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
 @inline function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
     s.offset += cst.fullspan
@@ -166,7 +167,6 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
 @inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
     loc = cursor_loc(s)
     val = cst.kind === Tokens.ABSTRACT ? "abstract" :
         cst.kind === Tokens.BAREMODULE ? "baremodule" :
@@ -207,7 +207,6 @@ p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
 @inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
     loc = cursor_loc(s)
     val = cst.kind === Tokens.LPAREN ? "(" :
         cst.kind === Tokens.LBRACE ? "{" :
@@ -225,7 +224,6 @@ p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
     p_punctuation(DefaultStyle(style), cst, s)
 
 @inline function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst.kind)
         val = cst.val
@@ -1509,10 +1507,48 @@ end
 p_vect(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_vect(DefaultStyle(style), cst, s)
 
-@inline p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) =
-    p_vect(ds, cst, s)
+# Comprehension
+function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
+
+    if is_block(cst[2])
+        t.force_nest = true
+    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
+        t.force_nest = true
+    end
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    t
+end
 p_comprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_comprehension(DefaultStyle(style), cst, s)
+
+# TypedComprehension
+function p_typedcomprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
+
+    if is_block(cst[3])
+        t.force_nest = true
+    elseif cst[3].typ === CSTParser.Generator && is_block(cst[3][1])
+        t.force_nest = true
+    end
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
+    t
+end
+p_typedcomprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_typedcomprehension(DefaultStyle(style), cst, s)
 
 # Parameters
 function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
