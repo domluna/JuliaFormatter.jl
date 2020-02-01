@@ -204,6 +204,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             multi_arg = n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
         end
+    # elseif is_block(cst[2])
+    #     t.force_nest = true
+    # elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
+    #     t.force_nest = true
     end
 
     if length(t.nodes) == 0
@@ -352,6 +356,7 @@ function is_iterable(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.Call && return true
     x.typ === CSTParser.Curly && return true
     x.typ === CSTParser.Comprehension && return true
+    x.typ === CSTParser.TypedComprehension && return true
     x.typ === CSTParser.MacroCall && return true
     x.typ === CSTParser.InvisBrackets && return true
     x.typ === CSTParser.Ref && return true
@@ -359,15 +364,16 @@ function is_iterable(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
-function is_block(cst::CSTParser.EXPR)
-    cst.typ === CSTParser.If && return true
-    cst.typ === CSTParser.Do && return true
-    cst.typ === CSTParser.Try && return true
-    cst.typ === CSTParser.Begin && return true
-    cst.typ === CSTParser.For && return true
-    cst.typ === CSTParser.While && return true
-    cst.typ === CSTParser.Let && return true
-    (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
+function is_block(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.If && return true
+    x.typ === CSTParser.Do && return true
+    x.typ === CSTParser.Try && return true
+    x.typ === CSTParser.Begin && return true
+    x.typ === CSTParser.For && return true
+    x.typ === CSTParser.While && return true
+    x.typ === CSTParser.Let && return true
+    # (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
+    (x.typ === CSTParser.Quote && x[1].val == "quote") && return true
     return false
 end
 

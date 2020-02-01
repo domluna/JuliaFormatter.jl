@@ -4069,6 +4069,44 @@ some_function(
         """
         @test fmt(str) == str
 
+        str_ = """
+        y1 = Any[if true
+            very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
+        end for i in 1:1]"""
+        str = """
+        y1 = Any[
+            if true
+                very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
+            end
+            for i = 1:1
+        ]"""
+        @test fmt(str_) == str
+
+        str_ = """
+        y1 = [if true
+            very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
+        end for i in 1:1]"""
+        str = """
+        y1 = [
+            if true
+                very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
+            end
+            for i = 1:1
+        ]"""
+        @test fmt(str_) == str
+
+        str_ = """
+        y1 = [if true
+            short_expr
+        end for i in 1:1]"""
+        str = """
+        y1 = [
+            if true
+                short_expr
+            end for i = 1:1
+        ]"""
+        @test fmt(str_) == str
+
     end
 
     @testset "multiline / #139" begin

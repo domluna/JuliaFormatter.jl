@@ -55,6 +55,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_vect(style, cst, s)
     elseif cst.typ === CSTParser.Comprehension
         return p_comprehension(style, cst, s)
+    elseif cst.typ === CSTParser.TypedComprehension
+        return p_typedcomprehension(style, cst, s)
     elseif cst.typ === CSTParser.Braces
         return p_braces(style, cst, s)
     elseif cst.typ === CSTParser.TupleH
@@ -1505,10 +1507,57 @@ end
 p_vect(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_vect(DefaultStyle(style), cst, s)
 
-@inline p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) =
-    p_vect(ds, cst, s)
+# Comprehension
+function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
+
+    if is_block(cst[2])
+        t.force_nest = true
+    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
+        t.force_nest = true
+    end
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines=true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines=true)
+    # n = pretty(style, cst[2], s)
+    # add_node!(t, n, s, join_lines=true)
+    #
+    # if is_block(cst[2])
+    #     t.force_nest = true
+    # elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
+    #     t.force_nest = true
+    # end
+
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines=true)
+    t
+end
 p_comprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_comprehension(DefaultStyle(style), cst, s)
+
+# TypedComprehension
+function p_typedcomprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
+
+    if is_block(cst[3])
+        t.force_nest = true
+    elseif cst[3].typ === CSTParser.Generator && is_block(cst[3][1])
+        t.force_nest = true
+    end
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines=true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines=true)
+    add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[4], s), s, join_lines=true)
+    t
+end
+p_typedcomprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_typedcomprehension(DefaultStyle(style), cst, s)
 
 # Parameters
 function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)

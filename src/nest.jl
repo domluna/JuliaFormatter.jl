@@ -166,6 +166,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_invisbrackets!(style, fst, s)
     elseif fst.typ === CSTParser.Comprehension
         n_comprehension!(style, fst, s)
+    elseif fst.typ === CSTParser.TypedComprehension
+        n_typedcomprehension!(style, fst, s)
     elseif fst.typ === CSTParser.Do
         n_do!(style, fst, s)
     elseif fst.typ === CSTParser.Generator
@@ -334,6 +336,9 @@ n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comprehension!(DefaultStyle(style), fst, s)
 
+@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
+n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_typedcomprehension!(DefaultStyle(style), fst, s)
 
 function n_call!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
