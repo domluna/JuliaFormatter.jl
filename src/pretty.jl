@@ -1518,9 +1518,9 @@ function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         t.force_nest = true
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     add_node!(t, Placeholder(0), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     # n = pretty(style, cst[2], s)
     # add_node!(t, n, s, join_lines=true)
     #
@@ -1531,7 +1531,7 @@ function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # end
 
     add_node!(t, Placeholder(0), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     t
 end
 p_comprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -1548,12 +1548,12 @@ function p_typedcomprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         t.force_nest = true
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines=true)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Placeholder(0), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     add_node!(t, Placeholder(0), s)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines=true)
+    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
     t
 end
 p_typedcomprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
