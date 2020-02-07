@@ -147,13 +147,12 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                 break
             end
         end
-        # @info "" t.endline n.endline loc[1]
 
         # If there's no semicolon, treat it
         # as a PLeaf
         if n.startline == -1
             t.len += length(n)
-            n.startline = t.startline
+            n.startline = t.endline
             n.endline = t.endline
             push!(t.nodes, n)
             return

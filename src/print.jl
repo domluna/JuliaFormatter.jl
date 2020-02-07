@@ -64,7 +64,6 @@ function print_tree(
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if n.typ === NOTCODE
-            # @info "" i n.typ n.val n.startline n.endline  length(nodes) n.indent indent
             if notcode_indent > -1
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])

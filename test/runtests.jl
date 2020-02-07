@@ -482,7 +482,7 @@ end
         @test fmt("a:b:c ") == "a:b:c"
         @test fmt("a::b:: c") == "a::b::c"
         @test fmt("a :: b::c") == "a::b::c"
-        # issue #74
+        # issue 74
         @test fmt("0:1/3:2") == "0:1/3:2"
         @test fmt("2a") == "2a"
         @test fmt("2(a+1)") == "2 * (a + 1)"
@@ -1120,7 +1120,7 @@ end
         t = run_pretty(str, 80)
         @test length(t) == 30
 
-        # issue #58
+        # issue 58
 
         str_ = """
         model = SDDP.LinearPolicyGraph(stages = 2, lower_bound = 1, direct_mode = false) do (subproblem1, subproblem2, subproblem3, subproblem4, subproblem5, subproblem6, subproblem7, subproblem8)
