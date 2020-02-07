@@ -106,7 +106,7 @@ end
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
     if cst.typ === CSTParser.MacroCall || cst.typ === CSTParser.TypedVcat ||
-       cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly
+       cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly || cst.typ === CSTParser.Call
         return get_args(cst.args[2:end])
     elseif cst.typ === CSTParser.Parameters || cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat || cst.typ === CSTParser.TupleH ||
@@ -398,7 +398,8 @@ function unnestable_arg(cst::CSTParser.EXPR)
     is_iterable(cst) && return true
     is_str(cst) && return true
     cst.typ === CSTParser.LITERAL && return true
-    (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT) && return true
+    cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
+    cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
     return false
 end
 

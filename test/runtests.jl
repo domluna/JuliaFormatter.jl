@@ -457,6 +457,9 @@ end
             end
         end"""
         @test fmt(str) == str
+
+        str = "foo(args...)"
+        @test fmt(str,m=1) == str
     end
 
     @testset "binary ops" begin
