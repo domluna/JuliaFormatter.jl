@@ -105,8 +105,9 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
-    if cst.typ === CSTParser.MacroCall || cst.typ === CSTParser.TypedVcat ||
-       cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly
+    if cst.typ === CSTParser.MacroCall ||
+       cst.typ === CSTParser.TypedVcat || cst.typ === CSTParser.Ref ||
+       cst.typ === CSTParser.Curly || cst.typ === CSTParser.Call
         return get_args(cst.args[2:end])
     elseif cst.typ === CSTParser.Parameters || cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat || cst.typ === CSTParser.TupleH ||
@@ -147,13 +148,12 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                 break
             end
         end
-        # @info "" t.endline n.endline loc[1]
 
         # If there's no semicolon, treat it
         # as a PLeaf
         if n.startline == -1
             t.len += length(n)
-            n.startline = t.startline
+            n.startline = t.endline
             n.endline = t.endline
             push!(t.nodes, n)
             return
@@ -193,6 +193,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
+        if length(n) == 0
+            n.startline = t.endline
+            n.endline = t.endline
+        end
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
@@ -398,7 +402,8 @@ function unnestable_arg(cst::CSTParser.EXPR)
     is_iterable(cst) && return true
     is_str(cst) && return true
     cst.typ === CSTParser.LITERAL && return true
-    (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT) && return true
+    cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
+    cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
     return false
 end
 

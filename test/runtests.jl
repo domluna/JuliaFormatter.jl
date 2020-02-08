@@ -457,6 +457,9 @@ end
             end
         end"""
         @test fmt(str) == str
+
+        str = "foo(args...)"
+        @test fmt(str, m = 1) == str
     end
 
     @testset "binary ops" begin
@@ -479,7 +482,7 @@ end
         @test fmt("a:b:c ") == "a:b:c"
         @test fmt("a::b:: c") == "a::b::c"
         @test fmt("a :: b::c") == "a::b::c"
-        # issue #74
+        # issue 74
         @test fmt("0:1/3:2") == "0:1/3:2"
         @test fmt("2a") == "2a"
         @test fmt("2(a+1)") == "2 * (a + 1)"
@@ -1117,7 +1120,7 @@ end
         t = run_pretty(str, 80)
         @test length(t) == 30
 
-        # issue #58
+        # issue 58
 
         str_ = """
         model = SDDP.LinearPolicyGraph(stages = 2, lower_bound = 1, direct_mode = false) do (subproblem1, subproblem2, subproblem3, subproblem4, subproblem5, subproblem6, subproblem7, subproblem8)
@@ -4427,6 +4430,38 @@ some_function(
         str = """var = a == b == c"""
         @test fmt(str_) == str
         @test fmt(str_, remove_extra_newlines = true) == str
+    end
+
+    @testset "#183" begin
+        str_ = """
+        function f(args...)
+
+            next!(s.progress;
+            # comment
+            )
+            nothing
+        end"""
+        str = """
+        function f(args...)
+
+            next!(s.progress;
+            # comment
+        )
+            nothing
+        end"""
+        @test fmt(str_) == str
+
+        # NOTE: when this passes delete the above test
+        str = """
+        function f(args...)
+
+            next!(
+                s.progress;
+                # comment
+            )
+            nothing
+        end"""
+        @test_broken fmt(str_) == str
     end
 
 end
