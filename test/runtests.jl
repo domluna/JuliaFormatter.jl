@@ -4441,7 +4441,15 @@ some_function(
             )
             nothing
         end"""
-        @test fmt(str_) == str_
+        str = """
+        function f(args...)
+
+            next!(s.progress;
+            # comment
+        )
+            nothing
+        end"""
+        @test fmt(str_) == str
 
         # NOTE: when this passes delete the above test
         str = """
