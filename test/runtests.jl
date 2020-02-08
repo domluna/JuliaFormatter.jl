@@ -4432,4 +4432,28 @@ some_function(
         @test fmt(str_, remove_extra_newlines = true) == str
     end
 
+    @testset "#183" begin
+        str_ = """
+        function f(args...)
+
+            next!(s.progress;
+            # comment
+            )
+            nothing
+        end"""
+        @test fmt(str_) == str_
+
+        # NOTE: when this passes delete the above test
+        str = """
+        function f(args...)
+
+            next!(
+                s.progress;
+                # comment
+            )
+            nothing
+        end"""
+        @test_broken fmt(str_) == str
+    end
+
 end

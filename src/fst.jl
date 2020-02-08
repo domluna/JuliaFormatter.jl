@@ -105,8 +105,9 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
-    if cst.typ === CSTParser.MacroCall || cst.typ === CSTParser.TypedVcat ||
-       cst.typ === CSTParser.Ref || cst.typ === CSTParser.Curly || cst.typ === CSTParser.Call
+    if cst.typ === CSTParser.MacroCall ||
+       cst.typ === CSTParser.TypedVcat || cst.typ === CSTParser.Ref ||
+       cst.typ === CSTParser.Curly || cst.typ === CSTParser.Call
         return get_args(cst.args[2:end])
     elseif cst.typ === CSTParser.Parameters || cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat || cst.typ === CSTParser.TupleH ||
@@ -192,6 +193,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
+        if length(n) == 0
+            n.startline = t.endline
+            n.endline = t.endline
+        end
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
