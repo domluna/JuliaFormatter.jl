@@ -4481,4 +4481,24 @@ some_function(
         @test_broken fmt(str_) == str
     end
 
+    @testset "#189" begin
+    str_ = """
+D2 = [
+        (b_hat * y - delta_hat[i] * y) * gamma[i] + (b * y_hat - delta[i] * y_hat) *
+                                                        gamma_hat[i] + (b_hat - y_hat) *
+                                                                       delta[i] + (b - y) *
+                                                                                  delta_hat[i] - delta[i] * delta_hat[i]
+        for i = 1:8
+    ]"""
+    str = """
+    D2 = [
+        (b_hat * y - delta_hat[i] * y) * gamma[i] +
+        (b * y_hat - delta[i] * y_hat) * gamma_hat[i] +
+        (b_hat - y_hat) * delta[i] +
+        (b - y) * delta_hat[i] - delta[i] * delta_hat[i] for i = 1:8
+    ]"""
+        @test fmt(str_) == str
+
+    end
+
 end

@@ -352,13 +352,24 @@ n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent=-1)
     style = getstyle(ds)
-    line_offset = s.line_offset
-closer = is_closer(fst[end])
-
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
+    closer = is_closer(fst[end])
+    if closer && (line_margin > s.margin || fst.force_nest)
+        idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
+        if idx !== nothing
+            fst[idx] = Newline(length = fst[idx].len)
+        end
+        idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
+        if idx !== nothing
+            fst[idx] = Newline(length = fst[idx].len)
+        end
+    end
 
     if indent >= 0
         fst.indent = indent
         else
+            # fst.indent += s.indent_size
                 add_indent!(fst, s, s.indent_size)
         end
 

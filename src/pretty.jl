@@ -1756,8 +1756,6 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     eq_to_in_normalization!(cst[j], s.opts.always_for_in)
                 end
             end
-        # elseif a.typ === CSTParser.BinaryOpCall
-        #     add_node!(t, pretty(style, a, s, nonest = true), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
