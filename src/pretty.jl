@@ -1773,5 +1773,5 @@ p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_filter(DefaultStyle(style), cst, s)
 
 @inline p_flatten(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
-p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+p_flatten(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_flatten(DefaultStyle(style), cst, s)
