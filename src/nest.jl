@@ -79,7 +79,6 @@ function dedent!(fst::FST, s::State)
     end
     fst.typ === CSTParser.ConditionalOpCall && return
     fst.typ === CSTParser.StringH && return
-    fst.typ === CSTParser.BinaryOpCall && return
 
     # dedent
     fst.indent -= s.indent_size
@@ -88,9 +87,21 @@ function dedent!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && !n.force_nest, fst.nodes)
     length(nl_inds) > 0 || return
     margin = s.line_offset + fst.extra_margin + length(fst)
-    # @info "" fst.typ margin s.line_offset fst.extra_margin length(fst) length(nl_inds)
     margin <= s.margin || return
     unnest!(fst, nl_inds)
+end
+
+function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
+    margin = s.line_offset
+    idx = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+    margin += sum(length.(fst[i:end])) + fst.extra_margin
+
+    if margin > s.margin || is_comment(fst[i+1]) || is_comment(fst[i-1])
+        fst[i] = Newline(length = fst[i].len)
+        s.line_offset = fst.indent
+    else
+        nest!(style, fst[i], s)
+    end
 end
 
 function nest!(
@@ -174,6 +185,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_generator!(style, fst, s)
     elseif fst.typ === CSTParser.Filter
         n_filter!(style, fst, s)
+    elseif fst.typ === CSTParser.Flatten
+        n_flatten!(style, fst, s)
     elseif fst.typ === CSTParser.Block
         n_block!(style, fst, s)
     elseif fst.typ === CSTParser.ChainOpCall
@@ -263,7 +276,6 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
     opener = length(fst.nodes) > 0 ? is_opener(fst[1]) : false
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
@@ -274,7 +286,6 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
             fst.indent += s.indent_size
         end
 
-        # @info "DURING" fst.typ fst.indent s.line_offset
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -302,7 +313,6 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
         if opener
             s.line_offset = fst[end].indent + 1
         end
-        # @info "EXITING" fst.typ s.line_offset fst.indent fst[end].indent
     else
         extra_margin = fst.extra_margin
         opener && (extra_margin += 1)
@@ -332,25 +342,83 @@ n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
 
-@inline n_comprehension!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_comprehension!(DefaultStyle(style), fst, s)
 
-@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
+function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+    style = getstyle(ds)
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    closer = is_closer(fst[end])
+    if closer && (line_margin > s.margin || fst.force_nest)
+        idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
+        if idx !== nothing
+            fst[idx] = Newline(length = fst[idx].len)
+        end
+        idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
+        if idx !== nothing
+            fst[idx] = Newline(length = fst[idx].len)
+        end
+        add_indent!(fst, s, s.indent_size)
+        fst[end].indent = fst.indent - s.indent_size
+    end
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            if fst.force_nest
+                fst[i] = Newline(length = n.len)
+                s.line_offset = fst.indent
+            else
+                nest_if_over_margin!(style, fst, s, i)
+            end
+        elseif n.typ === TRAILINGSEMICOLON
+            n.val = ""
+            n.len = 0
+            nest!(style, n, s)
+        elseif i == length(fst.nodes) && !closer
+            nest!(style, n, s)
+        else
+            n.extra_margin = 1
+            nest!(style, n, s)
+        end
+    end
+
+    if closer
+        s.line_offset = fst[end].indent + 1
+    end
+end
+
+n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
+    n_comprehension!(DefaultStyle(style), fst, s, indent = indent)
+
+@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) =
+    n_comprehension!(ds, fst, s)
 n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
+
+@inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
+    n_comprehension!(ds, fst, s, indent = fst.indent)
+n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_generator!(DefaultStyle(style), fst, s)
+
+@inline n_filter!(ds::DefaultStyle, fst::FST, s::State) =
+    n_comprehension!(ds, fst, s, indent = fst.indent)
+n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_filter!(DefaultStyle(style), fst, s)
+
+@inline n_flatten!(ds::DefaultStyle, fst::FST, s::State) =
+    n_comprehension!(ds, fst, s, indent = fst.indent)
+n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_flatten!(DefaultStyle(style), fst, s)
 
 function n_call!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    # @info "ENTERING" fst.typ s.line_offset length(fst) fst.extra_margin s.margin fst[1].val
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
         fst[end].indent = fst.indent
         fst.indent += s.indent_size
 
-        # @info "DURING" fst.typ fst.indent s.line_offset
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -407,7 +475,6 @@ n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    # @info "" s.line_offset fst.typ line_margin fst.extra_margin length(fst) fst.force_nest line_margin > s.margin
     if line_margin > s.margin || fst.force_nest
         line_offset = s.line_offset
         # after "A where "
@@ -469,7 +536,6 @@ n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    # @info "ENTERING" fst.typ s.line_offset line_margin fst.force_nest
     if line_margin > s.margin || fst.force_nest
         line_offset = s.line_offset
         fst.indent = s.line_offset
@@ -546,7 +612,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
-    # @info "ENTERING" fst.typ fst.extra_margin s.line_offset length(fst) idxs fst.ref[][2]
     if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest || rhs.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
@@ -606,7 +671,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                 line_margin += rw
             end
 
-            # @info "" rhs.typ indent_nest s.line_offset line_margin fst.extra_margin length(fst[end])
             if line_margin + fst.extra_margin <= s.margin
                 fst[i1] = Whitespace(1)
                 if indent_nest
@@ -616,10 +680,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             end
         end
 
-        # @info "before reset" line_offset s.line_offset
         s.line_offset = line_offset
         walk(reset_line_offset!, fst, s)
-        # @info "after reset" line_offset s.line_offset
     else
         # Handles the case of a function def defined
         # as "foo(a)::R where {A,B} = body".
@@ -651,9 +713,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         elseif idx === nothing
             return_width, _ = length_to(fst, [NEWLINE], start = 2)
         end
-
-        # @info "" idx map(n -> n.typ, fst.nodes)
-        # @info "" s.line_offset length(fst[1]) return_width fst.extra_margin
 
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
@@ -701,17 +760,14 @@ n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_let!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_let!(DefaultStyle(style), fst, s)
 
-function n_block!(ds::DefaultStyle, fst::FST, s::State; custom_indent = 0)
+function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
-        custom_indent > 0 && (fst.indent = custom_indent)
-        # @info "" fst.indent
+        indent >= 0 && (fst.indent = indent)
 
-        # @info "DURING" fst.indent s.line_offset fst.typ
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -734,23 +790,12 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; custom_indent = 0)
             end
         end
 
-        # @info "EXITING" fst.typ s.line_offset fst.indent fst[end].indent
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_block!(style::S, fst::FST, s::State; custom_indent = 0) where {S<:AbstractStyle} =
-    n_block!(DefaultStyle(style), fst, s, custom_indent = custom_indent)
-
-@inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
-    n_block!(ds, fst, s, custom_indent = fst.indent)
-n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_generator!(DefaultStyle(style), fst, s)
-
-@inline n_filter!(ds::DefaultStyle, fst::FST, s::State) =
-    n_block!(ds, fst, s, custom_indent = fst.indent)
-n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_filter!(DefaultStyle(style), fst, s)
+n_block!(style::S, fst::FST, s::State; indent = 0) where {S<:AbstractStyle} =
+    n_block!(DefaultStyle(style), fst, s, indent = indent)
 
 @inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
 n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =

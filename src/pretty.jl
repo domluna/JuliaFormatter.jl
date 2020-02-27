@@ -117,6 +117,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_generator(style, cst, s)
     elseif cst.typ === CSTParser.Filter
         return p_filter(style, cst, s)
+    elseif cst.typ === CSTParser.Flatten
+        return p_flatten(style, cst, s)
     elseif cst.typ === CSTParser.FileH
         return p_fileh(style, cst, s)
     end
@@ -374,8 +376,6 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     has_closer = is_closer(cst.args[end])
 
-    # @info "" has_closer
-
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -434,7 +434,6 @@ function p_block(
     single_line = ignore_single_line ? false :
         cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]
 
-    # @info "" from_quote single_line ignore_single_line join_body
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if from_quote && !single_line
@@ -1157,7 +1156,6 @@ function p_binaryopcall(
     nrhs = nest_rhs(cst)
     nrhs && (t.force_nest = true)
     nest = (nestable(style, cst) && !nonest) || nrhs
-    # @info "" nestable(cst) !nonest nrhs nest cst[2]
 
     if op.fullspan == 0 && cst[3].typ === CSTParser.IDENTIFIER
         # do nothing
@@ -1381,7 +1379,6 @@ function p_invisbrackets(
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest
-    # @info "nest invis" nest nonest
 
     if is_block(cst[2])
         t.force_nest = true
@@ -1402,11 +1399,9 @@ function p_invisbrackets(
             n = pretty(style, a, s, nonest = nonest, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         elseif is_opener(a) && nest
-            # @info "opening"
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(a) && nest
-            # @info "closing"
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         else
@@ -1640,7 +1635,6 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     st = cst.typ === CSTParser.Vcat ? 1 : 2
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
-    # @info "" nest length(cst) st
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1748,17 +1742,15 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             end
 
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+            add_node!(t, Placeholder(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(cst)
                     eq_to_in_normalization!(cst[j], s.opts.always_for_in)
                 end
             end
-        elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(t, pretty(style, a, s, nonest = true), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+            add_node!(t, Placeholder(1), s)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
@@ -1771,3 +1763,7 @@ p_generator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline p_filter(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
 p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_filter(DefaultStyle(style), cst, s)
+
+@inline p_flatten(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
+p_flatten(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_flatten(DefaultStyle(style), cst, s)

@@ -48,7 +48,6 @@ function Document(text::AbstractString)
     str = ""
 
     for t in CSTParser.Tokenize.tokenize(text)
-        # @info "token" t
         if t.kind === Tokens.WHITESPACE
             offset = t.startbyte
             for c in t.val
@@ -122,7 +121,6 @@ function Document(text::AbstractString)
                 idx1 = findfirst(c -> c == '\n', str)
                 idx2 = findlast(c -> c == '\n', str)
                 str = str[idx1:idx2]
-                # @info "format skip str" str
                 push!(format_skips, (pop!(stack), t.startpos[1], str))
                 str = ""
                 format_on = true
@@ -150,7 +148,6 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" comments
     Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
 end
 

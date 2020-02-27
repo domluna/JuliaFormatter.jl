@@ -106,7 +106,6 @@ function print_stringh(io::IOBuffer, fst::FST, s::State)
 
     # This difference notes if there is a change due to nesting.
     diff = fst.indent + 1 - s.line_offset
-    # @info "" length(fst) s.line_offset
 
     # The new indent for the string is index of when a character in
     # the multiline string is FIRST encountered in the source file - the above difference
