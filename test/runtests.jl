@@ -2711,7 +2711,16 @@ end
 
         str = """
         (
-          x for x = 1:10
+          x for
+          x = 1:10
+        )"""
+        @test fmt("(x   for x  in  1 : 10)", 2, 10) == str
+
+        str = """
+        (
+          x for
+          x =
+            1:10
         )"""
         @test fmt("(x   for x  in  1 : 10)", 2, 1) == str
 
@@ -3747,10 +3756,18 @@ end
     end
 
     @testset "comphrehensions types" begin
-        # This shouldn't before `for` otherwise the
-        # formatted text will result in a parsing error.
-        str = "var = (x, y) for x = 1:10, y = 1:10"
-        @test fmt(str, 4, length(str) - 1) == str
+        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str = """
+        var = (x, y) for
+        x = 1:10, y = 1:10"""
+        @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 18) == str
+
+        str = """
+        var = (x, y) for
+        x = 1:10,
+        y = 1:10"""
+        @test fmt(str_, 4, 17) == str
 
         str_ = """
         begin
@@ -3759,7 +3776,6 @@ end
                 w,
             ) in enumerate(weightfn.(eachrow(subject.events))))
         end"""
-
         str = """
         begin
             weights = Dict(
@@ -3773,10 +3789,9 @@ end
         begin
             weights = Dict(
                 (file, i) => w for (file, subject) in subjects
-                for (
-                    i,
-                    w,
-                ) in enumerate(weightfn.(eachrow(subject.events)))
+                for
+                (i, w) in
+                enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 60) == str
@@ -3786,10 +3801,9 @@ end
             weights = Dict(
                 (file, i) => w
                 for (file, subject) in subjects
-                for (
-                    i,
-                    w,
-                ) in enumerate(weightfn.(eachrow(subject.events)))
+                for
+                (i, w) in
+                enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 50) == str
@@ -3811,8 +3825,7 @@ end
                 very_very_very_very_very_very_very_very_very_very_very_very_long_function_name(
                     very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
                     very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
-                )
-                for x in xs
+                ) for x in xs
             ))),
             another_argument,
         )"""
@@ -3826,9 +3839,9 @@ some_function(
                    very_very_very_very_very_very_very_very_very_very_very_very_long_argument,
                )
                for x in xs
-               ))),
+))),
            another_argument,
-       )"""
+        )"""
         @test fmt(str_) == str
 
         str = """
@@ -4080,10 +4093,11 @@ some_function(
         y1 = Any[
             if true
                 very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
-            end
-            for i = 1:1
+            end for i = 1:1
         ]"""
         @test fmt(str_) == str
+        s = run_nest(str_, 100)
+        @test s.line_offset == 1
 
         str_ = """
         y1 = [if true
@@ -4093,10 +4107,11 @@ some_function(
         y1 = [
             if true
                 very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_expr
-            end
-            for i = 1:1
+            end for i = 1:1
         ]"""
         @test fmt(str_) == str
+        s = run_nest(str_, 100)
+        @test s.line_offset == 1
 
         str_ = """
         y1 = [if true
@@ -4109,6 +4124,8 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
+        s = run_nest(str_, 100)
+        @test s.line_offset == 1
 
     end
 

@@ -175,30 +175,6 @@ end
 # Nesting
 #
 
-function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
-    margin = s.line_offset
-    idx = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-    if idx === nothing
-        margin += sum(length.(fst[i+1:end])) + fst.extra_margin
-    else
-        margin += sum(length.(fst[i+1:idx]))
-    end
-
-    # len, found = length_to(fst, [PLACEHOLDER], start = i + 1)
-    # if found
-    #     margin += len
-    # else
-    #     margin += sum(length.(fst[i+1:end])) + fst.extra_margin
-    # end
-
-    if margin > s.margin || is_comment(fst[i+1]) || is_comment(fst[i-1])
-        fst[i] = Newline(length = fst[i].len)
-        s.line_offset = fst.indent
-    else
-        nest!(style, fst[i], s)
-    end
-end
-
 function n_call!(ys::YASStyle, fst::FST, s::State)
     line_offset = s.line_offset
     fst.indent = line_offset + sum(length.(fst[1:2]))

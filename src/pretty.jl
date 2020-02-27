@@ -117,6 +117,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_generator(style, cst, s)
     elseif cst.typ === CSTParser.Filter
         return p_filter(style, cst, s)
+    elseif cst.typ === CSTParser.Flatten
+        return p_flatten(style, cst, s)
     elseif cst.typ === CSTParser.FileH
         return p_fileh(style, cst, s)
     end
@@ -1748,17 +1750,17 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             end
 
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+            add_node!(t, Placeholder(1), s)
             if a.kind === Tokens.FOR
                 for j = i+1:length(cst)
                     eq_to_in_normalization!(cst[j], s.opts.always_for_in)
                 end
             end
-        elseif a.typ === CSTParser.BinaryOpCall
-            add_node!(t, pretty(style, a, s, nonest = true), s, join_lines = true)
+        # elseif a.typ === CSTParser.BinaryOpCall
+        #     add_node!(t, pretty(style, a, s, nonest = true), s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+            add_node!(t, Placeholder(1), s)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
@@ -1771,3 +1773,7 @@ p_generator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline p_filter(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
 p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_filter(DefaultStyle(style), cst, s)
+
+@inline p_flatten(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
+p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_flatten(DefaultStyle(style), cst, s)
