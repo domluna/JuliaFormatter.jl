@@ -350,7 +350,7 @@ n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
 
 
-function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent=-1)
+function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # @info "ENTERING" idx fst.typ s.line_offset length(fst) fst.extra_margin
@@ -368,10 +368,10 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent=-1)
 
     if indent >= 0
         fst.indent = indent
-        else
-            # fst.indent += s.indent_size
-                add_indent!(fst, s, s.indent_size)
-        end
+    else
+        # fst.indent += s.indent_size
+        add_indent!(fst, s, s.indent_size)
+    end
 
     if closer
         fst[end].indent = fst.indent - s.indent_size
@@ -399,15 +399,16 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent=-1)
         end
     end
 
-        if closer
-            s.line_offset = fst[end].indent + 1
-        end
+    if closer
+        s.line_offset = fst[end].indent + 1
+    end
 end
 
-n_comprehension!(style::S, fst::FST, s::State; indent=-1) where {S<:AbstractStyle} =
-    n_comprehension!(DefaultStyle(style), fst, s, indent=indent)
+n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
+    n_comprehension!(DefaultStyle(style), fst, s, indent = indent)
 
-@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) = n_comprehension!(ds, fst, s)
+@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) =
+    n_comprehension!(ds, fst, s)
 n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
 
@@ -632,7 +633,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
     if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest || rhs.force_nest)
-    # @info "ENTERING" fst.typ fst.extra_margin s.line_offset length(fst) idxs fst.ref[][2]
+        # @info "ENTERING" fst.typ fst.extra_margin s.line_offset length(fst) idxs fst.ref[][2]
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -833,5 +834,3 @@ n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 @inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
 n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_chainopcall!(DefaultStyle(style), fst, s)
-
-
