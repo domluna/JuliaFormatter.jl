@@ -79,7 +79,6 @@ function dedent!(fst::FST, s::State)
     end
     fst.typ === CSTParser.ConditionalOpCall && return
     fst.typ === CSTParser.StringH && return
-    # fst.typ === CSTParser.BinaryOpCall && return
 
     # dedent
     fst.indent -= s.indent_size
@@ -364,16 +363,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         if idx !== nothing
             fst[idx] = Newline(length = fst[idx].len)
         end
-    end
-
-    if indent >= 0
-        fst.indent = indent
-    else
-        # fst.indent += s.indent_size
         add_indent!(fst, s, s.indent_size)
-    end
-
-    if closer
         fst[end].indent = fst.indent - s.indent_size
     end
 
