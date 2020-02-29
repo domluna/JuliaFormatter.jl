@@ -48,7 +48,8 @@ end
 
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
-    if fst.typ === CSTParser.BinaryOpCall || fst.typ === CSTParser.ConditionalOpCall
+    if fst.typ === CSTParser.BinaryOpCall ||
+       fst.typ === CSTParser.ConditionalOpCall || fst.typ === CSTParser.ModuleH
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)

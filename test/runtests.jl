@@ -4501,4 +4501,20 @@ some_function(
 
     end
 
+    @testset "#193" begin
+        str = """
+        module Module
+        # comment
+        end"""
+        @test fmt(str) == str
+
+        str = """
+        module Module
+        # comment
+        @test
+        # comment
+        end"""
+        @test fmt(str) == str
+    end
+
 end
