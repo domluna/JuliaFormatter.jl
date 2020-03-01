@@ -4517,4 +4517,17 @@ some_function(
         @test fmt(str) == str
     end
 
+    @testset "#194" begin
+        str_ = """
+        function mystr( str::String )
+        return SubString( str, 1:
+        3 )
+        end"""
+        str = """
+        function mystr(str::String)
+            return SubString(str, 1:3)
+        end"""
+        @test fmt(str_) == str
+    end
+
 end
