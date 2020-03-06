@@ -421,3 +421,77 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     end
     false
 end
+
+"""
+Flattens a binary op call tree.
+
+Transforms
+
+    BinaryOpCall
+     BinaryOpCall
+      BinaryOpCall
+       BinaryOpCall
+        BinaryOpCall
+         BinaryOpCall
+          some_expression
+          OP: RPIPE
+          some_expression
+         OP: RPIPE
+         some_expression
+        OP: RPIPE
+        some_expression
+       OP: RPIPE
+       some_expression
+      OP: RPIPE
+      some_expression
+     OP: RPIPE
+     some_expression
+
+into
+
+    ChainOpCall
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+"""
+function flatten_binaryopcall(fst::FST)
+    fst.typ === CSTParser.BinaryOpCall || return FST[]
+    op = fst[3].ref[]
+    op.kind in (Tokens.AND, Tokens.OR, Tokens.LAZY_AND, Tokens.LAZY_OR) || return FST[]
+    cst = fst.ref[]
+
+    nodes = FST[]
+    lhs = fst[1]
+    if lhs.typ === CSTParser.BinaryOpCall && lhs[3].ref[].kind === op.kind
+        push!(nodes, flatten_binaryopcall(lhs)...)
+    else
+        push!(nodes, lhs)
+    end
+    # everything except the indentation placeholder
+    push!(nodes, fst.nodes[2:end-2]...)
+
+    rhs = fst[end]
+    if rhs.typ === CSTParser.BinaryOpCall && rhs[3].ref[].kind == op.kind
+        push!(nodes, flatten_binaryopcall(rhs)...)
+    else
+        push!(nodes, rhs)
+    end
+
+    return nodes
+end
+
+function flatten_binary_topdown(fst::FST)
+end
+
+function flatten_binary_bottomup(fst::FST)
+end
