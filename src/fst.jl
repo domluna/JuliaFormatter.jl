@@ -422,8 +422,18 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     false
 end
 
+
+@inline function flattenable(op::CSTParser.EXPR)
+    op.kind === Tokens.AND && return true
+    op.kind === Tokens.OR && return true
+    op.kind === Tokens.LAZY_AND && return true
+    op.kind === Tokens.LAZY_OR && return true
+    op.kind === Tokens.RPIPE && return true
+end
+
 """
-Flattens a binary op call tree.
+Flattens a binary op call tree if the op repeats 2 or more times.
+"a && b && c" will be transformed while "a && b" will not.
 
 Transforms
 
@@ -464,25 +474,32 @@ into
     OP: RPIPE
     some_expression
 """
-function flatten_binaryopcall(fst::FST)
-    fst.typ === CSTParser.BinaryOpCall || return FST[]
-    op = fst[3].ref[]
-    op.kind in (Tokens.AND, Tokens.OR, Tokens.LAZY_AND, Tokens.LAZY_OR) || return FST[]
-    cst = fst.ref[]
-
+function flatten_binaryopcall(fst::FST; top=true)
     nodes = FST[]
+    op = fst.ref[][2]
+    flattenable(op) || return nodes
+
     lhs = fst[1]
-    if lhs.typ === CSTParser.BinaryOpCall && lhs[3].ref[].kind === op.kind
-        push!(nodes, flatten_binaryopcall(lhs)...)
+    rhs = fst[end]
+    lhs_same_op = lhs.typ === CSTParser.BinaryOpCall && lhs.ref[][2].kind === op.kind
+    rhs_same_op = rhs.typ === CSTParser.BinaryOpCall && rhs.ref[][2].kind === op.kind
+
+    if top && !lhs_same_op && !rhs_same_op
+        return nodes
+    end
+
+    if lhs_same_op
+        # @info "calling lhs"
+        push!(nodes, flatten_binaryopcall(lhs, top=false)...)
     else
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
     push!(nodes, fst.nodes[2:end-2]...)
 
-    rhs = fst[end]
-    if rhs.typ === CSTParser.BinaryOpCall && rhs[3].ref[].kind == op.kind
-        push!(nodes, flatten_binaryopcall(rhs)...)
+    if rhs_same_op
+        # @info "calling rhs"
+        push!(nodes, flatten_binaryopcall(rhs, top=false)...)
     else
         push!(nodes, rhs)
     end
@@ -490,8 +507,19 @@ function flatten_binaryopcall(fst::FST)
     return nodes
 end
 
-function flatten_binary_topdown(fst::FST)
-end
-
-function flatten_binary_bottomup(fst::FST)
+function flatten_fst!(fst::FST)
+    for n in fst.nodes
+        if is_leaf(n)
+            continue
+        elseif n.typ === CSTParser.BinaryOpCall
+            # possibly convert BinaryOpCall to ChainOpCall
+            nnodes = flatten_binaryopcall(n)
+            if length(nnodes) > 0
+                n.nodes = nnodes
+                n.typ = CSTParser.ChainOpCall
+            end
+        else
+            flatten_fst!(n)
+        end
+    end
 end

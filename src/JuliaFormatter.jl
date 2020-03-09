@@ -286,6 +286,7 @@ function format_text(
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
+    flatten_fst!(t)
     nest!(style, t, s)
 
     s.line_offset = 0
@@ -404,7 +405,7 @@ if VERSION < v"1.1.0"
             dir, base = _splitdir_nodrive(p)
             dir == p && (pushfirst!(out, dir); break)  # Reached root node.
             if !isempty(base)  # Skip trailing '/' in basename
-                pushfirst!(out, base)
+                pushfirst!(out, base)common
             end
             p = dir
         end

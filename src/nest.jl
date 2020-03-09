@@ -797,10 +797,10 @@ end
 n_block!(style::S, fst::FST, s::State; indent = 0) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)
 
-@inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
+@inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s, indent=s.line_offset)
 n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comparison!(DefaultStyle(style), fst, s)
 
-@inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
+@inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s, indent=s.line_offset)
 n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_chainopcall!(DefaultStyle(style), fst, s)
