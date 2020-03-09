@@ -4584,8 +4584,8 @@ some_function(
 
             body
         end"""
-        @test fmt(str_,m=74) == str
-        @test fmt(str,m=75) == str_
+        @test fmt(str_, m = 74) == str
+        @test fmt(str, m = 75) == str_
     end
 
 end

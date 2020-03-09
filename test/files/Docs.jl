@@ -282,7 +282,8 @@ function astname(x::Expr, ismacro::Bool)
         ismacro ? macroname(x) : x
         # Call overloading, e.g. `(a::A)(b) = b` or `function (a::A)(b) b end` should document `A(b)`
     elseif (isexpr(x, :function) || isexpr(x, :(=))) &&
-           isexpr(x.args[1], :call) && isexpr(x.args[1].args[1], :(::))
+           isexpr(x.args[1], :call) &&
+           isexpr(x.args[1].args[1], :(::))
         return astname(x.args[1].args[1].args[end], ismacro)
     else
         n = isexpr(x, (:module, :struct)) ? 2 : 1
@@ -297,7 +298,8 @@ macroname(s::Symbol) = Symbol('@', s)
 macroname(x::Expr) = Expr(x.head, x.args[1], macroname(x.args[end].value))
 
 isfield(@nospecialize x) =
-    isexpr(x, :.) && (isa(x.args[1], Symbol) || isfield(x.args[1])) &&
+    isexpr(x, :.) &&
+    (isa(x.args[1], Symbol) || isfield(x.args[1])) &&
     (isa(x.args[2], QuoteNode) || isexpr(x.args[2], :quote))
 
 # @doc expression builders.
@@ -340,7 +342,9 @@ function metadata(__source__, __module__, expr, ismodule)
                 end
             elseif isexpr(each, :function) || isexpr(each, :(=))
                 break
-            elseif isa(each, String) || isexpr(each, :string) || isexpr(each, :call) ||
+            elseif isa(each, String) ||
+                   isexpr(each, :string) ||
+                   isexpr(each, :call) ||
                    (isexpr(each, :macrocall) && each.args[1] === Symbol("@doc_str"))
                 # forms that might be doc strings
                 last_docstr = each
@@ -492,7 +496,8 @@ end
 # `true` to signify that at least one `@__doc__` has been found, and `false` otherwise.
 function finddoc(λ, def::Expr)
     if isexpr(def, :block, 2) &&
-       isexpr(def.args[1], :meta, 1) && def.args[1].args[1] === :doc
+       isexpr(def.args[1], :meta, 1) &&
+       def.args[1].args[1] === :doc
         # Found the macroexpansion of an `@__doc__` expression.
         λ(def)
         true

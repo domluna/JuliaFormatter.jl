@@ -49,7 +49,8 @@ end
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
     if fst.typ === CSTParser.BinaryOpCall ||
-       fst.typ === CSTParser.ConditionalOpCall || fst.typ === CSTParser.ModuleH
+       fst.typ === CSTParser.ConditionalOpCall ||
+       fst.typ === CSTParser.ModuleH
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)
@@ -90,7 +91,8 @@ function print_tree(
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
-               nodes[i+1].typ === CSTParser.Block || nodes[i+1].typ === CSTParser.Begin
+               nodes[i+1].typ === CSTParser.Block ||
+               nodes[i+1].typ === CSTParser.Begin
                 write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])

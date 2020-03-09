@@ -361,7 +361,9 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
         return t
     elseif length(cst) == 3 &&
-           cst[1].typ === CSTParser.MacroName && cst[1][2].val == "doc" && is_str(cst[2])
+           cst[1].typ === CSTParser.MacroName &&
+           cst[1][2].val == "doc" &&
+           is_str(cst[2])
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -1125,7 +1127,8 @@ function p_binaryopcall(
     op = cst[2]
     nonest = nonest || op.kind === Tokens.COLON
     if cst.parent.typ === CSTParser.Curly &&
-       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE) && !s.opts.whitespace_typedefs
+       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE) &&
+       !s.opts.whitespace_typedefs
         nospace = true
     elseif op.kind === Tokens.COLON
         nospace = true
@@ -1143,7 +1146,9 @@ function p_binaryopcall(
     end
 
     if op.kind === Tokens.COLON &&
-       s.opts.whitespace_ops_in_indices && !is_leaf(cst[1]) && !is_iterable(cst[1])
+       s.opts.whitespace_ops_in_indices &&
+       !is_leaf(cst[1]) &&
+       !is_iterable(cst[1])
         paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
@@ -1188,7 +1193,9 @@ function p_binaryopcall(
     end
 
     if op.kind === Tokens.COLON &&
-       s.opts.whitespace_ops_in_indices && !is_leaf(cst[3]) && !is_iterable(cst[3])
+       s.opts.whitespace_ops_in_indices &&
+       !is_leaf(cst[3]) &&
+       !is_iterable(cst[3])
         paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
         add_node!(t, n, s, join_lines = true)
@@ -1232,7 +1239,8 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     args = get_args(cst.args[3:end])
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
-        !CSTParser.is_lbrace(cst[3]) && cst.parent.typ !== CSTParser.Curly &&
+        !CSTParser.is_lbrace(cst[3]) &&
+        cst.parent.typ !== CSTParser.Curly &&
         cst[3].typ !== CSTParser.Curly && cst[3].typ !== CSTParser.BracesCat
 
     brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
