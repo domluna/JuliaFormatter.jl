@@ -405,7 +405,7 @@ if VERSION < v"1.1.0"
             dir, base = _splitdir_nodrive(p)
             dir == p && (pushfirst!(out, dir); break)  # Reached root node.
             if !isempty(base)  # Skip trailing '/' in basename
-                pushfirst!(out, base)common
+                pushfirst!(out, base)
             end
             p = dir
         end
