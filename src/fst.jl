@@ -429,6 +429,7 @@ end
     op.kind === Tokens.LAZY_AND && return true
     op.kind === Tokens.LAZY_OR && return true
     op.kind === Tokens.RPIPE && return true
+    return false
 end
 
 """
