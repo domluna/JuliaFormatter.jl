@@ -652,7 +652,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
             if (
                 rhs.typ === CSTParser.BinaryOpCall &&
-                (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)
+                 cst[2].kind !== Tokens.IN
             ) || rhs.typ === CSTParser.UnaryOpCall ||
                rhs.typ === CSTParser.ChainOpCall || rhs.typ === CSTParser.Comparison
                 line_margin += length(fst[end])
