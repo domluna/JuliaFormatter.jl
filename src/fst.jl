@@ -501,6 +501,7 @@ function flatten_binaryopcall(fst::FST; top = true)
         # @info "calling lhs"
         push!(nodes, flatten_binaryopcall(lhs, top = false)...)
     else
+        flatten_fst!(lhs)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
@@ -510,6 +511,7 @@ function flatten_binaryopcall(fst::FST; top = true)
         # @info "calling rhs"
         push!(nodes, flatten_binaryopcall(rhs, top = false)...)
     else
+        flatten_fst!(rhs)
         push!(nodes, rhs)
     end
 
@@ -517,6 +519,7 @@ function flatten_binaryopcall(fst::FST; top = true)
 end
 
 function flatten_fst!(fst::FST)
+    is_leaf(fst) && return
     for n in fst.nodes
         if is_leaf(n)
             continue

@@ -781,6 +781,12 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
+            elseif i < length(fst.nodes) -1 && fst[i+2].typ === CSTParser.OPERATOR
+                # chainopcall / comparison
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1 + length(fst[i+2])
+                nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
@@ -788,7 +794,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 nest!(style, n, s)
             end
         end
-
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end

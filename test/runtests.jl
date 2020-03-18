@@ -4586,6 +4586,35 @@ some_function(
         end"""
         @test fmt(str_, m = 74) == str
         @test fmt(str, m = 75) == str_
+
+        str_ = """
+        if argument1 && argument2 && (argument3 || argument4 || argument5) && argument6
+
+            body
+        end"""
+        str = """
+        if argument1 &&
+           argument2 &&
+           (argument3 || argument4 || argument5) &&
+           argument6
+
+            body
+        end"""
+        @test fmt(str_, m = 43) == str
+
+        str = """
+        if argument1 &&
+           argument2 &&
+           (
+               argument3 ||
+               argument4 ||
+               argument5
+           ) &&
+           argument6
+
+            body
+        end"""
+        @test fmt(str_, m = 42) == str
     end
 
 end
