@@ -650,11 +650,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             cst = rhs.ref[]
             line_margin = s.line_offset
 
-            if (
-                rhs.typ === CSTParser.BinaryOpCall &&
-                (!(is_lazy_op(cst) && !indent_nest) && cst[2].kind !== Tokens.IN)
-            ) || rhs.typ === CSTParser.UnaryOpCall ||
-               rhs.typ === CSTParser.ChainOpCall || rhs.typ === CSTParser.Comparison
+            if (rhs.typ === CSTParser.BinaryOpCall && cst[2].kind !== Tokens.IN) ||
+               rhs.typ === CSTParser.UnaryOpCall ||
+               rhs.typ === CSTParser.ChainOpCall ||
+               rhs.typ === CSTParser.Comparison
                 line_margin += length(fst[end])
             elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
@@ -782,6 +781,12 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
+            elseif i < length(fst.nodes) - 1 && fst[i+2].typ === CSTParser.OPERATOR
+                # chainopcall / comparison
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1 + length(fst[i+2])
+                nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
@@ -789,7 +794,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 nest!(style, n, s)
             end
         end
-
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
@@ -797,10 +801,12 @@ end
 n_block!(style::S, fst::FST, s::State; indent = 0) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)
 
-@inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
+@inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) =
+    n_block!(ds, fst, s, indent = s.line_offset)
 n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comparison!(DefaultStyle(style), fst, s)
 
-@inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) = n_block!(ds, fst, s)
+@inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) =
+    n_block!(ds, fst, s, indent = s.line_offset)
 n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_chainopcall!(DefaultStyle(style), fst, s)

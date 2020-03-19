@@ -106,12 +106,17 @@ end
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
     if cst.typ === CSTParser.MacroCall ||
-       cst.typ === CSTParser.TypedVcat || cst.typ === CSTParser.Ref ||
-       cst.typ === CSTParser.Curly || cst.typ === CSTParser.Call
+       cst.typ === CSTParser.TypedVcat ||
+       cst.typ === CSTParser.Ref ||
+       cst.typ === CSTParser.Curly ||
+       cst.typ === CSTParser.Call
         return get_args(cst.args[2:end])
-    elseif cst.typ === CSTParser.Parameters || cst.typ === CSTParser.Braces ||
-           cst.typ === CSTParser.Vcat || cst.typ === CSTParser.TupleH ||
-           cst.typ === CSTParser.Vect || cst.typ === CSTParser.InvisBrackets
+    elseif cst.typ === CSTParser.Parameters ||
+           cst.typ === CSTParser.Braces ||
+           cst.typ === CSTParser.Vcat ||
+           cst.typ === CSTParser.TupleH ||
+           cst.typ === CSTParser.Vect ||
+           cst.typ === CSTParser.InvisBrackets
         return get_args(cst.args)
     end
     CSTParser.get_args(cst)
@@ -160,8 +165,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator || en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten || en.typ === CSTParser.MacroCall ||
+        if en.typ === CSTParser.Generator ||
+           en.typ === CSTParser.Filter ||
+           en.typ === CSTParser.Flatten ||
+           en.typ === CSTParser.MacroCall ||
            (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
             # don't insert trailing comma in these cases
         elseif is_comma(en)
@@ -264,7 +271,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             end
             add_node!(t, Newline(force_nest = true), s)
         elseif nt === PLACEHOLDER &&
-               current_line != n.startline && hascomment(s.doc, current_line)
+               current_line != n.startline &&
+               hascomment(s.doc, current_line)
             t.force_nest = true
             add_node!(t, InlineComment(current_line), s)
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
@@ -420,4 +428,110 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
         return nest_block(rhs)
     end
     false
+end
+
+
+@inline function flattenable(op::CSTParser.EXPR)
+    op.kind === Tokens.AND && return true
+    op.kind === Tokens.OR && return true
+    op.kind === Tokens.LAZY_AND && return true
+    op.kind === Tokens.LAZY_OR && return true
+    op.kind === Tokens.RPIPE && return true
+    return false
+end
+
+"""
+Flattens a binary op call tree if the op repeats 2 or more times.
+"a && b && c" will be transformed while "a && b" will not.
+
+Transforms
+
+    BinaryOpCall
+     BinaryOpCall
+      BinaryOpCall
+       BinaryOpCall
+        BinaryOpCall
+         BinaryOpCall
+          some_expression
+          OP: RPIPE
+          some_expression
+         OP: RPIPE
+         some_expression
+        OP: RPIPE
+        some_expression
+       OP: RPIPE
+       some_expression
+      OP: RPIPE
+      some_expression
+     OP: RPIPE
+     some_expression
+
+into
+
+    ChainOpCall
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+    OP: RPIPE
+    some_expression
+"""
+function flatten_binaryopcall(fst::FST; top = true)
+    nodes = FST[]
+    op = fst.ref[][2]
+    flattenable(op) || return nodes
+
+    lhs = fst[1]
+    rhs = fst[end]
+    lhs_same_op = lhs.typ === CSTParser.BinaryOpCall && lhs.ref[][2].kind === op.kind
+    rhs_same_op = rhs.typ === CSTParser.BinaryOpCall && rhs.ref[][2].kind === op.kind
+
+    if top && !lhs_same_op && !rhs_same_op
+        return nodes
+    end
+
+    if lhs_same_op
+        # @info "calling lhs"
+        push!(nodes, flatten_binaryopcall(lhs, top = false)...)
+    else
+        flatten_fst!(lhs)
+        push!(nodes, lhs)
+    end
+    # everything except the indentation placeholder
+    push!(nodes, fst.nodes[2:end-2]...)
+
+    if rhs_same_op
+        # @info "calling rhs"
+        push!(nodes, flatten_binaryopcall(rhs, top = false)...)
+    else
+        flatten_fst!(rhs)
+        push!(nodes, rhs)
+    end
+
+    return nodes
+end
+
+function flatten_fst!(fst::FST)
+    is_leaf(fst) && return
+    for n in fst.nodes
+        if is_leaf(n)
+            continue
+        elseif n.typ === CSTParser.BinaryOpCall
+            # possibly convert BinaryOpCall to ChainOpCall
+            nnodes = flatten_binaryopcall(n)
+            if length(nnodes) > 0
+                n.nodes = nnodes
+                n.typ = CSTParser.ChainOpCall
+            end
+        else
+            flatten_fst!(n)
+        end
+    end
 end

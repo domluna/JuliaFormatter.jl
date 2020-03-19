@@ -286,6 +286,7 @@ function format_text(
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
+    flatten_fst!(t)
     nest!(style, t, s)
 
     s.line_offset = 0

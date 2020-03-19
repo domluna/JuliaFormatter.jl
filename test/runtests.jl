@@ -4530,4 +4530,91 @@ some_function(
         @test fmt(str_) == str
     end
 
+    @testset "align ChainOpCall indent" begin
+        str_ = """
+        function _()
+            return some_expression *
+            some_expression *
+            some_expression *
+            some_expression *
+            some_expression *
+            some_expression *
+            some_expression
+        end"""
+        str = """
+        function _()
+            return some_expression *
+                   some_expression *
+                   some_expression *
+                   some_expression *
+                   some_expression *
+                   some_expression *
+                   some_expression
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        @some_macro some_expression *
+        some_expression *
+        some_expression *
+        some_expression *
+        some_expression *
+        some_expression *
+        some_expression"""
+        str = """
+        @some_macro some_expression *
+                    some_expression *
+                    some_expression *
+                    some_expression *
+                    some_expression *
+                    some_expression *
+                    some_expression"""
+        @test fmt(str_) == str
+
+        str_ = """
+        if some_expression && some_expression && some_expression && some_expression
+
+            body
+        end"""
+        str = """
+        if some_expression &&
+           some_expression &&
+           some_expression &&
+           some_expression
+
+            body
+        end"""
+        @test fmt(str_, m = 74) == str
+        @test fmt(str, m = 75) == str_
+
+        str_ = """
+        if argument1 && argument2 && (argument3 || argument4 || argument5) && argument6
+
+            body
+        end"""
+        str = """
+        if argument1 &&
+           argument2 &&
+           (argument3 || argument4 || argument5) &&
+           argument6
+
+            body
+        end"""
+        @test fmt(str_, m = 43) == str
+
+        str = """
+        if argument1 &&
+           argument2 &&
+           (
+               argument3 ||
+               argument4 ||
+               argument5
+           ) &&
+           argument6
+
+            body
+        end"""
+        @test fmt(str_, m = 42) == str
+    end
+
 end
