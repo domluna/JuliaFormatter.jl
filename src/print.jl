@@ -107,11 +107,11 @@ function print_stringh(io::IOBuffer, fst::FST, s::State)
     # The indent of StringH is set to the the offset
     # of when the quote is first encountered in the source file.
 
-    # This difference notes if there is a change due to formatting.
+    # This difference notes the indent change due to formatting.
     diff = s.line_offset - fst.indent
 
     # The new indent for the string is the index of when a character in
-    # the multiline string is FIRST encountered in the source file minus
+    # the multiline string is FIRST encountered in the source file plus
     # the above difference.
     fst.indent = max(fst[1].indent + diff, 0)
     print_tree(io, fst, s)
