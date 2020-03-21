@@ -82,6 +82,7 @@ function dedent!(fst::FST, s::State)
 
     # dedent
     fst.indent -= s.indent_size
+
     fst.force_nest && return
 
     nl_inds = findall(n -> n.typ === NEWLINE && !n.force_nest, fst.nodes)
@@ -199,12 +200,29 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_let!(style, fst, s)
     elseif fst.typ === CSTParser.UnaryOpCall && fst[2].typ === CSTParser.OPERATOR
         n_unaryopcall!(style, fst, s)
+    elseif fst.typ === CSTParser.StringH
+        n_stringh!(style, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
 nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     nest!(DefaultStyle(style), fst, s)
+
+function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
+    style = getstyle(ds)
+    # difference in positioning of the string
+    # from the source document to the formatted document
+    diff = s.line_offset - fst.indent
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst[i+1].indent + diff
+        else
+            nest!(style, n, s)
+        end
+    end
+end
 
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)

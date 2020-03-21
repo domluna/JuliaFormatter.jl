@@ -4617,4 +4617,26 @@ some_function(
         @test fmt(str_, m = 42) == str
     end
 
+    @testset "issue 200" begin
+        str_ = """
+        begin
+            f() do
+                @info @sprintf \"\"\"
+                Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) / weightedsum(Qe)
+            end
+        end"""
+
+        # NOTE: this looks slightly off because we're compensating for escaping quotes
+        str = """
+        begin
+            f() do
+                @info @sprintf \"\"\"
+                Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) /
+                                   weightedsum(Qe)
+            end
+        end"""
+        @test fmt(str_, m = 81) == str
+        @test fmt(str, m = 82) == str_
+    end
+
 end
