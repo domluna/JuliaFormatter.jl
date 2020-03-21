@@ -2,6 +2,7 @@ module JuliaFormatter
 
 using CSTParser
 using Tokenize
+using DataStructures
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
@@ -13,10 +14,17 @@ is_str_or_cmd(typ::CSTParser.Head) =
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 
+# Implement Interval Tree using DataStructures's SortedDict
+struct IntervalTreeOrder <: DataStructures.Ordering end
+DataStructures.lt(::IntervalTreeOrder, a::UnitRange{Int}, b::UnitRange{Int}) =
+    last(a) < first(b)
+DataStructures.eq(::IntervalTreeOrder, a::UnitRange{Int}, b::UnitRange{Int}) =
+    isequal(a, b) || first(a) in b || first(b) in a
+
 struct Document
     text::AbstractString
 
-    ranges::Vector{UnitRange{Int}}
+    range_to_line::SortedDict{UnitRange{Int},Int,IntervalTreeOrder}
     line_to_range::Dict{Int,UnitRange{Int}}
 
     # mapping the offset in the file to the raw literal
@@ -37,7 +45,6 @@ end
 
 function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
-    line_to_range = Dict{Int,UnitRange{Int}}()
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Set{Int}()
@@ -134,7 +141,11 @@ function Document(text::AbstractString)
             str *= Tokenize.untokenize(t)
         end
     end
+
+    range_to_line = SortedDict{UnitRange{Int},Int}(IntervalTreeOrder())
+    line_to_range = Dict{Int,UnitRange{Int}}()
     for (l, r) in enumerate(ranges)
+        insert!(range_to_line, r, l)
         line_to_range[l] = r
     end
 
@@ -148,7 +159,15 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    Document(text, ranges, line_to_range, lit_strings, comments, semicolons, format_skips)
+    Document(
+        text,
+        range_to_line,
+        line_to_range,
+        lit_strings,
+        comments,
+        semicolons,
+        format_skips,
+    )
 end
 
 Base.@kwdef struct Options
@@ -177,12 +196,9 @@ State(doc, indent_size, margin, opts) = State(doc, indent_size, 0, 1, 0, margin,
 @inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
 
 @inline function cursor_loc(s::State, offset::Integer)
-    for (l, r) in enumerate(s.doc.ranges)
-        if offset in r
-            return (l, offset - first(r) + 1, length(r))
-        end
-    end
-    error("Indexing range 1 - $(last(s.doc.ranges[end])), index used = $(offset)")
+    l = s.doc.range_to_line[offset:offset]
+    r = s.doc.line_to_range[l]
+    return (l, offset - first(r) + 1, length(r))
 end
 @inline cursor_loc(s::State) = cursor_loc(s, s.offset)
 
@@ -300,9 +316,9 @@ function format_text(
 
     print_tree(io, t, s)
 
-    if t.endline < length(s.doc.ranges)
+    if t.endline < length(s.doc.range_to_line)
         print_leaf(io, Newline(), s)
-        format_check(io, Notcode(t.endline + 1, length(s.doc.ranges)), s)
+        format_check(io, Notcode(t.endline + 1, length(s.doc.range_to_line)), s)
     end
 
     text = String(take!(io))
