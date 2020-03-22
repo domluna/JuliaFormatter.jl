@@ -14,22 +14,6 @@
 #
 # the length of " op" will be considered when nesting LHS
 
-# unnest, converts newlines to whitespace
-unnest!(fst::FST, ind::Int) = fst[ind] = Whitespace(fst[ind].len)
-function unnest!(fst::FST, nl_inds::Vector{Int})
-    for (i, ind) in enumerate(nl_inds)
-        unnest!(fst, ind)
-        i == length(nl_inds) || continue
-        ind2 = ind - 1
-        if fst[ind2].typ === TRAILINGCOMMA
-            fst[ind2].val = ""
-            fst[ind2].len = 0
-        elseif fst[ind-1].typ === TRAILINGSEMICOLON
-            fst[ind2].val = ";"
-            fst[ind2].len = 1
-        end
-    end
-end
 
 function skip_indent(fst::FST)
     if fst.typ === CSTParser.LITERAL && fst.val == ""
@@ -67,6 +51,24 @@ function add_indent!(fst::FST, s::State, indent)
     f = (fst::FST, s::State) -> fst.indent += indent
     walk(f, fst, s)
     s.line_offset = lo
+end
+
+# unnest, converts newlines to whitespace
+function unnest!(fst::FST, nl_inds::Vector{Int})
+    for (i, ind) in enumerate(nl_inds)
+        fst[ind] = Whitespace(fst[ind].len)
+        i == length(nl_inds) || continue
+        if fst[ind-1].typ === TRAILINGCOMMA
+            fst[ind-1].val = ""
+            fst[ind-1].len = 0
+        elseif fst[ind-1].typ === TRAILINGSEMICOLON
+            fst[ind-1].val = ";"
+            fst[ind-1].len = 1
+        elseif fst.typ === CSTParser.BinaryOpCall && fst[ind+1].typ === WHITESPACE
+            # remove additional indent
+            fst[ind+1] = Whitespace(0)
+        end
+    end
 end
 
 function dedent!(fst::FST, s::State)

@@ -4639,4 +4639,62 @@ some_function(
         @test fmt(str, m = 82) == str_
     end
 
+    @testset "issue 202" begin
+        str_ = """
+        @inline function _make_zop_getvalues(iterators)
+            types = map(iterators) do itr
+                t =     constructorof(typeof(itr))::Union{Iterators.ProductIterator,CartesianIndices}
+                Val(t)
+            end
+            return function (xs) end
+        end"""
+        str = """
+        @inline function _make_zop_getvalues(iterators)
+            types = map(iterators) do itr
+                t = constructorof(typeof(itr))::Union{Iterators.ProductIterator,CartesianIndices}
+                Val(t)
+            end
+            return function (xs) end
+        end"""
+        @test fmt(str_, m = 92) == str
+
+        str_ = """
+        @vlplot(
+            data = dataset("cars"),
+            facet = {row = {field = :Origin, type = :nominal}},
+            spec = {
+                layer = [
+                    {
+                        mark = :point,
+                        encoding =     {x = {field = :Horsepower}, y = {field = :Miles_per_Gallon}},
+                    },
+                    {
+                        mark = {type = :rule, color = :red},
+                        data = {values = [{ref = 10}]},
+                        encoding = {y = {field = :ref, type = :quantitative}},
+                    },
+                ],
+            }
+        )"""
+        str = """
+        @vlplot(
+            data = dataset("cars"),
+            facet = {row = {field = :Origin, type = :nominal}},
+            spec = {
+                layer = [
+                    {
+                        mark = :point,
+                        encoding = {x = {field = :Horsepower}, y = {field = :Miles_per_Gallon}},
+                    },
+                    {
+                        mark = {type = :rule, color = :red},
+                        data = {values = [{ref = 10}]},
+                        encoding = {y = {field = :ref, type = :quantitative}},
+                    },
+                ],
+            }
+        )"""
+        @test fmt(str_, m = 92) == str
+    end
+
 end
