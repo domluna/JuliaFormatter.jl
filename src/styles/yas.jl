@@ -29,11 +29,11 @@ yasformat(s::AbstractString; kwargs...) = format_text(
     style = YASStyle(),
 )
 
-# function nestable(::YASStyle, cst::CSTParser.EXPR)
-#     CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return false
-#     nest_assignment(cst) && return false
-#     return true
-# end
+function nestable(::YASStyle, cst::CSTParser.EXPR)
+    (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
+    (cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC) && return false
+    return true
+end
 
 function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
@@ -184,7 +184,8 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            nest_if_over_margin!(ys, fst, s, i)
+            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -211,7 +212,8 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            nest_if_over_margin!(ys, fst, s, i)
+            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -232,11 +234,12 @@ end
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 
-function n_import!(ys::YASStyle, fst::FST, s::State)
+function n_using!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
     for (i, n) in enumerate(fst.nodes)
         if n.typ === PLACEHOLDER
-            nest_if_over_margin!(ys, fst, s, i)
+            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         else
@@ -244,10 +247,12 @@ function n_import!(ys::YASStyle, fst::FST, s::State)
         end
     end
 end
-@inline n_export!(ys::YASStyle, fst::FST, s::State) = n_import!(ys, fst, s)
-@inline n_using!(ys::YASStyle, fst::FST, s::State) = n_import!(ys, fst, s)
+@inline n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
+@inline n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 
 n_whereopcall!(ys::YASStyle, fst::FST, s::State) =
     nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
 n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
-    n_block!(DefaultStyle(ys), fst, s, custom_indent = s.line_offset)
+    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
+n_comparison!(ys::YASStyle, fst::FST, s::State) =
+    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
