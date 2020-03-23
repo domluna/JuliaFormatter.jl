@@ -1,5 +1,8 @@
+# FNode are extra nodes used for formatting which don't have a CSTParser equivalent.
 @enum(
-    PLeaf,
+    FNode,
+
+    # leaf nodes
     NEWLINE,
     SEMICOLON,
     WHITESPACE,
@@ -12,7 +15,7 @@
 
 # Formatted Syntax Tree
 mutable struct FST
-    typ::Union{CSTParser.Head,PLeaf}
+    typ::Union{CSTParser.Head,FNode}
     startline::Int
     endline::Int
     indent::Int
@@ -157,7 +160,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
 
         # If there's no semicolon, treat it
-        # as a PLeaf
+        # as a FNode
         if n.startline == -1
             t.len += length(n)
             n.startline = t.endline
@@ -190,7 +193,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif n.typ isa PLeaf
+    elseif n.typ isa FNode
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline
