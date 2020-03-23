@@ -96,9 +96,11 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
+@inline p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
+@inline p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 
 
 function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
@@ -136,7 +138,11 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
             pretty(ys, a, s)
 
-        if CSTParser.is_comma(a) && is_closer(cst[i+1])
+        if CSTParser.is_comma(a) && i + 2 == length(cst) - 1
+            continue
+        elseif CSTParser.is_comma(a) && i + 2 < length(cst) && !is_punc(cst[i+3])
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -171,14 +177,14 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 @inline p_filter(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_generator(ys, cst, s)
+@inline p_flatten(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_generator(ys, cst, s)
 
 #
 # Nesting
 #
 
 function n_call!(ys::YASStyle, fst::FST, s::State)
-    line_offset = s.line_offset
-    fst.indent = line_offset + sum(length.(fst[1:2]))
+    fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
@@ -234,6 +240,31 @@ end
 @inline n_parameters!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
+# @inline n_generator!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
+# @inline n_filter!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
+# @inline n_flatten!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
+
+function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
+    fst.indent = s.line_offset
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
+        elseif is_opener(n) && n.val == "{"
+            fst.indent = s.line_offset + 1
+            nest!(ys, n, s)
+        elseif i == 1
+            nest!(ys, n, s)
+        else
+            n.extra_margin = 1
+            nest!(ys, n, s)
+        end
+    end
+end
+
 
 function n_using!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
@@ -251,9 +282,7 @@ end
 @inline n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 @inline n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 
-n_whereopcall!(ys::YASStyle, fst::FST, s::State) =
-    nest!(ys, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
-n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
-    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
-n_comparison!(ys::YASStyle, fst::FST, s::State) =
-    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
+# n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
+#     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
+# n_comparison!(ys::YASStyle, fst::FST, s::State) =
+#     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)

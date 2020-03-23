@@ -393,6 +393,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         if idx !== nothing
             fst[idx] = Newline(length = fst[idx].len)
         end
+
         add_indent!(fst, s, s.indent_size)
         fst[end].indent = fst.indent - s.indent_size
     end
