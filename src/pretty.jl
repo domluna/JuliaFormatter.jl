@@ -359,11 +359,14 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, p_stringh(style, cst[2], s), s)
         end
         add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
+        # change the node type
+        t.typ = CSTParser.GlobalRefDoc
         return t
     elseif length(cst) == 3 &&
            cst[1].typ === CSTParser.MacroName &&
            cst[1][2].val == "doc" &&
            is_str(cst[2])
+
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -371,6 +374,8 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         join_lines = t.endline == n.startline
         join_lines && add_node!(t, Whitespace(1), s)
         add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
+        # change the node type
+        t.typ = CSTParser.GlobalRefDoc
         return t
     end
 
