@@ -213,7 +213,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
             idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
-            idx !== nothing && deleteat!(t.nodes, idx)
+            idx !== nothing && (t[idx] = Whitespace(0))
         end
         add_node!(t, Semicolon(), s)
 

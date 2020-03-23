@@ -769,7 +769,7 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State)
     n = fst[idx]
     if n.typ === NOTCODE && n.startline == n.endline
         res = get(s.doc.comments, n.startline, (0, ""))
-        res == (0, "") && deleteat!(fst.nodes, idx - 1)
+        res == (0, "") && (fst[idx-1] = Whitespace(0))
     end
 end
 n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
