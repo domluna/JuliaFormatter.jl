@@ -190,7 +190,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             n.val = ""
             n.len = 0
             nest!(ys, n, s)
-        elseif n.typ === CSTParser.Parameters || n.typ === CSTParser.Generator
+        elseif n.typ === CSTParser.Generator
             n.indent = fst.indent
             n.extra_margin = 1
             nest!(ys, n, s)
@@ -202,10 +202,11 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
 end
 @inline n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+@inline n_macrocall!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+@inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tupleh!(ys::YASStyle, fst::FST, s::State)
-    line_offset = s.line_offset
-    fst.typ !== CSTParser.Parameters && (fst.indent = line_offset)
+    fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
     for (i, n) in enumerate(fst.nodes)

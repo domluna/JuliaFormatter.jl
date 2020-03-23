@@ -117,12 +117,12 @@ function get_args(cst::CSTParser.EXPR)
     elseif cst.typ === CSTParser.WhereOpCall
         # get the arguments in B of `A where B`
         return get_args(cst.args[3:end])
-    elseif cst.typ === CSTParser.Parameters ||
-           cst.typ === CSTParser.Braces ||
+    elseif cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat ||
            cst.typ === CSTParser.TupleH ||
            cst.typ === CSTParser.Vect ||
-           cst.typ === CSTParser.InvisBrackets
+           cst.typ === CSTParser.InvisBrackets ||
+           cst.typ === CSTParser.Parameters
         return get_args(cst.args)
     end
     CSTParser.get_args(cst)
@@ -205,10 +205,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
-        if length(n) == 0
-            n.startline = t.endline
-            n.endline = t.endline
-        end
+        # unpack Parameters arguments into the parent
+        # node
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
@@ -226,6 +224,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             multi_arg = n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
+        for nn in n.nodes
+            add_node!(t, nn, s, join_lines=true)
+        end
+        return
     end
 
     if length(t.nodes) == 0
@@ -289,10 +291,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
-        end
-
-        if n.typ === CSTParser.Parameters && n.force_nest
-            t.force_nest = true
         end
     end
 

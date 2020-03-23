@@ -1566,10 +1566,10 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if i == length(cst) && CSTParser.is_comma(a)
             # do nothing
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
+            push!(t.nodes, n)
+            push!(t.nodes, Placeholder(1))
         else
-            add_node!(t, n, s, join_lines = true)
+            push!(t.nodes, n)
         end
     end
     t

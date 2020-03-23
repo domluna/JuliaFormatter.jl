@@ -191,8 +191,6 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_vect!(style, fst, s)
     elseif fst.typ === CSTParser.Vcat
         n_vcat!(style, fst, s)
-    elseif fst.typ === CSTParser.Parameters
-        n_parameters!(style, fst, s)
     elseif fst.typ === CSTParser.Braces
         n_braces!(style, fst, s)
     elseif fst.typ === CSTParser.InvisBrackets
@@ -321,7 +319,7 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
         if opener
             fst[end].indent = fst.indent
         end
-        if fst.typ !== CSTParser.Parameters && !(fst.typ === CSTParser.TupleH && !opener)
+        if fst.typ !== CSTParser.TupleH || opener
             fst.indent += s.indent_size
         end
 
@@ -473,13 +471,11 @@ function n_call!(ds::DefaultStyle, fst::FST, s::State)
                 n.len = 0
                 nest!(style, n, s)
             elseif i == 1 || i == length(fst.nodes)
-                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 n.extra_margin = 1
                 nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                n.typ === CSTParser.Parameters && (n.force_nest = true)
                 n.extra_margin = 1
                 nest!(style, n, s)
             end
