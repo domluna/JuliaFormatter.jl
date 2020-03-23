@@ -1,16 +1,17 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle
+using JuliaFormatter: DefaultStyle, YASStyle
 using CSTParser
 using Test
 
 fmt1(
-    s,
+    s;
     i = 4,
     m = 80,
     always_for_in = false,
     whitespace_typedefs = false,
     whitespace_ops_in_indices = false,
     remove_extra_newlines = false,
+    style = DefaultStyle()
 ) = JuliaFormatter.format_text(
     s,
     indent = i,
@@ -19,6 +20,7 @@ fmt1(
     whitespace_typedefs = whitespace_typedefs,
     whitespace_ops_in_indices = whitespace_ops_in_indices,
     remove_extra_newlines = remove_extra_newlines,
+    style = style,
 )
 
 # Verifies formatting the formatted text
@@ -31,28 +33,31 @@ function fmt(
     whitespace_typedefs = false,
     whitespace_ops_in_indices = false,
     remove_extra_newlines = false,
+    style = DefaultStyle()
 )
     s1 = fmt1(
         s,
-        i,
-        m,
-        always_for_in,
-        whitespace_typedefs,
-        whitespace_ops_in_indices,
-        remove_extra_newlines,
+        i = i,
+        m = m,
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices =whitespace_ops_in_indices,
+        remove_extra_newlines =remove_extra_newlines,
+        style =style
     )
     fmt1(
         s1,
-        i,
-        m,
-        always_for_in,
-        whitespace_typedefs,
-        whitespace_ops_in_indices,
-        remove_extra_newlines,
+        i = i,
+        m = m,
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices =whitespace_ops_in_indices,
+        remove_extra_newlines =remove_extra_newlines,
+        style =style
     )
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
+fmt1(s, i, m) = fmt1(s, i, m)
 
 function run_pretty(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
@@ -4746,6 +4751,284 @@ some_function(
 
 end
 
+yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
+yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 
-@testset "YAS" begin
+@testset "YAS alignment" begin
+    @testset "basic" begin
+        str_ = "a = (arg1, arg2, arg3)"
+        str = """
+        a = (arg1, arg2,
+             arg3)"""
+        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, 16) == str
+
+        str = """
+        a = (arg1,
+             arg2,
+             arg3)"""
+        @test yasfmt(str_, 4, 15) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = [arg1, arg2, arg3]"
+        str = """
+        a = [arg1, arg2,
+             arg3]"""
+        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, 16) == str
+
+        str = """
+        a = [arg1,
+             arg2,
+             arg3]"""
+        @test yasfmt(str_, 4, 15) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = {arg1, arg2, arg3}"
+        str = """
+        a = {arg1,arg2,arg3}"""
+        @test yasfmt(str_, 4, 20) == str
+
+        str = """
+        a = {arg1,arg2,
+             arg3}"""
+        @test yasfmt(str_, 4, 19) == str
+        @test yasfmt(str_, 4, 15) == str
+
+        str = """
+        a = {arg1,
+             arg2,
+             arg3}"""
+        @test yasfmt(str_, 4, 14) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = Union{arg1, arg2, arg3}"
+        str = """
+        a = Union{arg1,arg2,arg3}"""
+        @test yasfmt(str_, 4, 25) == str
+
+        str = """
+        a = Union{arg1,arg2,
+                  arg3}"""
+        @test yasfmt(str_, 4, 24) == str
+        @test yasfmt(str_, 4, 20) == str
+
+        str = """
+        a = Union{arg1,
+                  arg2,
+                  arg3}"""
+        @test yasfmt(str_, 4, 19) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = fcall(arg1,arg2,arg3)"
+        str = """
+        a = fcall(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = fcall(arg1, arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = fcall(arg1,
+                  arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = @call(arg1,arg2,arg3)"
+        str = """
+        a = @call(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = @call(arg1, arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = @call(arg1,
+                  arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = array[arg1,arg2,arg3]"
+        str = """
+        a = array[arg1, arg2, arg3]"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = array[arg1, arg2,
+                  arg3]"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = array[arg1,
+                  arg2,
+                  arg3]"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+
+    end
+
+    # more complicated samples
+    @testset "pretty" begin
+        str_ = "comp = [a * b for a in 1:10, b in 11:20]"
+        str = """
+        comp = [a * b for
+                a in 1:10, b in 11:20]"""
+        @test yasfmt(str_, 2, length(str_)-1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 30, always_for_in = true) == str
+
+        str = """
+        comp = [a * b for
+                a in 1:10,
+                b in 11:20]"""
+        @test yasfmt(str_, 2, 29, always_for_in = true) == str
+        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+
+        str_ = "comp = Typed[a * b for a in 1:10, b in 11:20]"
+        str = """
+        comp = Typed[a * b for
+                     a in 1:10, b in 11:20]"""
+        @test yasfmt(str_, 2, length(str_)-1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 35, always_for_in = true) == str
+
+        str = """
+        comp = Typed[a * b for
+                     a in 1:10,
+                     b in 11:20]"""
+        @test yasfmt(str_, 2, 34, always_for_in = true) == str
+        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+
+        str_ = "foo(arg1, arg2, arg3) == bar(arg1, arg2, arg3)"
+        str = """
+        foo(arg1, arg2, arg3) ==
+        bar(arg1, arg2, arg3)"""
+        @test yasfmt(str, 2, length(str_)) == str_
+        @test yasfmt(str_, 2, length(str_)-1) == str
+        @test yasfmt(str_, 2, 24) == str
+
+        str = """
+        foo(arg1, arg2,
+            arg3) ==
+        bar(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 2, 23) == str
+        @test yasfmt(str_, 2, 21) == str
+
+        str = """
+        foo(arg1, arg2,
+            arg3) ==
+        bar(arg1, arg2,
+            arg3)"""
+        @test yasfmt(str_, 2, 20) == str
+        @test yasfmt(str_, 2, 15) == str
+
+        str = """
+        foo(arg1,
+            arg2,
+            arg3) ==
+        bar(arg1,
+            arg2,
+            arg3)"""
+        @test yasfmt(str_, 2, 14) == str
+        @test yasfmt(str_, 2, 1) == str
+
+        str_ = """
+        function func(arg1::Type1, arg2::Type2, arg3) where {Type1,Type2}
+          body
+        end"""
+        str = """
+        function func(arg1::Type1, arg2::Type2, arg3) where {Type1,
+                                                             Type2}
+          body
+        end"""
+        @test yasfmt(str_, 2, 64) == str
+        @test yasfmt(str_, 2, 45) == str
+
+
+        str = """
+        function func(arg1::Type1, arg2::Type2,
+                      arg3) where {Type1,Type2}
+          body
+        end"""
+        @test yasfmt(str_, 2, 44) == str
+        @test yasfmt(str_, 2, 39) == str
+
+        str = """
+        function func(arg1::Type1,
+                      arg2::Type2,
+                      arg3) where {Type1,
+                                   Type2}
+          body
+        end"""
+        @test yasfmt(str_, 2, 31) == str
+        @test yasfmt(str_, 2, 1) == str
+
+
+        str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, 73) == str
+
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal;
+                                          channel_names=[:avl, :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, 72) == str
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal;
+                                          channel_names=[:avl,
+                                                         :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, 1) == str
+    end
+
+    @testset "inline comments with arguments" begin
+        str_ = """
+        var = fcall(arg1,
+            arg2, arg3, # comment
+                            arg4, arg5)"""
+        str = """
+        var = fcall(arg1, arg2, arg3, # comment
+                    arg4, arg5)"""
+        @test yasfmt(str_, 4, 80) == str
+        @test yasfmt(str_, 4, 29) == str
+
+        str = """
+        var = fcall(arg1, arg2,
+                    arg3, # comment
+                    arg4, arg5)"""
+        @test yasfmt(str_, 4, 28) == str
+        @test yasfmt(str_, 4, 23) == str
+
+        str = """
+        var = fcall(arg1,
+                    arg2,
+                    arg3, # comment
+                    arg4,
+                    arg5)"""
+        @test yasfmt(str_, 4, 22) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        # TODO: determine whether it's preferable to
+        # keep as much on the same line as possible
+        str_ = """
+        comp = [a * b + c for a in 1:10, # comment
+        b in 11:20, c in 300:400]"""
+        str = """
+        comp = [a * b + c for
+                a = 1:10, # comment
+                b = 11:20,
+                c = 300:400]"""
+        @test yasfmt(str_, 4, 80) == str
+    end
 end
