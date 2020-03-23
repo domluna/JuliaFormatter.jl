@@ -115,7 +115,7 @@ function nest_if_over_margin!(style, fst::FST, s::State, idx::Int; stop_idx::Uni
     if stop_idx === nothing
         margin += sum(length.(fst[idx:end])) + fst.extra_margin
     else
-        margin += sum(length.(fst[idx:stop_idx-1])) + fst.extra_margin
+        margin += sum(length.(fst[idx:stop_idx-1]))
     end
 
     if margin > s.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
