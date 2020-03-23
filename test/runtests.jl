@@ -4756,6 +4756,10 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 
 @testset "YAS alignment" begin
     @testset "basic" begin
+        str_ = "foo(; k =v)"
+        str = "foo(; k=v)"
+        @test yasfmt(str_, 4, 80) == str
+
         str_ = "a = (arg1, arg2, arg3)"
         str = """
         a = (arg1, arg2,
