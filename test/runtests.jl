@@ -11,7 +11,7 @@ fmt1(
     whitespace_typedefs = false,
     whitespace_ops_in_indices = false,
     remove_extra_newlines = false,
-    style = DefaultStyle()
+    style = DefaultStyle(),
 ) = JuliaFormatter.format_text(
     s,
     indent = i,
@@ -33,7 +33,7 @@ function fmt(
     whitespace_typedefs = false,
     whitespace_ops_in_indices = false,
     remove_extra_newlines = false,
-    style = DefaultStyle()
+    style = DefaultStyle(),
 )
     s1 = fmt1(
         s,
@@ -41,9 +41,9 @@ function fmt(
         m = m,
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices =whitespace_ops_in_indices,
-        remove_extra_newlines =remove_extra_newlines,
-        style =style
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        style = style,
     )
     fmt1(
         s1,
@@ -51,9 +51,9 @@ function fmt(
         m = m,
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices =whitespace_ops_in_indices,
-        remove_extra_newlines =remove_extra_newlines,
-        style =style
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        style = style,
     )
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
@@ -4760,7 +4760,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         a = (arg1, arg2,
              arg3)"""
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
         @test yasfmt(str_, 4, 16) == str
 
         str = """
@@ -4774,7 +4774,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         a = [arg1, arg2,
              arg3]"""
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
         @test yasfmt(str_, 4, 16) == str
 
         str = """
@@ -4883,7 +4883,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         comp = [a * b for
                 a in 1:10, b in 11:20]"""
-        @test yasfmt(str_, 2, length(str_)-1, always_for_in = true) == str
+        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
         @test yasfmt(str_, 2, 30, always_for_in = true) == str
 
         str = """
@@ -4897,7 +4897,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         comp = Typed[a * b for
                      a in 1:10, b in 11:20]"""
-        @test yasfmt(str_, 2, length(str_)-1, always_for_in = true) == str
+        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
         @test yasfmt(str_, 2, 35, always_for_in = true) == str
 
         str = """
@@ -4912,7 +4912,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         foo(arg1, arg2, arg3) ==
         bar(arg1, arg2, arg3)"""
         @test yasfmt(str, 2, length(str_)) == str_
-        @test yasfmt(str_, 2, length(str_)-1) == str
+        @test yasfmt(str_, 2, length(str_) - 1) == str
         @test yasfmt(str_, 2, 24) == str
 
         str = """
@@ -4976,7 +4976,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = raw"""
         ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
                                           file_extension=Symbol("lpcm.zst"))"""
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
         @test yasfmt(str_, 4, 73) == str
 
         str = raw"""

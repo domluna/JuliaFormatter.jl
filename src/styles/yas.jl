@@ -100,7 +100,8 @@ end
 @inline p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
-@inline p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
+@inline p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) =
+    p_call(ys, cst, s)
 
 
 function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
@@ -191,7 +192,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -220,7 +221,7 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -252,7 +253,7 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
         elseif is_opener(n) && n.val == "{"
             fst.indent = s.line_offset + 1
             nest!(ys, n, s)
@@ -271,7 +272,7 @@ function n_using!(ys::YASStyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx=si)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         else

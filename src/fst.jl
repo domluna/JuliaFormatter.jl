@@ -225,7 +225,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
         for nn in n.nodes
-            add_node!(t, nn, s, join_lines=true)
+            add_node!(t, nn, s, join_lines = true)
         end
         return
     end
