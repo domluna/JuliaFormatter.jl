@@ -96,12 +96,26 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
-@inline p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State) =
     p_call(ys, cst, s)
+
+function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    fst = p_macrocall(DefaultStyle(ys), cst, s)
+    fst.typ == CSTParser.MacroCall || return fst
+    is_closer(cst.args[end]) || return fst
+
+    # remove initial and last placeholders
+    # @call(PLACEHOLDER, args..., PLACEHOLDER) -> @call(args...)
+    idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
+    idx !== nothing && (fst[idx] = Whitespace(0))
+    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
+    idx !== nothing && (fst[idx] = Whitespace(0))
+
+    return fst
+end
 
 
 function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
