@@ -11,6 +11,9 @@
     INLINECOMMENT,
     TRAILINGCOMMA,
     TRAILINGSEMICOLON,
+
+    # no equivalent in CSTParser
+    MACROBLOCK,
 )
 
 # Formatted Syntax Tree
@@ -438,7 +441,6 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     end
     false
 end
-
 
 @inline function flattenable(op::CSTParser.EXPR)
     op.kind === Tokens.AND && return true
