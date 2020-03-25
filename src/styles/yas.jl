@@ -201,8 +201,6 @@ end
 function n_call!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
-    @info "" fst[1].val fst.extra_margin
-
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
