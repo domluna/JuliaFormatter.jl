@@ -4697,4 +4697,51 @@ some_function(
         @test fmt(str_, m = 92) == str
     end
 
+    @testset "issue 207" begin
+        str_ = """
+        @traitfn function predict_ar(m::TGP, p::Int = 3, n::Int = 1; y_past = get_y(m)) where {T,TGP<:AbstractGP{T};IsMultiOutput{TGP}}
+        end"""
+
+        str = """
+        @traitfn function predict_ar(
+            m::TGP,
+            p::Int = 3,
+            n::Int = 1;
+            y_past = get_y(m),
+        ) where {T,TGP<:AbstractGP{T};IsMultiOutput{TGP}} end"""
+        @test fmt(str_, m = 92) == str
+
+        str = """
+        @traitfn function predict_ar(
+            m::TGP,
+            p::Int = 3,
+            n::Int = 1;
+            y_past = get_y(m),
+        ) where {T, TGP <: AbstractGP{T}; IsMultiOutput{TGP}} end"""
+        @test fmt(str_, m = 92, whitespace_typedefs = true) == str
+
+        str_ = """
+        @traitfn function predict_ar(m::TGP, p::Int = 3, n::Int = 1; y_past = get_y(m)) where C <: Union{T,TGP<:AbstractGP{T};IsMultiOutput{TGP}}
+        end"""
+
+        str = """
+        @traitfn function predict_ar(
+            m::TGP,
+            p::Int = 3,
+            n::Int = 1;
+            y_past = get_y(m),
+        ) where {C<:Union{T,TGP<:AbstractGP{T};IsMultiOutput{TGP}}} end"""
+        @test fmt(str_, m = 92) == str
+
+        str = """
+        @traitfn function predict_ar(
+            m::TGP,
+            p::Int = 3,
+            n::Int = 1;
+            y_past = get_y(m),
+        ) where {C <: Union{T, TGP <: AbstractGP{T}; IsMultiOutput{TGP}}} end"""
+        @test fmt(str_, m = 92, whitespace_typedefs = true) == str
+
+    end
+
 end

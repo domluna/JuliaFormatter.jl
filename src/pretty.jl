@@ -1235,7 +1235,6 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # Used to mark where `B` starts.
     add_node!(t, Placeholder(0), s)
 
-    nest = length(CSTParser.get_where_params(cst)) > 0
     args = get_args(cst.args[3:end])
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
