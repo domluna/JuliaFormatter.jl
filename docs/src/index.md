@@ -40,6 +40,7 @@ format_text(
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
+    import_to_using::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
 
@@ -47,30 +48,18 @@ format_file(
     file::AbstractString;
     overwrite = true,
     verbose = false,
-    indent = 4,
-    margin = 92,
-    always_for_in = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    format_options...,
 )
 
 format(
     paths...;
-    overwrite = true,
-    verbose = false,
-    indent = 4,
-    margin = 92,
-    always_for_in = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    options...,
 )
 ```
 
 The `text` argument to `format_text` is a string containing the code to be formatted; the formatted code is retuned as a new string. The `file` argument to `format_file` is the path of a file to be formatted. The `format` function is either called with a singe string to format if it is a `.jl` file or to recuse into looking for `.jl` files if it is a directory. It can also be called with a collection of such paths to iterate over.
+
+`format` calls `format_file` which in turn calls `format_text`.
 
 ### File Options
 
@@ -116,4 +105,6 @@ is rewritten as
 a = 1
 
 b = 2
+
+If `import_to_using` is true `import` keywords are rewritten to `using keywords.
 ```
