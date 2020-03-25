@@ -4982,15 +4982,15 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         @test TimeSpan(spike_annotation) ==
               TimeSpan(first(spike_annotation), last(spike_annotation))"""
-              @test yasfmt(str_, 4, length(str_)-1) == str
-              @test yasfmt(str_, 4, 63) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+        @test yasfmt(str_, 4, 63) == str
         str_ = """
         @test TimeSpan(spike_annotation) == TimeSpan(first(spike_annotation), last(spike_annotation))"""
         str = """
         @test TimeSpan(spike_annotation) ==
               TimeSpan(first(spike_annotation),
                        last(spike_annotation))"""
-              @test yasfmt(str_, 4, 62) == str
+        @test yasfmt(str_, 4, 62) == str
 
 
         str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
