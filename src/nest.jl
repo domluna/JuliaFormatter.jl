@@ -275,7 +275,7 @@ n_do!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 
 # Import,Using,Export
-function n_import!(ds::DefaultStyle, fst::FST, s::State)
+function n_using!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -304,16 +304,16 @@ function n_import!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_import!(DefaultStyle(style), fst, s)
+n_using!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_using!(DefaultStyle(style), fst, s)
 
-@inline n_export!(ds::DefaultStyle, fst::FST, s::State) = n_import!(ds, fst, s)
+@inline n_export!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
 n_export!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_export!(DefaultStyle(style), fst, s)
 
-@inline n_using!(ds::DefaultStyle, fst::FST, s::State) = n_import!(ds, fst, s)
-n_using!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_using!(DefaultStyle(style), fst, s)
+@inline n_import!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
+n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_import!(DefaultStyle(style), fst, s)
 
 function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
