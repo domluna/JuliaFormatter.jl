@@ -111,6 +111,9 @@ function get_args(cst::CSTParser.EXPR)
        cst.typ === CSTParser.Curly ||
        cst.typ === CSTParser.Call
         return get_args(cst.args[2:end])
+    elseif cst.typ === CSTParser.WhereOpCall
+        # get the arguments in B of `A where B`
+        return get_args(cst.args[3:end])
     elseif cst.typ === CSTParser.Parameters ||
            cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat ||
@@ -124,22 +127,21 @@ end
 
 function get_args(args::Vector{CSTParser.EXPR})
     args0 = CSTParser.EXPR[]
-    for arg in args
-        CSTParser.ispunctuation(arg) && continue
-        if CSTParser.typof(arg) === CSTParser.Parameters
-            for j = 1:length(arg.args)
-                parg = arg[j]
+    for a in args
+        CSTParser.ispunctuation(a) && continue
+        if CSTParser.typof(a) === CSTParser.Parameters
+            for j = 1:length(a.args)
+                parg = a[j]
                 CSTParser.ispunctuation(parg) && continue
                 push!(args0, parg)
             end
         else
-            push!(args0, arg)
+            push!(args0, a)
         end
     end
     args0
 end
-
-n_args(x) = length(get_args(x))
+@inline n_args(x) = length(get_args(x))
 
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
@@ -211,9 +213,15 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             idx !== nothing && deleteat!(t.nodes, idx)
         end
         add_node!(t, Semicolon(), s)
+
         if length(n.nodes) > 0
+            nws = 1
+            if (t.typ === CSTParser.Curly || t.typ === CSTParser.WhereOpCall) &&
+               !s.opts.whitespace_typedefs
+                nws = 0
+            end
             multi_arg = n_args(t.ref[]) > 0
-            multi_arg ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
+            multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
     end
 
