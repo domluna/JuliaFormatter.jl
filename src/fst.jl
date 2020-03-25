@@ -1,4 +1,6 @@
-# FNode are extra nodes used for formatting which don't have a CSTParser equivalent.
+"""
+`FNode` is a node used for formatting which does not have a `CSTParser` equivalent.
+"""
 @enum(
     FNode,
 
@@ -13,7 +15,7 @@
     TRAILINGSEMICOLON,
 
     # no equivalent in CSTParser
-    MACROBLOCK,
+    MacroBlock,
 )
 
 # Formatted Syntax Tree
@@ -196,7 +198,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif n.typ isa FNode
+    elseif n.typ isa FNode && is_leaf(n)
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline

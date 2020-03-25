@@ -421,6 +421,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             end
         end
     end
+    !has_closer && (t.typ = MacroBlock)
     t
 end
 p_macrocall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
