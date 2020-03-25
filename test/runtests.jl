@@ -7,20 +7,12 @@ fmt1(
     s;
     i = 4,
     m = 80,
-    always_for_in = false,
-    whitespace_typedefs = false,
-    whitespace_ops_in_indices = false,
-    remove_extra_newlines = false,
-    style = DefaultStyle(),
+    kwargs...,
 ) = JuliaFormatter.format_text(
-    s,
+    s;
+    kwargs...,
     indent = i,
     margin = m,
-    always_for_in = always_for_in,
-    whitespace_typedefs = whitespace_typedefs,
-    whitespace_ops_in_indices = whitespace_ops_in_indices,
-    remove_extra_newlines = remove_extra_newlines,
-    style = style,
 )
 
 # Verifies formatting the formatted text
@@ -29,35 +21,23 @@ function fmt(
     s;
     i = 4,
     m = 80,
-    always_for_in = false,
-    whitespace_typedefs = false,
-    whitespace_ops_in_indices = false,
-    remove_extra_newlines = false,
-    style = DefaultStyle(),
+    kwargs...,
 )
     s1 = fmt1(
-        s,
+        s;
+        kwargs...,
         i = i,
         m = m,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        style = style,
     )
-    fmt1(
-        s1,
+    return fmt1(
+        s1;
+        kwargs...,
         i = i,
         m = m,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        style = style,
     )
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s, i, m)
+fmt1(s, i, m) = fmt1(s; i = i, m = m)
 
 function run_pretty(text::String, print_width::Int; style = DefaultStyle())
     d = JuliaFormatter.Document(text)
@@ -342,55 +322,6 @@ end
         @test fmt(str_) == str
     end
 
-    @testset "always eq to in" begin
-        str_ = """
-        for i = 1:n
-            println(i)
-        end"""
-        str = """
-        for i in 1:n
-            println(i)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = """
-        for i = I1, j in I2
-            println(i, j)
-        end"""
-        str = """
-        for i in I1, j in I2
-            println(i, j)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = """
-        for i = 1:30, j = 100:-2:1
-            println(i, j)
-        end"""
-        str = """
-        for i in 1:30, j in 100:-2:1
-            println(i, j)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "[(i,j) for i=I1,j=I2]"
-        str = "[(i, j) for i in I1, j in I2]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "((i,j) for i=I1,j=I2)"
-        str = "((i, j) for i in I1, j in I2)"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
-        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-    end
 
     @testset "tuples" begin
         @test fmt("(a,)") == "(a,)"
@@ -4216,71 +4147,6 @@ some_function(
 
     end
 
-    @testset "whitespace typedefs option" begin
-        str_ = "Foo{A,B,C}"
-        str = "Foo{A, B, C}"
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = """
-        struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
-            a::A
-        end"""
-        str = """
-        struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
-            a::A
-        end"""
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = """
-        function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
-            body
-        end
-        """
-        str = """
-        function foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z}
-            body
-        end
-        """
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
-        str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
-        @test fmt(str_, whitespace_typedefs = true) == str
-    end
-
-    @testset "whitespace ops in indices option" begin
-        str = "arr[1 + 2]"
-        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[(1 + 2)]"
-        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "arr[1:2*num_source*num_dump-1]"
-        str = "arr[1:(2 * num_source * num_dump - 1)]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "arr[2*num_source*num_dump-1:1]"
-        str = "arr[(2 * num_source * num_dump - 1):1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[(a + b):c]"
-        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[a in b]"
-        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "a:b+c:d-e"
-        str = "a:(b + c):(d - e)"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        # issue 180
-        str_ = "s[m+i+1]"
-        str = "s[m+i+1]"
-        @test fmt(str, m = 1) == str
-
-        str = "s[m + i + 1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-    end
 
     @testset "BracesCat / Issue 150" begin
         str_ = "const SymReg{B,MT} = ArrayReg{B,Basic,MT} where {MT <:AbstractMatrix{Basic}}"
@@ -4749,6 +4615,131 @@ some_function(
 
     end
 
+
+end
+
+@testset "Format Options" begin
+    @testset "whitespace typedefs option" begin
+        str_ = "Foo{A,B,C}"
+        str = "Foo{A, B, C}"
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+            a::A
+        end"""
+        str = """
+        struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
+            a::A
+        end"""
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
+            body
+        end
+        """
+        str = """
+        function foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z}
+            body
+        end
+        """
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
+        str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
+        @test fmt(str_, whitespace_typedefs = true) == str
+    end
+
+    @testset "whitespace ops in indices option" begin
+        str = "arr[1 + 2]"
+        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(1 + 2)]"
+        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[1:2*num_source*num_dump-1]"
+        str = "arr[1:(2 * num_source * num_dump - 1)]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[2*num_source*num_dump-1:1]"
+        str = "arr[(2 * num_source * num_dump - 1):1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(a + b):c]"
+        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[a in b]"
+        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "a:b+c:d-e"
+        str = "a:(b + c):(d - e)"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        # issue 180
+        str_ = "s[m+i+1]"
+        str = "s[m+i+1]"
+        @test fmt(str, m = 1) == str
+
+        str = "s[m + i + 1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+    end
+
+    @testset "whitespace ops in indices option" begin
+        str_ = "import A"
+        str = "using A"
+        @test fmt(str_, import_to_using = true) == str
+    end
+
+    @testset "always eq to in" begin
+        str_ = """
+        for i = 1:n
+            println(i)
+        end"""
+        str = """
+        for i in 1:n
+            println(i)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = """
+        for i = I1, j in I2
+            println(i, j)
+        end"""
+        str = """
+        for i in I1, j in I2
+            println(i, j)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = """
+        for i = 1:30, j = 100:-2:1
+            println(i, j)
+        end"""
+        str = """
+        for i in 1:30, j in 100:-2:1
+            println(i, j)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i,j) for i=I1,j=I2]"
+        str = "[(i, j) for i in I1, j in I2]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "((i,j) for i=I1,j=I2)"
+        str = "((i, j) for i in I1, j in I2)"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+    end
 end
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
