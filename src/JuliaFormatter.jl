@@ -175,6 +175,7 @@ Base.@kwdef struct Options
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
     remove_extra_newlines::Bool = false
+    import_to_using::Bool = false
 end
 
 mutable struct State
@@ -232,6 +233,7 @@ include("styles/yas.jl")
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
+        import_to_using::Bool = false,
         style::AbstractStyle = DefaultStyle(),
     )::String
 
@@ -274,6 +276,8 @@ a = 1
 
 b = 2
 ```
+
+If `import_to_using` is true `import` keywords are rewritten to `using keywords.
 """
 function format_text(
     text::AbstractString;
@@ -283,6 +287,7 @@ function format_text(
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
+    import_to_using::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
@@ -334,13 +339,7 @@ end
         filename::AbstractString;
         overwrite::Bool = true,
         verbose::Bool = false,
-        indent::Integer = 4,
-        margin::Integer = 92,
-        always_for_in::Bool = false,
-        whitespace_typedefs::Bool = false,
-        whitespace_ops_in_indices::Bool = false,
-        remove_extra_newlines::Bool = false,
-        style::AbstractStyle = DefaultStyle(),
+        format_options...,
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -362,13 +361,7 @@ function format_file(
     filename::AbstractString;
     overwrite::Bool = true,
     verbose::Bool = false,
-    indent::Integer = 4,
-    margin::Integer = 92,
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    format_options...,
 )
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
@@ -377,16 +370,7 @@ function format_file(
     end
     verbose && println("Formatting $filename")
     str = String(read(filename))
-    str = format_text(
-        str,
-        indent = indent,
-        margin = margin,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        style = style,
-    )
+    str = format_text(str; format_options...)
     str = replace(str, r"\n*$" => "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
@@ -435,17 +419,13 @@ end
 """
     format(
         paths; # a path or collection of paths
-        indent::Integer = 4,
-        margin::Integer = 92,
-        overwrite::Bool = true,
-        verbose::Bool = false,
-        always_for_in::Bool = false,
-        remove_extra_newlines = false,
-        style = DefaultStyle(),
+        options...,
     )
 
 Recursively descend into files and directories, formatting any `.jl`
 files by calling `format_file` on them.
+
+See `format_file` and `format_text` for a description of the options.
 """
 function format(paths; options...)
     for path in paths
