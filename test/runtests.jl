@@ -3,38 +3,14 @@ using JuliaFormatter: DefaultStyle, YASStyle
 using CSTParser
 using Test
 
-fmt1(
-    s;
-    i = 4,
-    m = 80,
-    kwargs...,
-) = JuliaFormatter.format_text(
-    s;
-    kwargs...,
-    indent = i,
-    margin = m,
-)
+fmt1(s; i = 4, m = 80, kwargs...) =
+    JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(
-    s;
-    i = 4,
-    m = 80,
-    kwargs...,
-)
-    s1 = fmt1(
-        s;
-        kwargs...,
-        i = i,
-        m = m,
-    )
-    return fmt1(
-        s1;
-        kwargs...,
-        i = i,
-        m = m,
-    )
+function fmt(s; i = 4, m = 80, kwargs...)
+    s1 = fmt1(s; kwargs..., i = i, m = m)
+    return fmt1(s1; kwargs..., i = i, m = m)
 end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s; i = i, m = m)
@@ -4742,12 +4718,12 @@ end
     end
 
     @testset "rewrite x |> f to f(x) option" begin
-        @test fmt("x |> f", pipe_to_function_call=true) == "f(x)"
+        @test fmt("x |> f", pipe_to_function_call = true) == "f(x)"
 
         str_ = "var = func1(arg1) |> func2 |> func3 |> func4 |> func5"
         str = "var = func5(func4(func3(func2(func1(arg1)))))"
-        @test fmt(str_, pipe_to_function_call=true) == str
-        @test fmt(str_, pipe_to_function_call=true, margin=1) == fmt(str)
+        @test fmt(str_, pipe_to_function_call = true) == str
+        @test fmt(str_, pipe_to_function_call = true, margin = 1) == fmt(str)
     end
 end
 

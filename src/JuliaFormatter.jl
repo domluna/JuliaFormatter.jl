@@ -309,7 +309,7 @@ function format_text(
         whitespace_ops_in_indices = whitespace_ops_in_indices,
         remove_extra_newlines = remove_extra_newlines,
         import_to_using = import_to_using,
-        pipe_to_function_call = pipe_to_function_call
+        pipe_to_function_call = pipe_to_function_call,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
