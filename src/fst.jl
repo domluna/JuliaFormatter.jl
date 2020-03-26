@@ -454,47 +454,8 @@ end
 end
 
 """
-Flattens a binary op call tree if the op repeats 2 or more times.
+Flattens a binary operation call tree if the operation repeats 2 or more times.
 "a && b && c" will be transformed while "a && b" will not.
-
-Transforms
-
-    BinaryOpCall
-     BinaryOpCall
-      BinaryOpCall
-       BinaryOpCall
-        BinaryOpCall
-         BinaryOpCall
-          some_expression
-          OP: RPIPE
-          some_expression
-         OP: RPIPE
-         some_expression
-        OP: RPIPE
-        some_expression
-       OP: RPIPE
-       some_expression
-      OP: RPIPE
-      some_expression
-     OP: RPIPE
-     some_expression
-
-into
-
-    ChainOpCall
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
 """
 function flatten_binaryopcall(fst::FST; top = true)
     nodes = FST[]
@@ -511,17 +472,15 @@ function flatten_binaryopcall(fst::FST; top = true)
     end
 
     if lhs_same_op
-        # @info "calling lhs"
         push!(nodes, flatten_binaryopcall(lhs, top = false)...)
     else
         flatten_fst!(lhs)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
-    push!(nodes, fst.nodes[2:end-2]...)
+    push!(nodes, fst[2:end-2]...)
 
     if rhs_same_op
-        # @info "calling rhs"
         push!(nodes, flatten_binaryopcall(rhs, top = false)...)
     else
         flatten_fst!(rhs)
@@ -547,4 +506,46 @@ function flatten_fst!(fst::FST)
             flatten_fst!(n)
         end
     end
+end
+
+is_pipe(n::FST) = n.typ === CSTParser.BinaryOpCall && n.ref[][2].kind === Tokens.RPIPE
+
+"""
+    pipe_to_function_call_pass!(fst::FST)
+
+Rewrites `x |> f` to `f(x)`.
+"""
+function pipe_to_function_call_pass!(fst::FST)
+    is_leaf(fst) && return
+
+    if is_pipe(fst)
+        fst.nodes = pipe_to_function_call(fst)
+        fst.typ = CSTParser.Call
+        return
+    end
+
+    for n in fst.nodes
+        if is_leaf(n)
+            continue
+        elseif is_pipe(n)
+            n.nodes = pipe_to_function_call(n)
+            n.typ = CSTParser.Call
+        else
+            pipe_to_function_call_pass!(n)
+        end
+    end
+end
+
+function pipe_to_function_call(fst::FST)
+    nodes = FST[]
+    arg2 = fst[end]
+    push!(nodes, arg2)
+    paren = FST(CSTParser.PUNCTUATION, arg2.endline, arg2.endline, "(")
+    push!(nodes, paren)
+    pipe_to_function_call_pass!(fst[1])
+    arg1 = fst[1]
+    push!(nodes, arg1)
+    paren = FST(CSTParser.PUNCTUATION, arg1.endline, arg1.endline, ")")
+    push!(nodes, paren)
+    return nodes
 end

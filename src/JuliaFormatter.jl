@@ -176,6 +176,7 @@ Base.@kwdef struct Options
     whitespace_ops_in_indices::Bool = false
     remove_extra_newlines::Bool = false
     import_to_using::Bool = false
+    pipe_to_function_call::Bool = false
 end
 
 mutable struct State
@@ -234,6 +235,7 @@ include("styles/yas.jl")
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
         import_to_using::Bool = false,
+        pipe_to_function_call::Bool = false,
         style::AbstractStyle = DefaultStyle(),
     )::String
 
@@ -277,7 +279,9 @@ a = 1
 b = 2
 ```
 
-If `import_to_using` is true `import` keywords are rewritten to `using keywords.
+If `import_to_using` is true `import` keywords are rewritten to `using` keywords.
+
+If `pipe_to_function_call` is true `f |> x` is rewritten to `f(x)`.
 """
 function format_text(
     text::AbstractString;
@@ -288,6 +292,7 @@ function format_text(
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
     import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
     isempty(text) && return text
@@ -304,10 +309,14 @@ function format_text(
         whitespace_ops_in_indices = whitespace_ops_in_indices,
         remove_extra_newlines = remove_extra_newlines,
         import_to_using = import_to_using,
+        pipe_to_function_call = pipe_to_function_call
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
+
+    opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
+
     flatten_fst!(t)
     nest!(style, t, s)
 

@@ -4685,7 +4685,7 @@ end
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
     end
 
-    @testset "whitespace ops in indices option" begin
+    @testset "rewrite import to using option" begin
         str_ = "import A"
         str = "using A"
         @test fmt(str_, import_to_using = true) == str
@@ -4739,6 +4739,15 @@ end
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
         @test fmt(str_, always_for_in = true) == str
         @test fmt(str, always_for_in = true) == str
+    end
+
+    @testset "rewrite x |> f to f(x) option" begin
+        @test fmt("x |> f", pipe_to_function_call=true) == "f(x)"
+
+        str_ = "var = func1(arg1) |> func2 |> func3 |> func4 |> func5"
+        str = "var = func5(func4(func3(func2(func1(arg1)))))"
+        @test fmt(str_, pipe_to_function_call=true) == str
+        @test fmt(str_, pipe_to_function_call=true, margin=1) == fmt(str)
     end
 end
 

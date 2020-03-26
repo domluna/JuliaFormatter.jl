@@ -41,6 +41,7 @@ format_text(
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
     import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
     style::AbstractStyle = DefaultStyle(),
 )
 
@@ -106,5 +107,8 @@ a = 1
 
 b = 2
 
-If `import_to_using` is true `import` keywords are rewritten to `using keywords.
 ```
+
+If `import_to_using` is true `import` keywords are rewritten to `using` keywords.
+
+If `pipe_to_function_call` is true `f |> x` is rewritten to `f(x)`.
