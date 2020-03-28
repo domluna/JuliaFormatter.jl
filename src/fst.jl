@@ -594,6 +594,15 @@ function import_to_usings(fst::FST)
 
         push!(use.nodes, FST(CSTParser.KEYWORD, sl, el, "using"))
         push!(use.nodes, Whitespace(1))
+
+        # collect the dots prior to a identifier
+        # import ..A
+        j = i -1
+        while fst[j].typ === CSTParser.OPERATOR
+            push!(use.nodes, fst[j])
+            j -= 1
+        end
+
         push!(use.nodes, FST(CSTParser.IDENTIFIER, sl, el, name))
         push!(use.nodes, FST(CSTParser.OPERATOR, sl, el, ":"))
         push!(use.nodes, Whitespace(1))

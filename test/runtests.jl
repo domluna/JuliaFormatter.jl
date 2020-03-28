@@ -4726,6 +4726,14 @@ end
         using B: B
         using C: C # inline"""
         @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import ..A, .B, ...C"""
+        str = """
+        using ..A: A
+        using .B: B
+        using ...C: C"""
+        @test fmt(str_, import_to_using = true) == str
     end
 
     @testset "always eq to in" begin
