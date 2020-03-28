@@ -248,6 +248,8 @@ function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
         end
     end
 end
+n_stringh!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_stringh!(DefaultStyle(style), fst, s)
 
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
