@@ -299,6 +299,9 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
             else
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+                i < length(fst.nodes) && (n.extra_margin = 1)
                 nest!(style, n, s)
             end
         end

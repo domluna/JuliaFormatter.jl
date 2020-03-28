@@ -21,14 +21,24 @@
 # Formatted Syntax Tree
 mutable struct FST
     typ::Union{CSTParser.Head,FNode}
+
+    # Start and end lines of the node
+    # in the original source file.
     startline::Int
     endline::Int
     indent::Int
+
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
     force_nest::Bool
+
+    # Extra margin caused by parent nodes.
+    # i.e. `(f(arg))`
+    #
+    # `f(arg)` would have `extra_margin` = 1
+    # due to `)` after `f(arg)`.
     extra_margin::Int
 end
 
@@ -39,9 +49,12 @@ function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::Abs
     FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
 end
 
-function FST(cst::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    FST(cst, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
+function FST(typ::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
+    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
 end
+
+FST(typ::CSTParser.Head, indent::Integer) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, false, 0)
 
 @inline Base.setindex!(fst::FST, node::FST, ind::Int) = fst.nodes[ind] = node
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
@@ -93,6 +106,13 @@ function is_multiline(fst::FST)
         return true
     end
     false
+end
+
+function is_importer_exporter(fst::FST)
+    fst.typ === CSTParser.Import && return true
+    fst.typ === CSTParser.Export && return true
+    fst.typ === CSTParser.Using && return true
+    return false
 end
 
 # f a function which returns a bool
@@ -210,8 +230,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
-        # unpack Parameters arguments into the parent
-        # node
+        # unpack Parameters arguments into the parent node
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
@@ -233,6 +252,14 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             add_node!(t, nn, s, join_lines = true)
         end
         return
+    elseif s.opts.import_to_using && n.typ === CSTParser.Import
+        usings = import_to_usings(n)
+        if length(usings) > 0
+            for nn in usings
+                add_node!(t, nn, s, join_lines = false)
+            end
+            return
+        end
     end
 
     if length(t.nodes) == 0
@@ -311,8 +338,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     if !join_lines && is_end(n)
         # end keyword isn't useful w.r.t margin lengths
     elseif t.typ === CSTParser.StringH
-        # @info "insert literal into stringh" length(n) n n.indent + length(n) - t.indent t.indent n.indent
-
         # The length of this node is the length of
         # the longest string. The length of the string is
         # only considered "in the positive" when it's past
@@ -383,6 +408,9 @@ function is_iterable(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.InvisBrackets && return true
     x.typ === CSTParser.Ref && return true
     x.typ === CSTParser.TypedVcat && return true
+    x.typ === CSTParser.Import && return true
+    x.typ === CSTParser.Using && return true
+    x.typ === CSTParser.Export && return true
     return false
 end
 
@@ -548,4 +576,31 @@ function pipe_to_function_call(fst::FST)
     paren = FST(CSTParser.PUNCTUATION, arg1.endline, arg1.endline, ")")
     push!(nodes, paren)
     return nodes
+end
+
+function import_to_usings(fst::FST)
+    findfirst(is_colon, fst.nodes) === nothing || return FST[]
+
+    usings = FST[]
+    idxs = findall(n -> n.typ === CSTParser.IDENTIFIER, fst.nodes)
+
+    for i in idxs
+        name = fst[i].val
+        sl = fst[i].startline
+        el = fst[i].endline
+        use = FST(CSTParser.Using, fst.indent)
+        use.startline = sl
+        use.endline = el
+
+        push!(use.nodes, FST(CSTParser.KEYWORD, sl, el, "using"))
+        push!(use.nodes, Whitespace(1))
+        push!(use.nodes, FST(CSTParser.IDENTIFIER, sl, el, name))
+        push!(use.nodes, FST(CSTParser.OPERATOR, sl, el, ":"))
+        push!(use.nodes, Whitespace(1))
+        push!(use.nodes, FST(CSTParser.IDENTIFIER, sl, el, name))
+
+        push!(usings, use)
+    end
+    # @info "" usings[1].startline usings[1].endline usings[end].startline usings[end].endline
+    return usings
 end

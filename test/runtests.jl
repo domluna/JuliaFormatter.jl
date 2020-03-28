@@ -2582,6 +2582,35 @@ end
             baz"""
         @test fmt(str_, 4, 11) == str
 
+        str_ = """
+        using A,
+
+        B, C"""
+        str = "using A, B, C"
+        @test fmt(str_) == str
+
+        str_ = """
+        using A,
+                  # comment
+        B, C"""
+        str = """
+        using A,
+          # comment
+          B,
+          C"""
+        @test fmt(str_, 2, 80) == str
+
+        str_ = """
+        using A,  #inline
+                  # comment
+        B, C#inline"""
+        str = """
+        using A,  #inline
+          # comment
+          B,
+          C#inline"""
+        @test fmt(str_, 2, 80) == str
+
         str = """
         @somemacro function (fcall_ | fcall_)
             body_
@@ -4663,7 +4692,39 @@ end
 
     @testset "rewrite import to using option" begin
         str_ = "import A"
-        str = "using A"
+        str = "using A: A"
+        @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A,
+
+        B, C"""
+        str = """
+        using A: A
+        using B: B
+        using C: C"""
+        @test_broken fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A,
+               # comment
+        B, C"""
+        str = """
+        using A: A
+        # comment
+        using B: B
+        using C: C"""
+        @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A, # inline
+               # comment
+        B, C # inline"""
+        str = """
+        using A: A # inline
+        # comment
+        using B: B
+        using C: C # inline"""
         @test fmt(str_, import_to_using = true) == str
     end
 

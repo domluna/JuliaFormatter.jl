@@ -279,7 +279,24 @@ a = 1
 b = 2
 ```
 
-If `import_to_using` is true `import` keywords are rewritten to `using` keywords.
+If `import_to_using` is true `import` expressions are rewritten to `using` expressions
+in the following cases:
+
+```julia
+import A
+
+import A, B, C
+```
+
+is rewritten to:
+
+```julia
+using A: A
+
+using A: A
+using B: B
+using C: C
+```
 
 If `pipe_to_function_call` is true `f |> x` is rewritten to `f(x)`.
 """

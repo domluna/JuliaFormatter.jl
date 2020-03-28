@@ -188,7 +188,6 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
         cst.kind === Tokens.FOR ? "for" :
         cst.kind === Tokens.FUNCTION ? "function" :
         cst.kind === Tokens.GLOBAL ? "global" :
-        cst.kind === Tokens.IMPORT && s.opts.import_to_using ? "using" :
         cst.kind === Tokens.IMPORT ? "import" :
         cst.kind === Tokens.LET ? "let" :
         cst.kind === Tokens.LOCAL ? "local" :
@@ -1579,6 +1578,7 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_parameters(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_parameters(DefaultStyle(style), cst, s)
+
 
 # Import, Export, Using
 function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
