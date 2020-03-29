@@ -610,7 +610,6 @@ function p_mutable(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.indent_size
         add_node!(t, pretty(style, cst[5], s), s)
     end
-    # annotate_args_with_any!(t[3])
     t
 end
 p_mutable(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

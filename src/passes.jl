@@ -134,6 +134,7 @@ function import_to_usings(fst::FST, s::State)
 end
 
 """
+    annotate_typefields_with_any!(fst::FST, s::State)
 
 Annotates fields in a type definitions with `::Any` if
 no type annotation is provided.
@@ -145,10 +146,10 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             nn = FST(CSTParser.BinaryOpCall, n.indent)
             nn.startline = n.startline
             nn.endline = n.endline
-            push!(nn.nodes, n)
-            push!(nn.nodes, FST(CSTParser.OPERATOR, n.startline, n.endline, "::"))
-            push!(nn.nodes, FST(CSTParser.IDENTIFIER, n.startline, n.endline, "Any"))
-            fst.nodes[i] = nn
+            add_node!(nn, n, s)
+            add_node!(nn, FST(CSTParser.OPERATOR, n.startline, n.endline, "::"), s, join_lines = true)
+            add_node!(nn, FST(CSTParser.IDENTIFIER, n.startline, n.endline, "Any"), s, join_lines = true)
+            fst[i] = nn
         else
             continue
         end
@@ -172,4 +173,15 @@ function f(arg2, arg2)
 end
 ```
 """
-function function_short_def_to_long_def(fst::FST) end
+function short_to_long_function_def(fst::FST, s::State)::FST
+    # 3 cases
+    #
+    # func(a) = 10
+    # func(a::T) where T = 10
+    # func(a::T)::R where T = 10
+
+    if fst[1].typ === CSTParser.Call
+        t = FST(CSTParser.FunctionDef, fst.indent)
+    end
+
+end

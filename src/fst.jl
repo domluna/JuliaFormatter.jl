@@ -56,7 +56,11 @@ end
 FST(typ::CSTParser.Head, indent::Integer) =
     FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, false, 0)
 
-@inline Base.setindex!(fst::FST, node::FST, ind::Int) = fst.nodes[ind] = node
+@inline function Base.setindex!(fst::FST, node::FST, ind::Int)
+    fst.len -= fst.nodes[ind].len
+    fst.nodes[ind] = node
+    fst.len += node.len
+end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
@@ -256,7 +260,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         usings = import_to_usings(n, s)
         if length(usings) > 0
             for nn in usings
-                add_node!(t, nn, s, join_lines = false)
+                add_node!(t, nn, s, join_lines = false, max_padding = 0)
             end
             return
         end

@@ -1,5 +1,5 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle, YASStyle
+using JuliaFormatter: DefaultStyle, YASStyle, Options
 using CSTParser
 using Test
 
@@ -15,17 +15,17 @@ end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s; i = i, m = m)
 
-function run_pretty(text::String, print_width::Int; style = DefaultStyle())
+function run_pretty(text::String, print_width::Int; opts = Options(), style=DefaultStyle())
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
+    s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     t
 end
 
-function run_nest(text::String, print_width::Int; style = DefaultStyle())
+function run_nest(text::String, print_width::Int; opts = Options(), style=DefaultStyle())
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
+    s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     JuliaFormatter.nest!(style, t, s)
@@ -1238,35 +1238,55 @@ end
         struct name
             arg::Any
         end"""
-        @test fmt("""
+
+        str_ = """
         struct name
             arg
-        end""") == str
-        @test fmt("""
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         struct name
         arg
-        end""") == str
-        @test fmt("""
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         struct name
                 arg
-            end""") == str
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 12
 
         str = """
         mutable struct name
-            arg::Any
+            reallylongfieldname::Any
         end"""
-        @test fmt("""
+
+        str_ = """
         mutable struct name
-            arg
-        end""") == str
-        @test fmt("""
+            reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         mutable struct name
-        arg
-        end""") == str
-        @test fmt("""
+        reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         mutable struct name
-                arg
-            end""") == str
+                reallylongfieldname
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 28
+
+
     end
 
     @testset "try" begin
@@ -4734,6 +4754,8 @@ end
         using .B: B
         using ...C: C"""
         @test fmt(str_, import_to_using = true) == str
+        t = run_pretty(str_, 80, opts = Options(import_to_using = true))
+        @test t.len == 13
     end
 
     @testset "always eq to in" begin
