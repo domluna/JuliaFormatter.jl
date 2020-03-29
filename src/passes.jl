@@ -227,7 +227,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_node!(funcdef, fst[1][1], s, join_lines = true)
 
         whereop = fst[1][end]
-        decl = FST(CSTParser.OPERATOR, fst[end].startline, fst[end].endline, "::")
+        decl = FST(CSTParser.OPERATOR, fst[1].startline, fst[1].endline, "::")
 
         # ::R where T
         add_node!(funcdef, decl, s, join_lines = true)
@@ -246,6 +246,4 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.len = funcdef.len
         # @info "" funcdef.startline funcdef.endline
     end
-
-    return funcdef
 end
