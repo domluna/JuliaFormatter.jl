@@ -1236,7 +1236,7 @@ end
     @testset "structs" begin
         str = """
         struct name
-            arg
+            arg::Any
         end"""
         @test fmt("""
         struct name
@@ -1253,7 +1253,7 @@ end
 
         str = """
         mutable struct name
-            arg
+            arg::Any
         end"""
         @test fmt("""
         mutable struct name
@@ -2344,7 +2344,7 @@ end
 
         str = """
         struct Foo
-            body
+            body::Any
         end"""
         @test fmt("struct Foo\n    body  end") == str
 
@@ -2365,7 +2365,7 @@ end
 
         str = """
         mutable struct Foo
-            body
+            body::Any
         end"""
         @test fmt("mutable struct Foo\n    body  end") == str
 

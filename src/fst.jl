@@ -253,7 +253,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
         return
     elseif s.opts.import_to_using && n.typ === CSTParser.Import
-        usings = import_to_usings(n)
+        usings = import_to_usings(n, s)
         if length(usings) > 0
             for nn in usings
                 add_node!(t, nn, s, join_lines = false)
@@ -472,144 +472,23 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     false
 end
 
-@inline function flattenable(op::CSTParser.EXPR)
-    op.kind === Tokens.AND && return true
-    op.kind === Tokens.OR && return true
-    op.kind === Tokens.LAZY_AND && return true
-    op.kind === Tokens.LAZY_OR && return true
-    op.kind === Tokens.RPIPE && return true
+function flattenable(kind::Tokens.Kind)
+    kind === Tokens.AND && return true
+    kind === Tokens.OR && return true
+    kind === Tokens.LAZY_AND && return true
+    kind === Tokens.LAZY_OR && return true
+    kind === Tokens.RPIPE && return true
     return false
 end
+flattenable(::Nothing) = false
 
-"""
-Flattens a binary operation call tree if the operation repeats 2 or more times.
-"a && b && c" will be transformed while "a && b" will not.
-"""
-function flatten_binaryopcall(fst::FST; top = true)
-    nodes = FST[]
-    op = fst.ref[][2]
-    flattenable(op) || return nodes
-
-    lhs = fst[1]
-    rhs = fst[end]
-    lhs_same_op = lhs.typ === CSTParser.BinaryOpCall && lhs.ref[][2].kind === op.kind
-    rhs_same_op = rhs.typ === CSTParser.BinaryOpCall && rhs.ref[][2].kind === op.kind
-
-    if top && !lhs_same_op && !rhs_same_op
-        return nodes
+function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
+    if cst.typ === CSTParser.BinaryOpCall
+        return cst[2].kind
+    elseif cst.typ === CSTParser.UnaryOpCall
+        return cst[1].typ === CSTParser.OPERATOR ? cst[1].kind : cst[2].kind
     end
-
-    if lhs_same_op
-        push!(nodes, flatten_binaryopcall(lhs, top = false)...)
-    else
-        flatten_fst!(lhs)
-        push!(nodes, lhs)
-    end
-    # everything except the indentation placeholder
-    push!(nodes, fst[2:end-2]...)
-
-    if rhs_same_op
-        push!(nodes, flatten_binaryopcall(rhs, top = false)...)
-    else
-        flatten_fst!(rhs)
-        push!(nodes, rhs)
-    end
-
-    return nodes
+    return nothing
 end
-
-function flatten_fst!(fst::FST)
-    is_leaf(fst) && return
-    for n in fst.nodes
-        if is_leaf(n)
-            continue
-        elseif n.typ === CSTParser.BinaryOpCall
-            # possibly convert BinaryOpCall to ChainOpCall
-            nnodes = flatten_binaryopcall(n)
-            if length(nnodes) > 0
-                n.nodes = nnodes
-                n.typ = CSTParser.ChainOpCall
-            end
-        else
-            flatten_fst!(n)
-        end
-    end
-end
-
-is_pipe(n::FST) = n.typ === CSTParser.BinaryOpCall && n.ref[][2].kind === Tokens.RPIPE
-
-"""
-    pipe_to_function_call_pass!(fst::FST)
-
-Rewrites `x |> f` to `f(x)`.
-"""
-function pipe_to_function_call_pass!(fst::FST)
-    is_leaf(fst) && return
-
-    if is_pipe(fst)
-        fst.nodes = pipe_to_function_call(fst)
-        fst.typ = CSTParser.Call
-        return
-    end
-
-    for n in fst.nodes
-        if is_leaf(n)
-            continue
-        elseif is_pipe(n)
-            n.nodes = pipe_to_function_call(n)
-            n.typ = CSTParser.Call
-        else
-            pipe_to_function_call_pass!(n)
-        end
-    end
-end
-
-function pipe_to_function_call(fst::FST)
-    nodes = FST[]
-    arg2 = fst[end]
-    push!(nodes, arg2)
-    paren = FST(CSTParser.PUNCTUATION, arg2.endline, arg2.endline, "(")
-    push!(nodes, paren)
-    pipe_to_function_call_pass!(fst[1])
-    arg1 = fst[1]
-    push!(nodes, arg1)
-    paren = FST(CSTParser.PUNCTUATION, arg1.endline, arg1.endline, ")")
-    push!(nodes, paren)
-    return nodes
-end
-
-function import_to_usings(fst::FST)
-    findfirst(is_colon, fst.nodes) === nothing || return FST[]
-
-    usings = FST[]
-    idxs = findall(n -> n.typ === CSTParser.IDENTIFIER, fst.nodes)
-
-    for i in idxs
-        name = fst[i].val
-        sl = fst[i].startline
-        el = fst[i].endline
-        use = FST(CSTParser.Using, fst.indent)
-        use.startline = sl
-        use.endline = el
-
-        push!(use.nodes, FST(CSTParser.KEYWORD, sl, el, "using"))
-        push!(use.nodes, Whitespace(1))
-
-        # collect the dots prior to a identifier
-        # import ..A
-        j = i -1
-        while fst[j].typ === CSTParser.OPERATOR
-            push!(use.nodes, fst[j])
-            j -= 1
-        end
-
-        push!(use.nodes, FST(CSTParser.IDENTIFIER, sl, el, name))
-        push!(use.nodes, FST(CSTParser.OPERATOR, sl, el, ":"))
-        push!(use.nodes, Whitespace(1))
-        push!(use.nodes, FST(CSTParser.IDENTIFIER, sl, el, name))
-
-        push!(usings, use)
-    end
-    # @info "" usings[1].startline usings[1].endline usings[end].startline usings[end].endline
-    return usings
-end
+op_kind(::Nothing) = nothing
+op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
