@@ -18,7 +18,9 @@
     MacroBlock,
 )
 
-# Formatted Syntax Tree
+"""
+Formatted Syntax Tree
+"""
 mutable struct FST
     typ::Union{CSTParser.Head,FNode}
 

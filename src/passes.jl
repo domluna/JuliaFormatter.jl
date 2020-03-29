@@ -168,6 +168,7 @@ end
 
 
 """
+    short_to_long_function_def!(fst::FST, s::State)
 
 Transforms a _short_ function definition
 
