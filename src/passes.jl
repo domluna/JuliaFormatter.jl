@@ -112,20 +112,20 @@ function import_to_usings(fst::FST, s::State)
         use.endline = el
 
         add_node!(use, FST(CSTParser.KEYWORD, sl, el, "using"), s)
-        add_node!(use, Whitespace(1), s, join_lines=true)
+        add_node!(use, Whitespace(1), s, join_lines = true)
 
         # collect the dots prior to a identifier
         # import ..A
-        j = i -1
+        j = i - 1
         while fst[j].typ === CSTParser.OPERATOR
             add_node!(use, fst[j], s, join_lines = true)
             j -= 1
         end
 
-        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines=true)
-        add_node!(use, FST(CSTParser.OPERATOR, sl, el, ":"), s, join_lines=true)
-        add_node!(use, Whitespace(1), s, join_lines=true)
-        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines=true)
+        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
+        add_node!(use, FST(CSTParser.OPERATOR, sl, el, ":"), s, join_lines = true)
+        add_node!(use, Whitespace(1), s, join_lines = true)
+        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
 
         push!(usings, use)
     end
@@ -172,5 +172,4 @@ function f(arg2, arg2)
 end
 ```
 """
-function function_short_def_to_long_def(fst::FST)
-end
+function function_short_def_to_long_def(fst::FST) end

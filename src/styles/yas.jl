@@ -144,7 +144,8 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     add_braces =
         !CSTParser.is_lbrace(cst[3]) &&
         cst.parent.typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.Curly && cst[3].typ !== CSTParser.BracesCat
+        cst[3].typ !== CSTParser.Curly &&
+        cst[3].typ !== CSTParser.BracesCat
 
     brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
     add_braces && add_node!(t, brace, s, join_lines = true)
