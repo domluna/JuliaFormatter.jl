@@ -147,8 +147,18 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             nn.startline = n.startline
             nn.endline = n.endline
             add_node!(nn, n, s)
-            add_node!(nn, FST(CSTParser.OPERATOR, n.startline, n.endline, "::"), s, join_lines = true)
-            add_node!(nn, FST(CSTParser.IDENTIFIER, n.startline, n.endline, "Any"), s, join_lines = true)
+            add_node!(
+                nn,
+                FST(CSTParser.OPERATOR, n.startline, n.endline, "::"),
+                s,
+                join_lines = true,
+            )
+            add_node!(
+                nn,
+                FST(CSTParser.IDENTIFIER, n.startline, n.endline, "Any"),
+                s,
+                join_lines = true,
+            )
             fst[i] = nn
         else
             continue
@@ -207,14 +217,15 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.nodes = funcdef.nodes
         fst.len = funcdef.len
         # @info "" funcdef.startline funcdef.endline
-    elseif fst[1].typ === CSTParser.BinaryOpCall && fst[1][end].typ === CSTParser.WhereOpCall
+    elseif fst[1].typ === CSTParser.BinaryOpCall &&
+           fst[1][end].typ === CSTParser.WhereOpCall
         kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
         add_node!(funcdef, Whitespace(1), s, join_lines = true)
 
         # func(a)
         add_node!(funcdef, fst[1][1], s, join_lines = true)
-      
+
         whereop = fst[1][end]
         decl = FST(CSTParser.OPERATOR, fst[end].startline, fst[end].endline, "::")
 

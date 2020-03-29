@@ -15,7 +15,12 @@ end
 fmt(s, i, m) = fmt(s; i = i, m = m)
 fmt1(s, i, m) = fmt1(s; i = i, m = m)
 
-function run_pretty(text::String, print_width::Int; opts = Options(), style=DefaultStyle())
+function run_pretty(
+    text::String,
+    print_width::Int;
+    opts = Options(),
+    style = DefaultStyle(),
+)
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
@@ -23,7 +28,7 @@ function run_pretty(text::String, print_width::Int; opts = Options(), style=Defa
     t
 end
 
-function run_nest(text::String, print_width::Int; opts = Options(), style=DefaultStyle())
+function run_nest(text::String, print_width::Int; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
@@ -5128,7 +5133,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
             body
         end"""
         @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
 
         # t, _ = run_nest(str_, length(str_)-1, style=YASStyle())
         # @test length(t) == 15
@@ -5139,7 +5144,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
             body
         end"""
         @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
 
         str_ = "foo(a::T)::R where {T} = body"
         str = """
@@ -5147,6 +5152,6 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
             body
         end"""
         @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_)-1) == str
+        @test yasfmt(str_, 4, length(str_) - 1) == str
     end
 end
