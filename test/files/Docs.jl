@@ -518,12 +518,14 @@ const BINDING_HEADS = [:const, :global, :(=)]
 # For the special `:@mac` / `:(Base.@mac)` syntax for documenting a macro after definition.
 isquotedmacrocall(@nospecialize x) =
     isexpr(x, :copyast, 1) &&
-    isa(x.args[1], QuoteNode) && isexpr(x.args[1].value, :macrocall, 2)
+    isa(x.args[1], QuoteNode) &&
+    isexpr(x.args[1].value, :macrocall, 2)
 # Simple expressions / atoms the may be documented.
 isbasicdoc(@nospecialize x) = isexpr(x, :.) || isa(x, Union{QuoteNode,Symbol})
 is_signature(@nospecialize x) =
     isexpr(x, :call) ||
-    (isexpr(x, :(::), 2) && isexpr(x.args[1], :call)) || isexpr(x, :where)
+    (isexpr(x, :(::), 2) && isexpr(x.args[1], :call)) ||
+    isexpr(x, :where)
 
 function docm(source::LineNumberNode, mod::Module, ex)
     @nospecialize ex
