@@ -162,26 +162,79 @@ end
 Transforms a _short_ function definition
 
 ```julia
-f(arg1, arg2) = 10
+f(arg1, arg2) = body
 ```
 
 to a _long_ function definition
 
 ```julia
 function f(arg2, arg2)
-    10
+    body
 end
 ```
 """
-function short_to_long_function_def(fst::FST, s::State)::FST
+function short_to_long_function_def!(fst::FST, s::State)
     # 3 cases
     #
-    # func(a) = 10
-    # func(a::T) where T = 10
-    # func(a::T)::R where T = 10
+    # case 1
+    #   func(a) = body
+    #
+    # case 2
+    #   func(a::T) where T = body
+    #
+    # case 3
+    #   func(a::T)::R where T = body
 
-    if fst[1].typ === CSTParser.Call
-        t = FST(CSTParser.FunctionDef, fst.indent)
+    funcdef = FST(CSTParser.FunctionDef, fst.indent)
+    if fst[1].typ === CSTParser.Call || fst[1].typ === CSTParser.WhereOpCall
+        # function
+        kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
+        add_node!(funcdef, kw, s)
+        add_node!(funcdef, Whitespace(1), s, join_lines = true)
+
+        # func(a) OR func(a) where T
+        add_node!(funcdef, fst[1], s, join_lines = true)
+
+        # body
+        add_node!(funcdef, fst[end], s, max_padding = s.indent_size)
+        add_indent!(funcdef[end], s, s.indent_size)
+
+        # end
+        kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "end")
+        add_node!(funcdef, kw, s)
+
+        fst.typ = funcdef.typ
+        fst.nodes = funcdef.nodes
+        fst.len = funcdef.len
+        # @info "" funcdef.startline funcdef.endline
+    elseif fst[1].typ === CSTParser.BinaryOpCall && fst[1][end].typ === CSTParser.WhereOpCall
+        kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
+        add_node!(funcdef, kw, s)
+        add_node!(funcdef, Whitespace(1), s, join_lines = true)
+
+        # func(a)
+        add_node!(funcdef, fst[1][1], s, join_lines = true)
+      
+        whereop = fst[1][end]
+        decl = FST(CSTParser.OPERATOR, fst[end].startline, fst[end].endline, "::")
+
+        # ::R where T
+        add_node!(funcdef, decl, s, join_lines = true)
+        add_node!(funcdef, whereop, s, join_lines = true)
+
+        # body
+        add_node!(funcdef, fst[end], s, max_padding = s.indent_size)
+        add_indent!(funcdef[end], s, s.indent_size)
+
+        # end
+        kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "end")
+        add_node!(funcdef, kw, s)
+
+        fst.typ = funcdef.typ
+        fst.nodes = funcdef.nodes
+        fst.len = funcdef.len
+        # @info "" funcdef.startline funcdef.endline
     end
 
+    return funcdef
 end

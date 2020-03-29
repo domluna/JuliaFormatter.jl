@@ -302,3 +302,20 @@ end
 #     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
 # n_comparison!(ys::YASStyle, fst::FST, s::State) =
 #     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
+#
+
+function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
+    if fst.ref === nothing || !CSTParser.defines_function(fst.ref[])
+        n_binaryopcall!(DefaultStyle(ys), fst, s)
+        return
+    end
+
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    if line_margin <= s.margin
+        n_binaryopcall!(DefaultStyle(ys), fst, s)
+        return
+    end
+
+    short_to_long_function_def!(fst, s)
+    nest!(DefaultStyle(ys), fst, s)
+end

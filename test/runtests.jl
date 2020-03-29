@@ -29,7 +29,7 @@ function run_nest(text::String, print_width::Int; opts = Options(), style=Defaul
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     JuliaFormatter.nest!(style, t, s)
-    s
+    t, s
 end
 
 @testset "Default" begin
@@ -2954,98 +2954,98 @@ end
 
     @testset "nesting line offset" begin
         str = "a - b + c * d"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 5
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "c ? e1 : e2"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 2
-        s = run_nest(str, 8)
+        _, s = run_nest(str, 8)
         @test s.line_offset == 2
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 2
 
         str = "c1 ? e1 : c2 ? e2 : c3 ? e3 : c4 ? e4 : e5"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 32
-        s = run_nest(str, 30)
+        _, s = run_nest(str, 30)
         @test s.line_offset == 22
-        s = run_nest(str, 20)
+        _, s = run_nest(str, 20)
         @test s.line_offset == 12
-        s = run_nest(str, 10)
+        _, s = run_nest(str, 10)
         @test s.line_offset == 2
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 2
 
         str = "f(a, b, c) where {A,B,C}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 15
-        s = run_nest(str, 14)
+        _, s = run_nest(str, 14)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where Union{A,B,C}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 20
-        s = run_nest(str, 19)
+        _, s = run_nest(str, 19)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         # adds surrounding {...} after `where`
         @test s.line_offset == length(str)
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A<:S}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 14
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where Union{A,B,Union{C,D,E}}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 31
-        s = run_nest(str, 30)
+        _, s = run_nest(str, 30)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A,{B, C, D},E}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "(a, b, c, d)"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 1
 
         str = "a, b, c, d"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 1
 
         str = """
@@ -3055,21 +3055,21 @@ end
                 name_::T_ => (name, T)
                 x_ => (x, :Any)
             end"""
-        s = run_nest(str, 96)
+        _, s = run_nest(str, 96)
         @test s.line_offset == 3
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 7
 
         str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 17
 
         str = "foo() = a + b"
-        s = run_nest(str, length(str))
+        _, s = run_nest(str, length(str))
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 9
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 5
 
         str_ = """
@@ -3106,30 +3106,30 @@ end
 
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
-        s = run_nest(str, length(str))
+        _, s = run_nest(str, length(str))
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 74
-        s = run_nest(str, 73)
+        _, s = run_nest(str, 73)
         @test s.line_offset == 9
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,
                :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 1
 
         str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes,
                :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 1
 
         str = "import A: foo, bar, baz"
-        s = run_nest(str, 22)
+        _, s = run_nest(str, 22)
         @test s.line_offset == 17
-        s = run_nest(str, 16)
+        _, s = run_nest(str, 16)
         @test s.line_offset == 7
 
     end
@@ -4057,7 +4057,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
         str_ = """
@@ -4071,7 +4071,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
         str_ = """
@@ -4085,7 +4085,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
     end
@@ -4644,7 +4644,7 @@ some_function(
 end
 
 @testset "Format Options" begin
-    @testset "whitespace typedefs option" begin
+    @testset "whitespace in typedefs" begin
         str_ = "Foo{A,B,C}"
         str = "Foo{A, B, C}"
         @test fmt(str_, whitespace_typedefs = true) == str
@@ -4676,7 +4676,7 @@ end
         @test fmt(str_, whitespace_typedefs = true) == str
     end
 
-    @testset "whitespace ops in indices option" begin
+    @testset "whitespace ops in indices" begin
         str = "arr[1 + 2]"
         @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
 
@@ -4710,7 +4710,7 @@ end
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
     end
 
-    @testset "rewrite import to using option" begin
+    @testset "rewrite import to using" begin
         str_ = "import A"
         str = "using A: A"
         @test fmt(str_, import_to_using = true) == str
@@ -4758,7 +4758,7 @@ end
         @test t.len == 13
     end
 
-    @testset "always eq to in" begin
+    @testset "always convert `=` to `in` (for loops)" begin
         str_ = """
         for i = 1:n
             println(i)
@@ -4808,7 +4808,7 @@ end
         @test fmt(str, always_for_in = true) == str
     end
 
-    @testset "rewrite x |> f to f(x) option" begin
+    @testset "rewrite x |> f to f(x)" begin
         @test fmt("x |> f", pipe_to_function_call = true) == "f(x)"
 
         str_ = "var = func1(arg1) |> func2 |> func3 |> func4 |> func5"
@@ -4816,6 +4816,7 @@ end
         @test fmt(str_, pipe_to_function_call = true) == str
         @test fmt(str_, pipe_to_function_call = true, margin = 1) == fmt(str)
     end
+
 end
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
@@ -5118,5 +5119,34 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
                 b = 11:20,
                 c = 300:400]"""
         @test yasfmt(str_, 4, 80) == str
+    end
+
+    @testset "function shortdef to longdef" begin
+        str_ = "foo(a) = body"
+        str = """
+        function foo(a)
+            body
+        end"""
+        @test yasfmt(str_, 4, length(str_)) == str_
+        @test yasfmt(str_, 4, length(str_)-1) == str
+
+        # t, _ = run_nest(str_, length(str_)-1, style=YASStyle())
+        # @test length(t) == 15
+
+        str_ = "foo(a::T) where {T} = body"
+        str = """
+        function foo(a::T) where {T}
+            body
+        end"""
+        @test yasfmt(str_, 4, length(str_)) == str_
+        @test yasfmt(str_, 4, length(str_)-1) == str
+
+        str_ = "foo(a::T)::R where {T} = body"
+        str = """
+        function foo(a::T)::R where {T}
+            body
+        end"""
+        @test yasfmt(str_, 4, length(str_)) == str_
+        @test yasfmt(str_, 4, length(str_)-1) == str
     end
 end
