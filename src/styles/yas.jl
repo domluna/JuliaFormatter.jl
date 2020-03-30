@@ -22,18 +22,6 @@ Recommended options are:
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
 
-yasformat(s::AbstractString; kwargs...) = format_text(
-    s;
-    kwargs...,
-    style = YASStyle(),
-    always_for_in = true,
-    whitespace_ops_in_indices = true,
-    whitespace_typedefs = false,
-    remove_extra_newlines = true,
-    import_to_using = true,
-    pipe_to_function_call = true,
-)
-
 function nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
     (cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC) && return false
