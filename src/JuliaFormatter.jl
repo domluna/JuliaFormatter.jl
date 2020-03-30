@@ -177,6 +177,7 @@ Base.@kwdef struct Options
     remove_extra_newlines::Bool = false
     import_to_using::Bool = false
     pipe_to_function_call::Bool = false
+    short_to_long_function_def::Bool = false
 end
 
 mutable struct State
@@ -186,8 +187,9 @@ mutable struct State
     offset::Int
     line_offset::Int
     margin::Int
-    # If true will output the formatted text
-    # otherwise will output the current text
+
+    # If true, output is formatted text otherwise
+    # it's source text
     on::Bool
     opts::Options
 end
@@ -231,13 +233,14 @@ include("styles/yas.jl")
         text::AbstractString;
         indent::Int = 4,
         margin::Int = 92,
+        style::AbstractStyle = DefaultStyle(),
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
         import_to_using::Bool = false,
         pipe_to_function_call::Bool = false,
-        style::AbstractStyle = DefaultStyle(),
+        short_to_long_function_def::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -305,13 +308,14 @@ function format_text(
     text::AbstractString;
     indent::Int = 4,
     margin::Int = 92,
+    style::AbstractStyle = DefaultStyle(),
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
     import_to_using::Bool = false,
     pipe_to_function_call::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    short_to_long_function_def::Bool = false,
 )
     isempty(text) && return text
 
@@ -328,6 +332,7 @@ function format_text(
         remove_extra_newlines = remove_extra_newlines,
         import_to_using = import_to_using,
         pipe_to_function_call = pipe_to_function_call,
+        short_to_long_function_def = short_to_long_function_def,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)

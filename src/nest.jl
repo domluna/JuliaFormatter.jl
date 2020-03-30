@@ -646,17 +646,19 @@ n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
 
-# lhs op rhs
-#
-# nest in order of
-#
-# lhs op
-# lhs
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+
+    if s.opts.short_to_long_function_def && line_margin > s.margin && fst.ref !== nothing && CSTParser.defines_function(fst.ref[])
+
+        short_to_long_function_def!(fst, s)
+        nest!(style, fst, s)
+        return
+    end
+
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
     if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest || rhs.force_nest)

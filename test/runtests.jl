@@ -5,6 +5,7 @@ using Test
 
 fmt1(s; i = 4, m = 80, kwargs...) =
     JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
+fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 
 # Verifies formatting the formatted text
 # results in the same output
@@ -12,8 +13,7 @@ function fmt(s; i = 4, m = 80, kwargs...)
     s1 = fmt1(s; kwargs..., i = i, m = m)
     return fmt1(s1; kwargs..., i = i, m = m)
 end
-fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s; i = i, m = m)
+fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
 function run_pretty(
     text::String,
@@ -4822,6 +4822,35 @@ end
         @test fmt(str_, pipe_to_function_call = true, margin = 1) == fmt(str)
     end
 
+    @testset "function shortdef to longdef" begin
+        str_ = "foo(a) = bodybodybody"
+        str = """
+        function foo(a)
+            bodybodybody
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+
+        # t, _ = run_nest(str_, length(str_)-1, style=YASStyle())
+        # @test length(t) == 15
+
+        str_ = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
+        str = """
+        function foo(a::T) where {T}
+            bodybodybodybodybodybodyb
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+
+        str_ = "foo(a::T)::R where {T} = bodybodybodybodybodybodybody"
+        str = """
+        function foo(a::T)::R where {T}
+            bodybodybodybodybodybodybody
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+    end
+
 end
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
@@ -4950,9 +4979,6 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
                   arg3]"""
         @test yasfmt(str_, 4, 20) == str
         @test yasfmt(str_, 4, 1) == str
-
-
-
 
     end
 
@@ -5126,32 +5152,4 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         @test yasfmt(str_, 4, 80) == str
     end
 
-    @testset "function shortdef to longdef" begin
-        str_ = "foo(a) = body"
-        str = """
-        function foo(a)
-            body
-        end"""
-        @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_) - 1) == str
-
-        # t, _ = run_nest(str_, length(str_)-1, style=YASStyle())
-        # @test length(t) == 15
-
-        str_ = "foo(a::T) where {T} = body"
-        str = """
-        function foo(a::T) where {T}
-            body
-        end"""
-        @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_) - 1) == str
-
-        str_ = "foo(a::T)::R where {T} = body"
-        str = """
-        function foo(a::T)::R where {T}
-            body
-        end"""
-        @test yasfmt(str_, 4, length(str_)) == str_
-        @test yasfmt(str_, 4, length(str_) - 1) == str
-    end
 end
