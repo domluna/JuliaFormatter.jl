@@ -11,10 +11,12 @@ Formatting style based on https://github.com/jrevels/YASGuide.
 
 Recommended options are:
 
-- `always_for_in` = true,
-- `whitespace_ops_in_indices` = true,
-- `whitespace_typedefs` = false,
-- `remove_extra_newlines` = true,
+- `always_for_in` = true
+- `whitespace_ops_in_indices` = true
+- `whitespace_typedefs` = false
+- `remove_extra_newlines` = true
+- `import_to_using` = true
+- `pipe_to_function_call` = true
 """
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
@@ -22,11 +24,13 @@ struct YASStyle <: AbstractStyle end
 yasformat(s::AbstractString; kwargs...) = format_text(
     s;
     kwargs...,
+    style = YASStyle(),
     always_for_in = true,
     whitespace_ops_in_indices = true,
     whitespace_typedefs = false,
     remove_extra_newlines = true,
-    style = YASStyle(),
+    import_to_using = true,
+    pipe_to_function_call = true,
 )
 
 function nestable(::YASStyle, cst::CSTParser.EXPR)
