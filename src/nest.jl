@@ -650,7 +650,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
 
-    if s.opts.short_to_long_function_def && line_margin > s.margin && fst.ref !== nothing && CSTParser.defines_function(fst.ref[])
+    if s.opts.short_to_long_function_def &&
+       line_margin > s.margin &&
+       fst.ref !== nothing &&
+       CSTParser.defines_function(fst.ref[])
 
         short_to_long_function_def!(fst, s)
         nest!(style, fst, s)
