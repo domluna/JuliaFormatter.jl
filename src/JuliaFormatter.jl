@@ -246,26 +246,38 @@ include("styles/yas.jl")
 Formats a Julia source passed in as a string, returning the formatted
 code as another string.
 
-### Formatting Options
+## Formatting Options
 
-`indent` - the number of spaces used for an indentation.
+### `indent`
 
-`margin` - the maximum length of a line. Code exceeding this margin will be formatted
-across multiple lines.
+The number of spaces used for an indentation.
 
-If `always_for_in` is true `=` is always replaced with `in` if part of a
-`for` loop condition.  For example, `for i = 1:10` will be transformed
-to `for i in 1:10`.
+### `margin`
 
-If `whitespace_typedefs` is true, whitespace is added for type definitions.
-Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+The maximum length of a line. Code exceeding this margin will
+be formatted across multiple lines.
 
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+### `always_for_in`
+
+If true `=` is always replaced with `in` if part of a `for` loop condition.
+For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+
+### `whitespace_typedefs`
+
+If true, whitespace is added for type definitions. Make this `true`
+if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+
+### `whitespace_ops_in_indices`
+
+If true, whitespace is added for binary operations in indices. Make this
+`true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's
+a colon `:` involved, parenthesis will be added to the LHS and RHS.
 
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
-If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+### `remove_extra_newlines`
+
+If true superflous newlines will be removed. For example:
 
 ```julia
 a = 1
@@ -283,7 +295,9 @@ a = 1
 b = 2
 ```
 
-If `import_to_using` is true `import` expressions are rewritten to `using` expressions
+### `import_to_using`
+
+If true `import` expressions are rewritten to `using` expressions
 in the following cases:
 
 ```julia
@@ -302,7 +316,26 @@ using B: B
 using C: C
 ```
 
-If `pipe_to_function_call` is true `f |> x` is rewritten to `f(x)`.
+### `pipe_to_function_call`
+
+If true `f |> x` is rewritten to `f(x)`.
+
+### `short_to_long_function_def`
+
+Transforms a _short_ function definition
+
+```julia
+f(arg1, arg2) = body
+```
+
+to a _long_ function definition
+
+```julia
+function f(arg2, arg2)
+    body
+end
+```
+
 """
 function format_text(
     text::AbstractString;

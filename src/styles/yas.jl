@@ -3,7 +3,7 @@
 # YAS style !!!
 
 """
-    YASStyle
+    YASStyle()
 
 **This style is EXPERIMENTAL !!!**
 
@@ -18,6 +18,7 @@ Recommended options are:
 - `remove_extra_newlines` = true
 - `import_to_using` = true
 - `pipe_to_function_call` = true
+- `short_to_long_function_def` = true
 """
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
