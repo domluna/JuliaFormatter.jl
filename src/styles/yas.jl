@@ -7,7 +7,8 @@
 
 **This style is EXPERIMENTAL !!!**
 
-Formatting style based on https://github.com/jrevels/YASGuide.
+Formatting style based on https://github.com/jrevels/YASGuide
+and https://github.com/domluna/JuliaFormatter.jl/issues/198.
 
 Recommended options are:
 
