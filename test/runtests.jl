@@ -5197,7 +5197,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
               end
               for x in xs)
         """
-        @test yasfmt(str_,2,80) == str
+        @test yasfmt(str_, 2, 80) == str
 
     end
 
@@ -5243,7 +5243,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
               (b_hat - y_hat) * delta[i] +
               (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
               for i = 1:8]"""
-        @test yasfmt(str_,2,60) == str
+        @test yasfmt(str_, 2, 60) == str
 
     end
 
