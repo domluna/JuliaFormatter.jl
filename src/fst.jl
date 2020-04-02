@@ -433,6 +433,17 @@ function is_block(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
+function is_opcall(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.BinaryOpCall && return true
+    x.typ === CSTParser.Comparison && return true
+    x.typ === CSTParser.ChainOpCall && return true
+    # InvisBrackets are often mixed with operators
+    # so kwargs are propagated through its related
+    # functions
+    x.typ === CSTParser.InvisBrackets && return true
+    return false
+end
+
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
     cst.typ === CSTParser.Do && return true

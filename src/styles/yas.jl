@@ -131,25 +131,28 @@ end
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 
 function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(ys, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.typ === CSTParser.BinaryOpCall || a.typ === CSTParser.InvisBrackets || a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        elseif a.typ === CSTParser.BinaryOpCall ||
+               a.typ === CSTParser.InvisBrackets ||
+               a.typ === CSTParser.ChainOpCall ||
+               a.typ === CSTParser.Comparison
 
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
+            n = pretty(ys, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(ys, a, s), s, join_lines = true)
         end
     end
     t
 end
 
 function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ys)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[2])
@@ -158,14 +161,13 @@ function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         t.force_nest = true
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[3], s), s, join_lines = true)
     t
 end
 
 function p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ys)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[3])
@@ -174,10 +176,10 @@ function p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         t.force_nest = true
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[3], s), s, join_lines = true)
+    add_node!(t, pretty(ys, cst[4], s), s, join_lines = true)
     t
 end
 

@@ -1070,11 +1070,7 @@ function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
     for a in cst
-        if a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        if is_opcall(a)
             n = pretty(style, a, s, nonest = true, nospace = nospace)
         else
             n = pretty(style, a, s)
@@ -1135,11 +1131,7 @@ function p_binaryopcall(
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
 
-    if cst[1].typ === CSTParser.BinaryOpCall
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[1].typ === CSTParser.InvisBrackets
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[1].typ === CSTParser.ChainOpCall || cst[1].typ === CSTParser.Comparison
+    if is_opcall(cst[1])
         n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
     else
         n = pretty(style, cst[1], s)
@@ -1183,11 +1175,7 @@ function p_binaryopcall(
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     end
 
-    if cst[3].typ === CSTParser.BinaryOpCall
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[3].typ === CSTParser.InvisBrackets
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[3].typ === CSTParser.ChainOpCall || cst[3].typ === CSTParser.Comparison
+    if is_opcall(cst[3])
         n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
     else
         n = pretty(style, cst[3], s)
@@ -1394,13 +1382,7 @@ function p_invisbrackets(
     for (i, a) in enumerate(cst)
         if a.typ === CSTParser.Block
             add_node!(t, pretty(style, a, s, from_quote = true), s, join_lines = true)
-        elseif a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        elseif is_opcall(a)
             n = pretty(style, a, s, nonest = nonest, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         elseif is_opener(a) && nest
@@ -1616,13 +1598,7 @@ function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        elseif is_opcall(a)
             n = pretty(style, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else
