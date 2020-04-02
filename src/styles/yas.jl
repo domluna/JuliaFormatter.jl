@@ -128,8 +128,25 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
-@inline p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
+
+function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    nospace = !s.opts.whitespace_ops_in_indices
+
+    for (i, a) in enumerate(cst)
+        if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        elseif a.typ === CSTParser.BinaryOpCall || a.typ === CSTParser.InvisBrackets || a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+
+            n = pretty(style, a, s, nonest = true, nospace = nospace)
+            add_node!(t, n, s, join_lines = true)
+        else
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        end
+    end
+    t
+end
 
 function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
