@@ -1233,9 +1233,6 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Whitespace(1), s)
 
-    # Used to mark where `B` starts.
-    add_node!(t, Placeholder(0), s)
-
     args = get_args(cst.args[3:end])
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
@@ -1248,7 +1245,6 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_braces && add_node!(t, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
-    # @debug "" nest in_braces cst[3].val == "{" cst.args[end].val
     for (i, a) in enumerate(cst.args[3:end])
         if is_opener(a) && nest
             add_node!(t, pretty(style, a, s), s, join_lines = true)

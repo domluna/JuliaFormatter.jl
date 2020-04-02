@@ -129,7 +129,6 @@ function import_to_usings(fst::FST, s::State)
 
         push!(usings, use)
     end
-    # @info "" usings[1].startline usings[1].endline usings[end].startline usings[end].endline
     return usings
 end
 
@@ -217,7 +216,6 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.typ = funcdef.typ
         fst.nodes = funcdef.nodes
         fst.len = funcdef.len
-        # @info "" funcdef.startline funcdef.endline
     elseif fst[1].typ === CSTParser.BinaryOpCall &&
            fst[1][end].typ === CSTParser.WhereOpCall
         kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
@@ -245,6 +243,5 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.typ = funcdef.typ
         fst.nodes = funcdef.nodes
         fst.len = funcdef.len
-        # @info "" funcdef.startline funcdef.endline
     end
 end
