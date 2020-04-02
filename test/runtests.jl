@@ -4986,30 +4986,46 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
     @testset "pretty" begin
         str_ = "comp = [a * b for a in 1:10, b in 11:20]"
         str = """
-        comp = [a * b for
-                a in 1:10, b in 11:20]"""
+        comp = [a * b
+                for a in 1:10, b in 11:20]"""
         @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
-        @test yasfmt(str_, 2, 30, always_for_in = true) == str
+        @test yasfmt(str_, 2, 34, always_for_in = true) == str
 
         str = """
-        comp = [a * b for
-                a in 1:10,
-                b in 11:20]"""
-        @test yasfmt(str_, 2, 29, always_for_in = true) == str
+        comp = [a * b
+                for a in 1:10,
+                    b in 11:20]"""
+        @test yasfmt(str_, 2, 33, always_for_in = true) == str
+
+        str = """
+        comp = [a *
+                b
+                for a in
+                    1:10,
+                    b in
+                    11:20]"""
         @test yasfmt(str_, 2, 1, always_for_in = true) == str
 
         str_ = "comp = Typed[a * b for a in 1:10, b in 11:20]"
         str = """
-        comp = Typed[a * b for
-                     a in 1:10, b in 11:20]"""
+        comp = Typed[a * b
+                     for a in 1:10, b in 11:20]"""
         @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
-        @test yasfmt(str_, 2, 35, always_for_in = true) == str
+        @test yasfmt(str_, 2, 39, always_for_in = true) == str
 
         str = """
-        comp = Typed[a * b for
-                     a in 1:10,
-                     b in 11:20]"""
-        @test yasfmt(str_, 2, 34, always_for_in = true) == str
+        comp = Typed[a * b
+                     for a in 1:10,
+                         b in 11:20]"""
+        @test yasfmt(str_, 2, 38, always_for_in = true) == str
+
+        str = """
+        comp = Typed[a *
+                     b
+                     for a in
+                         1:10,
+                         b in
+                         11:20]"""
         @test yasfmt(str_, 2, 1, always_for_in = true) == str
 
         str_ = "foo(arg1, arg2, arg3) == bar(arg1, arg2, arg3)"
@@ -5050,20 +5066,11 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
           body
         end"""
         str = """
-        function func(arg1::Type1, arg2::Type2, arg3) where {Type1,
-                                                             Type2}
-          body
-        end"""
-        @test yasfmt(str_, 2, 64) == str
-        @test yasfmt(str_, 2, 45) == str
-
-
-        str = """
         function func(arg1::Type1, arg2::Type2,
                       arg3) where {Type1,Type2}
           body
         end"""
-        @test yasfmt(str_, 2, 44) == str
+        @test yasfmt(str_, 2, 64) == str
         @test yasfmt(str_, 2, 39) == str
 
         str = """
@@ -5110,6 +5117,8 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
                                                          :avr],
                                           file_extension=Symbol("lpcm.zst"))"""
         @test yasfmt(str_, 4, 1) == str
+
+
     end
 
     @testset "inline comments with arguments" begin
@@ -5139,17 +5148,103 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         @test yasfmt(str_, 4, 22) == str
         @test yasfmt(str_, 4, 1) == str
 
-        # TODO: determine whether it's preferable to
-        # keep as much on the same line as possible
         str_ = """
-        comp = [a * b + c for a in 1:10, # comment
-        b in 11:20, c in 300:400]"""
+        comp = [
+        begin
+                    x = a * b + c
+                    y = x^2 + 3x # comment 1
+            end
+                       for a in 1:10,  # comment 2
+                    b in 11:20,
+           c in 300:400]"""
+
         str = """
-        comp = [a * b + c for
-                a = 1:10, # comment
-                b = 11:20,
-                c = 300:400]"""
-        @test yasfmt(str_, 4, 80) == str
+        comp = [begin
+                  x = a * b + c
+                  y = x^2 + 3x # comment 1
+                end
+                for a = 1:10,  # comment 2
+                    b = 11:20, c = 300:400]"""
+        @test yasfmt(str_, 2, 80) == str
+        @test yasfmt(str_, 2, 35) == str
+
+        str = """
+        comp = [begin
+                  x = a * b + c
+                  y = x^2 + 3x # comment 1
+                end
+                for a = 1:10,  # comment 2
+                    b = 11:20,
+                    c = 300:400]"""
+        @test yasfmt(str_, 2, 34) == str
+
+        str_ = """
+        ys = ( if p1(x)
+                 f1(x)
+        elseif p2(x)
+            f2(x)
+        else
+            f3(x)
+        end for    x in xs)
+        """
+        str = """
+        ys = (if p1(x)
+                f1(x)
+              elseif p2(x)
+                f2(x)
+              else
+                f3(x)
+              end
+              for x in xs)
+        """
+        @test yasfmt(str_,2,80) == str
+
+    end
+
+    @testset "inline comments with arguments" begin
+        # parsing error is newline is placed front of `for` here
+        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str = """
+        var = (x, y) for x = 1:10,
+                         y = 1:10"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+    end
+
+    @testset "invisbrackets" begin
+        str_ = """
+        if ((
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        ))
+          nothing
+        end"""
+        str = """
+        if ((aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa))
+          nothing
+        end"""
+        @test yasfmt(str_, 2, 92) == str
+    end
+
+    @testset "#189" begin
+        str_ = """
+    D2 = [
+            (b_hat * y - delta_hat[i] * y) * gamma[i] + (b * y_hat - delta[i] * y_hat) *
+                                                            gamma_hat[i] + (b_hat - y_hat) *
+                                                                           delta[i] + (b - y) *
+                                                                                      delta_hat[i] - delta[i] * delta_hat[i]
+            for i = 1:8
+        ]"""
+        str = """
+        D2 = [(b_hat * y - delta_hat[i] * y) * gamma[i] +
+              (b * y_hat - delta[i] * y_hat) * gamma_hat[i] +
+              (b_hat - y_hat) * delta[i] +
+              (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
+              for i = 1:8]"""
+        @test yasfmt(str_,2,60) == str
+
     end
 
 end
