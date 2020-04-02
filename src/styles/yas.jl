@@ -393,7 +393,7 @@ end
 @inline n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 @inline n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 
-n_chainopcall!(ys::YASStyle, fst::FST, s::State) = 
+n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
 n_comparison!(ys::YASStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
