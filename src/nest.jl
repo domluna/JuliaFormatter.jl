@@ -24,20 +24,24 @@ function skip_indent(fst::FST)
     false
 end
 
-function walk(f, fst::FST, s::State)
-    f(fst, s)
-    is_leaf(fst) && return
-    for (i, n) in enumerate(fst.nodes)
-        if n.typ === NEWLINE && i < length(fst.nodes)
-            if is_closer(fst[i+1])
-                s.line_offset = fst[i+1].indent
-            elseif !skip_indent(fst[i+1])
-                s.line_offset = fst.indent
+function walk(f, nodes::Vector{FST}, s::State, indent::Int)
+    for (i, n) in enumerate(nodes)
+        if n.typ === NEWLINE && i < length(nodes)
+            if is_closer(nodes[i+1])
+                s.line_offset = nodes[i+1].indent
+            elseif !skip_indent(nodes[i+1])
+                s.line_offset = indent
             end
         else
             walk(f, n, s)
         end
     end
+end
+
+function walk(f, fst::FST, s::State)
+    f(fst, s)
+    is_leaf(fst) && return
+    walk(f, fst.nodes, s, fst.indent)
 end
 
 function reset_line_offset!(fst::FST, s::State)
@@ -180,6 +184,14 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === CSTParser.ConditionalOpCall
         n_conditionalopcall!(style, fst, s)
     elseif fst.typ === CSTParser.BinaryOpCall
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.short_to_long_function_def &&
+           line_margin > s.margin &&
+           fst.ref !== nothing &&
+           CSTParser.defines_function(fst.ref[])
+
+            short_to_long_function_def!(fst, s)
+        end
         n_binaryopcall!(style, fst, s)
     elseif fst.typ === CSTParser.Curly
         n_curly!(style, fst, s)
@@ -640,17 +652,6 @@ no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-
-    if s.opts.short_to_long_function_def &&
-       line_margin > s.margin &&
-       fst.ref !== nothing &&
-       CSTParser.defines_function(fst.ref[])
-
-        short_to_long_function_def!(fst, s)
-        nest!(style, fst, s)
-        return
-    end
-
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     rhs = fst[end]
@@ -733,21 +734,22 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         # CSTParser.BinaryOpCall
         #  - CSTParser.WhereOpCall
         #  - OP
-        #  - rhs
+        #  - RHS
         #
         # It's parsed as:
         #
         # CSTParser.BinaryOpCall
         #  - CSTParser.BinaryOpCall
-        #   - lhs
+        #   - LHS
         #   - OP
         #   - CSTParser.WhereOpCall
         #    - R
         #    - ...
         #  - OP
-        #  - rhs
+        #  - RHS
         #
         # The result being extra width is trickier to deal with.
+
         idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, fst.nodes)
         return_width = 0
         if idx !== nothing && idx > 1
@@ -756,17 +758,36 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             return_width, _ = length_to(fst, [NEWLINE], start = 2)
         end
 
+        # for (i, n) in enumerate(fst.nodes)
+        #     if n.typ === NEWLINE
+        #         s.line_offset = fst.indent
+        #     elseif i == 1
+        #         n.extra_margin = return_width + fst.extra_margin
+        #         nest!(style, n, s)
+        #     elseif i == idx
+        #         n.extra_margin = fst.extra_margin
+        #         nest!(style, n, s)
+        #     else
+        #         n.extra_margin = fst.extra_margin
+        #         nest!(style, n, s)
+        #     end
+        # end
+
+        # length of op and surrounding whitespace
+        oplen = sum(length.(fst.nodes[2:end]))
+
+        # @info "" fst.typ fst[1].typ oplen
+
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif i == 1
-                n.extra_margin = return_width + fst.extra_margin
+                n.extra_margin = oplen + fst.extra_margin
                 nest!(style, n, s)
-            elseif i == idx
+            elseif i == length(fst.nodes)
                 n.extra_margin = fst.extra_margin
                 nest!(style, n, s)
             else
-                n.extra_margin = fst.extra_margin
                 nest!(style, n, s)
             end
         end

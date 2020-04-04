@@ -245,3 +245,77 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.len = funcdef.len
     end
 end
+
+"""
+    binaryop_to_whereop(fst::FST, s::State)
+
+
+Handles the case of a function def defined
+as:
+
+```julia
+foo(a::A)::R where A = body
+```
+
+In this case instead of it being parsed as (1):
+
+```
+CSTParser.BinaryOpCall
+ - CSTParser.WhereOpCall
+ - OP
+ - RHS
+```
+
+It's parsed as (2):
+
+```
+CSTParser.BinaryOpCall
+ - CSTParser.BinaryOpCall
+  - LHS
+  - OP
+  - CSTParser.WhereOpCall
+   - R
+   - ...
+ - OP
+ - RHS
+```
+
+(1) is preferrable since it's the same parsed result as:
+
+```julia
+foo(a::A) where A = body
+```
+
+This transformation converts (2) to (1).
+
+ref https://github.com/julia-vscode/CSTParser.jl/issues/93
+"""
+function binaryop_to_whereop!(fst::FST, s::State)
+    fst[1].typ === CSTParser.BinaryOpCall || return
+    fst[1][end].typ === CSTParser.WhereOpCall || return
+
+    # transform fst[1] to a WhereOpCall
+
+    oldbinop = fst[1]
+    oldwhereop = fst[1][end]
+    binop = FST(CSTParser.BinaryOpCall, fst[1].indent)
+
+    # foo(a::A)
+    add_node!(binop, oldbinop[1], s)
+    # foo(a::A)::
+    add_node!(binop, oldbinop[2], s, join_lines=true)
+    # foo(a::A)::R
+    add_node!(binop, oldwhereop[1], s, join_lines=true)
+
+    whereop = FST(CSTParser.WhereOpCall, fst[1].indent)
+    add_node!(whereop, binop, s)
+
+    # "foo(a::A)::R where "
+    for n in oldwhereop[2:end]
+        add_node!(whereop, n, s, join_lines = true)
+    end
+
+    fst[1].typ = whereop.typ
+    fst[1].nodes = whereop.nodes
+    fst[1].len = whereop.len
+end

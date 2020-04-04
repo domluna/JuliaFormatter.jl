@@ -18,6 +18,12 @@
     MacroBlock,
 )
 
+# nesting
+# DEFAULT
+# NEST
+# UNNEST
+# @enum()
+
 """
 Formatted Syntax Tree
 """
@@ -266,6 +272,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             end
             return
         end
+    elseif n.typ === CSTParser.BinaryOpCall
+        binaryop_to_whereop!(n, s)
     end
 
     if length(t.nodes) == 0
@@ -519,3 +527,4 @@ function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
 end
 op_kind(::Nothing) = nothing
 op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
+

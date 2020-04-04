@@ -5206,6 +5206,19 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
                                  for ann in recording.annotations
                                  if ann.value == "epileptiform_spike")"""
         @test yasfmt(str_, 2, 80) == str
+
+        # only that
+        str_ = "foo(a, b) = (arg1, arg2, arg3)"
+        str = """
+        foo(a, b) = (arg1, arg2,
+                     arg3)"""
+        @test yasfmt(str_, 2, length(str_)-1) == str
+
+        str = """
+        foo(a, b) = (arg1,
+                     arg2,
+                     arg3)"""
+        @test yasfmt(str_, 2, 1) == str
     end
 
     @testset "inline comments with arguments" begin
