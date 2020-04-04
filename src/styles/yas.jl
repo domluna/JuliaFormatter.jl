@@ -440,11 +440,17 @@ n_comparison!(ys::YASStyle, fst::FST, s::State) =
 function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
 
-    if idx === nothing
-        walk(reset_line_offset!, fst.nodes[1:end-1], s, fst.indent)
-        nest!(ys, fst[end], s)
+    if idx !== nothing
+        n_binaryopcall!(DefaultStyle(ys), fst, s)
         return
     end
 
-    n_binaryopcall!(DefaultStyle(ys), fst, s)
+    # line_offset = s.line_offset
+    walk(reset_line_offset!, fst.nodes[1:end-1], s, fst.indent)
+    nest!(ys, fst[end], s)
+    # s.line_offset = line_offset
+    # nest!(ys, fst[1], s)
+    # s.line_offset = line_offset
+    # walk(reset_line_offset!, fst, s)
+
 end
