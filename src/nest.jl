@@ -700,7 +700,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                rhs.typ === CSTParser.Comparison
                 line_margin += length(fst[end])
             elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
-                rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
@@ -710,7 +710,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                     line_margin += sum(length.(rhs[1:idx-1]))
                 end
             else
-                rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
             end
 
@@ -727,7 +727,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         walk(reset_line_offset!, fst, s)
     else
         # length of op and surrounding whitespace
-        # oplen, _ = length_to(fst, [NEWLINE], start = 2)
+        # oplen, _ = length_to(fst, (NEWLINE,), start = 2)
         oplen = sum(length.(fst[2:end]))
 
         # @info "" length(fst[1]) s.line_offset fst.typ fst[1].typ oplen

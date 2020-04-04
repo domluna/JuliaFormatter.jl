@@ -383,7 +383,7 @@ end
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-@inline function length_to(fst::FST, ntyps::Vector; start::Int = 1)
+@inline function length_to(fst::FST, ntyps; start::Int = 1)
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
