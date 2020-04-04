@@ -444,6 +444,16 @@ function is_opcall(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
+# Generator typ
+# (x for x in 1:10)
+# (x for x in 1:10 if x % 2 == 0)
+function is_gen(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.Generator && return true
+    x.typ === CSTParser.Filter && return true
+    x.typ === CSTParser.Flatten && return true
+    return false
+end
+
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
     cst.typ === CSTParser.Do && return true
