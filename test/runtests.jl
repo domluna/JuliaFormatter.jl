@@ -898,7 +898,7 @@ end
         str = """
         __module__ == Main ||
         @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""""
-        @test fmt(str_, 4, length(str_)-1) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
     end
 
     @testset "begin" begin
