@@ -893,6 +893,12 @@ end
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 41
+
+        str_ = "__module__ == Main || @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""
+        str = """
+        __module__ == Main ||
+        @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""""
+        @test fmt(str_, 4, length(str_)-1) == str
     end
 
     @testset "begin" begin
@@ -5212,7 +5218,7 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         str = """
         foo(a, b) = (arg1, arg2,
                      arg3)"""
-        @test yasfmt(str_, 2, length(str_)-1) == str
+        @test yasfmt(str_, 2, length(str_) - 1) == str
 
         str = """
         foo(a, b) = (arg1,

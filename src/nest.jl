@@ -726,59 +726,14 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         s.line_offset = line_offset
         walk(reset_line_offset!, fst, s)
     else
-        # Handles the case of a function def defined
-        # as "foo(a)::R where {A,B} = body".
-        #
-        # In this case instead of it being parsed as:
-        #
-        # CSTParser.BinaryOpCall
-        #  - CSTParser.WhereOpCall
-        #  - OP
-        #  - RHS
-        #
-        # It's parsed as:
-        #
-        # CSTParser.BinaryOpCall
-        #  - CSTParser.BinaryOpCall
-        #   - LHS
-        #   - OP
-        #   - CSTParser.WhereOpCall
-        #    - R
-        #    - ...
-        #  - OP
-        #  - RHS
-        #
-        # The result being extra width is trickier to deal with.
-
-        idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, fst.nodes)
-        return_width = 0
-        if idx !== nothing && idx > 1
-            return_width = length(fst[idx]) + length(fst[2])
-        elseif idx === nothing
-            return_width, _ = length_to(fst, [NEWLINE], start = 2)
-        end
-
-        # for (i, n) in enumerate(fst.nodes)
-        #     if n.typ === NEWLINE
-        #         s.line_offset = fst.indent
-        #     elseif i == 1
-        #         n.extra_margin = return_width + fst.extra_margin
-        #         nest!(style, n, s)
-        #     elseif i == idx
-        #         n.extra_margin = fst.extra_margin
-        #         nest!(style, n, s)
-        #     else
-        #         n.extra_margin = fst.extra_margin
-        #         nest!(style, n, s)
-        #     end
-        # end
-
         # length of op and surrounding whitespace
-        oplen = sum(length.(fst.nodes[2:end]))
+        # oplen, _ = length_to(fst, [NEWLINE], start = 2)
+        oplen = sum(length.(fst[2:end]))
 
-        # @info "" fst.typ fst[1].typ oplen
+        # @info "" length(fst[1]) s.line_offset fst.typ fst[1].typ oplen
 
         for (i, n) in enumerate(fst.nodes)
+            # i > 1 && (@info "node" i n.typ length(n) n.val)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif i == 1
