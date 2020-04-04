@@ -5199,6 +5199,13 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
         """
         @test yasfmt(str_, 2, 80) == str
 
+
+        str_ = """spike_annotation = first(ann for ann in recording.annotations if ann.value == "epileptiform_spike")"""
+        str = """
+        spike_annotation = first(ann
+                                 for ann in recording.annotations
+                                 if ann.value == "epileptiform_spike")"""
+        @test yasfmt(str_, 2, 80) == str
     end
 
     @testset "inline comments with arguments" begin

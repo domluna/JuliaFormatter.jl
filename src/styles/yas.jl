@@ -284,9 +284,11 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 end
             end
 
-            tup = p_tupleh(ys, cst.args[i+1:length(cst)], s)
-            add_node!(t, tup, s, join_lines = true)
-            return t
+            if !is_gen(cst.args[i+1])
+                tup = p_tupleh(ys, cst.args[i+1:length(cst)], s)
+                add_node!(t, tup, s, join_lines = true)
+                return t
+            end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
@@ -317,7 +319,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             n.val = ""
             n.len = 0
             nest!(ys, n, s)
-        elseif n.typ === CSTParser.Generator
+        elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
             nest!(ys, n, s)
@@ -330,8 +332,10 @@ end
 @inline n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_macrocall!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+@inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tupleh!(ys::YASStyle, fst::FST, s::State)
+    # @info "" fst.typ fst.indent s.line_offset
     fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
@@ -345,7 +349,7 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
             n.val = ""
             n.len = 0
             nest!(ys, n, s)
-        elseif n.typ === CSTParser.Generator
+        elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
             nest!(ys, n, s)
@@ -359,14 +363,31 @@ end
 @inline n_vect!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_parameters!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
-
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
-@inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 
-function n_generator!(ys::YASStyle, fst::FST, s::State)
+function n_generator!(ys::YASStyle, fst::FST, s::State; indent=0)
     diff = s.line_offset - fst[1].indent
+
+    # if the first argument is not a leaf
+    # aligns it to be inside the generator
+    # expression
     add_indent!(fst[1], s, diff)
-    n_tupleh!(ys, fst, s)
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+        elseif is_gen(n)
+            n.indent = fst.indent
+            n.extra_margin = 1
+            nest!(ys, n, s)
+        else
+            n.extra_margin = 1
+            nest!(ys, n, s)
+        end
+    end
 end
 
 @inline n_filter!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
