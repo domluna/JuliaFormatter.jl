@@ -527,4 +527,3 @@ function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
 end
 op_kind(::Nothing) = nothing
 op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
-

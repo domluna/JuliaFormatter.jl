@@ -303,9 +303,9 @@ function binaryop_to_whereop!(fst::FST, s::State)
     # foo(a::A)
     add_node!(binop, oldbinop[1], s)
     # foo(a::A)::
-    add_node!(binop, oldbinop[2], s, join_lines=true)
+    add_node!(binop, oldbinop[2], s, join_lines = true)
     # foo(a::A)::R
-    add_node!(binop, oldwhereop[1], s, join_lines=true)
+    add_node!(binop, oldwhereop[1], s, join_lines = true)
 
     whereop = FST(CSTParser.WhereOpCall, fst[1].indent)
     add_node!(whereop, binop, s)

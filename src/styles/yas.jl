@@ -365,7 +365,7 @@ end
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 
-function n_generator!(ys::YASStyle, fst::FST, s::State; indent=0)
+function n_generator!(ys::YASStyle, fst::FST, s::State)
     diff = s.line_offset - fst[1].indent
 
     # if the first argument is not a leaf
