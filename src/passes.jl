@@ -378,7 +378,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
     f = (t) -> (n, s) -> is_leaf(n) && push!(t, n)
     walk(f(t), fst, s)
 
-    macroname = FST(CSTParser.ChainOpCall, fst.indent)
+    macroname = FST(CSTParser.MacroName, fst.indent)
     for (i, n) in enumerate(t)
         if n.val == "@"
             continue
