@@ -445,7 +445,7 @@ n_comparison!(ys::YASStyle, fst::FST, s::State) =
 function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
 
-    if idx !== nothing 
+    if idx !== nothing
         n_binaryopcall!(DefaultStyle(ys), fst, s)
         return
     end
