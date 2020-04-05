@@ -316,9 +316,7 @@ function binaryop_to_whereop!(fst::FST, s::State)
         add_node!(whereop, n, s, join_lines = true)
     end
 
-    fst[1].typ = whereop.typ
-    fst[1].nodes = whereop.nodes
-    fst[1].len = whereop.len
+    fst[1] = whereop
 end
 
 """
