@@ -325,6 +325,8 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             n.extra_margin = 1
             nest!(ys, n, s)
         else
+            diff = fst.indent - fst[i].indent
+            add_indent!(n, s, diff)
             n.extra_margin = 1
             nest!(ys, n, s)
         end
@@ -355,6 +357,8 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
             n.extra_margin = 1
             nest!(ys, n, s)
         else
+            diff = fst.indent - fst[i].indent
+            add_indent!(n, s, diff)
             n.extra_margin = 1
             nest!(ys, n, s)
         end
@@ -441,7 +445,7 @@ n_comparison!(ys::YASStyle, fst::FST, s::State) =
 function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
 
-    if idx !== nothing
+    if idx !== nothing 
         n_binaryopcall!(DefaultStyle(ys), fst, s)
         return
     end

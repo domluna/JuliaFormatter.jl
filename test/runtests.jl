@@ -5287,6 +5287,20 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
                      arg2,
                      arg3)"""
         @test yasfmt(str_, 2, 1) == str
+
+        str_ = """
+        fooooooooooooooooooo(arg1, arg2, 
+        x -> begin
+        body
+        end
+        )"""
+        str = """
+        fooooooooooooooooooo(arg1, arg2,
+                             x -> begin
+                                 body
+                             end)"""
+        @test yasfmt(str_, 4, 32) == str
+
     end
 
     @testset "inline comments with arguments" begin
