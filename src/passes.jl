@@ -377,19 +377,21 @@ Module.@macro
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
     t = FST[]
-    f = (t) -> (n, s) -> n.typ === CSTParser.IDENTIFIER && push!(t, n)
+    f = (t) -> (n, s) -> is_leaf(n) && push!(t, n)
     walk(f(t), fst, s)
 
     macroname = FST(CSTParser.ChainOpCall, fst.indent)
     for (i, n) in enumerate(t)
-        if i < length(t)
-            add_node!(macroname, n, s, join_lines=true)
-            op = FST(CSTParser.OPERATOR, n.startline, n.endline, ".")
-            add_node!(macroname, op, s, join_lines = true)
+        if n.val == "@"
+            continue
+        elseif i < length(t)
+            add_node!(macroname, n, s, join_lines = true)
+            # op = FST(CSTParser.OPERATOR, n.startline, n.endline, ".")
+            # add_node!(macroname, op, s, join_lines = true)
         else
             at = FST(CSTParser.PUNCTUATION, n.startline, n.endline, "@")
-            add_node!(macroname, at, s, join_lines=true)
-            add_node!(macroname, n, s, join_lines=true)
+            add_node!(macroname, at, s, join_lines = true)
+            add_node!(macroname, n, s, join_lines = true)
         end
     end
 

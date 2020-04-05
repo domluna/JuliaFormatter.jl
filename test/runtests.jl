@@ -879,8 +879,13 @@ end
         str = """@warn("Text")"""
         @test fmt(str) == str
 
-        str_ = "@Module.macro" 
-        str = "Module.@macro" 
+        str_ = "@Module.macro"
+        str = "Module.@macro"
+        @test fmt(str_) == str
+        @test fmt(str) == str
+
+        str_ = "\$Module.@macro"
+        str = "\$Module.@macro"
         @test fmt(str_) == str
         @test fmt(str) == str
     end
