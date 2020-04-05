@@ -112,7 +112,7 @@ function import_to_usings(fst::FST, s::State)
         use.endline = el
 
         add_node!(use, FST(CSTParser.KEYWORD, sl, el, "using"), s)
-        add_node!(use, Whitespace(1), s, join_lines = true)
+        add_node!(use, Whitespace(1), s)
 
         # collect the dots prior to a identifier
         # import ..A
@@ -124,7 +124,7 @@ function import_to_usings(fst::FST, s::State)
 
         add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
         add_node!(use, FST(CSTParser.OPERATOR, sl, el, ":"), s, join_lines = true)
-        add_node!(use, Whitespace(1), s, join_lines = true)
+        add_node!(use, Whitespace(1), s)
         add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
 
         push!(usings, use)
@@ -200,12 +200,15 @@ function short_to_long_function_def!(fst::FST, s::State)
         # function
         kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
-        add_node!(funcdef, Whitespace(1), s, join_lines = true)
+        add_node!(funcdef, Whitespace(1), s)
 
-        # func(a) OR func(a) where T
+        # func(a)
+        # OR
+        # func(a) where T
         add_node!(funcdef, fst[1], s, join_lines = true)
 
         # body
+        s.opts.always_use_return && prepend_return!(fst[end], s)
         add_node!(funcdef, fst[end], s, max_padding = s.indent_size)
         add_indent!(funcdef[end], s, s.indent_size)
 
@@ -218,9 +221,10 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.len = funcdef.len
     elseif fst[1].typ === CSTParser.BinaryOpCall &&
            fst[1][end].typ === CSTParser.WhereOpCall
+        # function
         kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
-        add_node!(funcdef, Whitespace(1), s, join_lines = true)
+        add_node!(funcdef, Whitespace(1), s)
 
         # func(a)
         add_node!(funcdef, fst[1][1], s, join_lines = true)
@@ -233,6 +237,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_node!(funcdef, whereop, s, join_lines = true)
 
         # body
+        s.opts.always_use_return && prepend_return!(fst[end], s)
         add_node!(funcdef, fst[end], s, max_padding = s.indent_size)
         add_indent!(funcdef[end], s, s.indent_size)
 
@@ -314,4 +319,38 @@ function binaryop_to_whereop!(fst::FST, s::State)
     fst[1].typ = whereop.typ
     fst[1].nodes = whereop.nodes
     fst[1].len = whereop.len
+end
+
+"""
+    prepend_return!(fst::FST, s::State)
+
+Prepends `return` to the last expression of a block.
+
+```julia
+function foo()
+    a = 2 * 3
+    a / 3
+end
+```
+
+to
+
+```julia
+function foo()
+    a = 2 * 3
+    return a / 3
+end
+```
+"""
+function prepend_return!(fst::FST, s::State)
+    fst.typ === CSTParser.Block || return
+    fst[end].typ !== CSTParser.Return || return
+
+    ret = FST(CSTParser.Return, fst.indent)
+    ln = fst[end]
+    kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "return")
+    add_node!(ret, kw, s)
+    add_node!(ret, Whitespace(1), s)
+    add_node!(ret, fst[end], s, join_lines = true)
+    fst[end] = ret
 end

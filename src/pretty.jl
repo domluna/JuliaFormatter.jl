@@ -545,9 +545,11 @@ function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
         else
             s.indent += s.indent_size
+            n = pretty(style, cst[3], s, ignore_single_line = true)
+            s.opts.always_use_return && prepend_return!(n, s)
             add_node!(
                 t,
-                pretty(style, cst[3], s, ignore_single_line = true),
+                n,
                 s,
                 max_padding = s.indent_size,
             )
@@ -885,9 +887,11 @@ function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     end
     if cst[4].typ === CSTParser.Block
         s.indent += s.indent_size
+        n = pretty(style, cst[4], s, ignore_single_line = true)
+        s.opts.always_use_return && prepend_return!(n, s)
         add_node!(
             t,
-            pretty(style, cst[4], s, ignore_single_line = true),
+            n,
             s,
             max_padding = s.indent_size,
         )

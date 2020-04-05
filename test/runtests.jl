@@ -4837,9 +4837,6 @@ end
         @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
         @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
 
-        # t, _ = run_nest(str_, length(str_)-1, style=YASStyle())
-        # @test length(t) == 15
-
         str_ = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
         str = """
         function foo(a::T) where {T}
@@ -4857,12 +4854,57 @@ end
         @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
     end
 
+    @testset "always use return" begin
+        str_ = "foo(a) = bodybodybody"
+        str = """
+        function foo(a)
+            return bodybodybody
+        end"""
+        @test fmt(str_, 4, length(str_)-1, short_to_long_function_def = true, always_use_return=true) == str
+
+        str_ = """
+        function foo()
+            expr1
+            expr2
+        end"""
+        str = """
+        function foo()
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+
+        str_ = """
+        macro foo()
+            expr1
+            expr2
+        end"""
+        str = """
+        macro foo()
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+
+        str_ = """
+        map(arg1, arg2) do x, y
+            expr1
+            expr2
+        end"""
+        str = """
+        map(arg1, arg2) do x, y
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+    end
+
 end
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
 yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 
-@testset "YAS alignment" begin
+@testset "YAS style" begin
     @testset "basic" begin
         str_ = "foo(; k =v)"
         str = "foo(; k=v)"

@@ -178,6 +178,7 @@ Base.@kwdef struct Options
     import_to_using::Bool = false
     pipe_to_function_call::Bool = false
     short_to_long_function_def::Bool = false
+    always_use_return::Bool = false
 end
 
 mutable struct State
@@ -241,6 +242,7 @@ include("styles/yas.jl")
         import_to_using::Bool = false,
         pipe_to_function_call::Bool = false,
         short_to_long_function_def::Bool = false,
+        always_use_return::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -336,6 +338,28 @@ function f(arg2, arg2)
 end
 ```
 
+### `always_use_return`
+
+If true `return` will be prepended to the last expression where
+applicable in function definitions, macro definitions, and do blocks.
+
+Example:
+
+```julia
+function foo()
+    expr1
+    expr2
+end
+```
+
+to
+
+```julia
+function foo()
+    expr1
+    return expr2
+end
+```
 """
 function format_text(
     text::AbstractString;
@@ -349,6 +373,7 @@ function format_text(
     import_to_using::Bool = false,
     pipe_to_function_call::Bool = false,
     short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
 )
     isempty(text) && return text
 
@@ -366,6 +391,7 @@ function format_text(
         import_to_using = import_to_using,
         pipe_to_function_call = pipe_to_function_call,
         short_to_long_function_def = short_to_long_function_def,
+        always_use_return = always_use_return,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
