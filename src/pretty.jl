@@ -547,12 +547,7 @@ function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             s.indent += s.indent_size
             n = pretty(style, cst[3], s, ignore_single_line = true)
             s.opts.always_use_return && prepend_return!(n, s)
-            add_node!(
-                t,
-                n,
-                s,
-                max_padding = s.indent_size,
-            )
+            add_node!(t, n, s, max_padding = s.indent_size)
             s.indent -= s.indent_size
             add_node!(t, pretty(style, cst[4], s), s)
         end
@@ -889,12 +884,7 @@ function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent += s.indent_size
         n = pretty(style, cst[4], s, ignore_single_line = true)
         s.opts.always_use_return && prepend_return!(n, s)
-        add_node!(
-            t,
-            n,
-            s,
-            max_padding = s.indent_size,
-        )
+        add_node!(t, n, s, max_padding = s.indent_size)
         s.indent -= s.indent_size
     end
     add_node!(t, pretty(style, cst.args[end], s), s)

@@ -4860,7 +4860,13 @@ end
         function foo(a)
             return bodybodybody
         end"""
-        @test fmt(str_, 4, length(str_)-1, short_to_long_function_def = true, always_use_return=true) == str
+        @test fmt(
+            str_,
+            4,
+            length(str_) - 1,
+            short_to_long_function_def = true,
+            always_use_return = true,
+        ) == str
 
         str_ = """
         function foo()
@@ -4872,7 +4878,7 @@ end
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
 
         str_ = """
         macro foo()
@@ -4884,7 +4890,7 @@ end
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
 
         str_ = """
         map(arg1, arg2) do x, y
@@ -4896,7 +4902,7 @@ end
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_)-1, always_use_return=true) == str
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
     end
 
 end
