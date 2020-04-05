@@ -291,11 +291,7 @@ This transformation converts (2) to (1).
 ref https://github.com/julia-vscode/CSTParser.jl/issues/93
 """
 function binaryop_to_whereop!(fst::FST, s::State)
-    fst[1].typ === CSTParser.BinaryOpCall || return
-    fst[1][end].typ === CSTParser.WhereOpCall || return
-
     # transform fst[1] to a WhereOpCall
-
     oldbinop = fst[1]
     oldwhereop = fst[1][end]
     binop = FST(CSTParser.BinaryOpCall, fst[1].indent)
@@ -310,7 +306,7 @@ function binaryop_to_whereop!(fst::FST, s::State)
     whereop = FST(CSTParser.WhereOpCall, fst[1].indent)
     add_node!(whereop, binop, s)
 
-    # "foo(a::A)::R where "
+    # "foo(a::A)::R where A"
     for n in oldwhereop[2:end]
         add_node!(whereop, n, s, join_lines = true)
     end

@@ -272,7 +272,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             end
             return
         end
-    elseif n.typ === CSTParser.BinaryOpCall
+    elseif n.typ === CSTParser.BinaryOpCall &&
+           n[1].typ === CSTParser.BinaryOpCall &&
+           n[1][end].typ === CSTParser.WhereOpCall
+        # normalize FST representation for WhereOpCall
         binaryop_to_whereop!(n, s)
     end
 
