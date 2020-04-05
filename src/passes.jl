@@ -386,8 +386,6 @@ function move_at_sign_to_the_end(fst::FST, s::State)
             continue
         elseif i < length(t)
             add_node!(macroname, n, s, join_lines = true)
-            # op = FST(CSTParser.OPERATOR, n.startline, n.endline, ".")
-            # add_node!(macroname, op, s, join_lines = true)
         else
             at = FST(CSTParser.PUNCTUATION, n.startline, n.endline, "@")
             add_node!(macroname, at, s, join_lines = true)
