@@ -36,13 +36,15 @@ format_text(
     text::AbstractString;
     indent = 4,
     margin = 92,
+    style::AbstractStyle = DefaultStyle(),
     always_for_in = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
     import_to_using::Bool = false,
     pipe_to_function_call::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
 )
 
 format_file(
@@ -64,12 +66,15 @@ The `text` argument to `format_text` is a string containing the code to be forma
 
 ### File Options
 
-If `overwrite` is `true` the file will be reformatted in place, overwriting
-the existing file; if it is `false`, the formatted version of `foo.jl` will
-be written to `foo_fmt.jl` instead.
+#### `overwrite`
 
-If `verbose` is `true` details related to formatting the file will be printed
-to `stdout`.
+The file will be reformatted in place, overwriting the existing file.
+If it is `false`, the formatted version of `foo.jl` will be written to
+`foo_fmt.jl` instead.
+
+#### `verbose`
+
+Details related to formatting the file will be printed to `stdout`.
 
 ### Formatting Options
 
@@ -164,3 +169,25 @@ function f(arg2, arg2)
 end
 ```
 
+#### `always_use_return`
+
+If true `return` will be prepended to the last expression where
+applicable in function definitions, macro definitions, and do blocks.
+
+Example:
+
+```julia
+function foo()
+    expr1
+    expr2
+end
+```
+
+to
+
+```julia
+function foo()
+    expr1
+    return expr2
+end
+```
