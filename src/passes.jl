@@ -354,3 +354,44 @@ function prepend_return!(fst::FST, s::State)
     add_node!(ret, fst[end], s, join_lines = true)
     fst[end] = ret
 end
+
+"""
+    move_at_sign_to_the_end(fst::FST, s::State)
+
+NOTE: Assumes `fst` is the caller name of a macrocall such as
+`@macro` or `Module.@macro`.
+
+Moves `@` to the last indentifier.
+
+Example:
+
+```julia
+@Module.macro
+```
+
+to
+
+```julia
+Module.@macro
+```
+"""
+function move_at_sign_to_the_end(fst::FST, s::State)
+    t = FST[]
+    f = (t) -> (n, s) -> n.typ === CSTParser.IDENTIFIER && push!(t, n)
+    walk(f(t), fst, s)
+
+    macroname = FST(CSTParser.ChainOpCall, fst.indent)
+    for (i, n) in enumerate(t)
+        if i < length(t)
+            add_node!(macroname, n, s, join_lines=true)
+            op = FST(CSTParser.OPERATOR, n.startline, n.endline, ".")
+            add_node!(macroname, op, s, join_lines = true)
+        else
+            at = FST(CSTParser.PUNCTUATION, n.startline, n.endline, "@")
+            add_node!(macroname, at, s, join_lines=true)
+            add_node!(macroname, n, s, join_lines=true)
+        end
+    end
+
+    return macroname
+end
