@@ -36,71 +36,81 @@ format_text(
     text::AbstractString;
     indent = 4,
     margin = 92,
+    style::AbstractStyle = DefaultStyle(),
     always_for_in = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
 )
 
 format_file(
     file::AbstractString;
     overwrite = true,
     verbose = false,
-    indent = 4,
-    margin = 92,
-    always_for_in = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    format_options...,
 )
 
 format(
     paths...;
-    overwrite = true,
-    verbose = false,
-    indent = 4,
-    margin = 92,
-    always_for_in = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    options...,
 )
 ```
 
 The `text` argument to `format_text` is a string containing the code to be formatted; the formatted code is retuned as a new string. The `file` argument to `format_file` is the path of a file to be formatted. The `format` function is either called with a singe string to format if it is a `.jl` file or to recuse into looking for `.jl` files if it is a directory. It can also be called with a collection of such paths to iterate over.
 
+`format` calls `format_file` which in turn calls `format_text`.
+
 ### File Options
 
-If `overwrite` is `true` the file will be reformatted in place, overwriting
-the existing file; if it is `false`, the formatted version of `foo.jl` will
-be written to `foo_fmt.jl` instead.
+#### `overwrite`
 
-If `verbose` is `true` details related to formatting the file will be printed
-to `stdout`.
+The file will be reformatted in place, overwriting the existing file.
+If it is `false`, the formatted version of `foo.jl` will be written to
+`foo_fmt.jl` instead.
+
+#### `verbose`
+
+Details related to formatting the file will be printed to `stdout`.
 
 ### Formatting Options
 
-`indent` - the number of spaces used for an indentation.
+Formats a Julia source passed in as a string, returning the formatted
+code as another string.
 
-`margin` - the maximum length of a line. Code exceeding this margin will be formatted
-across multiple lines.
+#### `indent`
 
-If `always_for_in` is true `=` is always replaced with `in` if part of a
-`for` loop condition.  For example, `for i = 1:10` will be transformed
-to `for i in 1:10`.
+The number of spaces used for an indentation.
 
-If `whitespace_typedefs` is true, whitespace is added for type definitions.
-Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+#### `margin`
 
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally,
-if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+The maximum length of a line. Code exceeding this margin will
+be formatted across multiple lines.
+
+#### `always_for_in`
+
+If true `=` is always replaced with `in` if part of a `for` loop condition.
+For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+
+#### `whitespace_typedefs`
+
+If true, whitespace is added for type definitions.  Make this `true`
+if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+
+#### `whitespace_ops_in_indices`
+
+If true, whitespace is added for binary operations in indices. Make this
+`true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's
+a colon `:` involved, parenthesis will be added to the LHS and RHS.
+
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
-If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+#### `remove_extra_newlines`
+
+If true superflous newlines will be removed. For example:
 
 ```julia
 a = 1
@@ -116,4 +126,68 @@ is rewritten as
 a = 1
 
 b = 2
+```
+
+#### `import_to_using`
+
+If true `import` expressions are rewritten to `using` expressions
+in the following cases:
+
+```julia
+import A
+
+import A, B, C
+```
+
+is rewritten to:
+
+```julia
+using A: A
+
+using A: A
+using B: B
+using C: C
+```
+
+#### `pipe_to_function_call`
+
+If true `f |> x` is rewritten to `f(x)`.
+
+#### `short_to_long_function_def`
+
+Transforms a _short_ function definition
+
+```julia
+f(arg1, arg2) = body
+```
+
+to a _long_ function definition
+
+```julia
+function f(arg2, arg2)
+    body
+end
+```
+
+#### `always_use_return`
+
+If true `return` will be prepended to the last expression where
+applicable in function definitions, macro definitions, and do blocks.
+
+Example:
+
+```julia
+function foo()
+    expr1
+    expr2
+end
+```
+
+to
+
+```julia
+function foo()
+    expr1
+    return expr2
+end
 ```
