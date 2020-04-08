@@ -583,12 +583,9 @@ function p_struct(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(
-            t,
-            pretty(style, cst[3], s, ignore_single_line = true),
-            s,
-            max_padding = s.indent_size,
-        )
+        n = pretty(style, cst[3], s, ignore_single_line = true)
+        annotate_typefields_with_any!(n, s)
+        add_node!(t, n, s, max_padding = s.indent_size)
         s.indent -= s.indent_size
         add_node!(t, pretty(style, cst[4], s), s)
     end
@@ -611,12 +608,9 @@ function p_mutable(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
     else
         s.indent += s.indent_size
-        add_node!(
-            t,
-            pretty(style, cst[4], s, ignore_single_line = true),
-            s,
-            max_padding = s.indent_size,
-        )
+        n = pretty(style, cst[4], s, ignore_single_line = true)
+        annotate_typefields_with_any!(n, s)
+        add_node!(t, n, s, max_padding = s.indent_size)
         s.indent -= s.indent_size
         add_node!(t, pretty(style, cst[5], s), s)
     end
