@@ -1,4 +1,6 @@
-# FNode are extra nodes used for formatting which don't have a CSTParser equivalent.
+"""
+`FNode` is a node used for formatting which does not have a `CSTParser` equivalent.
+"""
 @enum(
     FNode,
 
@@ -11,19 +13,40 @@
     INLINECOMMENT,
     TRAILINGCOMMA,
     TRAILINGSEMICOLON,
+
+    # no equivalent in CSTParser
+    MacroBlock,
 )
 
-# Formatted Syntax Tree
+# nesting
+# DEFAULT
+# NEST
+# UNNEST
+# @enum()
+
+"""
+Formatted Syntax Tree
+"""
 mutable struct FST
     typ::Union{CSTParser.Head,FNode}
+
+    # Start and end lines of the node
+    # in the original source file.
     startline::Int
     endline::Int
     indent::Int
+
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
     force_nest::Bool
+
+    # Extra margin caused by parent nodes.
+    # i.e. `(f(arg))`
+    #
+    # `f(arg)` would have `extra_margin` = 1
+    # due to `)` after `f(arg)`.
     extra_margin::Int
 end
 
@@ -34,11 +57,18 @@ function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::Abs
     FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
 end
 
-function FST(cst::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    FST(cst, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
+function FST(typ::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
+    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
 end
 
-@inline Base.setindex!(fst::FST, node::FST, ind::Int) = fst.nodes[ind] = node
+FST(typ::CSTParser.Head, indent::Integer) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, false, 0)
+
+@inline function Base.setindex!(fst::FST, node::FST, ind::Int)
+    fst.len -= fst.nodes[ind].len
+    fst.nodes[ind] = node
+    fst.len += node.len
+end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
@@ -90,6 +120,13 @@ function is_multiline(fst::FST)
     false
 end
 
+function is_importer_exporter(fst::FST)
+    fst.typ === CSTParser.Import && return true
+    fst.typ === CSTParser.Export && return true
+    fst.typ === CSTParser.Using && return true
+    return false
+end
+
 # f a function which returns a bool
 function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
     p = cst.parent
@@ -117,12 +154,12 @@ function get_args(cst::CSTParser.EXPR)
     elseif cst.typ === CSTParser.WhereOpCall
         # get the arguments in B of `A where B`
         return get_args(cst.args[3:end])
-    elseif cst.typ === CSTParser.Parameters ||
-           cst.typ === CSTParser.Braces ||
+    elseif cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat ||
            cst.typ === CSTParser.TupleH ||
            cst.typ === CSTParser.Vect ||
-           cst.typ === CSTParser.InvisBrackets
+           cst.typ === CSTParser.InvisBrackets ||
+           cst.typ === CSTParser.Parameters
         return get_args(cst.args)
     end
     CSTParser.get_args(cst)
@@ -193,7 +230,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif n.typ isa FNode
+    elseif n.typ isa FNode && is_leaf(n)
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline
@@ -205,10 +242,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         push!(t.nodes, n)
         return
     elseif n.typ === CSTParser.Parameters
-        if length(n) == 0
-            n.startline = t.endline
-            n.endline = t.endline
-        end
+        # unpack Parameters arguments into the parent node
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
@@ -226,6 +260,23 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             multi_arg = n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
+        for nn in n.nodes
+            add_node!(t, nn, s, join_lines = true)
+        end
+        return
+    elseif s.opts.import_to_using && n.typ === CSTParser.Import
+        usings = import_to_usings(n, s)
+        if length(usings) > 0
+            for nn in usings
+                add_node!(t, nn, s, join_lines = false, max_padding = 0)
+            end
+            return
+        end
+    elseif n.typ === CSTParser.BinaryOpCall &&
+           n[1].typ === CSTParser.BinaryOpCall &&
+           n[1][end].typ === CSTParser.WhereOpCall
+        # normalize FST representation for WhereOpCall
+        binaryop_to_whereop!(n, s)
     end
 
     if length(t.nodes) == 0
@@ -290,10 +341,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
         end
-
-        if n.typ === CSTParser.Parameters && n.force_nest
-            t.force_nest = true
-        end
     end
 
     @label add_node_end
@@ -308,8 +355,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     if !join_lines && is_end(n)
         # end keyword isn't useful w.r.t margin lengths
     elseif t.typ === CSTParser.StringH
-        # @info "insert literal into stringh" length(n) n n.indent + length(n) - t.indent t.indent n.indent
-
         # The length of this node is the length of
         # the longest string. The length of the string is
         # only considered "in the positive" when it's past
@@ -341,7 +386,7 @@ end
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-@inline function length_to(fst::FST, ntyps::Vector; start::Int = 1)
+@inline function length_to(fst::FST, ntyps; start::Int = 1)
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
@@ -380,6 +425,9 @@ function is_iterable(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.InvisBrackets && return true
     x.typ === CSTParser.Ref && return true
     x.typ === CSTParser.TypedVcat && return true
+    x.typ === CSTParser.Import && return true
+    x.typ === CSTParser.Using && return true
+    x.typ === CSTParser.Export && return true
     return false
 end
 
@@ -393,6 +441,27 @@ function is_block(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.Let && return true
     # (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
     (x.typ === CSTParser.Quote && x[1].val == "quote") && return true
+    return false
+end
+
+function is_opcall(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.BinaryOpCall && return true
+    x.typ === CSTParser.Comparison && return true
+    x.typ === CSTParser.ChainOpCall && return true
+    # InvisBrackets are often mixed with operators
+    # so kwargs are propagated through its related
+    # functions
+    x.typ === CSTParser.InvisBrackets && return true
+    return false
+end
+
+# Generator typ
+# (x for x in 1:10)
+# (x for x in 1:10 if x % 2 == 0)
+function is_gen(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.Generator && return true
+    x.typ === CSTParser.Filter && return true
+    x.typ === CSTParser.Flatten && return true
     return false
 end
 
@@ -441,108 +510,23 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     false
 end
 
-
-@inline function flattenable(op::CSTParser.EXPR)
-    op.kind === Tokens.AND && return true
-    op.kind === Tokens.OR && return true
-    op.kind === Tokens.LAZY_AND && return true
-    op.kind === Tokens.LAZY_OR && return true
-    op.kind === Tokens.RPIPE && return true
+function flattenable(kind::Tokens.Kind)
+    kind === Tokens.AND && return true
+    kind === Tokens.OR && return true
+    kind === Tokens.LAZY_AND && return true
+    kind === Tokens.LAZY_OR && return true
+    kind === Tokens.RPIPE && return true
     return false
 end
+flattenable(::Nothing) = false
 
-"""
-Flattens a binary op call tree if the op repeats 2 or more times.
-"a && b && c" will be transformed while "a && b" will not.
-
-Transforms
-
-    BinaryOpCall
-     BinaryOpCall
-      BinaryOpCall
-       BinaryOpCall
-        BinaryOpCall
-         BinaryOpCall
-          some_expression
-          OP: RPIPE
-          some_expression
-         OP: RPIPE
-         some_expression
-        OP: RPIPE
-        some_expression
-       OP: RPIPE
-       some_expression
-      OP: RPIPE
-      some_expression
-     OP: RPIPE
-     some_expression
-
-into
-
-    ChainOpCall
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-    OP: RPIPE
-    some_expression
-"""
-function flatten_binaryopcall(fst::FST; top = true)
-    nodes = FST[]
-    op = fst.ref[][2]
-    flattenable(op) || return nodes
-
-    lhs = fst[1]
-    rhs = fst[end]
-    lhs_same_op = lhs.typ === CSTParser.BinaryOpCall && lhs.ref[][2].kind === op.kind
-    rhs_same_op = rhs.typ === CSTParser.BinaryOpCall && rhs.ref[][2].kind === op.kind
-
-    if top && !lhs_same_op && !rhs_same_op
-        return nodes
+function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
+    if cst.typ === CSTParser.BinaryOpCall
+        return cst[2].kind
+    elseif cst.typ === CSTParser.UnaryOpCall
+        return cst[1].typ === CSTParser.OPERATOR ? cst[1].kind : cst[2].kind
     end
-
-    if lhs_same_op
-        # @info "calling lhs"
-        push!(nodes, flatten_binaryopcall(lhs, top = false)...)
-    else
-        flatten_fst!(lhs)
-        push!(nodes, lhs)
-    end
-    # everything except the indentation placeholder
-    push!(nodes, fst.nodes[2:end-2]...)
-
-    if rhs_same_op
-        # @info "calling rhs"
-        push!(nodes, flatten_binaryopcall(rhs, top = false)...)
-    else
-        flatten_fst!(rhs)
-        push!(nodes, rhs)
-    end
-
-    return nodes
+    return nothing
 end
-
-function flatten_fst!(fst::FST)
-    is_leaf(fst) && return
-    for n in fst.nodes
-        if is_leaf(n)
-            continue
-        elseif n.typ === CSTParser.BinaryOpCall
-            # possibly convert BinaryOpCall to ChainOpCall
-            nnodes = flatten_binaryopcall(n)
-            if length(nnodes) > 0
-                n.nodes = nnodes
-                n.typ = CSTParser.ChainOpCall
-            end
-        else
-            flatten_fst!(n)
-        end
-    end
-end
+op_kind(::Nothing) = nothing
+op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
