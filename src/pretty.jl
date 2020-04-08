@@ -1071,11 +1071,7 @@ function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
     for a in cst
-        if a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        if is_opcall(a)
             n = pretty(style, a, s, nonest = true, nospace = nospace)
         else
             n = pretty(style, a, s)
@@ -1136,11 +1132,7 @@ function p_binaryopcall(
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
 
-    if cst[1].typ === CSTParser.BinaryOpCall
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[1].typ === CSTParser.InvisBrackets
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[1].typ === CSTParser.ChainOpCall || cst[1].typ === CSTParser.Comparison
+    if is_opcall(cst[1])
         n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
     else
         n = pretty(style, cst[1], s)
@@ -1150,6 +1142,7 @@ function p_binaryopcall(
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
+
         paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
@@ -1164,7 +1157,7 @@ function p_binaryopcall(
     nest = (nestable(style, cst) && !nonest) || nrhs
 
     if op.fullspan == 0 && cst[3].typ === CSTParser.IDENTIFIER
-        # do nothing
+        # noop
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
@@ -1183,11 +1176,7 @@ function p_binaryopcall(
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     end
 
-    if cst[3].typ === CSTParser.BinaryOpCall
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[3].typ === CSTParser.InvisBrackets
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    elseif cst[3].typ === CSTParser.ChainOpCall || cst[3].typ === CSTParser.Comparison
+    if is_opcall(cst[3])
         n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
     else
         n = pretty(style, cst[3], s)
@@ -1233,21 +1222,18 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Whitespace(1), s)
 
-    # Used to mark where `B` starts.
-    add_node!(t, Placeholder(0), s)
-
     args = get_args(cst.args[3:end])
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     add_braces =
         !CSTParser.is_lbrace(cst[3]) &&
         cst.parent.typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.Curly && cst[3].typ !== CSTParser.BracesCat
+        cst[3].typ !== CSTParser.Curly &&
+        cst[3].typ !== CSTParser.BracesCat
 
     brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
     add_braces && add_node!(t, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
-    # @debug "" nest in_braces cst[3].val == "{" cst.args[end].val
     for (i, a) in enumerate(cst.args[3:end])
         if is_opener(a) && nest
             add_node!(t, pretty(style, a, s), s, join_lines = true)
@@ -1397,13 +1383,7 @@ function p_invisbrackets(
     for (i, a) in enumerate(cst)
         if a.typ === CSTParser.Block
             add_node!(t, pretty(style, a, s, from_quote = true), s, join_lines = true)
-        elseif a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        elseif is_opcall(a)
             n = pretty(style, a, s, nonest = nonest, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         elseif is_opener(a) && nest
@@ -1562,16 +1542,17 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if i == length(cst) && CSTParser.is_comma(a)
             # do nothing
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
+            push!(t.nodes, n)
+            push!(t.nodes, Placeholder(1))
         else
-            add_node!(t, n, s, join_lines = true)
+            push!(t.nodes, n)
         end
     end
     t
 end
 p_parameters(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_parameters(DefaultStyle(style), cst, s)
+
 
 # Import, Export, Using
 function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -1618,13 +1599,7 @@ function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.typ === CSTParser.BinaryOpCall
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.InvisBrackets
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif a.typ === CSTParser.ChainOpCall || a.typ === CSTParser.Comparison
+        elseif is_opcall(a)
             n = pretty(style, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else
