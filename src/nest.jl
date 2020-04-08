@@ -649,17 +649,11 @@ n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
 
-# lhs op rhs
-#
-# nest in order of
-#
-# lhs op
-# lhs
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
     if length(idxs) == 2 && (line_margin > s.margin || fst.force_nest || rhs.force_nest)
@@ -706,7 +700,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                rhs.typ === CSTParser.Comparison
                 line_margin += length(fst[end])
             elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
-                rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
             elseif is_block(cst)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
@@ -716,7 +710,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                     line_margin += sum(length.(rhs[1:idx-1]))
                 end
             else
-                rw, _ = length_to(fst, [NEWLINE], start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
             end
 
@@ -732,48 +726,19 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         s.line_offset = line_offset
         walk(reset_line_offset!, fst, s)
     else
-        # Handles the case of a function def defined
-        # as "foo(a)::R where {A,B} = body".
-        #
-        # In this case instead of it being parsed as:
-        #
-        # CSTParser.BinaryOpCall
-        #  - CSTParser.WhereOpCall
-        #  - OP
-        #  - rhs
-        #
-        # It's parsed as:
-        #
-        # CSTParser.BinaryOpCall
-        #  - CSTParser.BinaryOpCall
-        #   - lhs
-        #   - OP
-        #   - CSTParser.WhereOpCall
-        #    - R
-        #    - ...
-        #  - OP
-        #  - rhs
-        #
-        # The result being extra width is trickier to deal with.
-        idx = findfirst(n -> n.typ === CSTParser.WhereOpCall, fst.nodes)
-        return_width = 0
-        if idx !== nothing && idx > 1
-            return_width = length(fst[idx]) + length(fst[2])
-        elseif idx === nothing
-            return_width, _ = length_to(fst, [NEWLINE], start = 2)
-        end
+        # length of op and surrounding whitespace
+        oplen = sum(length.(fst[2:end]))
 
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif i == 1
-                n.extra_margin = return_width + fst.extra_margin
+                n.extra_margin = oplen + fst.extra_margin
                 nest!(style, n, s)
-            elseif i == idx
+            elseif i == length(fst.nodes)
                 n.extra_margin = fst.extra_margin
                 nest!(style, n, s)
             else
-                n.extra_margin = fst.extra_margin
                 nest!(style, n, s)
             end
         end
