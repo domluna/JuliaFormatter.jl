@@ -1,77 +1,43 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle
+using JuliaFormatter: DefaultStyle, YASStyle, Options
 using CSTParser
 using Test
 
-fmt1(
-    s,
-    i = 4,
-    m = 80,
-    always_for_in = false,
-    whitespace_typedefs = false,
-    whitespace_ops_in_indices = false,
-    remove_extra_newlines = false,
-) = JuliaFormatter.format_text(
-    s,
-    indent = i,
-    margin = m,
-    always_for_in = always_for_in,
-    whitespace_typedefs = whitespace_typedefs,
-    whitespace_ops_in_indices = whitespace_ops_in_indices,
-    remove_extra_newlines = remove_extra_newlines,
-)
+fmt1(s; i = 4, m = 80, kwargs...) =
+    JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
+fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 
 # Verifies formatting the formatted text
 # results in the same output
-function fmt(
-    s;
-    i = 4,
-    m = 80,
-    always_for_in = false,
-    whitespace_typedefs = false,
-    whitespace_ops_in_indices = false,
-    remove_extra_newlines = false,
-)
-    s1 = fmt1(
-        s,
-        i,
-        m,
-        always_for_in,
-        whitespace_typedefs,
-        whitespace_ops_in_indices,
-        remove_extra_newlines,
-    )
-    fmt1(
-        s1,
-        i,
-        m,
-        always_for_in,
-        whitespace_typedefs,
-        whitespace_ops_in_indices,
-        remove_extra_newlines,
-    )
+function fmt(s; i = 4, m = 80, kwargs...)
+    s1 = fmt1(s; kwargs..., i = i, m = m)
+    return fmt1(s1; kwargs..., i = i, m = m)
 end
-fmt(s, i, m) = fmt(s; i = i, m = m)
-fmt1(s, i, m) = fmt1(s, i, m, false, false, false)
+fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
-function run_pretty(text::String, print_width::Int; style = DefaultStyle())
+function run_pretty(
+    text::String,
+    print_width::Int;
+    opts = Options(),
+    style = DefaultStyle(),
+)
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
+    s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     t
 end
 
-function run_nest(text::String, print_width::Int; style = DefaultStyle())
+function run_nest(text::String, print_width::Int; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
-    s = JuliaFormatter.State(d, 4, print_width, JuliaFormatter.Options())
+    s = JuliaFormatter.State(d, 4, print_width, opts)
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     JuliaFormatter.nest!(style, t, s)
-    s
+    t, s
 end
 
-@testset "All" begin
+@testset "Default" begin
 
     @testset "basic" begin
         @test fmt("") == ""
@@ -337,55 +303,6 @@ end
         @test fmt(str_) == str
     end
 
-    @testset "always eq to in" begin
-        str_ = """
-        for i = 1:n
-            println(i)
-        end"""
-        str = """
-        for i in 1:n
-            println(i)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = """
-        for i = I1, j in I2
-            println(i, j)
-        end"""
-        str = """
-        for i in I1, j in I2
-            println(i, j)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = """
-        for i = 1:30, j = 100:-2:1
-            println(i, j)
-        end"""
-        str = """
-        for i in 1:30, j in 100:-2:1
-            println(i, j)
-        end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "[(i,j) for i=I1,j=I2]"
-        str = "[(i, j) for i in I1, j in I2]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "((i,j) for i=I1,j=I2)"
-        str = "((i, j) for i in I1, j in I2)"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-
-        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
-        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-    end
 
     @testset "tuples" begin
         @test fmt("(a,)") == "(a,)"
@@ -961,6 +878,16 @@ end
 
         str = """@warn("Text")"""
         @test fmt(str) == str
+
+        str_ = "@Module.macro"
+        str = "Module.@macro"
+        @test fmt(str_) == str
+        @test fmt(str) == str
+
+        str_ = "\$Module.@macro"
+        str = "\$Module.@macro"
+        @test fmt(str_) == str
+        @test fmt(str) == str
     end
 
     @testset "macro block" begin
@@ -976,6 +903,12 @@ end
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 41
+
+        str_ = "__module__ == Main || @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""
+        str = """
+        __module__ == Main ||
+        @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""""
+        @test fmt(str_, 4, length(str_) - 1) == str
     end
 
     @testset "begin" begin
@@ -1324,37 +1257,57 @@ end
     @testset "structs" begin
         str = """
         struct name
+            arg::Any
+        end"""
+
+        str_ = """
+        struct name
             arg
         end"""
-        @test fmt("""
-        struct name
-            arg
-        end""") == str
-        @test fmt("""
+        @test fmt(str_) == str
+
+        str_ = """
         struct name
         arg
-        end""") == str
-        @test fmt("""
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         struct name
                 arg
-            end""") == str
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 12
 
         str = """
         mutable struct name
-            arg
+            reallylongfieldname::Any
         end"""
-        @test fmt("""
+
+        str_ = """
         mutable struct name
-            arg
-        end""") == str
-        @test fmt("""
+            reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         mutable struct name
-        arg
-        end""") == str
-        @test fmt("""
+        reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
         mutable struct name
-                arg
-            end""") == str
+                reallylongfieldname
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 28
+
+
     end
 
     @testset "try" begin
@@ -2432,7 +2385,7 @@ end
 
         str = """
         struct Foo
-            body
+            body::Any
         end"""
         @test fmt("struct Foo\n    body  end") == str
 
@@ -2453,7 +2406,7 @@ end
 
         str = """
         mutable struct Foo
-            body
+            body::Any
         end"""
         @test fmt("mutable struct Foo\n    body  end") == str
 
@@ -2669,6 +2622,35 @@ end
             bar,
             baz"""
         @test fmt(str_, 4, 11) == str
+
+        str_ = """
+        using A,
+
+        B, C"""
+        str = "using A, B, C"
+        @test fmt(str_) == str
+
+        str_ = """
+        using A,
+                  # comment
+        B, C"""
+        str = """
+        using A,
+          # comment
+          B,
+          C"""
+        @test fmt(str_, 2, 80) == str
+
+        str_ = """
+        using A,  #inline
+                  # comment
+        B, C#inline"""
+        str = """
+        using A,  #inline
+          # comment
+          B,
+          C#inline"""
+        @test fmt(str_, 2, 80) == str
 
         str = """
         @somemacro function (fcall_ | fcall_)
@@ -2993,98 +2975,98 @@ end
 
     @testset "nesting line offset" begin
         str = "a - b + c * d"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 5
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "c ? e1 : e2"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 2
-        s = run_nest(str, 8)
+        _, s = run_nest(str, 8)
         @test s.line_offset == 2
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 2
 
         str = "c1 ? e1 : c2 ? e2 : c3 ? e3 : c4 ? e4 : e5"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 32
-        s = run_nest(str, 30)
+        _, s = run_nest(str, 30)
         @test s.line_offset == 22
-        s = run_nest(str, 20)
+        _, s = run_nest(str, 20)
         @test s.line_offset == 12
-        s = run_nest(str, 10)
+        _, s = run_nest(str, 10)
         @test s.line_offset == 2
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 2
 
         str = "f(a, b, c) where {A,B,C}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 15
-        s = run_nest(str, 14)
+        _, s = run_nest(str, 14)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where Union{A,B,C}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 20
-        s = run_nest(str, 19)
+        _, s = run_nest(str, 19)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         # adds surrounding {...} after `where`
         @test s.line_offset == length(str)
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A<:S}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 14
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where Union{A,B,Union{C,D,E}}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 31
-        s = run_nest(str, 30)
+        _, s = run_nest(str, 30)
         @test s.line_offset == 1
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "f(a, b, c) where {A,{B, C, D},E}"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
         str = "(a, b, c, d)"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 1
 
         str = "a, b, c, d"
-        s = run_nest(str, 100)
+        _, s = run_nest(str, 100)
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 1
 
         str = """
@@ -3094,21 +3076,21 @@ end
                 name_::T_ => (name, T)
                 x_ => (x, :Any)
             end"""
-        s = run_nest(str, 96)
+        _, s = run_nest(str, 96)
         @test s.line_offset == 3
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 7
 
         str = "prettify(ex; lines = false) = ex |> (lines ? identity : striplines) |> flatten |> unresolve |> resyntax |> alias_gensyms"
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 17
 
         str = "foo() = a + b"
-        s = run_nest(str, length(str))
+        _, s = run_nest(str, length(str))
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 9
-        s = run_nest(str, 1)
+        _, s = run_nest(str, 1)
         @test s.line_offset == 5
 
         str_ = """
@@ -3145,30 +3127,30 @@ end
 
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
-        s = run_nest(str, length(str))
+        _, s = run_nest(str, length(str))
         @test s.line_offset == length(str)
-        s = run_nest(str, length(str) - 1)
+        _, s = run_nest(str, length(str) - 1)
         @test s.line_offset == 74
-        s = run_nest(str, 73)
+        _, s = run_nest(str, 73)
         @test s.line_offset == 9
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,
                :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 1
 
         str = """this_is_a_long_variable_name = (:numberofpointattributes => NAttributes,
                :numberofpointmtrs => NMTr, :numberofcorners => NSimplex, :firstnumber => Cint(1),
                :mesh_dim => Cint(3),)"""
-        s = run_nest(str, 80)
+        _, s = run_nest(str, 80)
         @test s.line_offset == 1
 
         str = "import A: foo, bar, baz"
-        s = run_nest(str, 22)
+        _, s = run_nest(str, 22)
         @test s.line_offset == 17
-        s = run_nest(str, 16)
+        _, s = run_nest(str, 16)
         @test s.line_offset == 7
 
     end
@@ -4096,7 +4078,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
         str_ = """
@@ -4110,7 +4092,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
         str_ = """
@@ -4124,7 +4106,7 @@ some_function(
             end for i = 1:1
         ]"""
         @test fmt(str_) == str
-        s = run_nest(str_, 100)
+        _, s = run_nest(str_, 100)
         @test s.line_offset == 1
 
     end
@@ -4211,71 +4193,6 @@ some_function(
 
     end
 
-    @testset "whitespace typedefs option" begin
-        str_ = "Foo{A,B,C}"
-        str = "Foo{A, B, C}"
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = """
-        struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
-            a::A
-        end"""
-        str = """
-        struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
-            a::A
-        end"""
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = """
-        function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
-            body
-        end
-        """
-        str = """
-        function foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z}
-            body
-        end
-        """
-        @test fmt(str_, whitespace_typedefs = true) == str
-
-        str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
-        str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
-        @test fmt(str_, whitespace_typedefs = true) == str
-    end
-
-    @testset "whitespace ops in indices option" begin
-        str = "arr[1 + 2]"
-        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[(1 + 2)]"
-        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "arr[1:2*num_source*num_dump-1]"
-        str = "arr[1:(2 * num_source * num_dump - 1)]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "arr[2*num_source*num_dump-1:1]"
-        str = "arr[(2 * num_source * num_dump - 1):1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[(a + b):c]"
-        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
-
-        str = "arr[a in b]"
-        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
-
-        str_ = "a:b+c:d-e"
-        str = "a:(b + c):(d - e)"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-
-        # issue 180
-        str_ = "s[m+i+1]"
-        str = "s[m+i+1]"
-        @test fmt(str, m = 1) == str
-
-        str = "s[m + i + 1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
-    end
 
     @testset "BracesCat / Issue 150" begin
         str_ = "const SymReg{B,MT} = ArrayReg{B,Basic,MT} where {MT <:AbstractMatrix{Basic}}"
@@ -4741,6 +4658,701 @@ some_function(
             y_past = get_y(m),
         ) where {C <: Union{T, TGP <: AbstractGP{T}; IsMultiOutput{TGP}}} end"""
         @test fmt(str_, m = 92, whitespace_typedefs = true) == str
+
+    end
+
+
+end
+
+@testset "Format Options" begin
+    @testset "whitespace in typedefs" begin
+        str_ = "Foo{A,B,C}"
+        str = "Foo{A, B, C}"
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
+            a::A
+        end"""
+        str = """
+        struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
+            a::A
+        end"""
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = """
+        function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
+            body
+        end
+        """
+        str = """
+        function foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z}
+            body
+        end
+        """
+        @test fmt(str_, whitespace_typedefs = true) == str
+
+        str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
+        str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
+        @test fmt(str_, whitespace_typedefs = true) == str
+    end
+
+    @testset "whitespace ops in indices" begin
+        str = "arr[1 + 2]"
+        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(1 + 2)]"
+        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[1:2*num_source*num_dump-1]"
+        str = "arr[1:(2 * num_source * num_dump - 1)]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "arr[2*num_source*num_dump-1:1]"
+        str = "arr[(2 * num_source * num_dump - 1):1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[(a + b):c]"
+        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
+
+        str = "arr[a in b]"
+        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
+
+        str_ = "a:b+c:d-e"
+        str = "a:(b + c):(d - e)"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+
+        # issue 180
+        str_ = "s[m+i+1]"
+        str = "s[m+i+1]"
+        @test fmt(str, m = 1) == str
+
+        str = "s[m + i + 1]"
+        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+    end
+
+    @testset "rewrite import to using" begin
+        str_ = "import A"
+        str = "using A: A"
+        @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A,
+
+        B, C"""
+        str = """
+        using A: A
+        using B: B
+        using C: C"""
+        @test_broken fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A,
+               # comment
+        B, C"""
+        str = """
+        using A: A
+        # comment
+        using B: B
+        using C: C"""
+        @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import A, # inline
+               # comment
+        B, C # inline"""
+        str = """
+        using A: A # inline
+        # comment
+        using B: B
+        using C: C # inline"""
+        @test fmt(str_, import_to_using = true) == str
+
+        str_ = """
+        import ..A, .B, ...C"""
+        str = """
+        using ..A: A
+        using .B: B
+        using ...C: C"""
+        @test fmt(str_, import_to_using = true) == str
+        t = run_pretty(str_, 80, opts = Options(import_to_using = true))
+        @test t.len == 13
+    end
+
+    @testset "always convert `=` to `in` (for loops)" begin
+        str_ = """
+        for i = 1:n
+            println(i)
+        end"""
+        str = """
+        for i in 1:n
+            println(i)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = """
+        for i = I1, j in I2
+            println(i, j)
+        end"""
+        str = """
+        for i in I1, j in I2
+            println(i, j)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = """
+        for i = 1:30, j = 100:-2:1
+            println(i, j)
+        end"""
+        str = """
+        for i in 1:30, j in 100:-2:1
+            println(i, j)
+        end"""
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i,j) for i=I1,j=I2]"
+        str = "[(i, j) for i in I1, j in I2]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "((i,j) for i=I1,j=I2)"
+        str = "((i, j) for i in I1, j in I2)"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+    end
+
+    @testset "rewrite x |> f to f(x)" begin
+        @test fmt("x |> f", pipe_to_function_call = true) == "f(x)"
+
+        str_ = "var = func1(arg1) |> func2 |> func3 |> func4 |> func5"
+        str = "var = func5(func4(func3(func2(func1(arg1)))))"
+        @test fmt(str_, pipe_to_function_call = true) == str
+        @test fmt(str_, pipe_to_function_call = true, margin = 1) == fmt(str)
+    end
+
+    @testset "function shortdef to longdef" begin
+        str_ = "foo(a) = bodybodybody"
+        str = """
+        function foo(a)
+            bodybodybody
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+
+        str_ = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
+        str = """
+        function foo(a::T) where {T}
+            bodybodybodybodybodybodyb
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+
+        str_ = "foo(a::T)::R where {T} = bodybodybodybodybodybodybody"
+        str = """
+        function foo(a::T)::R where {T}
+            bodybodybodybodybodybodybody
+        end"""
+        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+    end
+
+    @testset "always use return" begin
+        str_ = "foo(a) = bodybodybody"
+        str = """
+        function foo(a)
+            return bodybodybody
+        end"""
+        @test fmt(
+            str_,
+            4,
+            length(str_) - 1,
+            short_to_long_function_def = true,
+            always_use_return = true,
+        ) == str
+
+        str_ = """
+        function foo()
+            expr1
+            expr2
+        end"""
+        str = """
+        function foo()
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+
+        str_ = """
+        macro foo()
+            expr1
+            expr2
+        end"""
+        str = """
+        macro foo()
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+
+        str_ = """
+        map(arg1, arg2) do x, y
+            expr1
+            expr2
+        end"""
+        str = """
+        map(arg1, arg2) do x, y
+            expr1
+            return expr2
+        end"""
+        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+    end
+
+end
+
+yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
+yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
+
+@testset "YAS style" begin
+    @testset "basic" begin
+        str_ = "foo(; k =v)"
+        str = "foo(; k=v)"
+        @test yasfmt(str_, 4, 80) == str
+
+        str_ = "( k1 =v1,  k2=v2)"
+        str = "(k1=v1, k2=v2)"
+        @test yasfmt(str_, 4, 80) == str
+
+        str_ = "a = (arg1, arg2, arg3)"
+        str = """
+        a = (arg1, arg2,
+             arg3)"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+        @test yasfmt(str_, 4, 16) == str
+
+        str = """
+        a = (arg1,
+             arg2,
+             arg3)"""
+        @test yasfmt(str_, 4, 15) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = [arg1, arg2, arg3]"
+        str = """
+        a = [arg1, arg2,
+             arg3]"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+        @test yasfmt(str_, 4, 16) == str
+
+        str = """
+        a = [arg1,
+             arg2,
+             arg3]"""
+        @test yasfmt(str_, 4, 15) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = {arg1, arg2, arg3}"
+        str = """
+        a = {arg1,arg2,arg3}"""
+        @test yasfmt(str_, 4, 20) == str
+
+        str = """
+        a = {arg1,arg2,
+             arg3}"""
+        @test yasfmt(str_, 4, 19) == str
+        @test yasfmt(str_, 4, 15) == str
+
+        str = """
+        a = {arg1,
+             arg2,
+             arg3}"""
+        @test yasfmt(str_, 4, 14) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = Union{arg1, arg2, arg3}"
+        str = """
+        a = Union{arg1,arg2,arg3}"""
+        @test yasfmt(str_, 4, 25) == str
+
+        str = """
+        a = Union{arg1,arg2,
+                  arg3}"""
+        @test yasfmt(str_, 4, 24) == str
+        @test yasfmt(str_, 4, 20) == str
+
+        str = """
+        a = Union{arg1,
+                  arg2,
+                  arg3}"""
+        @test yasfmt(str_, 4, 19) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = fcall(arg1,arg2,arg3)"
+        str = """
+        a = fcall(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = fcall(arg1, arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = fcall(arg1,
+                  arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = @call(arg1,arg2,arg3)"
+        str = """
+        a = @call(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = @call(arg1, arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = @call(arg1,
+                  arg2,
+                  arg3)"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = "a = array[arg1,arg2,arg3]"
+        str = """
+        a = array[arg1, arg2, arg3]"""
+        @test yasfmt(str_, 4, length(str)) == str
+
+        str = """
+        a = array[arg1, arg2,
+                  arg3]"""
+        @test yasfmt(str_, 4, 26) == str
+        @test yasfmt(str_, 4, 21) == str
+
+        str = """
+        a = array[arg1,
+                  arg2,
+                  arg3]"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = """
+        using Cassette: A, B, C"""
+        str = """
+        using Cassette: A,
+                        B,
+                        C"""
+        @test yasfmt(str_, 4, 1) == str
+    end
+
+    # more complicated samples
+    @testset "pretty" begin
+        str_ = "comp = [a * b for a in 1:10, b in 11:20]"
+        str = """
+        comp = [a * b
+                for a in 1:10, b in 11:20]"""
+        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 34, always_for_in = true) == str
+
+        str = """
+        comp = [a * b
+                for a in 1:10,
+                    b in 11:20]"""
+        @test yasfmt(str_, 2, 33, always_for_in = true) == str
+
+        str = """
+        comp = [a *
+                b
+                for a in
+                    1:10,
+                    b in
+                    11:20]"""
+        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+
+        str_ = "comp = Typed[a * b for a in 1:10, b in 11:20]"
+        str = """
+        comp = Typed[a * b
+                     for a in 1:10, b in 11:20]"""
+        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 39, always_for_in = true) == str
+
+        str = """
+        comp = Typed[a * b
+                     for a in 1:10,
+                         b in 11:20]"""
+        @test yasfmt(str_, 2, 38, always_for_in = true) == str
+
+        str = """
+        comp = Typed[a *
+                     b
+                     for a in
+                         1:10,
+                         b in
+                         11:20]"""
+        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+
+        str_ = "foo(arg1, arg2, arg3) == bar(arg1, arg2, arg3)"
+        str = """
+        foo(arg1, arg2, arg3) ==
+        bar(arg1, arg2, arg3)"""
+        @test yasfmt(str, 2, length(str_)) == str_
+        @test yasfmt(str_, 2, length(str_) - 1) == str
+        @test yasfmt(str_, 2, 24) == str
+
+        str = """
+        foo(arg1, arg2,
+            arg3) ==
+        bar(arg1, arg2, arg3)"""
+        @test yasfmt(str_, 2, 23) == str
+        @test yasfmt(str_, 2, 21) == str
+
+        str = """
+        foo(arg1, arg2,
+            arg3) ==
+        bar(arg1, arg2,
+            arg3)"""
+        @test yasfmt(str_, 2, 20) == str
+        @test yasfmt(str_, 2, 15) == str
+
+        str = """
+        foo(arg1,
+            arg2,
+            arg3) ==
+        bar(arg1,
+            arg2,
+            arg3)"""
+        @test yasfmt(str_, 2, 14) == str
+        @test yasfmt(str_, 2, 1) == str
+
+        str_ = """
+        function func(arg1::Type1, arg2::Type2, arg3) where {Type1,Type2}
+          body
+        end"""
+        str = """
+        function func(arg1::Type1, arg2::Type2,
+                      arg3) where {Type1,Type2}
+          body
+        end"""
+        @test yasfmt(str_, 2, 64) == str
+        @test yasfmt(str_, 2, 39) == str
+
+        str = """
+        function func(arg1::Type1,
+                      arg2::Type2,
+                      arg3) where {Type1,
+                                   Type2}
+          body
+        end"""
+        @test yasfmt(str_, 2, 31) == str
+        @test yasfmt(str_, 2, 1) == str
+
+        str_ = """
+        @test TimeSpan(spike_annotation) == TimeSpan(first(spike_annotation), last(spike_annotation))"""
+        str = """
+        @test TimeSpan(spike_annotation) ==
+              TimeSpan(first(spike_annotation), last(spike_annotation))"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+        @test yasfmt(str_, 4, 63) == str
+        str_ = """
+        @test TimeSpan(spike_annotation) == TimeSpan(first(spike_annotation), last(spike_annotation))"""
+        str = """
+        @test TimeSpan(spike_annotation) ==
+              TimeSpan(first(spike_annotation),
+                       last(spike_annotation))"""
+        @test yasfmt(str_, 4, 62) == str
+
+
+        str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+        @test yasfmt(str_, 4, 73) == str
+
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal;
+                                          channel_names=[:avl, :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, 72) == str
+        str = raw"""
+        ecg_signal = signal_from_template(eeg_signal;
+                                          channel_names=[:avl,
+                                                         :avr],
+                                          file_extension=Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, 1) == str
+
+
+    end
+
+    @testset "inline comments with arguments" begin
+        str_ = """
+        var = fcall(arg1,
+            arg2, arg3, # comment
+                            arg4, arg5)"""
+        str = """
+        var = fcall(arg1, arg2, arg3, # comment
+                    arg4, arg5)"""
+        @test yasfmt(str_, 4, 80) == str
+        @test yasfmt(str_, 4, 29) == str
+
+        str = """
+        var = fcall(arg1, arg2,
+                    arg3, # comment
+                    arg4, arg5)"""
+        @test yasfmt(str_, 4, 28) == str
+        @test yasfmt(str_, 4, 23) == str
+
+        str = """
+        var = fcall(arg1,
+                    arg2,
+                    arg3, # comment
+                    arg4,
+                    arg5)"""
+        @test yasfmt(str_, 4, 22) == str
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = """
+        comp = [
+        begin
+                    x = a * b + c
+                    y = x^2 + 3x # comment 1
+            end
+                       for a in 1:10,  # comment 2
+                    b in 11:20,
+           c in 300:400]"""
+
+        str = """
+        comp = [begin
+                  x = a * b + c
+                  y = x^2 + 3x # comment 1
+                end
+                for a = 1:10,  # comment 2
+                    b = 11:20, c = 300:400]"""
+        @test yasfmt(str_, 2, 80) == str
+        @test yasfmt(str_, 2, 35) == str
+
+        str = """
+        comp = [begin
+                  x = a * b + c
+                  y = x^2 + 3x # comment 1
+                end
+                for a = 1:10,  # comment 2
+                    b = 11:20,
+                    c = 300:400]"""
+        @test yasfmt(str_, 2, 34) == str
+
+        str_ = """
+        ys = ( if p1(x)
+                 f1(x)
+        elseif p2(x)
+            f2(x)
+        else
+            f3(x)
+        end for    x in xs)
+        """
+        str = """
+        ys = (if p1(x)
+                f1(x)
+              elseif p2(x)
+                f2(x)
+              else
+                f3(x)
+              end
+              for x in xs)
+        """
+        @test yasfmt(str_, 2, 80) == str
+
+
+        str_ = """spike_annotation = first(ann for ann in recording.annotations if ann.value == "epileptiform_spike")"""
+        str = """
+        spike_annotation = first(ann
+                                 for ann in recording.annotations
+                                 if ann.value == "epileptiform_spike")"""
+        @test yasfmt(str_, 2, 80) == str
+
+        # only that
+        str_ = "foo(a, b) = (arg1, arg2, arg3)"
+        str = """
+        foo(a, b) = (arg1, arg2,
+                     arg3)"""
+        @test yasfmt(str_, 2, length(str_) - 1) == str
+
+        str = """
+        foo(a, b) = (arg1,
+                     arg2,
+                     arg3)"""
+        @test yasfmt(str_, 2, 1) == str
+
+        str_ = """
+        fooooooooooooooooooo(arg1, arg2, 
+        x -> begin
+        body
+        end
+        )"""
+        str = """
+        fooooooooooooooooooo(arg1, arg2,
+                             x -> begin
+                                 body
+                             end)"""
+        @test yasfmt(str_, 4, 32) == str
+
+    end
+
+    @testset "inline comments with arguments" begin
+        # parsing error is newline is placed front of `for` here
+        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str = """
+        var = (x, y) for x = 1:10,
+                         y = 1:10"""
+        @test yasfmt(str_, 4, length(str_) - 1) == str
+    end
+
+    @testset "invisbrackets" begin
+        str_ = """
+        if ((
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+          aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        ))
+          nothing
+        end"""
+        str = """
+        if ((aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ||
+             aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa))
+          nothing
+        end"""
+        @test yasfmt(str_, 2, 92) == str
+    end
+
+    @testset "#189" begin
+        str_ = """
+    D2 = [
+            (b_hat * y - delta_hat[i] * y) * gamma[i] + (b * y_hat - delta[i] * y_hat) *
+                                                            gamma_hat[i] + (b_hat - y_hat) *
+                                                                           delta[i] + (b - y) *
+                                                                                      delta_hat[i] - delta[i] * delta_hat[i]
+            for i = 1:8
+        ]"""
+        str = """
+        D2 = [(b_hat * y - delta_hat[i] * y) * gamma[i] +
+              (b * y_hat - delta[i] * y_hat) * gamma_hat[i] +
+              (b_hat - y_hat) * delta[i] +
+              (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
+              for i = 1:8]"""
+        @test yasfmt(str_, 2, 60) == str
 
     end
 
