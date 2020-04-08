@@ -410,17 +410,25 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     add_node!(t, Whitespace(1), s)
                 end
             else
-                add_node!(t, n, s, join_lines = true, max_padding = 0)
+                padding = n.endline == n.startline ? -1 : 0
+                add_node!(t, n, s, join_lines = true, max_padding = padding)
                 i < length(cst) && add_node!(t, Whitespace(1), s)
             end
         else
             if has_closer
                 add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, n, s, join_lines = true, max_padding = 0)
+                padding = n.endline == n.startline ? -1 : 0
+                add_node!(t, n, s, join_lines = true, max_padding = padding)
             end
         end
     end
+    # move placement of @ to the end
+    #
+    # @Module.macro -> Module.@macro
+    t[1] = move_at_sign_to_the_end(t[1], s)
+
+    !has_closer && (t.typ = MacroBlock)
     t
 end
 p_macrocall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
