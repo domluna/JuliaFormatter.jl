@@ -536,20 +536,12 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     if line_margin > s.margin || fst.force_nest
         line_offset = s.line_offset
-        # after "A where "
-        idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-        Blen = sum(length.(fst[idx+1:end]))
+        Blen = sum(length.(fst[2:end]))
 
-        # A, +7 is the length of " where "
-        fst[1].extra_margin = Blen + 7 + fst.extra_margin
+        fst[1].extra_margin = Blen + fst.extra_margin
         nest!(style, fst[1], s)
 
-        for (i, n) in enumerate(fst[2:idx-1])
-            nest!(style, n, s)
-        end
-
         # "B"
-
         has_braces = is_closer(fst[end])
         if has_braces
             fst[end].indent = fst.indent
@@ -557,8 +549,7 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         over = (s.line_offset + Blen + fst.extra_margin > s.margin) || fst.force_nest
         fst.indent += s.indent_size
-
-        for (i, n) in enumerate(fst[idx+1:end])
+        for (i, n) in enumerate(fst[2:end])
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif is_opener(n)
@@ -568,7 +559,7 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
                 end
                 nest!(style, n, s)
             elseif n.typ === PLACEHOLDER && over
-                fst[i+idx] = Newline(length = n.len)
+                fst[i+1] = Newline(length = length(n))
                 s.line_offset = fst.indent
             elseif n.typ === TRAILINGCOMMA && over
                 n.val = ","
