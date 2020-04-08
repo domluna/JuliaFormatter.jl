@@ -37,6 +37,27 @@ function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
+function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
+    add_node!(t, pretty(ys, cst[1], s), s)
+    add_node!(t, Whitespace(1), s)
+
+    for (i, a) in enumerate(cst.args[2:end])
+        if CSTParser.is_comma(a)
+            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        elseif CSTParser.is_colon(a)
+            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+        else
+            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+        end
+    end
+    t
+end
+@inline p_using(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_import(ys, cst, s)
+@inline p_export(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_import(ys, cst, s)
+
 function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
@@ -422,7 +443,13 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
 end
 
 function n_using!(ys::YASStyle, fst::FST, s::State)
-    fst.indent = s.line_offset + sum(length.(fst[1:2]))
+    idx = findfirst(n -> n.val == ":", fst.nodes)
+    fst.indent = s.line_offset
+    if idx === nothing
+        fst.indent += sum(length.(fst[1:2]))
+    else
+        fst.indent += sum(length.(fst[1:idx+1]))
+    end
     for (i, n) in enumerate(fst.nodes)
         if n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
