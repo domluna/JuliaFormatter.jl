@@ -80,3 +80,28 @@ foo(x::T) where {T} = ...
 ```
 
 See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/53) for more details.
+
+## Annotate unannotated type fields with `Any`
+
+```julia
+struct Foo
+    field
+end
+
+->
+
+struct Foo
+    field::Any
+end
+```
+
+## Move `@` in macro calls to the final identifier
+
+
+```julia
+@Module.macro
+
+->
+
+Module.@macro
+```
