@@ -184,6 +184,14 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === CSTParser.ConditionalOpCall
         n_conditionalopcall!(style, fst, s)
     elseif fst.typ === CSTParser.BinaryOpCall
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.short_to_long_function_def &&
+           line_margin > s.margin &&
+           fst.ref !== nothing &&
+           CSTParser.defines_function(fst.ref[])
+
+            short_to_long_function_def!(fst, s)
+        end
         n_binaryopcall!(style, fst, s)
     elseif fst.typ === CSTParser.Curly
         n_curly!(style, fst, s)
