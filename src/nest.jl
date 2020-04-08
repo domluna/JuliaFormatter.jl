@@ -24,20 +24,24 @@ function skip_indent(fst::FST)
     false
 end
 
-function walk(f, fst::FST, s::State)
-    f(fst, s)
-    is_leaf(fst) && return
-    for (i, n) in enumerate(fst.nodes)
-        if n.typ === NEWLINE && i < length(fst.nodes)
-            if is_closer(fst[i+1])
-                s.line_offset = fst[i+1].indent
-            elseif !skip_indent(fst[i+1])
-                s.line_offset = fst.indent
+function walk(f, nodes::Vector{FST}, s::State, indent::Int)
+    for (i, n) in enumerate(nodes)
+        if n.typ === NEWLINE && i < length(nodes)
+            if is_closer(nodes[i+1])
+                s.line_offset = nodes[i+1].indent
+            elseif !skip_indent(nodes[i+1])
+                s.line_offset = indent
             end
         else
             walk(f, n, s)
         end
     end
+end
+
+function walk(f, fst::FST, s::State)
+    f(fst, s)
+    is_leaf(fst) && return
+    walk(f, fst.nodes, s, fst.indent)
 end
 
 function reset_line_offset!(fst::FST, s::State)
@@ -94,16 +98,41 @@ function dedent!(fst::FST, s::State)
     unnest!(fst, nl_inds)
 end
 
-function nest_if_over_margin!(style, fst::FST, s::State, i::Int)
-    margin = s.line_offset
-    idx = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-    margin += sum(length.(fst[i:end])) + fst.extra_margin
+"""
+    nest_if_over_margin!(
+        style,
+        fst::FST,
+        s::State,
+        idx::Int;
+        stop_idx::Union{Int,Nothing} = nothing,
+    )
 
-    if margin > s.margin || is_comment(fst[i+1]) || is_comment(fst[i-1])
-        fst[i] = Newline(length = fst[i].len)
+Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than
+the allowed margin.
+
+If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will
+be included.
+"""
+function nest_if_over_margin!(
+    style,
+    fst::FST,
+    s::State,
+    idx::Int;
+    stop_idx::Union{Int,Nothing} = nothing,
+)
+    @assert fst[idx].typ == PLACEHOLDER
+    margin = s.line_offset
+    if stop_idx === nothing
+        margin += sum(length.(fst[idx:end])) + fst.extra_margin
+    else
+        margin += sum(length.(fst[idx:stop_idx-1]))
+    end
+
+    if margin > s.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
+        fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent
     else
-        nest!(style, fst[i], s)
+        nest!(style, fst[idx], s)
     end
 end
 
