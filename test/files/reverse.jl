@@ -65,7 +65,8 @@ end
 
 is_literal_getindex(ex) =
     iscall(ex, Base, :getindex) &&
-    length(ex.args) == 3 && ex.args[3] isa Union{Integer,QuoteNode}
+    length(ex.args) == 3 &&
+    ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_getindex!(ir, v, ex)
     is_literal_getindex(ex) ?
@@ -75,7 +76,8 @@ end
 
 is_literal_iterate(ex) =
     iscall(ex, Base, :indexed_iterate) &&
-    length(ex.args) >= 3 && ex.args[3] isa Union{Integer,QuoteNode}
+    length(ex.args) >= 3 &&
+    ex.args[3] isa Union{Integer,QuoteNode}
 
 function instrument_iterate!(ir, v, ex)
     is_literal_iterate(ex) ?
