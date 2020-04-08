@@ -175,6 +175,10 @@ Base.@kwdef struct Options
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
     remove_extra_newlines::Bool = false
+    import_to_using::Bool = false
+    pipe_to_function_call::Bool = false
+    short_to_long_function_def::Bool = false
+    always_use_return::Bool = false
 end
 
 mutable struct State
@@ -184,8 +188,9 @@ mutable struct State
     offset::Int
     line_offset::Int
     margin::Int
-    # If true will output the formatted text
-    # otherwise will output the current text
+
+    # If true, output is formatted text otherwise
+    # it's source text
     on::Bool
     opts::Options
 end
@@ -218,6 +223,7 @@ DefaultStyle() = DefaultStyle(nothing)
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 include("fst.jl")
+include("passes.jl")
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
@@ -228,36 +234,52 @@ include("styles/yas.jl")
         text::AbstractString;
         indent::Int = 4,
         margin::Int = 92,
+        style::AbstractStyle = DefaultStyle(),
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
-        style::AbstractStyle = DefaultStyle(),
+        import_to_using::Bool = false,
+        pipe_to_function_call::Bool = false,
+        short_to_long_function_def::Bool = false,
+        always_use_return::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
 code as another string.
 
-### Formatting Options
+## Formatting Options
 
-`indent` - the number of spaces used for an indentation.
+### `indent`
 
-`margin` - the maximum length of a line. Code exceeding this margin will be formatted
-across multiple lines.
+The number of spaces used for an indentation.
 
-If `always_for_in` is true `=` is always replaced with `in` if part of a
-`for` loop condition.  For example, `for i = 1:10` will be transformed
-to `for i in 1:10`.
+### `margin`
 
-If `whitespace_typedefs` is true, whitespace is added for type definitions.
-Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+The maximum length of a line. Code exceeding this margin will
+be formatted across multiple lines.
 
-If `whitespace_ops_in_indices` is true, whitespace is added for binary operations
-in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
+### `always_for_in`
+
+If true `=` is always replaced with `in` if part of a `for` loop condition.
+For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+
+### `whitespace_typedefs`
+
+If true, whitespace is added for type definitions. Make this `true`
+if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+
+### `whitespace_ops_in_indices`
+
+If true, whitespace is added for binary operations in indices. Make this
+`true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's
+a colon `:` involved, parenthesis will be added to the LHS and RHS.
 
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
-If `remove_extra_newlines` is true superflous newlines will be removed. For example:
+### `remove_extra_newlines`
+
+If true superflous newlines will be removed. For example:
 
 ```julia
 a = 1
@@ -274,16 +296,84 @@ a = 1
 
 b = 2
 ```
+
+### `import_to_using`
+
+If true `import` expressions are rewritten to `using` expressions
+in the following cases:
+
+```julia
+import A
+
+import A, B, C
+```
+
+is rewritten to:
+
+```julia
+using A: A
+
+using A: A
+using B: B
+using C: C
+```
+
+### `pipe_to_function_call`
+
+If true `f |> x` is rewritten to `f(x)`.
+
+### `short_to_long_function_def`
+
+Transforms a _short_ function definition
+
+```julia
+f(arg1, arg2) = body
+```
+
+to a _long_ function definition
+
+```julia
+function f(arg2, arg2)
+    body
+end
+```
+
+### `always_use_return`
+
+If true `return` will be prepended to the last expression where
+applicable in function definitions, macro definitions, and do blocks.
+
+Example:
+
+```julia
+function foo()
+    expr1
+    expr2
+end
+```
+
+to
+
+```julia
+function foo()
+    expr1
+    return expr2
+end
+```
 """
 function format_text(
     text::AbstractString;
     indent::Int = 4,
     margin::Int = 92,
+    style::AbstractStyle = DefaultStyle(),
     always_for_in::Bool = false,
     whitespace_typedefs::Bool = false,
     whitespace_ops_in_indices::Bool = false,
     remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
 )
     isempty(text) && return text
 
@@ -298,10 +388,17 @@ function format_text(
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
         remove_extra_newlines = remove_extra_newlines,
+        import_to_using = import_to_using,
+        pipe_to_function_call = pipe_to_function_call,
+        short_to_long_function_def = short_to_long_function_def,
+        always_use_return = always_use_return,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
+
+    opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
+
     flatten_fst!(t)
     nest!(style, t, s)
 
@@ -334,13 +431,7 @@ end
         filename::AbstractString;
         overwrite::Bool = true,
         verbose::Bool = false,
-        indent::Integer = 4,
-        margin::Integer = 92,
-        always_for_in::Bool = false,
-        whitespace_typedefs::Bool = false,
-        whitespace_ops_in_indices::Bool = false,
-        remove_extra_newlines::Bool = false,
-        style::AbstractStyle = DefaultStyle(),
+        format_options...,
     )
 
 Formats the contents of `filename` assuming it's a Julia source file.
@@ -362,13 +453,7 @@ function format_file(
     filename::AbstractString;
     overwrite::Bool = true,
     verbose::Bool = false,
-    indent::Integer = 4,
-    margin::Integer = 92,
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    style::AbstractStyle = DefaultStyle(),
+    format_options...,
 )
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
@@ -377,16 +462,7 @@ function format_file(
     end
     verbose && println("Formatting $filename")
     str = String(read(filename))
-    str = format_text(
-        str,
-        indent = indent,
-        margin = margin,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        style = style,
-    )
+    str = format_text(str; format_options...)
     str = replace(str, r"\n*$" => "\n")
     overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
     nothing
@@ -435,17 +511,13 @@ end
 """
     format(
         paths; # a path or collection of paths
-        indent::Integer = 4,
-        margin::Integer = 92,
-        overwrite::Bool = true,
-        verbose::Bool = false,
-        always_for_in::Bool = false,
-        remove_extra_newlines = false,
-        style = DefaultStyle(),
+        options...,
     )
 
 Recursively descend into files and directories, formatting any `.jl`
 files by calling `format_file` on them.
+
+See `format_file` and `format_text` for a description of the options.
 """
 function format(paths; options...)
     for path in paths
