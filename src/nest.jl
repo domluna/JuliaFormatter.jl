@@ -475,6 +475,7 @@ function n_call!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
+
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
         fst[end].indent = fst.indent

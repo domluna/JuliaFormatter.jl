@@ -43,4 +43,3 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 include("default_style.jl")
 include("yas_style.jl")
 include("options.jl")
-

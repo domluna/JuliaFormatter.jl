@@ -354,7 +354,6 @@ end
 @inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tupleh!(ys::YASStyle, fst::FST, s::State)
-    # @info "" fst.typ fst.indent s.line_offset
     fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
