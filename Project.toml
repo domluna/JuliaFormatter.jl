@@ -6,6 +6,7 @@ version = "0.4.2"
 [deps]
 CSTParser = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
