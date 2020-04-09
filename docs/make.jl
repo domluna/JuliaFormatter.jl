@@ -11,6 +11,7 @@ makedocs(
         "Skipping Formatting" => "skipping_formatting.md",
         "Syntax Transforms" => "transforms.md",
         "Custom Styles" => "custom_styles.md",
+        "YAS Style" => "yas_style.md",
         "API Reference" => "api.md",
     ],
 )
