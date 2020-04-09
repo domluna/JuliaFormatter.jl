@@ -3,6 +3,7 @@ module JuliaFormatter
 using CSTParser
 using Tokenize
 using DataStructures
+using Pkg.TOML: parsefile
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
@@ -447,7 +448,7 @@ to `stdout`.
 
 ### Formatting Options
 
-See `format_text` for description of formatting options.
+See [`format_text`](@ref) for description of formatting options.
 """
 function format_file(
     filename::AbstractString;
@@ -517,20 +518,37 @@ end
 Recursively descend into files and directories, formatting any `.jl`
 files by calling `format_file` on them.
 
-See `format_file` and `format_text` for a description of the options.
+See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
+
+If there is `.JuliaFormatter.toml` found, the configurations in the file will overwrite the
+given `options` when formatting files in or below the directory where it appears.
 """
 function format(paths; options...)
+    config_depth = typemax(Int)
+    config = ()
     for path in paths
         if isfile(path)
             format_file(path; options...)
         else
             for (root, dirs, files) in walkdir(path)
                 for file in files
+                    if file == ".JuliaFormatter.toml"
+                        full_path = joinpath(root, file)
+                        config_depth = length(splitpath(full_path))
+                        config = parse_config(full_path)
+                        continue
+                    end
                     _, ext = splitext(file)
                     ext == ".jl" || continue
                     full_path = joinpath(root, file)
-                    ".git" in splitpath(full_path) && continue
-                    format_file(full_path; options...)
+                    ps = splitpath(full_path)
+                    ".git" in ps && continue
+                    opts = if config_depth ≤ length(ps)
+                        overwrote_options(options, config)
+                    else
+                        options
+                    end
+                    format_file(full_path; opts...)
                 end
             end
         end
@@ -538,5 +556,15 @@ function format(paths; options...)
     nothing
 end
 format(path::AbstractString; options...) = format((path,); options...)
+
+function kwargs(dict)
+    ns = (Symbol.(keys(dict))...,)
+    vs = (collect(values(dict))...,)
+    return pairs(NamedTuple{ns}(vs))
+end
+
+parse_config(tomlfile) = kwargs(parsefile(tomlfile))
+
+overwrote_options(options, config) = kwargs(merge(options, config))
 
 end
