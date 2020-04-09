@@ -410,7 +410,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     add_node!(t, Whitespace(1), s)
                 end
             else
-                padding = n.endline == n.startline ? -1 : 0
+                padding = is_block(n) ? 0 : -1
                 add_node!(t, n, s, join_lines = true, max_padding = padding)
                 i < length(cst) && add_node!(t, Whitespace(1), s)
             end
@@ -418,7 +418,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             if has_closer
                 add_node!(t, n, s, join_lines = true)
             else
-                padding = n.endline == n.startline ? -1 : 0
+                padding = is_block(n) ? 0 : -1
                 add_node!(t, n, s, join_lines = true, max_padding = padding)
             end
         end
