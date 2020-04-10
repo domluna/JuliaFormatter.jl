@@ -151,7 +151,7 @@ using C: C
 
 #### `pipe_to_function_call`
 
-If true `f |> x` is rewritten to `f(x)`.
+If true `x |> f` is rewritten to `f(x)`.
 
 #### `short_to_long_function_def`
 
