@@ -1,5 +1,5 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle, YASStyle, Options
+using JuliaFormatter: DefaultStyle, YASStyle, Options, CONFIG_FILE_NAME
 using CSTParser
 using Test
 
@@ -43,3 +43,4 @@ yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 include("default_style.jl")
 include("yas_style.jl")
 include("options.jl")
+include("config.jl")
