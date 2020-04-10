@@ -509,6 +509,8 @@ if VERSION < v"1.1.0"
     end
 end
 
+const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
+
 """
     format(
         paths; # a path or collection of paths
@@ -524,26 +526,37 @@ If there is `.JuliaFormatter.toml` found, the configurations in the file will ov
 given `options` when formatting files in or below the directory where it appears.
 """
 function format(paths; options...)
-    config_depth = typemax(Int)
-    config = ()
     for path in paths
         if isfile(path)
-            format_file(path; options...)
+            dir = dirname(path)
+            opts = if (config = search_config(dir)) !== nothing
+                overwrote_options(options, config)
+            else
+                options
+            end
+            format_file(path; opts...)
         else
+            depth2config = Dict()
             for (root, dirs, files) in walkdir(path)
+                # to make sure we first respect configuration if exist
+                if (config = search_config(root)) !== nothing
+                    depth = get_path_depth(root)
+                    depth2config[depth] = (root, config)
+                end
+
                 for file in files
-                    if file == ".JuliaFormatter.toml"
-                        full_path = joinpath(root, file)
-                        config_depth = length(splitpath(full_path))
-                        config = parse_config(full_path)
-                        continue
-                    end
                     _, ext = splitext(file)
                     ext == ".jl" || continue
                     full_path = joinpath(root, file)
-                    ps = splitpath(full_path)
-                    ".git" in ps && continue
-                    opts = if config_depth ≤ length(ps)
+                    ".git" in splitpath(full_path) && continue
+                    current_depth = get_path_depth(root)
+                    valid_depths = sort!(filter!(d->d≤current_depth, collect(keys(depth2config))); rev = true)
+                    i = findfirst(valid_depths) do depth
+                        config_dir, _ = depth2config[depth]
+                        return startswith(full_path, config_dir)
+                    end
+                    opts = if i !== nothing
+                        _, config = depth2config[valid_depths[i]]
                         overwrote_options(options, config)
                     else
                         options
@@ -556,6 +569,18 @@ function format(paths; options...)
     nothing
 end
 format(path::AbstractString; options...) = format((path,); options...)
+
+function search_config(dir)
+    files = readdir(dir)
+    return if CONFIG_FILE_NAME in files
+        full_path = joinpath(dir, CONFIG_FILE_NAME)
+        parse_config(full_path)
+    else
+        nothing
+    end
+end
+
+get_path_depth(path) = length(splitpath(path))
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)
