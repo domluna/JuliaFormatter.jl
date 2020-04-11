@@ -530,7 +530,7 @@ function format(paths; options...)
         if isfile(path)
             dir = dirname(path)
             opts = if (config = search_config(dir)) !== nothing
-                overwrote_options(options, config)
+                overwrite_options(options, config)
             else
                 options
             end
@@ -557,7 +557,7 @@ function format(paths; options...)
                     end
                     opts = if i !== nothing
                         _, config = depth2config[valid_depths[i]]
-                        overwrote_options(options, config)
+                        overwrite_options(options, config)
                     else
                         options
                     end
@@ -590,6 +590,6 @@ end
 
 parse_config(tomlfile) = kwargs(parsefile(tomlfile))
 
-overwrote_options(options, config) = kwargs(merge(options, config))
+overwrite_options(options, config) = kwargs(merge(options, config))
 
 end
