@@ -36,11 +36,11 @@ end
     config4 = "indent = 4"
     config2 = "indent = 2"
 
-    # test basic
-    # basic_test
+    # test basic configuration case
+    # test_basic_config
     # ├─ .JuliaFormatter.toml (config2)
     # └─ code.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "basic_test")
+    sandbox_dir = joinpath(@__DIR__, "test_basic_config")
     try
         mkdir(sandbox_dir)
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
@@ -54,13 +54,13 @@ end
         rm(sandbox_dir; recursive = true)
     end
 
-    # test rules only applies to sub directory
-    # subdir_test
+    # test configs only applies to a sub directory
+    # test_subdir_config
     # ├─ code.jl (before -> after4)
     # └─ sub
     #    ├─ .JuliaFormatter.toml (config2)
     #    └─ sub_code.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "subdir_test")
+    sandbox_dir = joinpath(@__DIR__, "test_subdir_config")
     try
         mkdir(sandbox_dir)
         sub_dir = joinpath(sandbox_dir, "sub")
@@ -80,7 +80,7 @@ end
     end
 
     # test configs defined in nested way
-    # sandbox_dir
+    # test_nested_config
     # ├─ .JuliaFormatter.toml (config2)
     # ├─ code.jl (before -> after2)
     # ├─ sub1
@@ -88,7 +88,7 @@ end
     # │  └─ sub_code1.jl (before -> after4)
     # └─ sub2
     #    └─ sub_code2.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_nested")
+    sandbox_dir = joinpath(@__DIR__, "test_nested_config")
     try
         mkdir(sandbox_dir)
         sub1_dir = joinpath(sandbox_dir, "sub1")
