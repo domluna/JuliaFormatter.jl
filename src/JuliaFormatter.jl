@@ -550,7 +550,10 @@ function format(paths; options...)
                     full_path = joinpath(root, file)
                     ".git" in splitpath(full_path) && continue
                     current_depth = get_path_depth(root)
-                    valid_depths = sort!(filter!(d->d≤current_depth, collect(keys(depth2config))); rev = true)
+                    valid_depths = sort!(
+                        filter!(d -> d ≤ current_depth, collect(keys(depth2config)));
+                        rev = true,
+                    )
                     i = findfirst(valid_depths) do depth
                         config_dir, _ = depth2config[depth]
                         return startswith(full_path, config_dir)
