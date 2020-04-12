@@ -528,7 +528,7 @@ given `options` when formatting files in or below the directory where it appears
 function format(paths; options...)
     for path in paths
         if isfile(path)
-            dir = dirname(path)
+            dir = dirname(realpath(path))
             opts = if (config = search_config(dir)) !== nothing
                 overwrite_options(options, config)
             else
