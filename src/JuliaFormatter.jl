@@ -588,7 +588,15 @@ function kwargs(dict)
     return pairs(NamedTuple{ns}(vs))
 end
 
-parse_config(tomlfile) = kwargs(parsefile(tomlfile))
+function parse_config(tomlfile)
+    config_dict = parsefile(tomlfile)
+    if (style = get(config_dict, "style", nothing)) !== nothing
+        @assert (style == "default" || style == "yas") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" for the style configuration"
+        config_dict["style"] =
+            (style == "yas" && @isdefined(YASStyle)) ? YASStyle() : DefaultStyle()
+    end
+    return kwargs(config_dict)
+end
 
 overwrite_options(options, config) = kwargs(merge(options, config))
 
