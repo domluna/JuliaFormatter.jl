@@ -4704,16 +4704,16 @@ some_function(
         ```
 
         ```jldoctest
-        julia> a =  1
+        julia> a = 1
         1
 
-        julia> b  = 2;
+        julia> b = 2;
 
-        julia>  a + b
+        julia> a + b
         3
 
         julia> function test(x)
-               x + 1
+                   x + 1
                end
         ```
         \"""
