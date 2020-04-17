@@ -347,11 +347,55 @@ end
 p_stringh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_stringh(DefaultStyle(style), cst, s)
 
+
+format_docstrings!(something_else) = nothing
+
+function format_docstrings!(document::MD)
+    for clause in document.content
+        format_docstrings!(clause)
+    end
+    nothing
+end
+
+function format_docstrings!(doctest::Code)
+    language = doctest.language
+    code = doctest.code
+    doctest.code = if startswith(language, "@example") ||
+        startswith(language, "@repl") ||
+        startswith(language, "@eval")
+        format_text(code)
+    elseif startswith(language, "jldoctest")
+        if occursin(r"^julia> "m, code)
+            join(
+                (
+                    string("julia> ", join(
+                        (
+                            line for line in split(format_text(input), '\n')
+                        ),
+                        "\n       "
+                    )) for (input, output) in repl_splitter(code)
+                ),
+                "\n\n"
+            )
+        else
+            an_input, output = split(code, "# output\n", limit = 2)
+            string(format_text(String(an_input)),  "# output\n", output)
+        end
+    else
+        code
+    end
+    nothing
+end
+
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     if cst[1].typ === CSTParser.GlobalRefDoc
+        # format docstrings
+        docstring = Markdown.parse(cst[2].val)
+        format_docstrings!(docstring)
+        cst[2].val = plain(docstring)
         # cst[1] is empty and fullspan is 0 so we can skip it
         if cst[2].typ === CSTParser.LITERAL
             add_node!(t, p_literal(style, cst[2], s), s, max_padding = 0)

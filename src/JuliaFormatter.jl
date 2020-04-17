@@ -3,6 +3,9 @@ module JuliaFormatter
 using CSTParser
 using Tokenize
 using DataStructures
+using Documenter.DocTests: repl_splitter
+import Markdown
+using Markdown: MD, Code, plain
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 

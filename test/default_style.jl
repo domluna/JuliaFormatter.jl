@@ -4274,7 +4274,7 @@ some_function(
             a &&
 
 
-        b &&  
+        b &&
         c"""
         str = """var = a && b && c"""
         @test fmt(str_) == str
@@ -4286,7 +4286,7 @@ some_function(
             a ?
 
 
-        b :          
+        b :
 
 
 
@@ -4301,7 +4301,7 @@ some_function(
             a +
 
 
-        b +          
+        b +
 
 
 
@@ -4316,7 +4316,7 @@ some_function(
             a   ==
 
 
-        b   ==          
+        b   ==
 
 
 
@@ -4645,4 +4645,80 @@ some_function(
         @test fmt(str_) == str
     end
 
+    @testset "Format docstrings" begin
+        unformatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a =  1
+         b  = 2
+         a + b
+        ```
+
+        ```jldoctest
+        a =  1
+        b  = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a =  1
+        1
+
+        julia> b  = 2;
+
+        julia>  a + b
+        3
+
+        julia> function test(x)
+               x + 1
+               end
+        ```
+        \"""
+        function test(x) x end
+        """
+
+        formatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a =  1
+         b  = 2
+         a + b
+        ```
+
+        ```jldoctest
+        a = 1
+        b = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a =  1
+        1
+
+        julia> b  = 2;
+
+        julia>  a + b
+        3
+
+        julia> function test(x)
+               x + 1
+               end
+        ```
+        \"""
+        function test(x) x end
+        """
+        @test fmt(unformatted) == formatted
+    end
 end
