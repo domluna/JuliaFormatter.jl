@@ -1,5 +1,5 @@
-using Main.JuliaFormatter
-using Main.JuliaFormatter: DefaultStyle, YASStyle, Options
+using JuliaFormatter
+using JuliaFormatter: DefaultStyle, YASStyle, Options
 using CSTParser
 using Test
 
