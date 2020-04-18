@@ -522,44 +522,45 @@ files by calling `format_file` on them.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
-If there is `.JuliaFormatter.toml` found, the configurations in the file will overwrite the
-given `options` when formatting files in or below the directory where it appears.
+This function will look for `.JuliaFormatter.toml` in the location of the file being
+formatted, and searching _up_ the file tree until a config file is (or isn't) found.
+When found, the configurations in the file will overwrite the given `options`.
+See ["Configuration File"](@id) for more details.
 """
 function format(paths; options...)
+    dir2config = Dict{String,Any}()
+    function find_config_file(dir)
+        next_dir = dirname(dir)
+        config = if (next_dir == dir || # ensure to escape infinite recursion
+                     isempty(dir)) # reached to the system root
+            nothing
+        elseif haskey(dir2config, dir)
+            dir2config[dir]
+        else
+            path = joinpath(dir, CONFIG_FILE_NAME)
+            isfile(path) ? parse_config(path) : find_config_file(next_dir)
+        end
+        return dir2config[dir] = config
+    end
+
     for path in paths
         if isfile(path)
             dir = dirname(realpath(path))
-            opts = if (config = search_config(dir)) !== nothing
+            opts = if (config = find_config_file(dir)) !== nothing
                 overwrite_options(options, config)
             else
                 options
             end
             format_file(path; opts...)
         else
-            depth2config = Dict()
             for (root, dirs, files) in walkdir(path)
-                # to make sure we first respect configuration if exist
-                if (config = search_config(root)) !== nothing
-                    depth = get_path_depth(root)
-                    depth2config[depth] = (root, config)
-                end
-
                 for file in files
                     _, ext = splitext(file)
                     ext == ".jl" || continue
                     full_path = joinpath(root, file)
                     ".git" in splitpath(full_path) && continue
-                    current_depth = get_path_depth(root)
-                    valid_depths = sort!(
-                        filter!(d -> d ≤ current_depth, collect(keys(depth2config)));
-                        rev = true,
-                    )
-                    i = findfirst(valid_depths) do depth
-                        config_dir, _ = depth2config[depth]
-                        return startswith(full_path, config_dir)
-                    end
-                    opts = if i !== nothing
-                        _, config = depth2config[valid_depths[i]]
+                    dir = relpath(root)
+                    opts = if (config = find_config_file(dir)) !== nothing
                         overwrite_options(options, config)
                     else
                         options
@@ -572,18 +573,6 @@ function format(paths; options...)
     nothing
 end
 format(path::AbstractString; options...) = format((path,); options...)
-
-function search_config(dir)
-    files = readdir(dir)
-    return if CONFIG_FILE_NAME in files
-        full_path = joinpath(dir, CONFIG_FILE_NAME)
-        parse_config(full_path)
-    else
-        nothing
-    end
-end
-
-get_path_depth(path) = length(splitpath(path))
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)
