@@ -28,14 +28,13 @@ then files under `somedir` will be formatted with 2 spaces indentation and the m
 !!! note
     Currently the configuration file doesn't support [Custom Styles](@ref).
     For the time being, we only provide [YAS Style](@ref) support for the configuration file.
-    In order to use YAS style, you can just specify:
+    In order to use YAS style instead of the default style, you can just specify:
     > .JuliaFormatter.toml
     ```toml
     ...
     style = "yas"
     ...
     ```
-    Any other value will fallback to the default style.
 
 
 ## Search Rule
@@ -44,16 +43,16 @@ then files under `somedir` will be formatted with 2 spaces indentation and the m
 So if you have:
 ```
 dir
+├─ .JuliaFormatter.toml
 ├─ code.jl
 └─ subdir
-   ├─ .JuliaFormatter.toml
    └─ sub_code.jl
 ```
-and call `format("dir")`, then the configurations defined in `dir/subdir/.JuliaFormatter.toml` will only be applied to
-`dir/subdir/sub_code.jl`, but not to `dir/code.jl`.
+then `format("subdir/sub_code.jl")` will be automatically configured by the `dir/.JuliaFormatter.toml`, as well as
+`format("dir")` will format both `dir/code.jl` and `dir/subdir/sub_code.jl` according to the same configuration.
 
-So if there are multiple `.JuliaFormatter.toml` files, the _deepest_ configuration has the precedence.
-For example, if you have
+What will happen when we have multiple `.JuliaFormatter.toml` files ? In that case, the _deepest_ configuration has the
+precedence. For example, if you have
 ```
 dir
 ├─ .JuliaFormatter.toml
