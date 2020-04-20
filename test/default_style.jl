@@ -422,6 +422,14 @@
             end"""
         @test fmt(str_) == str
 
+        str_ = """foo() = for outer i=1:10 body end"""
+        str = """
+        foo() =
+            for outer i = 1:10
+                body
+            end"""
+        @test fmt(str_) == str
+
         str_ = """foo() = while cond body end"""
         str = """
         foo() =

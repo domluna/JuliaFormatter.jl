@@ -95,6 +95,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_const(style, cst, s)
     elseif cst.typ === CSTParser.Return
         return p_return(style, cst, s)
+    elseif cst.typ === CSTParser.Outer
+        return p_outer(style, cst, s)
     elseif cst.typ === CSTParser.Import
         return p_import(style, cst, s)
     elseif cst.typ === CSTParser.Export
@@ -194,7 +196,7 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
         cst.kind === Tokens.MACRO ? "macro" :
         cst.kind === Tokens.MODULE ? "module" :
         cst.kind === Tokens.MUTABLE ? "mutable" :
-        cst.kind === Tokens.OUTER ? "outer " :
+        cst.kind === Tokens.OUTER ? "outer" :
         cst.kind === Tokens.PRIMITIVE ? "primitive" :
         cst.kind === Tokens.QUOTE ? "quote" :
         cst.kind === Tokens.RETURN ? "return" :
@@ -643,7 +645,7 @@ p_module(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 p_baremodule(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_baremodule(DefaultStyle(style), cst, s)
 
-# Const/Local/Global/Return
+# Const/Local/Global/Return/Outer
 function p_const(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
@@ -670,6 +672,10 @@ p_global(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline p_return(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
 p_return(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_return(DefaultStyle(style), cst, s)
+
+@inline p_outer(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
+p_outer(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_outer(DefaultStyle(style), cst, s)
 
 # TopLevel
 function p_toplevel(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
