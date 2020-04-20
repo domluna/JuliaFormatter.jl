@@ -2,7 +2,7 @@ using Documenter, JuliaFormatter
 
 makedocs(
     sitename = "JuliaFormatter",
-    format = Documenter.HTML(prettyurls = true),
+    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [JuliaFormatter],
     pages = [
         "Introduction" => "index.md",
