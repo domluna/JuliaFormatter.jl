@@ -12,7 +12,7 @@ When found, the configurations in the file will overwrite the given options.
     [Juno](https://junolab.org/), a Julia IDE that offers formatting feature using this package, also respects
     configuration file.
     When you use `Julia-Client: Format-Code` command, Juno will automatically search for a configuration file with the
-    same rule as `format` does from the directory fo the current editor.
+    same rule as `format` does from the directory of current editor.
 
 
 ## Basic Configuration
@@ -25,9 +25,9 @@ margin = 100
 ```
 then files under `somedir` will be formatted with 2 spaces indentation and the maximum line length 100.
 
-!!! note
+!!! warning "Custom Style"
     Currently the configuration file doesn't support [Custom Styles](@ref).
-    For the time being, we only provide [YAS Style](@ref) support for the configuration file.
+    For the time being, we only provide [YAS Style](@ref) spec in configuration file.
     In order to use YAS style instead of the default style, you can just specify:
     > .JuliaFormatter.toml
     ```toml
@@ -39,7 +39,7 @@ then files under `somedir` will be formatted with 2 spaces indentation and the m
 
 ## Search Rule
 
-`.JuliaFormatter.toml` will be searched _up_ from the directory of the file begin formatted.
+`.JuliaFormatter.toml` will be searched _up_ from the directory of the file being formatted.
 So if you have:
 ```
 dir
