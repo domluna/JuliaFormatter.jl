@@ -269,6 +269,7 @@ end
 
 function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
+
     for (i, a) in enumerate(cst)
         # n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nonest = true) :
         #     pretty(ys, a, s)
@@ -277,12 +278,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             incomp = parent_is(
                 a,
                 is_iterable,
-                ignore_typs = (
-                    CSTParser.InvisBrackets,
-                    CSTParser.Generator,
-                    CSTParser.Flatten,
-                    CSTParser.Filter,
-                ),
+                ignore = n -> is_gen(n) || n.typ === CSTParser.InvisBrackets,
             )
 
             if is_block(cst[i-1])

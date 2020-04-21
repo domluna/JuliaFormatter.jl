@@ -70,9 +70,6 @@ function flatten_fst!(fst::FST)
     end
 end
 
-is_pipe(n) = op_kind(n) === Tokens.RPIPE
-
-
 """
     pipe_to_function_call_pass!(fst::FST)
 
@@ -81,7 +78,7 @@ Rewrites `x |> f` to `f(x)`.
 function pipe_to_function_call_pass!(fst::FST)
     is_leaf(fst) && return
 
-    if is_pipe(fst)
+    if op_kind(fst) === Tokens.RPIPE
         fst.nodes = pipe_to_function_call(fst)
         fst.typ = CSTParser.Call
         return
@@ -90,7 +87,7 @@ function pipe_to_function_call_pass!(fst::FST)
     for n in fst.nodes
         if is_leaf(n)
             continue
-        elseif is_pipe(n)
+        elseif op_kind(n) === Tokens.RPIPE
             n.nodes = pipe_to_function_call(n)
             n.typ = CSTParser.Call
         else
