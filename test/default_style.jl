@@ -875,7 +875,7 @@
         str_ = "__module__ == Main || @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""
         str = """
         __module__ == Main ||
-        @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""""
+            @warn \"Replacing docs for `\$b :: \$sig` in module `\$(__module__)`\""""
         @test fmt(str_, 4, length(str_) - 1) == str
     end
 
@@ -2779,23 +2779,6 @@
                :mesh_dim => Cint(3),)"""
         @test fmt(str_, 4, 80) == str
 
-        str = """
-        begin
-            a &&
-            b
-            a ||
-            b
-        end"""
-        @test fmt(str, 4, 1) == str
-
-        str = """
-        begin
-            a &&
-            b ||
-            c &&
-            d
-        end"""
-        @test fmt("begin\n a && b || c && d\nend", 4, 1) == str
 
         str = """
         func(
@@ -3233,7 +3216,7 @@
         str_ = "(var1,var2) && var3"
         str = """
         (var1, var2) &&
-        var3"""
+            var3"""
         @test fmt(str_, 4, 19) == str
         @test fmt(str_, 4, 15) == str
 
@@ -3249,7 +3232,7 @@
             var1,
             var2,
         ) &&
-        var3"""
+            var3"""
         @test fmt(str_, 4, 1) == str
 
         str_ = "(var1,var2) ? (var3,var4) : var5"
@@ -4653,4 +4636,213 @@ some_function(
         @test fmt(str_) == str
     end
 
+    @testset "standalone lazy expr indent" begin
+        str = """
+        begin
+          a &&
+            b
+          a ||
+            b
+        end"""
+        @test fmt(str, 2, 1) == str
+
+        str_ = """
+        begin
+         a && b || c && d
+        end"""
+
+        str = """
+        begin
+            a && b ||
+                c && d
+        end"""
+        @test fmt(str_, 4, 19) == str
+
+        str = """
+        begin
+            a && b ||
+                c &&
+                    d
+        end"""
+        @test fmt(str_, 4, 13) == str
+
+        str = """
+        begin
+            a &&
+                b ||
+                c &&
+                    d
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        begin
+        a || (b && c && d)
+        end"""
+
+        str = """
+        begin
+            a ||
+                (
+                    b &&
+                    c &&
+                    d
+                )
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        begin
+        (a && b && c) || d
+        end"""
+
+        str = """
+        begin
+            (
+                a &&
+                b &&
+                c
+            ) ||
+                d
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        begin
+         a || b && c || d
+        end"""
+
+        str = """
+        begin
+            a ||
+                b && c ||
+                d
+        end"""
+        @test fmt(str_, 4, 19) == str
+
+        str = """
+        begin
+            a ||
+                b &&
+                    c ||
+                d
+        end"""
+        @test fmt(str_, 4, 16) == str
+
+        # Due to parsing but in practice this
+        # case that will never come up and
+        # can be fixed by adding parenthesis.
+        str_ = """
+        begin
+         a && b || c || d || e
+        end"""
+        str = """
+        begin
+            a &&
+                b ||
+                    c ||
+                    d ||
+                    e
+        end"""
+        @test_broken fmt(str_, 4, 1) == str
+
+        str_ = """
+        begin
+         a || b && c && d && e
+        end"""
+        str = """
+        begin
+            a ||
+                b &&
+                    c &&
+                    d &&
+                    e
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        if aa && bb
+        end
+
+        if (aa && bb)
+        end"""
+
+        str = """
+        if aa &&
+           bb
+        end
+
+        if (
+            aa &&
+            bb
+        )
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        if aa || bb || cc
+        end
+
+        if (aa || bb || cc)
+        end"""
+
+        str = """
+        if aa ||
+           bb ||
+           cc
+        end
+
+        if (
+            aa ||
+            bb ||
+            cc
+        )
+        end"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """var = a && b"""
+        str = """
+        var =
+            a &&
+            b"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """var() = a && b"""
+        str = """
+        var() =
+            a &&
+            b"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """var = a || b || c"""
+        str = """
+        var =
+            a ||
+            b ||
+            c"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """var() = a || b || c"""
+        str = """
+        var() =
+            a ||
+            b ||
+            c"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        @hello arg1 && arg2 && return arg3"""
+        str = """
+        @hello arg1 &&
+               arg2 &&
+               return arg3"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        @hello arg1 || return arg2"""
+        str = """
+        @hello arg1 ||
+               return arg2"""
+        @test fmt(str_, 4, 1) == str
+    end
 end
