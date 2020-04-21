@@ -51,7 +51,8 @@ unwrapquote(x::QuoteNode) = x.value
 is_literal_getproperty(ex) =
     (
         iscall(ex, Base, :getproperty) ||
-        iscall(ex, Core, :getfield) || iscall(ex, Base, :getfield)
+        iscall(ex, Core, :getfield) ||
+        iscall(ex, Base, :getfield)
     ) && ex.args[3] isa Union{QuoteNode,Integer}
 
 function instrument_getproperty!(ir, v, ex)
