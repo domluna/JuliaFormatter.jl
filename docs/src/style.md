@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = JuliaFormatter
+```
+
 # Style
 
 This is meant to give an impression of how the ouput of a formatted file looks like.
