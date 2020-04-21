@@ -664,9 +664,12 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         fst[i1] = Newline(length = fst[i1].len)
         cst = fst.ref[]
 
-        has_eq = CSTParser.defines_function(cst) || nest_assignment(cst)
-        has_arrow = cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC
-        indent_nest = has_eq || has_arrow
+        indent_nest =
+            CSTParser.defines_function(cst) ||
+            nest_assignment(cst) ||
+            cst[2].kind === Tokens.PAIR_ARROW ||
+            cst[2].kind === Tokens.ANON_FUNC ||
+            is_standalone_shortcircuit(cst)
 
         if indent_nest
             s.line_offset = fst.indent + s.indent_size
@@ -782,6 +785,10 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     if idx !== nothing && (line_margin > s.margin || fst.force_nest)
         line_offset = s.line_offset
         indent >= 0 && (fst.indent = indent)
+
+        if fst.typ === CSTParser.ChainOpCall && is_standalone_shortcircuit(fst.ref[])
+            fst.indent += s.indent_size
+        end
 
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
