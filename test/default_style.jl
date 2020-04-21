@@ -4844,5 +4844,12 @@ some_function(
         @hello arg1 ||
                return arg2"""
         @test fmt(str_, 4, 1) == str
+
+        str_ = """
+        return arg1 || arg2"""
+        str = """
+        return arg1 ||
+               arg2"""
+        @test fmt(str_, 4, 1) == str
     end
 end

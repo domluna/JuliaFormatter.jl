@@ -558,6 +558,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         n === nothing && return true
         n.typ === CSTParser.InvisBrackets && return false
         n.typ === CSTParser.MacroCall && return false
+        n.typ === CSTParser.Return && return false
         n.typ === CSTParser.If && return false
         n.typ === CSTParser.Block && nest_assignment(n.parent) && return false
         n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
@@ -569,6 +570,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         n.typ === CSTParser.If && return false
         n.typ === CSTParser.Block && return false
         n.typ === CSTParser.MacroCall && return false
+        n.typ === CSTParser.Return && return false
         n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
         return true
     end
