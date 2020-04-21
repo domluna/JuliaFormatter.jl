@@ -1718,12 +1718,7 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             if a.kind === Tokens.FOR && parent_is(
                 a,
                 is_iterable,
-                ignore_typs = (
-                    CSTParser.InvisBrackets,
-                    CSTParser.Generator,
-                    CSTParser.Flatten,
-                    CSTParser.Filter,
-                ),
+                ignore = n -> is_gen(n) || n.typ === CSTParser.InvisBrackets,
             )
                 add_node!(t, Placeholder(1), s)
             else
