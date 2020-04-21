@@ -1,17 +1,31 @@
 # FST passes/transforms
 
+function flattenable(kind::Tokens.Kind)
+    kind === Tokens.AND && return true
+    kind === Tokens.OR && return true
+    kind === Tokens.LAZY_AND && return true
+    kind === Tokens.LAZY_OR && return true
+    kind === Tokens.RPIPE && return true
+    return false
+end
+flattenable(::Nothing) = false
+
 """
 Flattens a binary operation call tree if the operation repeats 2 or more times.
 "a && b && c" will be transformed while "a && b" will not.
 """
 function flatten_binaryopcall(fst::FST; top = true)
     nodes = FST[]
+    kind = op_kind(fst)
+
+    # @info "a" top kind
 
     lhs = fst[1]
-    kind = op_kind(fst)
     rhs = fst[end]
-    lhs_same_op = op_kind(lhs) === kind
-    rhs_same_op = op_kind(rhs) === kind
+    lhs_kind = op_kind(lhs)
+    rhs_kind = op_kind(rhs)
+    lhs_same_op = lhs_kind === kind
+    rhs_same_op = rhs_kind === kind
 
     if top && !lhs_same_op && !rhs_same_op
         return nodes
@@ -45,8 +59,10 @@ function flatten_fst!(fst::FST)
             # possibly convert BinaryOpCall to ChainOpCall
             nnodes = flatten_binaryopcall(n)
             if length(nnodes) > 0
-                n.nodes = nnodes
                 n.typ = CSTParser.ChainOpCall
+                n.nodes = nnodes
+            else
+                flatten_fst!(n)
             end
         else
             flatten_fst!(n)

@@ -102,10 +102,6 @@ end
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
     cst.typ === CSTParser.ColonOpCall
 
-@inline is_lazy_op(cst::CSTParser.EXPR) =
-    cst.typ === CSTParser.BinaryOpCall &&
-    (cst[2].kind === Tokens.LAZY_OR || cst[2].kind === Tokens.LAZY_AND)
-
 function is_multiline(fst::FST)
     fst.typ === CSTParser.StringH && return true
     if fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringH
@@ -128,13 +124,13 @@ function is_importer_exporter(fst::FST)
 end
 
 # f a function which returns a bool
-function parent_is(cst::CSTParser.EXPR, f; ignore_typs = [])
+function parent_is(cst::CSTParser.EXPR, valid; ignore = (n) -> false)
     p = cst.parent
     p === nothing && return false
-    while p !== nothing && p.typ in ignore_typs
+    while p !== nothing && ignore(p)
         p = p.parent
     end
-    f(p)
+    valid(p)
 end
 
 function contains_comment(fst::FST)
@@ -462,6 +458,7 @@ function is_gen(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.Generator && return true
     x.typ === CSTParser.Filter && return true
     x.typ === CSTParser.Flatten && return true
+    # x.typ === CSTParser.InvisBrackets && return true
     return false
 end
 
@@ -510,18 +507,10 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
     false
 end
 
-function flattenable(kind::Tokens.Kind)
-    kind === Tokens.AND && return true
-    kind === Tokens.OR && return true
-    kind === Tokens.LAZY_AND && return true
-    kind === Tokens.LAZY_OR && return true
-    kind === Tokens.RPIPE && return true
-    return false
-end
-flattenable(::Nothing) = false
-
 function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
-    if cst.typ === CSTParser.BinaryOpCall
+    if cst.typ === CSTParser.BinaryOpCall ||
+       cst.typ === CSTParser.Comparison ||
+       cst.typ === CSTParser.ChainOpCall
         return cst[2].kind
     elseif cst.typ === CSTParser.UnaryOpCall
         return cst[1].typ === CSTParser.OPERATOR ? cst[1].kind : cst[2].kind
@@ -530,3 +519,59 @@ function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
 end
 op_kind(::Nothing) = nothing
 op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
+
+is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
+
+"""
+    is_standalone_shortcircuit(cst::CSTParser.EXPR)
+
+Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`)
+and is _standalone_, meaning it's not directly associated with another statement or
+expression.
+
+### Examples
+
+```julia
+# this IS a standalone short-circuit
+a && b
+
+# this IS NOT a standalone short-circuit
+if a && b
+end
+
+# this IS NOT a standalone short-circuit
+var = a && b
+
+# this IS NOT a standalone short-circuit
+@macro a && b
+
+# operation inside parenthesis IS NOT a standalone short-circuit
+# operation outside parenthesis IS a standalone short-circuit
+(a && b) && c
+```
+"""
+function is_standalone_shortcircuit(cst::CSTParser.EXPR)
+    kind = op_kind(cst)
+    is_lazy_op(kind) || return false
+
+    function valid(n)
+        n === nothing && return true
+        n.typ === CSTParser.InvisBrackets && return false
+        n.typ === CSTParser.MacroCall && return false
+        n.typ === CSTParser.If && return false
+        n.typ === CSTParser.Block && nest_assignment(n.parent) && return false
+        n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
+        return true
+    end
+
+    function ignore(n::CSTParser.EXPR)
+        n.typ === CSTParser.InvisBrackets && return false
+        n.typ === CSTParser.If && return false
+        n.typ === CSTParser.Block && return false
+        n.typ === CSTParser.MacroCall && return false
+        n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
+        return true
+    end
+
+    return parent_is(cst, valid, ignore = ignore)
+end
