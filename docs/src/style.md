@@ -199,7 +199,7 @@ e1 :
 e2
 ```
 
-If nesting is required for a `=` binary operation, the RHS is placed on the following line.
+If nesting is required for a `=` binary operation, the RHS is placed on the following line and indented.
 
 ```julia
 foo() = body
@@ -209,6 +209,8 @@ foo() = body
 foo() =
     body
 ```
+
+Lazy `&&` and `||` operations are nested according to [`is_standalone_shortcircuit`](@ref) rules.
 
 All arguments of a function call (applies to any opening/closing punctuation type) are nested
 if the expression exceeds the margin. The arguments are indented one level. 
