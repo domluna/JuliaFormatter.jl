@@ -150,7 +150,6 @@ function Document(text::AbstractString)
         line_to_range[l] = r
     end
 
-
     # If there is a SINGLE "#! format: off" tag
     # do not format from the "off" tag onwards.
     if length(stack) == 1 && length(format_skips) == 0
