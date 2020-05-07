@@ -799,7 +799,6 @@ end
 p_let(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_let(DefaultStyle(style), cst, s)
 
-
 # Transforms
 #
 # for i = iter body end
@@ -1115,7 +1114,6 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_kw(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_kw(DefaultStyle(style), cst, s)
-
 
 # BinaryOpCall
 function p_binaryopcall(
@@ -1558,7 +1556,6 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_parameters(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_parameters(DefaultStyle(style), cst, s)
-
 
 # Import, Export, Using
 function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
