@@ -215,7 +215,6 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     return fst
 end
 
-
 function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)

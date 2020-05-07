@@ -7,206 +7,6 @@ using Pkg.TOML: parsefile
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
-is_str_or_cmd(t::Tokens.Kind) =
-    t in (Tokens.CMD, Tokens.TRIPLE_CMD, Tokens.STRING, Tokens.TRIPLE_STRING)
-is_str_or_cmd(typ::CSTParser.Head) =
-    typ in (CSTParser.StringH, CSTParser.x_Str, CSTParser.x_Cmd)
-
-# on Windows lines can end in "\r\n"
-normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
-
-# Implement Interval Tree using DataStructures's SortedDict
-struct IntervalTreeOrder <: DataStructures.Ordering end
-DataStructures.lt(::IntervalTreeOrder, a::UnitRange{Int}, b::UnitRange{Int}) =
-    last(a) < first(b)
-DataStructures.eq(::IntervalTreeOrder, a::UnitRange{Int}, b::UnitRange{Int}) =
-    isequal(a, b) || first(a) in b || first(b) in a
-
-struct Document
-    text::AbstractString
-
-    range_to_line::SortedDict{UnitRange{Int},Int,IntervalTreeOrder}
-    line_to_range::Dict{Int,UnitRange{Int}}
-
-    # mapping the offset in the file to the raw literal
-    # string and what lines it starts and ends at.
-    lit_strings::Dict{Int,Tuple{Int,Int,String}}
-    comments::Dict{Int,Tuple{Int,String}}
-
-    # CSTParser does not detect semicolons.
-    # It's useful to know where these are for
-    # a few node types.
-    semicolons::Set{Int}
-
-    # List of tuples where a tuple contains
-    # the start and end lines of regions in the
-    # file formatting should be skipped.
-    format_skips::Vector{Tuple{Int,Int,String}}
-end
-
-function Document(text::AbstractString)
-    ranges = UnitRange{Int}[]
-    lit_strings = Dict{Int,Tuple{Int,Int,String}}()
-    comments = Dict{Int,Tuple{Int,String}}()
-    semicolons = Set{Int}()
-    format_skips = Tuple{Int,Int,String}[]
-    prev_tok = Tokens.Token() # dummy initial token
-    stack = Int[]
-    format_on = true
-    str = ""
-
-    for t in CSTParser.Tokenize.tokenize(text)
-        if t.kind === Tokens.WHITESPACE
-            offset = t.startbyte
-            for c in t.val
-                if c == '\n'
-                    s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                    push!(ranges, s:offset+1)
-                end
-                offset += 1
-            end
-        elseif t.kind === Tokens.ENDMARKER
-            s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-            push!(ranges, s:t.startbyte)
-        elseif is_str_or_cmd(t.kind)
-            lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
-            if t.startpos[1] != t.endpos[1]
-                offset = t.startbyte
-                nls = findall(x -> x == '\n', t.val)
-                for nl in nls
-                    s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                    push!(ranges, s:offset+nl)
-                end
-            end
-        elseif t.kind === Tokens.COMMENT
-            ws = 0
-            if prev_tok.kind === Tokens.WHITESPACE
-                # Handles the case where the value of the
-                # WHITESPACE token is like " \n ".
-                i = findlast(c -> c == '\n', prev_tok.val)
-                i === nothing && (i = 1)
-                ws = count(c -> c == ' ', prev_tok.val[i:end])
-            end
-
-            if t.startpos[1] == t.endpos[1]
-                # Determine the number of spaces prior to a possible inline comment
-                comments[t.startpos[1]] = (ws, t.val)
-            else
-                # multiline comment of the form
-                # #=
-                #
-                # #=
-
-                line = t.startpos[1]
-                offset = t.startbyte
-                cs = ""
-                for (i, c) in enumerate(t.val)
-                    cs *= c
-                    if c == '\n'
-                        s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                        push!(ranges, s:offset+1)
-                        fc = findfirst(c -> !isspace(c), cs)
-                        idx = fc === nothing ? 1 : min(fc, ws + 1)
-                        comments[line] = (ws, cs[idx:end])
-                        line += 1
-                        cs = ""
-                    end
-                    offset += 1
-                end
-                # last comment
-                idx = min(findfirst(c -> !isspace(c), cs), ws + 1)
-                comments[line] = (ws, cs[idx:end])
-            end
-
-            if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
-                # There should not be more than 1
-                # "off" tag on the stack at a time.
-                push!(stack, t.startpos[1])
-                format_on = false
-            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
-                # If "#! format: off" has not been seen
-                # "#! format: on" is treated as a normal comment.
-                idx1 = findfirst(c -> c == '\n', str)
-                idx2 = findlast(c -> c == '\n', str)
-                str = str[idx1:idx2]
-                push!(format_skips, (pop!(stack), t.startpos[1], str))
-                str = ""
-                format_on = true
-            end
-        elseif t.kind === Tokens.SEMICOLON
-            push!(semicolons, t.startpos[1])
-        end
-        prev_tok = t
-
-        if !format_on
-            str *= Tokenize.untokenize(t)
-        end
-    end
-
-    range_to_line = SortedDict{UnitRange{Int},Int}(IntervalTreeOrder())
-    line_to_range = Dict{Int,UnitRange{Int}}()
-    for (l, r) in enumerate(ranges)
-        insert!(range_to_line, r, l)
-        line_to_range[l] = r
-    end
-
-    # If there is a SINGLE "#! format: off" tag
-    # do not format from the "off" tag onwards.
-    if length(stack) == 1 && length(format_skips) == 0
-        # -1 signifies everything afterwards "#! format: off"
-        # will not formatted.
-        idx1 = findfirst(c -> c == '\n', str)
-        str = str[idx1:end]
-        push!(format_skips, (stack[1], -1, str))
-    end
-    Document(
-        text,
-        range_to_line,
-        line_to_range,
-        lit_strings,
-        comments,
-        semicolons,
-        format_skips,
-    )
-end
-
-Base.@kwdef struct Options
-    always_for_in::Bool = false
-    whitespace_typedefs::Bool = false
-    whitespace_ops_in_indices::Bool = false
-    remove_extra_newlines::Bool = false
-    import_to_using::Bool = false
-    pipe_to_function_call::Bool = false
-    short_to_long_function_def::Bool = false
-    always_use_return::Bool = false
-end
-
-mutable struct State
-    doc::Document
-    indent_size::Int
-    indent::Int
-    offset::Int
-    line_offset::Int
-    margin::Int
-
-    # If true, output is formatted text otherwise
-    # it's source text
-    on::Bool
-    opts::Options
-end
-State(doc, indent_size, margin, opts) = State(doc, indent_size, 0, 1, 0, margin, true, opts)
-
-@inline nspaces(s::State) = s.indent
-@inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
-@inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
-
-@inline function cursor_loc(s::State, offset::Integer)
-    l = s.doc.range_to_line[offset:offset]
-    r = s.doc.line_to_range[l]
-    return (l, offset - first(r) + 1, length(r))
-end
-@inline cursor_loc(s::State) = cursor_loc(s, s.offset)
-
 abstract type AbstractStyle end
 
 """
@@ -222,12 +22,19 @@ DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
+include("document.jl")
+include("options.jl")
+include("state.jl")
 include("fst.jl")
 include("passes.jl")
 include("pretty.jl")
 include("nest.jl")
 include("print.jl")
+
 include("styles/yas.jl")
+
+# on Windows lines can end in "\r\n"
+normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 
 """
     format_text(

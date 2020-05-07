@@ -178,7 +178,6 @@ function annotate_typefields_with_any!(fst::FST, s::State)
     end
 end
 
-
 """
     short_to_long_function_def!(fst::FST, s::State)
 

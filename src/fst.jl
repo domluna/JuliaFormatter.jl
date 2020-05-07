@@ -72,7 +72,6 @@ end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
-
 @inline Newline(; length = 0, force_nest = false) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
 @inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)

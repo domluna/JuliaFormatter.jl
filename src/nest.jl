@@ -14,7 +14,6 @@
 #
 # the length of " op" will be considered when nesting LHS
 
-
 function skip_indent(fst::FST)
     if fst.typ === CSTParser.LITERAL && fst.val == ""
         return true
@@ -287,7 +286,6 @@ end
 n_do!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_do!(DefaultStyle(style), fst, s)
 
-
 # Import,Using,Export
 function n_using!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -401,7 +399,6 @@ n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 @inline n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
 n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
-
 
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
