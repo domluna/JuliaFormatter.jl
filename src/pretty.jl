@@ -275,7 +275,7 @@ function format_docstrings(style, state, text)
     boundaries = findall(text) do character
         character != '"' && !isspace(character)
     end
-    parsed = Markdown.parse(text[boundaries[begin]:boundaries[end]])
+    parsed = Markdown.parse(text[boundaries[1]:boundaries[end]])
     format_docstrings!(style, state, parsed)
     # put all docstrings in triple quotes, escape
     string("\"\"\"\n", plain(parsed), "\"\"\"")
