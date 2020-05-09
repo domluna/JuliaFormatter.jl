@@ -227,7 +227,61 @@ end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
 
-@inline function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+format_docstrings!(style, state, _) = nothing
+
+function format_docstrings!(style, state, document::MD)
+    for clause in document.content
+        format_docstrings!(style, state, clause)
+    end
+    nothing
+end
+
+function format_docstrings!(style, state, doctest::Code)
+    language = doctest.language
+    code = doctest.code
+    doctest.code = if startswith(language, "@example") ||
+        startswith(language, "@repl") ||
+        startswith(language, "@eval")
+        format_text(style, state, code)
+    elseif startswith(language, "jldoctest")
+        if occursin(r"^julia> "m, code)
+            join(
+                (
+                    string(
+                        "julia> ",
+                        join(
+                            (
+                                line for line in split(format_text(input), '\n')
+                            ),
+                            "\n       "
+                        ),
+                        '\n',
+                        output
+                    ) for (input, output) in repl_splitter(code)
+                ),
+                "\n\n"
+            )
+        else
+            an_input, output = split(code, "# output\n", limit = 2)
+            string(format_text(style, state, String(an_input)),  "# output\n", output)
+        end
+    else
+        code
+    end
+    nothing
+end
+
+function format_docstrings(style, state, text)
+    boundaries = findall(text) do character
+        character != '"' && !isspace(character)
+    end
+    parsed = Markdown.parse(text[boundaries[begin]:boundaries[end]])
+    format_docstrings!(style, state, parsed)
+    # put all docstrings in triple quotes, escape
+    string("\"\"\"\n", plain(parsed), "\"\"\"")
+end
+
+@inline function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstring = false)
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst.kind)
         val = cst.val
@@ -258,6 +312,10 @@ p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
 
     startline, endline, str = str_info
     # @debug "" loc startline endline str
+
+    if from_docstring
+        str = format_docstrings(ds, s, str)
+    end
 
     s.offset += cst.fullspan
 
@@ -356,7 +414,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     if cst[1].typ === CSTParser.GlobalRefDoc
         # cst[1] is empty and fullspan is 0 so we can skip it
         if cst[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(style, cst[2], s), s, max_padding = 0)
+            add_node!(t, p_literal(style, cst[2], s, from_docstring = true), s, max_padding = 0)
         elseif cst[2].typ == CSTParser.StringH
             add_node!(t, p_stringh(style, cst[2], s), s)
         end

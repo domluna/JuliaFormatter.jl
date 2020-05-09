@@ -1,5 +1,5 @@
-using JuliaFormatter
-using JuliaFormatter: DefaultStyle, YASStyle, Options, CONFIG_FILE_NAME
+using Main.JuliaFormatter
+using Main.JuliaFormatter: DefaultStyle, YASStyle, Options, CONFIG_FILE_NAME
 using CSTParser
 using Test
 

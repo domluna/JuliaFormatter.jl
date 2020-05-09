@@ -4,6 +4,9 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Markdown: Markdown, MD, Code, plain
+using Documenter.DocTests: repl_splitter
+import Markdown
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
@@ -394,10 +397,17 @@ function format_text(
         always_use_return = always_use_return,
     )
     s = State(Document(text), indent, margin, opts)
-    _format_text(x, ps, s, style)
+    _format_text(style, s, x)
 end
 
-function _format_text(x, ps, s, style)
+function format_text(style, state, text)
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input:\n\n$text")
+    s = State(Document(text), state.indent, state.margin, state.opts)
+    _format_text(style, s, x)
+end
+
+function _format_text(style, s, x)
     opts = s.opts
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
