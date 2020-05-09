@@ -4931,4 +4931,14 @@ some_function(
         end"""
         @test fmt(unformatted) == formatted
     end
+    @testset "Multi-line indented code-blocks" begin
+        text = """
+        \"""
+            format_text(
+            )::String
+        \"""
+        function format_text() end
+        """
+        @test format_text(text) == text
+    end
 end
