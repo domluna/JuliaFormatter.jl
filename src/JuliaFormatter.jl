@@ -394,6 +394,11 @@ function format_text(
         always_use_return = always_use_return,
     )
     s = State(Document(text), indent, margin, opts)
+    _format_text(x, ps, s, style)
+end
+
+function _format_text(x, ps, s, style)
+    opts = s.opts
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
