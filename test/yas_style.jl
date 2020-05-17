@@ -251,7 +251,6 @@
                        last(spike_annotation))"""
         @test yasfmt(str_, 4, 62) == str
 
-
         str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
         str = raw"""
         ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
@@ -270,7 +269,6 @@
                                                          :avr],
                                           file_extension=Symbol("lpcm.zst"))"""
         @test yasfmt(str_, 4, 1) == str
-
 
     end
 
@@ -351,7 +349,6 @@
               for x in xs)
         """
         @test yasfmt(str_, 2, 80) == str
-
 
         str_ = """spike_annotation = first(ann for ann in recording.annotations if ann.value == "epileptiform_spike")"""
         str = """

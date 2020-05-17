@@ -360,6 +360,12 @@ function format(paths; options...)
             format_file(path; opts...)
         else
             for (root, dirs, files) in walkdir(path)
+                base_opts = if (config = find_config_file(path)) !== nothing
+                    overwrite_options(options, config)
+                else
+                    options
+                end
+
                 for file in files
                     _, ext = splitext(file)
                     ext == ".jl" || continue
@@ -367,9 +373,9 @@ function format(paths; options...)
                     ".git" in splitpath(full_path) && continue
                     dir = relpath(root)
                     opts = if (config = find_config_file(dir)) !== nothing
-                        overwrite_options(options, config)
+                        overwrite_options(base_opts, config)
                     else
-                        options
+                        base_opts
                     end
                     format_file(full_path; opts...)
                 end
