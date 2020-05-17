@@ -263,7 +263,6 @@
         @test fmt(str_) == str
     end
 
-
     @testset "tuples" begin
         @test fmt("(a,)") == "(a,)"
         @test fmt("a,b") == "a, b"
@@ -547,7 +546,6 @@
             body
           end"""
         @test fmt(str_, 2, 39) == str
-
 
         str = """
         foo =
@@ -1275,7 +1273,6 @@
         t = run_pretty(str_, 80)
         @test length(t) == 28
 
-
     end
 
     @testset "try" begin
@@ -1360,7 +1357,6 @@
             catch err
                 arg
             end""") == str
-
 
         str = """
         try
@@ -1594,7 +1590,6 @@
                       cool!\"\"\"
         end"""
         @test fmt(str_) == str
-
 
         str = """
         begin
@@ -2486,7 +2481,6 @@
         d"""
         @test fmt("a | b | c | d", 4, 1) == str
 
-
         str = """
         a, b, c, d"""
         @test fmt("a, b, c, d", 4, 10) == str
@@ -2729,8 +2723,6 @@
         @test fmt(str_) == str_
         @test fmt(str_, 2, 1) == str
 
-
-
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """
         this_is_a_long_variable_name = Dict{Symbol,Any}(
@@ -2779,7 +2771,6 @@
                :mesh_dim => Cint(3),)"""
         @test fmt(str_, 4, 80) == str
 
-
         str = """
         func(
             a,
@@ -2816,8 +2807,6 @@
         )"""
         @test fmt(str, 4, 1) == str_
 
-
-
         # Ref
         str = "a[1+2]"
         @test fmt("a[1 + 2]", 4, 1) == str
@@ -2837,7 +2826,6 @@
         )"""
         @test fmt(str_, 2, length(str_) - 1) == str
         @test fmt(str_, 2, 1) == str
-
 
         str_ = "(a <= b <= c <= d)"
         @test fmt(str_, 4, length(str_)) == str_
@@ -3075,7 +3063,6 @@
             end
         )"""
         @test fmt(str_, 4, 20) == str
-
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
         _, s = run_nest(str, length(str))
@@ -3586,7 +3573,6 @@
             body
         end"""
         @test fmt(str) == str
-
 
         # issue 155
         str_ = raw"""
@@ -4141,9 +4127,7 @@ some_function(
         )"""
         @test fmt(str_) == str
 
-
     end
-
 
     @testset "issue #150" begin
         str_ = "const SymReg{B,MT} = ArrayReg{B,Basic,MT} where {MT <:AbstractMatrix{Basic}}"
