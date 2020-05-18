@@ -111,6 +111,10 @@
         @test fmt(str_, import_to_using = true) == str
         t = run_pretty(str_, 80, opts = Options(import_to_using = true))
         @test t.len == 13
+
+        # #232
+        str = """import A.b"""
+        @test fmt(str, import_to_using = true) == str
     end
 
     @testset "always convert `=` to `in` (for loops)" begin
