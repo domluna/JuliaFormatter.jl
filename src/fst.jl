@@ -91,6 +91,7 @@ end
 @inline is_leaf(fst::FST) = fst.nodes === nothing
 
 @inline is_punc(cst::CSTParser.EXPR) = CSTParser.ispunctuation(cst)
+@inline is_punc(fst::FST) = fst.typ === CSTParser.PUNCTUATION
 @inline is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
 @inline is_colon(x) = x.typ === CSTParser.OPERATOR && x.val == ":"
 @inline is_comma(fst::FST) =

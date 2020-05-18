@@ -112,6 +112,7 @@ end
 
 function import_to_usings(fst::FST, s::State)
     findfirst(is_colon, fst.nodes) === nothing || return FST[]
+    findfirst(n -> is_punc(n) && n.val == ".", fst.nodes) === nothing || return FST[]
 
     usings = FST[]
     idxs = findall(n -> n.typ === CSTParser.IDENTIFIER, fst.nodes)
