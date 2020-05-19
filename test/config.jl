@@ -126,6 +126,7 @@
     #    └─ sub_code2.jl (before -> after2)
     sandbox_dir = joinpath(@__DIR__, "test_nested_config")
     mkdir(sandbox_dir)
+    original_dir = pwd()
     try
         sub1_dir = joinpath(sandbox_dir, "sub1")
         sub2_dir = joinpath(sandbox_dir, "sub2")
@@ -148,6 +149,7 @@
         @test read(sub_code1_path, String) == after4
         @test read(sub_code2_path, String) == after2
     finally
+        cd(original_dir)
         rm(sandbox_dir; recursive = true)
     end
 end
