@@ -13,7 +13,24 @@ Recommended options for confirming with the above guide are:
 - `short_to_long_function_def` = true
 - `always_use_return` = true
 
-## Usage
+## Configuration File Example
+
+The `.JuliaFormatter.toml` which represents these settings is
+```toml
+style = "yas"
+indent = 4
+margin = 92
+always_for_in = true
+whitespace_ops_in_indices = true
+whitespace_typedefs = false
+remove_extra_newlines = true
+import_to_using = true
+pipe_to_function_call = true
+short_to_long_function_def = true
+always_use_return = true
+```
+
+## Direct Usage
 
 ```julia
 format("file.jl", style=YASStyle(), ...)
