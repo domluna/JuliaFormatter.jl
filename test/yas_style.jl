@@ -412,7 +412,7 @@
         @test yasfmt(str_, 2, 92) == str
     end
 
-    @testset "#189" begin
+    @testset "issue 189" begin
         str_ = """
     D2 = [
             (b_hat * y - delta_hat[i] * y) * gamma[i] + (b * y_hat - delta[i] * y_hat) *
@@ -429,6 +429,18 @@
               for i = 1:8]"""
         @test yasfmt(str_, 2, 60) == str
 
+    end
+
+    @testset "issue 237" begin
+        str_ = """
+        for x in (arg1, arg2,)
+            @info "Test"
+        end"""
+        str = """
+        for x in (arg1, arg2)
+            @info "Test"
+        end"""
+        @test yasfmt(str_, 4, 92) == str
     end
 
 end

@@ -74,10 +74,11 @@ function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
+            n = pretty(ys, a, s)
             if n_args(cst) == 1
-                add_node!(t, pretty(ys, a, s), s, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
             elseif !is_closer(cst[i+1])
-                add_node!(t, pretty(ys, a, s), s, join_lines = true)
+                add_node!(t, n, s, join_lines = true)
                 add_node!(t, Placeholder(1), s)
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
