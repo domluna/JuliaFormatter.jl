@@ -3630,8 +3630,8 @@
         open(f1, "w") do io
             write(io, "a = 10\n\n\n\n\n\n")
         end
-        format_file(f1)
-        format_file(f1)
+        @test format_file(f1) == false
+        @test format_file(f1) == true
         open(f1) do io
             res = read(io, String)
             @test res == str
