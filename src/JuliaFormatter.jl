@@ -239,7 +239,7 @@ end
         overwrite::Bool = true,
         verbose::Bool = false,
         format_options...,
-    )
+    )::Bool
 
 Formats the contents of `filename` assuming it's a Julia source file.
 
@@ -255,13 +255,18 @@ to `stdout`.
 ### Formatting Options
 
 See [`format_text`](@ref) for description of formatting options.
+
+### Output
+ 
+Returns a boolean indicating whether the file was already formatted (`true`)
+or not (`false`). 
 """
 function format_file(
     filename::AbstractString;
     overwrite::Bool = true,
     verbose::Bool = false,
     format_options...,
-)
+)::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
     if ext != ".jl" && match(shebang_pattern, readline(filename)) === nothing
@@ -269,10 +274,10 @@ function format_file(
     end
     verbose && println("Formatting $filename")
     str = String(read(filename))
-    str = format_text(str; format_options...)
-    str = replace(str, r"\n*$" => "\n")
-    overwrite ? write(filename, str) : write(path * "_fmt" * ext, str)
-    nothing
+    formatted_str = format_text(str; format_options...)
+    formatted_str = replace(formatted_str, r"\n*$" => "\n")
+    overwrite ? write(filename, formatted_str) : write(path * "_fmt" * ext, formatted_str)
+    return formatted_str == str
 end
 
 if VERSION < v"1.1.0"
@@ -321,7 +326,7 @@ const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
     format(
         paths; # a path or collection of paths
         options...,
-    )
+    )::Bool
 
 Recursively descend into files and directories, formatting any `.jl`
 files by calling `format_file` on them.
@@ -332,9 +337,15 @@ This function will look for `.JuliaFormatter.toml` in the location of the file b
 formatted, and searching _up_ the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
 See ["Configuration File"](@id) for more details.
+
+### Output
+ 
+Returns a boolean indicating whether the file was already formatted (`true`)
+or not (`false`). 
 """
-function format(paths; options...)
+function format(paths; options...)::Bool
     dir2config = Dict{String,Any}()
+    already_formatted = true
     function find_config_file(dir)
         next_dir = dirname(dir)
         config = if (next_dir == dir || # ensure to escape infinite recursion
@@ -350,7 +361,7 @@ function format(paths; options...)
     end
 
     for path in paths
-        if isfile(path)
+        already_formatted &= if isfile(path)
             dir = dirname(realpath(path))
             opts = if (config = find_config_file(dir)) !== nothing
                 overwrite_options(options, config)
@@ -359,24 +370,28 @@ function format(paths; options...)
             end
             format_file(path; opts...)
         else
-            for (root, dirs, files) in walkdir(path)
-                for file in files
+            reduce(walkdir(path), init = true) do formatted_path, dir_branch
+                root, dirs, files = dir_branch
+                formatted_path & reduce(files, init = true) do formatted_file, file
                     _, ext = splitext(file)
-                    ext == ".jl" || continue
                     full_path = joinpath(root, file)
-                    ".git" in splitpath(full_path) && continue
-                    dir = realpath(root)
-                    opts = if (config = find_config_file(dir)) !== nothing
-                        overwrite_options(options, config)
+                    formatted_file &
+                    if ext == ".jl" && !(".git" in splitpath(full_path))
+                        dir = realpath(root)
+                        opts = if (config = find_config_file(dir)) !== nothing
+                            overwrite_options(options, config)
+                        else
+                            options
+                        end
+                        format_file(full_path; opts...)
                     else
-                        options
+                        true
                     end
-                    format_file(full_path; opts...)
                 end
             end
         end
     end
-    nothing
+    return already_formatted
 end
 format(path::AbstractString; options...) = format((path,); options...)
 

@@ -17,7 +17,7 @@
         open(io -> write(io, config2), config_path, "w")
         open(io -> write(io, before), code_path, "w")
 
-        format(code_path)
+        @test format(code_path) == false
         @test read(code_path, String) == after2
     finally
         rm(sandbox_dir; recursive = true)
@@ -44,10 +44,12 @@
         open(io -> write(io, before), sub_code_path, "w")
         open(io -> write(io, before), subsub_code_path, "w")
 
-        format(sub_code_path)
+        @test format(sub_code_path) == false
         @test read(sub_code_path, String) == after2
-        format(subsub_code_path)
+        @test format(subsub_code_path) == false
         @test read(subsub_code_path, String) == after2
+        @test format(sub_code_path) == true
+        @test format(subsub_code_path) == true
     finally
         rm(sandbox_dir; recursive = true)
     end
@@ -70,9 +72,10 @@
         open(io -> write(io, before), code_path, "w")
         open(io -> write(io, before), sub_code_path, "w")
 
-        format(sandbox_dir)
+        @test format(sandbox_dir) == false
         @test read(code_path, String) == after2
         @test read(sub_code_path, String) == after2
+        @test format(sandbox_dir) == true
     finally
         rm(sandbox_dir; recursive = true)
     end
@@ -104,10 +107,11 @@
         open(io -> write(io, before), sub_code1_path, "w")
         open(io -> write(io, before), sub_code2_path, "w")
 
-        format(sandbox_dir)
+        @test format(sandbox_dir) == false
         @test read(code_path, String) == after2
         @test read(sub_code1_path, String) == after4
         @test read(sub_code2_path, String) == after2
+        @test format(sandbox_dir) == true
     finally
         rm(sandbox_dir; recursive = true)
     end
@@ -144,10 +148,11 @@
         open(io -> write(io, before), sub_code2_path, "w")
 
         cd(sandbox_dir)
-        format(".")
+        @test format(".") == false
         @test read(code_path, String) == after2
         @test read(sub_code1_path, String) == after4
         @test read(sub_code2_path, String) == after2
+        @test format(".") == true
     finally
         cd(original_dir)
         rm(sandbox_dir; recursive = true)
