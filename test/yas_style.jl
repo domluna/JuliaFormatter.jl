@@ -1,7 +1,7 @@
 @testset "YAS style" begin
     @testset "basic" begin
         str_ = "foo(; k =v)"
-        str = "foo(; k=v)"
+        str = "foo(; k = v)"
         @test yasfmt(str_, 4, 80) == str
 
         str_ = "( k1 =v1,  k2=v2)"
@@ -253,21 +253,21 @@
 
         str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
         str = raw"""
-        ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
-                                          file_extension=Symbol("lpcm.zst"))"""
+        ecg_signal = signal_from_template(eeg_signal; channel_names = [:avl, :avr],
+                                          file_extension = Symbol("lpcm.zst"))"""
         @test yasfmt(str_, 4, length(str_) - 1) == str
-        @test yasfmt(str_, 4, 73) == str
+        @test yasfmt(str_, 4, 75) == str
 
         str = raw"""
         ecg_signal = signal_from_template(eeg_signal;
-                                          channel_names=[:avl, :avr],
-                                          file_extension=Symbol("lpcm.zst"))"""
-        @test yasfmt(str_, 4, 72) == str
+                                          channel_names = [:avl, :avr],
+                                          file_extension = Symbol("lpcm.zst"))"""
+        @test yasfmt(str_, 4, 73) == str
         str = raw"""
         ecg_signal = signal_from_template(eeg_signal;
-                                          channel_names=[:avl,
-                                                         :avr],
-                                          file_extension=Symbol("lpcm.zst"))"""
+                                          channel_names = [:avl,
+                                                           :avr],
+                                          file_extension = Symbol("lpcm.zst"))"""
         @test yasfmt(str_, 4, 1) == str
 
     end

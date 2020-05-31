@@ -14,6 +14,7 @@ Recommended options are:
 - `pipe_to_function_call` = true
 - `short_to_long_function_def` = true
 - `always_use_return` = true
+- `whitespace_in_kwargs` = false
 """
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
@@ -22,14 +23,6 @@ function nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
     (cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC) && return false
     return true
-end
-
-function p_kw(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    t = FST(cst, nspaces(s))
-    for a in cst
-        add_node!(t, pretty(ys, a, s), s, join_lines = true)
-    end
-    t
 end
 
 function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)

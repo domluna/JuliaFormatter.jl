@@ -50,6 +50,7 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         pipe_to_function_call::Bool = false,
         short_to_long_function_def::Bool = false,
         always_use_return::Bool = false,
+        whitespace_in_kwargs::Bool = true,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -68,7 +69,7 @@ be formatted across multiple lines.
 
 ### `always_for_in`
 
-If true `=` is always replaced with `in` if part of a `for` loop condition.
+If true, `=` is always replaced with `in` if part of a `for` loop condition.
 For example, `for i = 1:10` will be transformed to `for i in 1:10`.
 
 ### `whitespace_typedefs`
@@ -86,7 +87,7 @@ Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
 ### `remove_extra_newlines`
 
-If true superflous newlines will be removed. For example:
+If true, superflous newlines will be removed. For example:
 
 ```julia
 a = 1
@@ -106,7 +107,7 @@ b = 2
 
 ### `import_to_using`
 
-If true `import` expressions are rewritten to `using` expressions
+If true, `import` expressions are rewritten to `using` expressions
 in the following cases:
 
 ```julia
@@ -127,7 +128,7 @@ using C: C
 
 ### `pipe_to_function_call`
 
-If true `x |> f` is rewritten to `f(x)`.
+If true, `x |> f` is rewritten to `f(x)`.
 
 ### `short_to_long_function_def`
 
@@ -147,7 +148,7 @@ end
 
 ### `always_use_return`
 
-If true `return` will be prepended to the last expression where
+If true, `return` will be prepended to the last expression where
 applicable in function definitions, macro definitions, and do blocks.
 
 Example:
@@ -167,6 +168,25 @@ function foo()
     return expr2
 end
 ```
+
+### `whitespace_in_kwargs`
+
+If true, `=` in keyword arguments will be surrounded by whitespace.
+
+```julia
+f(; a=4)
+```
+
+to
+
+```julia
+f(; a = 4)
+```
+
+An exception to this is if the LHS ends with "!" then even if `whitespace_in_kwargs` is
+false, `=` will still be surrounded by whitespace. The logic behind this intervention being
+on the following parse the `!` will be treated as part of `=`, as in a "not equal" binary
+operation. This would change the semantics of the code and is therefore disallowed.
 """
 function format_text(
     text::AbstractString;
@@ -181,6 +201,7 @@ function format_text(
     pipe_to_function_call::Bool = false,
     short_to_long_function_def::Bool = false,
     always_use_return::Bool = false,
+    whitespace_in_kwargs::Bool = true,
 )
     isempty(text) && return text
 
@@ -199,6 +220,7 @@ function format_text(
         pipe_to_function_call = pipe_to_function_call,
         short_to_long_function_def = short_to_long_function_def,
         always_use_return = always_use_return,
+        whitespace_in_kwargs = whitespace_in_kwargs,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)

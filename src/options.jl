@@ -7,4 +7,5 @@ Base.@kwdef struct Options
     pipe_to_function_call::Bool = false
     short_to_long_function_def::Bool = false
     always_use_return::Bool = false
+    whitespace_in_kwargs::Bool = true
 end
