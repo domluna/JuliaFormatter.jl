@@ -262,8 +262,9 @@
         @test fmt(str, 4, 92, whitespace_in_kwargs = false) == str
 
         # issue 242
-        str = "f(a, b! = 1; c! = 2, d! = 3)"
-        @test fmt(str, 4, 92, whitespace_in_kwargs = false) == str
+        str_ = "f(a, b! = 1; c! = 2, d = 3, e! = 4)"
+        str = "f(a, b! = 1; c! = 2, d=3, e! = 4)"
+        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
     end
 
 end
