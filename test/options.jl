@@ -253,4 +253,17 @@
         @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
     end
 
+    @testset "whitespace in keyword arguments" begin
+        str_ = "f(; a = b)"
+        str = "f(; a=b)"
+        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
+
+        str = "f(; a!) = a!"
+        @test fmt(str, 4, 92, whitespace_in_kwargs = false) == str
+
+        # issue 242
+        str = "f(; a! = 4)"
+        @test fmt(str, 4, 92, whitespace_in_kwargs = false) == str
+    end
+
 end

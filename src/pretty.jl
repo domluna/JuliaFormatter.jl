@@ -1101,15 +1101,19 @@ p_colonopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
 function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    for a in cst
-        if a.kind === Tokens.EQ
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
-        else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        end
+
+    exclamation = cst[1].typ === CSTParser.IDENTIFIER && endswith(cst[1].val, "!")
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    if s.opts.whitespace_in_kwargs || exclamation
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+        add_node!(t, Whitespace(1), s)
+    else
+        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+
     t
 end
 p_kw(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
