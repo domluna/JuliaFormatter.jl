@@ -1424,7 +1424,12 @@ function p_tupleh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
 
     for (i, a) in enumerate(cst)
-        n = pretty(style, a, s)
+        n = if a.typ === CSTParser.BinaryOpCall && a[2].kind === Tokens.EQ
+            p_kw(style, a, s)
+        else
+            pretty(style, a, s)
+        end
+
         if is_opener(n) && nest
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)

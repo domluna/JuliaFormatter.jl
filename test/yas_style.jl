@@ -4,10 +4,6 @@
         str = "foo(; k = v)"
         @test yasfmt(str_, 4, 80) == str
 
-        str_ = "( k1 =v1,  k2=v2)"
-        str = "(k1=v1, k2=v2)"
-        @test yasfmt(str_, 4, 80) == str
-
         str_ = "a = (arg1, arg2, arg3)"
         str = """
         a = (arg1, arg2,

@@ -78,7 +78,7 @@ function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(ys, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif a.typ === CSTParser.BinaryOpCall && a[2].kind === Tokens.EQ
-            add_node!(t, pretty(ys, a, s, nospace = true), s, join_lines = true)
+            add_node!(t, p_kw(ys, a, s), s, join_lines = true)
         else
             add_node!(t, pretty(ys, a, s), s, join_lines = true)
         end
