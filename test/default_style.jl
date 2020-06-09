@@ -4916,7 +4916,7 @@ some_function(
         julia> function test(x)
                    x + 1
                end;
-        
+
         ```
         \"""
         function test(x)
@@ -4939,6 +4939,21 @@ some_function(
         format_text(
         )
         ```
+        \"""
+        function format_text() end"""
+
+        @test format_text(unformatted) == formatted
+    end
+    @testset "Empty line in docstring" begin
+        unformatted = """
+        \"""
+
+        \"""
+        function test() end
+        """
+
+        formatted = """
+        \"""
         \"""
         function format_text() end"""
 
