@@ -1436,13 +1436,21 @@
         t = run_pretty(str, 80)
         @test length(t) == 12
 
+        normalized = """
+        \"""
+        doc
+        \"""
+        function f()
+            20
+        end"""
+
         str = """
         \"""doc
         \"""
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         str = """
         \"""
@@ -1450,14 +1458,14 @@
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         str = """
         \"""doc\"""
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         str = """
         "doc
@@ -1465,7 +1473,7 @@
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         str = """
         "
@@ -1473,14 +1481,14 @@
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         str = """
         "doc"
         function f()
             20
         end"""
-        @test fmt(str) == str
+        @test fmt(str) == normalized
 
         # test aligning to function identation
         str_ = """
@@ -1493,7 +1501,7 @@
         function f()
             20
         end"""
-        @test fmt(str_) == str
+        @test fmt(str_) == normalized
 
         str = """\"""
                  doc for Foo
@@ -1571,7 +1579,7 @@
         \\\\
         \"""
         x"""
-        @test fmt(str) == str
+        @test_broken fmt(str) == str
 
         str = """
         begin
@@ -4249,7 +4257,7 @@ some_function(
             a &&
 
 
-        b &&  
+        b &&
         c"""
         str = """var = a && b && c"""
         @test fmt(str_) == str
@@ -4261,7 +4269,7 @@ some_function(
             a ?
 
 
-        b :          
+        b :
 
 
 
@@ -4276,7 +4284,7 @@ some_function(
             a +
 
 
-        b +          
+        b +
 
 
 
@@ -4291,7 +4299,7 @@ some_function(
             a   ==
 
 
-        b   ==          
+        b   ==
 
 
 
@@ -4835,5 +4843,105 @@ some_function(
         return arg1 ||
                arg2"""
         @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "Format docstrings" begin
+        unformatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a =  1
+         b  = 2
+         a + b
+        ```
+
+        ```jldoctest
+        a =  1
+        b  = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a =  1
+        1
+
+        julia> b  = 2;
+
+        julia>  a + b
+        3
+
+        julia> function test(x)
+               x + 1
+               end;
+        ```
+        \"""
+        function test(x) x end
+        """
+
+        formatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a = 1
+        b = 2
+        a + b
+        ```
+
+        ```jldoctest
+        a = 1
+        b = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a = 1
+        1
+
+        julia> b = 2;
+
+
+        julia> a + b
+        3
+
+        julia> function test(x)
+                   x + 1
+               end;
+        
+        ```
+        \"""
+        function test(x)
+            x
+        end"""
+        @test fmt(unformatted) == formatted
+    end
+    @testset "Multi-line indented code-blocks" begin
+        unformatted = """
+        \"""
+            format_text(
+            )
+        \"""
+        function format_text() end
+        """
+
+        formatted = """
+        \"""
+        ```
+        format_text(
+        )
+        ```
+        \"""
+        function format_text() end"""
+
+        @test format_text(unformatted) == formatted
     end
 end
