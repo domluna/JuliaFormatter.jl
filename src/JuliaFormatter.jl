@@ -187,6 +187,25 @@ An exception to this is if the LHS ends with "!" then even if `whitespace_in_kwa
 false, `=` will still be surrounded by whitespace. The logic behind this intervention being
 on the following parse the `!` will be treated as part of `=`, as in a "not equal" binary
 operation. This would change the semantics of the code and is therefore disallowed.
+
+### `annotate_untyped_fields_with_any`
+
+Annotates fields in a type definitions with `::Any` if no type annotation is provided:
+
+```julia
+struct A
+    arg1
+end
+```
+
+to
+
+```julia
+struct A
+    arg1::Any
+end
+```
+
 """
 function format_text(
     text::AbstractString;
@@ -202,6 +221,7 @@ function format_text(
     short_to_long_function_def::Bool = false,
     always_use_return::Bool = false,
     whitespace_in_kwargs::Bool = true,
+    annotate_untyped_fields_with_any::Bool = true,
 )
     isempty(text) && return text
 
@@ -221,6 +241,7 @@ function format_text(
         short_to_long_function_def = short_to_long_function_def,
         always_use_return = always_use_return,
         whitespace_in_kwargs = whitespace_in_kwargs,
+        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)

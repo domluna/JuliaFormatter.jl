@@ -277,4 +277,110 @@
         @test fmt(str_, 4, 80, style = DefaultStyle(), whitespace_in_kwargs = true) == str
     end
 
+    @testset "annotate untyped fields with `Any`" begin
+        str = """
+        struct name
+            arg::Any
+        end"""
+
+        str_ = """
+        struct name
+            arg
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        struct name
+        arg
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        struct name
+                arg
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 12
+
+        str = """
+        mutable struct name
+            reallylongfieldname::Any
+        end"""
+
+        str_ = """
+        mutable struct name
+            reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        mutable struct name
+        reallylongfieldname
+        end"""
+        @test fmt(str_) == str
+
+        str_ = """
+        mutable struct name
+                reallylongfieldname
+            end"""
+        @test fmt(str_) == str
+
+        t = run_pretty(str_, 80)
+        @test length(t) == 28
+
+        str = """
+        struct name
+            arg
+        end"""
+
+        str_ = """
+        struct name
+            arg
+        end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        str_ = """
+        struct name
+        arg
+        end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        str_ = """
+        struct name
+                arg
+            end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
+        @test length(t) == 11
+
+        str = """
+        mutable struct name
+            reallylongfieldname
+        end"""
+
+        str_ = """
+        mutable struct name
+            reallylongfieldname
+        end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        str_ = """
+        mutable struct name
+        reallylongfieldname
+        end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        str_ = """
+        mutable struct name
+                reallylongfieldname
+            end"""
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+
+        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
+        @test length(t) == 23
+    end
+
 end

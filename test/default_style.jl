@@ -1220,61 +1220,6 @@
         @test length(t) == 27
     end
 
-    @testset "structs" begin
-        str = """
-        struct name
-            arg::Any
-        end"""
-
-        str_ = """
-        struct name
-            arg
-        end"""
-        @test fmt(str_) == str
-
-        str_ = """
-        struct name
-        arg
-        end"""
-        @test fmt(str_) == str
-
-        str_ = """
-        struct name
-                arg
-            end"""
-        @test fmt(str_) == str
-
-        t = run_pretty(str_, 80)
-        @test length(t) == 12
-
-        str = """
-        mutable struct name
-            reallylongfieldname::Any
-        end"""
-
-        str_ = """
-        mutable struct name
-            reallylongfieldname
-        end"""
-        @test fmt(str_) == str
-
-        str_ = """
-        mutable struct name
-        reallylongfieldname
-        end"""
-        @test fmt(str_) == str
-
-        str_ = """
-        mutable struct name
-                reallylongfieldname
-            end"""
-        @test fmt(str_) == str
-
-        t = run_pretty(str_, 80)
-        @test length(t) == 28
-
-    end
-
     @testset "try" begin
         str = """
         try
