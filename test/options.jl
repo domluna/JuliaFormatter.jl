@@ -339,21 +339,21 @@
         struct name
             arg
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         struct name
         arg
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         struct name
                 arg
             end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any=false))
+        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
         @test length(t) == 11
 
         str = """
@@ -365,21 +365,21 @@
         mutable struct name
             reallylongfieldname
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         mutable struct name
         reallylongfieldname
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         mutable struct name
                 reallylongfieldname
             end"""
-        @test fmt(str_, annotate_untyped_fields_with_any=false) == str
+        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any=false))
+        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
         @test length(t) == 23
     end
 

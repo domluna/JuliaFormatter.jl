@@ -587,7 +587,7 @@ function p_struct(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent += s.indent_size
         n = pretty(style, cst[3], s, ignore_single_line = true)
         if s.opts.annotate_untyped_fields_with_any
-           annotate_typefields_with_any!(n, s)
+            annotate_typefields_with_any!(n, s)
         end
         add_node!(t, n, s, max_padding = s.indent_size)
         s.indent -= s.indent_size

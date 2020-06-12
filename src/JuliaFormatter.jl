@@ -241,7 +241,7 @@ function format_text(
         short_to_long_function_def = short_to_long_function_def,
         always_use_return = always_use_return,
         whitespace_in_kwargs = whitespace_in_kwargs,
-annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
+        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
     )
     s = State(Document(text), indent, margin, opts)
     t = pretty(style, x, s)
