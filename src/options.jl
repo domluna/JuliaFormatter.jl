@@ -8,4 +8,5 @@ Base.@kwdef struct Options
     short_to_long_function_def::Bool = false
     always_use_return::Bool = false
     whitespace_in_kwargs::Bool = true
+    annotate_untyped_fields_with_any::Bool = true
 end
