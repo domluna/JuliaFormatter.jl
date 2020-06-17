@@ -207,6 +207,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
            en.typ === CSTParser.Filter ||
            en.typ === CSTParser.Flatten ||
            en.typ === CSTParser.MacroCall ||
+           en.typ === MacroBlock ||
            (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
             # don't insert trailing comma in these cases
         elseif is_comma(en)
