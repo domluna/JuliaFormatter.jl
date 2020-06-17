@@ -4781,4 +4781,16 @@ some_function(
                arg2"""
         @test fmt(str_, 4, 1) == str
     end
+
+    @testset "issue 248" begin
+        str_ = """
+        var = call(a, @macrocall b)"""
+        str = """
+        var =
+            call(
+                a,
+                @macrocall b
+            )"""
+        @test fmt(str_, 4, 1) == str
+    end
 end
