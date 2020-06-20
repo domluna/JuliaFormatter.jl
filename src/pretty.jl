@@ -1168,7 +1168,7 @@ function p_binaryopcall(
     nrhs && (t.force_nest = true)
     nest = (nestable(style, cst) && !nonest) || nrhs
 
-    if op.fullspan == 0 && cst[3].typ === CSTParser.IDENTIFIER
+    if op.fullspan == 0
         # noop
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
