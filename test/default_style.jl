@@ -361,7 +361,9 @@
         # issue 74
         @test fmt("0:1/3:2") == "0:1/3:2"
         @test fmt("2a") == "2a"
-        @test fmt("2(a+1)") == "2 * (a + 1)"
+        # issue 251
+        @test fmt("2(a+1)") == "2(a + 1)"
+        @test fmt("1 / 2a^2") == "1 / 2a^2"
 
         str_ = "a[1:2 * num_source * num_dump-1]"
         str = "a[1:2*num_source*num_dump-1]"
