@@ -4,16 +4,20 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Markdown: Markdown, MD, Code, plain
+using Documenter.DocTests: repl_splitter
+import Markdown
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
 abstract type AbstractStyle end
 
 """
-    DefaultStyle
+```
+DefaultStyle
+```
 
-The default formatting style. See the style section of the documentation
-for more details.
+The default formatting style. See the style section of the documentation for more details.
 """
 struct DefaultStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -37,24 +41,25 @@ include("styles/yas.jl")
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 
 """
-    format_text(
-        text::AbstractString;
-        indent::Int = 4,
-        margin::Int = 92,
-        style::AbstractStyle = DefaultStyle(),
-        always_for_in::Bool = false,
-        whitespace_typedefs::Bool = false,
-        whitespace_ops_in_indices::Bool = false,
-        remove_extra_newlines::Bool = false,
-        import_to_using::Bool = false,
-        pipe_to_function_call::Bool = false,
-        short_to_long_function_def::Bool = false,
-        always_use_return::Bool = false,
-        whitespace_in_kwargs::Bool = true,
-    )::String
+```
+format_text(
+    text::AbstractString;
+    indent::Int = 4,
+    margin::Int = 92,
+    style::AbstractStyle = DefaultStyle(),
+    always_for_in::Bool = false,
+    whitespace_typedefs::Bool = false,
+    whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
+    whitespace_in_kwargs::Bool = true,
+)::String
+```
 
-Formats a Julia source passed in as a string, returning the formatted
-code as another string.
+Formats a Julia source passed in as a string, returning the formatted code as another string.
 
 ## Formatting Options
 
@@ -64,24 +69,19 @@ The number of spaces used for an indentation.
 
 ### `margin`
 
-The maximum length of a line. Code exceeding this margin will
-be formatted across multiple lines.
+The maximum length of a line. Code exceeding this margin will be formatted across multiple lines.
 
 ### `always_for_in`
 
-If true, `=` is always replaced with `in` if part of a `for` loop condition.
-For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+If true, `=` is always replaced with `in` if part of a `for` loop condition. For example, `for i = 1:10` will be transformed to `for i in 1:10`.
 
 ### `whitespace_typedefs`
 
-If true, whitespace is added for type definitions. Make this `true`
-if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
+If true, whitespace is added for type definitions. Make this `true` if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
 ### `whitespace_ops_in_indices`
 
-If true, whitespace is added for binary operations in indices. Make this
-`true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's
-a colon `:` involved, parenthesis will be added to the LHS and RHS.
+If true, whitespace is added for binary operations in indices. Make this `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's a colon `:` involved, parenthesis will be added to the LHS and RHS.
 
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
@@ -107,8 +107,7 @@ b = 2
 
 ### `import_to_using`
 
-If true, `import` expressions are rewritten to `using` expressions
-in the following cases:
+If true, `import` expressions are rewritten to `using` expressions in the following cases:
 
 ```julia
 import A
@@ -132,13 +131,13 @@ If true, `x |> f` is rewritten to `f(x)`.
 
 ### `short_to_long_function_def`
 
-Transforms a _short_ function definition
+Transforms a *short* function definition
 
 ```julia
 f(arg1, arg2) = body
 ```
 
-to a _long_ function definition
+to a *long* function definition
 
 ```julia
 function f(arg2, arg2)
@@ -148,8 +147,7 @@ end
 
 ### `always_use_return`
 
-If true, `return` will be prepended to the last expression where
-applicable in function definitions, macro definitions, and do blocks.
+If true, `return` will be prepended to the last expression where applicable in function definitions, macro definitions, and do blocks.
 
 Example:
 
@@ -183,10 +181,7 @@ to
 f(; a = 4)
 ```
 
-An exception to this is if the LHS ends with "!" then even if `whitespace_in_kwargs` is
-false, `=` will still be surrounded by whitespace. The logic behind this intervention being
-on the following parse the `!` will be treated as part of `=`, as in a "not equal" binary
-operation. This would change the semantics of the code and is therefore disallowed.
+An exception to this is if the LHS ends with "!" then even if `whitespace_in_kwargs` is false, `=` will still be surrounded by whitespace. The logic behind this intervention being on the following parse the `!` will be treated as part of `=`, as in a "not equal" binary operation. This would change the semantics of the code and is therefore disallowed.
 
 ### `annotate_untyped_fields_with_any`
 
@@ -205,7 +200,6 @@ struct A
     arg1::Any
 end
 ```
-
 """
 function format_text(
     text::AbstractString;
@@ -244,6 +238,18 @@ function format_text(
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
     )
     s = State(Document(text), indent, margin, opts)
+    _format_text(style, s, x)
+end
+
+function format_text(style, state, text)
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input:\n\n$text")
+    s = State(Document(text), state.indent, state.margin, state.opts)
+    _format_text(style, s, x)
+end
+
+function _format_text(style, s, x)
+    opts = s.opts
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
@@ -277,32 +283,30 @@ function format_text(
 end
 
 """
-    format_file(
-        filename::AbstractString;
-        overwrite::Bool = true,
-        verbose::Bool = false,
-        format_options...,
-    )::Bool
+```
+format_file(
+    filename::AbstractString;
+    overwrite::Bool = true,
+    verbose::Bool = false,
+    format_options...,
+)::Bool
+```
 
 Formats the contents of `filename` assuming it's a Julia source file.
 
 ### File Options
 
-If `overwrite` is `true` the file will be reformatted in place, overwriting
-the existing file; if it is `false`, the formatted version of `foo.jl` will
-be written to `foo_fmt.jl` instead.
+If `overwrite` is `true` the file will be reformatted in place, overwriting the existing file; if it is `false`, the formatted version of `foo.jl` will be written to `foo_fmt.jl` instead.
 
-If `verbose` is `true` details related to formatting the file will be printed
-to `stdout`.
+If `verbose` is `true` details related to formatting the file will be printed to `stdout`.
 
 ### Formatting Options
 
 See [`format_text`](@ref) for description of formatting options.
 
 ### Output
- 
-Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+
+Returns a boolean indicating whether the file was already formatted (`true`) or not (`false`).
 """
 function format_file(
     filename::AbstractString;
@@ -366,25 +370,22 @@ end
 const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
 
 """
-    format(
-        paths; # a path or collection of paths
-        options...,
-    )::Bool
+```
+format(
+    paths; # a path or collection of paths
+    options...,
+)::Bool
+```
 
-Recursively descend into files and directories, formatting any `.jl`
-files by calling `format_file` on them.
+Recursively descend into files and directories, formatting any `.jl` files by calling `format_file` on them.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
-This function will look for `.JuliaFormatter.toml` in the location of the file being
-formatted, and searching _up_ the file tree until a config file is (or isn't) found.
-When found, the configurations in the file will overwrite the given `options`.
-See ["Configuration File"](@id) for more details.
+This function will look for `.JuliaFormatter.toml` in the location of the file being formatted, and searching *up* the file tree until a config file is (or isn't) found. When found, the configurations in the file will overwrite the given `options`. See ["Configuration File"](@id) for more details.
 
 ### Output
- 
-Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+
+Returns a boolean indicating whether the file was already formatted (`true`) or not (`false`).
 """
 function format(paths; options...)::Bool
     dir2config = Dict{String,Any}()

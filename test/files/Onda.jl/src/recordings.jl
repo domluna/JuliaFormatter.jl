@@ -55,14 +55,15 @@ end
 #####
 
 """
-    Annotation <: AbstractTimeSpan
+```
+Annotation <: AbstractTimeSpan
+```
 
-A type representing an individual Onda annotation object. Instances contain
-the following fields, following the Onda specification for annotation objects:
+A type representing an individual Onda annotation object. Instances contain the following fields, following the Onda specification for annotation objects:
 
-- `value::String`
-- `start_nanosecond::Nanosecond`
-- `stop_nanosecond::Nanosecond`
+  * `value::String`
+  * `start_nanosecond::Nanosecond`
+  * `stop_nanosecond::Nanosecond`
 """
 struct Annotation <: AbstractTimeSpan
     value::String
@@ -89,21 +90,22 @@ Base.last(annotation::Annotation) = annotation.stop_nanosecond
 #####
 
 """
-    Signal
+```
+Signal
+```
 
-A type representing an individual Onda signal object. Instances contain
-the following fields, following the Onda specification for signal objects:
+A type representing an individual Onda signal object. Instances contain the following fields, following the Onda specification for signal objects:
 
-- `channel_names::Vector{Symbol}`
-- `start_nanosecond::Nanosecond`
-- `stop_nanosecond::Nanosecond`
-- `sample_unit::Symbol`
-- `sample_resolution_in_unit::Float64`
-- `sample_offset_in_unit::Float64`
-- `sample_type::DataType`
-- `sample_rate::Float64`
-- `file_extension::Symbol`
-- `file_options::Union{Nothing,Dict{Symbol,Any}}`
+  * `channel_names::Vector{Symbol}`
+  * `start_nanosecond::Nanosecond`
+  * `stop_nanosecond::Nanosecond`
+  * `sample_unit::Symbol`
+  * `sample_resolution_in_unit::Float64`
+  * `sample_offset_in_unit::Float64`
+  * `sample_type::DataType`
+  * `sample_rate::Float64`
+  * `file_extension::Symbol`
+  * `file_options::Union{Nothing,Dict{Symbol,Any}}`
 """
 Base.@kwdef struct Signal
     channel_names::Vector{Symbol}
@@ -145,17 +147,19 @@ function file_option(signal::Signal, name, default)
 end
 
 """
-    signal_from_template(signal::Signal;
-                         channel_names=signal.channel_names,
-                         start_nanosecond=signal.start_nanosecond,
-                         stop_nanosecond=signal.stop_nanosecond,
-                         sample_unit=signal.sample_unit,
-                         sample_resolution_in_unit=signal.sample_resolution_in_unit,
-                         sample_offset_in_unit=signal.sample_offset_in_unit,
-                         sample_type=signal.sample_type,
-                         sample_rate=signal.sample_rate,
-                         file_extension=signal.file_extension,
-                         file_options=signal.file_options)
+```
+signal_from_template(signal::Signal;
+                     channel_names=signal.channel_names,
+                     start_nanosecond=signal.start_nanosecond,
+                     stop_nanosecond=signal.stop_nanosecond,
+                     sample_unit=signal.sample_unit,
+                     sample_resolution_in_unit=signal.sample_resolution_in_unit,
+                     sample_offset_in_unit=signal.sample_offset_in_unit,
+                     sample_type=signal.sample_type,
+                     sample_rate=signal.sample_rate,
+                     file_extension=signal.file_extension,
+                     file_options=signal.file_options)
+```
 
 Return a `Signal` where each field is mapped to the corresponding keyword argument.
 """
@@ -175,7 +179,9 @@ function signal_from_template(signal::Signal; channel_names=signal.channel_names
 end
 
 """
-    channel(signal::Signal, name::Symbol)
+```
+channel(signal::Signal, name::Symbol)
+```
 
 Return `i` where `signal.channel_names[i] == name`.
 """
@@ -184,50 +190,62 @@ function channel(signal::Signal, name::Symbol)
 end
 
 """
-    channel(signal::Signal, i::Integer)
+```
+channel(signal::Signal, i::Integer)
+```
 
 Return `signal.channel_names[i]`.
 """
 channel(signal::Signal, i::Integer) = signal.channel_names[i]
 
 """
-    channel_count(signal::Signal)
+```
+channel_count(signal::Signal)
+```
 
 Return `length(signal.channel_names)`.
 """
 channel_count(signal::Signal) = length(signal.channel_names)
 
 """
-    span(signal::Signal)
+```
+span(signal::Signal)
+```
 
 Return `TimeSpan(signal.start_nanosecond, signal.stop_nanosecond)`.
 """
 span(signal::Signal) = TimeSpan(signal.start_nanosecond, signal.stop_nanosecond)
 
 """
-    duration(signal::Signal)
+```
+duration(signal::Signal)
+```
 
 Return `duration(span(signal))`.
 """
 duration(signal::Signal) = duration(span(signal))
 
 """
-    sample_count(signal::Signal)
+```
+sample_count(signal::Signal)
+```
 
-Return the number of multichannel samples that fit within `duration(signal)`
-given `signal.sample_rate`.
+Return the number of multichannel samples that fit within `duration(signal)` given `signal.sample_rate`.
 """
 function sample_count(signal::Signal)
     return index_from_time(signal.sample_rate, duration(signal)) - 1
 end
 
 """
-    sizeof_samples(signal::Signal)
+```
+sizeof_samples(signal::Signal)
+```
 
-Returns the expected size (in bytes) of the encoded `Samples` object corresponding
-to the entirety of `signal`:
+Returns the expected size (in bytes) of the encoded `Samples` object corresponding to the entirety of `signal`:
 
-    sample_count(signal) * channel_count(signal) * sizeof(signal.sample_type)
+```
+sample_count(signal) * channel_count(signal) * sizeof(signal.sample_type)
+```
 """
 function sizeof_samples(signal::Signal)
     return sample_count(signal) * channel_count(signal) * sizeof(signal.sample_type)
@@ -238,13 +256,14 @@ end
 #####
 
 """
-    Recording
+```
+Recording
+```
 
-A type representing an individual Onda recording object. Instances contain
-the following fields, following the Onda specification for recording objects:
+A type representing an individual Onda recording object. Instances contain the following fields, following the Onda specification for recording objects:
 
-- `signals::Dict{Symbol,Signal}`
-- `annotations::Set{Annotation}`
+  * `signals::Dict{Symbol,Signal}`
+  * `annotations::Set{Annotation}`
 """
 struct Recording
     signals::Dict{Symbol,Signal}
@@ -258,7 +277,9 @@ end
 MsgPack.msgpack_type(::Type{Recording}) = MsgPack.StructType()
 
 """
-    annotate!(recording::Recording, annotation::Annotation)
+```
+annotate!(recording::Recording, annotation::Annotation)
+```
 
 Returns `push!(recording.annotations, annotation)`.
 """
@@ -267,10 +288,11 @@ function annotate!(recording::Recording, annotation::Annotation)
 end
 
 """
-    duration(recording::Recording)
+```
+duration(recording::Recording)
+```
 
-Returns `maximum(s -> s.stop_nanosecond, values(recording.signals))`; throws an
-`ArgumentError` if `recording.signals` is empty.
+Returns `maximum(s -> s.stop_nanosecond, values(recording.signals))`; throws an `ArgumentError` if `recording.signals` is empty.
 """
 function duration(recording::Recording)
     isempty(recording.signals) &&
@@ -279,11 +301,11 @@ function duration(recording::Recording)
 end
 
 """
-    set_span!(recording::Recording, name::Symbol, span::AbstractTimeSpan)
+```
+set_span!(recording::Recording, name::Symbol, span::AbstractTimeSpan)
+```
 
-Replace `recording.signals[name]` with a copy that has the `start_nanosecond`
-and `start_nanosecond` fields set to match the provided `span`. Returns the
-newly constructed `Signal` instance.
+Replace `recording.signals[name]` with a copy that has the `start_nanosecond` and `start_nanosecond` fields set to match the provided `span`. Returns the newly constructed `Signal` instance.
 """
 function set_span!(recording::Recording, name::Symbol, span::AbstractTimeSpan)
     signal = signal_from_template(recording.signals[name]; start_nanosecond=first(span),
@@ -293,7 +315,9 @@ function set_span!(recording::Recording, name::Symbol, span::AbstractTimeSpan)
 end
 
 """
-    set_span!(recording::Recording, span::TimeSpan)
+```
+set_span!(recording::Recording, span::TimeSpan)
+```
 
 Return `Dict(name => set_span!(recording, name, span) for name in keys(recording.signals))`
 """

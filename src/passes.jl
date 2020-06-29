@@ -11,8 +11,7 @@ end
 flattenable(::Nothing) = false
 
 """
-Flattens a binary operation call tree if the operation repeats 2 or more times.
-"a && b && c" will be transformed while "a && b" will not.
+Flattens a binary operation call tree if the operation repeats 2 or more times. "a && b && c" will be transformed while "a && b" will not.
 """
 function flatten_binaryopcall(fst::FST; top = true)
     nodes = FST[]
@@ -71,7 +70,9 @@ function flatten_fst!(fst::FST)
 end
 
 """
-    pipe_to_function_call_pass!(fst::FST)
+```
+pipe_to_function_call_pass!(fst::FST)
+```
 
 Rewrites `x |> f` to `f(x)`.
 """
@@ -147,10 +148,11 @@ function import_to_usings(fst::FST, s::State)
 end
 
 """
-    annotate_typefields_with_any!(fst::FST, s::State)
+```
+annotate_typefields_with_any!(fst::FST, s::State)
+```
 
-Annotates fields in a type definitions with `::Any` if
-no type annotation is provided.
+Annotates fields in a type definitions with `::Any` if no type annotation is provided.
 """
 function annotate_typefields_with_any!(fst::FST, s::State)
     is_leaf(fst) && return
@@ -180,15 +182,17 @@ function annotate_typefields_with_any!(fst::FST, s::State)
 end
 
 """
-    short_to_long_function_def!(fst::FST, s::State)
+```
+short_to_long_function_def!(fst::FST, s::State)
+```
 
-Transforms a _short_ function definition
+Transforms a *short* function definition
 
 ```julia
 f(arg1, arg2) = body
 ```
 
-to a _long_ function definition
+to a *long* function definition
 
 ```julia
 function f(arg2, arg2)
@@ -265,11 +269,11 @@ function short_to_long_function_def!(fst::FST, s::State)
 end
 
 """
-    binaryop_to_whereop(fst::FST, s::State)
+```
+binaryop_to_whereop(fst::FST, s::State)
+```
 
-
-Handles the case of a function def defined
-as:
+Handles the case of a function def defined as:
 
 ```julia
 foo(a::A)::R where A = body
@@ -333,7 +337,9 @@ function binaryop_to_whereop!(fst::FST, s::State)
 end
 
 """
-    prepend_return!(fst::FST, s::State)
+```
+prepend_return!(fst::FST, s::State)
+```
 
 Prepends `return` to the last expression of a block.
 
@@ -367,10 +373,11 @@ function prepend_return!(fst::FST, s::State)
 end
 
 """
-    move_at_sign_to_the_end(fst::FST, s::State)
+```
+move_at_sign_to_the_end(fst::FST, s::State)
+```
 
-NOTE: Assumes `fst` is the caller name of a macrocall such as
-`@macro` or `Module.@macro`.
+NOTE: Assumes `fst` is the caller name of a macrocall such as `@macro` or `Module.@macro`.
 
 Moves `@` to the last indentifier.
 

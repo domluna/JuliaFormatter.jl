@@ -9,18 +9,16 @@ using Onda, Test, Random, Dates
 #####
 
 """
-     FLAC(lpcm::LPCM; sample_rate, level=5)
-     FLAC(signal::Signal; level=5)
+```
+ FLAC(lpcm::LPCM; sample_rate, level=5)
+ FLAC(signal::Signal; level=5)
+```
 
-Return a `FLAC<:AbstractLPCMSerializer` instance that represents the
-FLAC format assumed for signal files with the ".flac" extension.
+Return a `FLAC<:AbstractLPCMSerializer` instance that represents the FLAC format assumed for signal files with the ".flac" extension.
 
-The `sample_rate` keyword argument corresponds to `flac`'s `--sample-rate` flag,
-while `level` corresponds to `flac`'s `--compression-level` flag.
+The `sample_rate` keyword argument corresponds to `flac`'s `--sample-rate` flag, while `level` corresponds to `flac`'s `--compression-level` flag.
 
-Note that FLAC is only applicable for signals where `1 <= signal.channel_count <= 8`
-and `sizeof(signal.sample_type) in (1, 2)`. The corresponding `signal.file_options`
-value may be either `nothing` or `Dict(:level => i)` where `0 <= i <= 8`.
+Note that FLAC is only applicable for signals where `1 <= signal.channel_count <= 8` and `sizeof(signal.sample_type) in (1, 2)`. The corresponding `signal.file_options` value may be either `nothing` or `Dict(:level => i)` where `0 <= i <= 8`.
 
 See https://xiph.org/flac/ for details about FLAC.
 

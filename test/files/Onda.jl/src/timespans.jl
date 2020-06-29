@@ -1,15 +1,16 @@
 """
-    AbstractTimeSpan
+```
+AbstractTimeSpan
+```
 
 A type repesenting a continuous, inclusive span between two points in time.
 
 All subtypes of `AbstractTimeSpan` must implement:
 
-- `first(::AbstractTimeSpan)::Nanosecond`: return the first nanosecond contained in `span`
-- `last(::AbstractTimeSpan)::Nanosecond`: return the last nanosecond contained in `span`
+  * `first(::AbstractTimeSpan)::Nanosecond`: return the first nanosecond contained in `span`
+  * `last(::AbstractTimeSpan)::Nanosecond`: return the last nanosecond contained in `span`
 
-For convenience, many Onda functions that accept `AbstractTimeSpan` values also accept
-`Dates.Period` values.
+For convenience, many Onda functions that accept `AbstractTimeSpan` values also accept `Dates.Period` values.
 
 See also: [`TimeSpan`](@ref)
 """
@@ -31,7 +32,9 @@ end
 #####
 
 """
-    TimeSpan(first, last)
+```
+TimeSpan(first, last)
+```
 
 Return `TimeSpan(Nanosecond(first), Nanosecond(last))::AbstractTimeSpan`.
 
@@ -48,7 +51,9 @@ struct TimeSpan <: AbstractTimeSpan
 end
 
 """
-    TimeSpan(x)
+```
+TimeSpan(x)
+```
 
 Return `TimeSpan(first(x), last(x))`.
 
@@ -65,7 +70,9 @@ Base.last(span::TimeSpan) = span.last
 #####
 
 """
-    contains(a, b)
+```
+contains(a, b)
+```
 
 Return `true` if the timespan `b` lies entirely within the timespan `a`, return `false` otherwise.
 """
@@ -75,7 +82,9 @@ function contains(a, b)
 end
 
 """
-    overlaps(a, b)
+```
+overlaps(a, b)
+```
 
 Return `true` if the timespan `a` and the timespan `b` overlap, return `false` otherwise.
 """
@@ -86,7 +95,9 @@ function overlaps(a, b)
 end
 
 """
-    shortest_timespan_containing(spans)
+```
+shortest_timespan_containing(spans)
+```
 
 Return the shortest possible `TimeSpan` containing all timespans in `spans`.
 
@@ -103,7 +114,9 @@ function shortest_timespan_containing(spans)
 end
 
 """
-    duration(span)
+```
+duration(span)
+```
 
 Return the duration of `span` as a `Period`.
 
@@ -117,11 +130,11 @@ duration(t::Period) = t
 nanoseconds_per_sample(sample_rate) = inv(sample_rate) * 1_000_000_000
 
 """
-    index_from_time(sample_rate, sample_time)
+```
+index_from_time(sample_rate, sample_time)
+```
 
-Given `sample_rate` in Hz, return the integer index of the most recent sample
-taken at `sample_time`. Note that `sample_time` must be non-negative and support
-`convert(Nanosecond, sample_time)`.
+Given `sample_rate` in Hz, return the integer index of the most recent sample taken at `sample_time`. Note that `sample_time` must be non-negative and support `convert(Nanosecond, sample_time)`.
 
 Examples:
 
@@ -148,7 +161,9 @@ function index_from_time(sample_rate, sample_time)
 end
 
 """
-    index_from_time(sample_rate, span::AbstractTimeSpan)
+```
+index_from_time(sample_rate, span::AbstractTimeSpan)
+```
 
 Return the `UnitRange` of indices corresponding to `span` given `sample_rate` in Hz:
 
@@ -171,10 +186,11 @@ function index_from_time(sample_rate, span::AbstractTimeSpan)
 end
 
 """
-    time_from_index(sample_rate, sample_index)
+```
+time_from_index(sample_rate, sample_index)
+```
 
-Given `sample_rate` in Hz and assuming `sample_index > 0`, return the earliest
-`Nanosecond` containing `sample_index`.
+Given `sample_rate` in Hz and assuming `sample_index > 0`, return the earliest `Nanosecond` containing `sample_index`.
 
 Examples:
 
@@ -198,7 +214,9 @@ function time_from_index(sample_rate, index)
 end
 
 """
-    time_from_index(sample_rate, sample_range::AbstractUnitRange)
+```
+time_from_index(sample_rate, sample_range::AbstractUnitRange)
+```
 
 Return the `TimeSpan` corresponding to `sample_range` given `sample_rate` in Hz:
 

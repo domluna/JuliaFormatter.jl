@@ -98,19 +98,19 @@ function dedent!(fst::FST, s::State)
 end
 
 """
-    nest_if_over_margin!(
-        style,
-        fst::FST,
-        s::State,
-        idx::Int;
-        stop_idx::Union{Int,Nothing} = nothing,
-    )
+```
+nest_if_over_margin!(
+    style,
+    fst::FST,
+    s::State,
+    idx::Int;
+    stop_idx::Union{Int,Nothing} = nothing,
+)
+```
 
-Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than
-the allowed margin.
+Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than the allowed margin.
 
-If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will
-be included.
+If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will be included.
 """
 function nest_if_over_margin!(
     style,

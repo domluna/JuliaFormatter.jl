@@ -1,13 +1,13 @@
 # This file is a part of Julia. License is MIT: https://julialang.org/license
 
 """
-    Docs
+```
+Docs
+```
 
-The `Docs` module provides the `@doc` macro which can be used to set and retrieve
-documentation metadata for Julia objects.
+The `Docs` module provides the `@doc` macro which can be used to set and retrieve documentation metadata for Julia objects.
 
-Please see the manual section on documentation for more
-information.
+Please see the manual section on documentation for more information.
 """
 module Docs
 
@@ -18,45 +18,51 @@ module Docs
 
 Functions, methods and types can be documented by placing a string before the definition:
 
-    \"""
-    # The Foo Function
-    `foo(x)`: Foo the living hell out of `x`.
-    \"""
-    foo(x) = ...
+```
+\"""
+# The Foo Function
+`foo(x)`: Foo the living hell out of `x`.
+\"""
+foo(x) = ...
+```
 
-The `@doc` macro can be used directly to both set and retrieve documentation / metadata. By
-default, documentation is written as Markdown, but any object can be placed before the
-arrow. For example:
+The `@doc` macro can be used directly to both set and retrieve documentation / metadata. By default, documentation is written as Markdown, but any object can be placed before the arrow. For example:
 
-    @doc "blah" ->
-    function foo() ...
+```
+@doc "blah" ->
+function foo() ...
+```
 
 The `->` is not required if the object is on the same line, e.g.
 
-    @doc "foo" foo
+```
+@doc "foo" foo
+```
 
 ## Documenting objects after they are defined
+
 You can document an object after its definition by
 
-    @doc "foo" function_to_doc
-    @doc "bar" TypeToDoc
+```
+@doc "foo" function_to_doc
+@doc "bar" TypeToDoc
+```
 
-For macros, the syntax is `@doc "macro doc" :(@Module.macro)` or `@doc "macro doc"
-:(string_macro"")` for string macros. Without the quote `:()` the expansion of the macro
-will be documented.
+For macros, the syntax is `@doc "macro doc" :(@Module.macro)` or `@doc "macro doc" :(string_macro"")` for string macros. Without the quote `:()` the expansion of the macro will be documented.
 
 ## Retrieving Documentation
+
 You can retrieve docs for functions, macros and other objects as follows:
 
-    @doc foo
-    @doc @time
-    @doc md""
+```
+@doc foo
+@doc @time
+@doc md""
+```
 
 ## Functions & Methods
-Placing documentation before a method definition (e.g. `function foo() ...` or `foo() = ...`)
-will cause that specific method to be documented, as opposed to the whole function. Method
-docs are concatenated together in the order they were defined to provide docs for the
-function.
+
+Placing documentation before a method definition (e.g. `function foo() ...` or `foo() = ...`) will cause that specific method to be documented, as opposed to the whole function. Method docs are concatenated together in the order they were defined to provide docs for the function.
 """
 :(Core.@doc)
 
@@ -131,16 +137,15 @@ tvar(s::Symbol) = :($s <: Any)
 # ================
 
 """
-    Docs.DocStr
+```
+Docs.DocStr
+```
 
 Stores the contents of a single docstring as well as related metadata.
 
-Both the raw text, `.text`, and the parsed markdown, `.object`, are tracked by this type.
-Parsing of the raw text is done lazily when a request is made to render the docstring,
-which helps to reduce total precompiled image size.
+Both the raw text, `.text`, and the parsed markdown, `.object`, are tracked by this type. Parsing of the raw text is done lazily when a request is made to render the docstring, which helps to reduce total precompiled image size.
 
-The `.data` fields stores several values related to the docstring, such as: path,
-linenumber, source code, and fielddocs.
+The `.data` fields stores several values related to the docstring, such as: path, linenumber, source code, and fielddocs.
 """
 mutable struct DocStr
     text::Core.SimpleVector
@@ -178,19 +183,23 @@ end
 docexpr(__source__, __module__, args...) = Expr(:call, docstr, args...)
 
 """
-    MultiDoc
+```
+MultiDoc
+```
 
-Stores a collection of docstrings for related objects, ie. a `Function`/`DataType` and
-associated `Method` objects.
+Stores a collection of docstrings for related objects, ie. a `Function`/`DataType` and associated `Method` objects.
 
-Each documented object in a `MultiDoc` is referred to by it's signature which is represented
-by a `Union` of `Tuple` types. For example, the following `Method` definition
+Each documented object in a `MultiDoc` is referred to by it's signature which is represented by a `Union` of `Tuple` types. For example, the following `Method` definition
 
-    f(x, y) = ...
+```
+f(x, y) = ...
+```
 
 is stored as `Tuple{Any, Any}` in the `MultiDoc` while
 
-    f(x::T, y = ?) where {T} = ...
+```
+f(x::T, y = ?) where {T} = ...
+```
 
 is stored as `Union{Tuple{T, Any}, Tuple{T}} where T`.
 
@@ -209,7 +218,9 @@ end
 # =======================
 
 """
-    Docs.doc!(__module__, binding, str, sig)
+```
+Docs.doc!(__module__, binding, str, sig)
+```
 
 Adds a new docstring `str` to the docsystem of `__module__` for `binding` and signature `sig`.
 """
@@ -237,18 +248,16 @@ end
 # =================
 
 """
-    getdoc(obj)
-    getdoc(obj, sig)
+```
+getdoc(obj)
+getdoc(obj, sig)
+```
 
-Return a custom docstring object associated with the object `obj` and, optionally, the tuple
-type signature `sig`. See `MultiDoc` docs for an explanation of the possible values of `sig`.
+Return a custom docstring object associated with the object `obj` and, optionally, the tuple type signature `sig`. See `MultiDoc` docs for an explanation of the possible values of `sig`.
 
-The returned object can either be a markdown object generated by `Markdown.parse` or some
-other custom type used to display non-markdown formatted documentation.
+The returned object can either be a markdown object generated by `Markdown.parse` or some other custom type used to display non-markdown formatted documentation.
 
-A return value of `nothing` can be used to signify to the docsystem that no documentation
-was found for `obj`, in which case the docsystem will fall back to searching for the
-`Binding` associated with `obj` instead.
+A return value of `nothing` can be used to signify to the docsystem that no documentation was found for `obj`, in which case the docsystem will fall back to searching for the `Binding` associated with `obj` instead.
 """
 function getdoc end
 
@@ -306,16 +315,18 @@ isfield(@nospecialize x) =
 # =========================
 
 """
-    Docs.metadata(source, module, expr, ismodule)
+```
+Docs.metadata(source, module, expr, ismodule)
+```
 
 Build a `Dict` expression containing metadata captured from the expression `expr`.
 
 Fields that may be included in the returned `Dict`:
 
-- `:path`:       Symbol representing the file where `expr` is defined.
-- `:linenumber`: Linenumber where `expr` is defined.
-- `:module`:     Module where the docstring is defined.
-- `:fields`:     `Dict` of all field docs found in `expr`. Only for concrete types.
+  * `:path`:       Symbol representing the file where `expr` is defined.
+  * `:linenumber`: Linenumber where `expr` is defined.
+  * `:module`:     Module where the docstring is defined.
+  * `:fields`:     `Dict` of all field docs found in `expr`. Only for concrete types.
 """
 function metadata(__source__, __module__, expr, ismodule)
     args = []
@@ -449,18 +460,21 @@ function multidoc(__source__, __module__, meta, ex::Expr, define::Bool)
 end
 
 """
-    @__doc__(ex)
+```
+@__doc__(ex)
+```
 
-Low-level macro used to mark expressions returned by a macro that should be documented. If
-more than one expression is marked then the same docstring is applied to each expression.
+Low-level macro used to mark expressions returned by a macro that should be documented. If more than one expression is marked then the same docstring is applied to each expression.
 
-    macro example(f)
-        quote
-            \$(f)() = 0
-            @__doc__ \$(f)(x) = 1
-            \$(f)(x, y) = 2
-        end |> esc
-    end
+```
+macro example(f)
+    quote
+        \$(f)() = 0
+        @__doc__ \$(f)(x) = 1
+        \$(f)(x, y) = 2
+    end |> esc
+end
+```
 
 `@__doc__` has no effect when a macro that uses it is not documented.
 """

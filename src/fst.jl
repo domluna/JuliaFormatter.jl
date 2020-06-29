@@ -379,7 +379,9 @@ end
 end
 
 """
-    `length_to(x::FST, ntyps; start::Int = 1)`
+```
+`length_to(x::FST, ntyps; start::Int = 1)`
+```
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
@@ -524,11 +526,11 @@ op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
 is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
 
 """
-    is_standalone_shortcircuit(cst::CSTParser.EXPR)
+```
+is_standalone_shortcircuit(cst::CSTParser.EXPR)
+```
 
-Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`)
-and is _standalone_, meaning it's not directly associated with another statement or
-expression.
+Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`) and is *standalone*, meaning it's not directly associated with another statement or expression.
 
 ### Examples
 

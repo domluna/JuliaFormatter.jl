@@ -9,7 +9,9 @@ using OrderedCollections
 using Profile: clear
 
 """
-    PProf.clear()
+```
+PProf.clear()
+```
 
 Alias for `Profile.clear()`
 """
@@ -37,13 +39,13 @@ const PProfile = perftools.profiles.Profile
 const proc = Ref{Union{Base.Process,Nothing}}(nothing)
 
 """
-    _enter!(dict::OrderedDict{T, Int64}, key::T) where T
+```
+_enter!(dict::OrderedDict{T, Int64}, key::T) where T
+```
 
-Resolves from `key` to the index (zero-based) in the dict.
-Useful for the Strings table
+Resolves from `key` to the index (zero-based) in the dict. Useful for the Strings table
 
-NOTE: We must use Int64 throughout this package (regardless of system word-size) b/c the
-proto file specifies 64-bit integers.
+NOTE: We must use Int64 throughout this package (regardless of system word-size) b/c the proto file specifies 64-bit integers.
 """
 function _enter!(dict::OrderedDict{T,Int64}, key::T) where {T}
     if haskey(dict, key)
@@ -61,32 +63,32 @@ using Base.StackTraces: lookup, StackFrame
 # - Mappings
 
 """
-    pprof(data, period;
-            web = true, webhost = "localhost", webport = 57599,
-            out = "profile.pb.gz", from_c = true, drop_frames = "", keep_frames = "")
+```
+pprof(data, period;
+        web = true, webhost = "localhost", webport = 57599,
+        out = "profile.pb.gz", from_c = true, drop_frames = "", keep_frames = "")
+```
 
-Fetches the collected `Profile` data, exports to the `pprof` format, and (optionally) opens
-a `pprof` web-server for interactively viewing the results.
+Fetches the collected `Profile` data, exports to the `pprof` format, and (optionally) opens a `pprof` web-server for interactively viewing the results.
 
-If `web=true`, the web-server is opened in the background. Re-running `pprof()` will refresh
-the web-server to use the new output.
+If `web=true`, the web-server is opened in the background. Re-running `pprof()` will refresh the web-server to use the new output.
 
-If you manually edit the output file, `PProf.refresh()` will refresh the server without
-overwriting the output file. `PProf.kill()` will kill the server.
+If you manually edit the output file, `PProf.refresh()` will refresh the server without overwriting the output file. `PProf.kill()` will kill the server.
 
 # Arguments:
-- `data::Vector{UInt}`: The data provided by `Profile.fetch` [optional].
-- `period::UInt64`: The sampling period in nanoseconds [optional].
+
+  * `data::Vector{UInt}`: The data provided by `Profile.fetch` [optional].
+  * `period::UInt64`: The sampling period in nanoseconds [optional].
 
 # Keyword Arguments
-- `web::Bool`: Whether to launch the `go tool pprof` interactive webserver for viewing results.
-- `webhost::AbstractString`: If using `web`, which host to launch the webserver on.
-- `webport::Integer`: If using `web`, which port to launch the webserver on.
-- `out::String`: Filename for output.
-- `from_c::Bool`: If `false`, exclude frames that come from from_c. Defaults to `true`.
-- `drop_frames`: frames with function_name fully matching regexp string will be dropped from the samples,
-                 along with their successors.
-- `keep_frames`: frames with function_name fully matching regexp string will be kept, even if it matches drop_functions.
+
+  * `web::Bool`: Whether to launch the `go tool pprof` interactive webserver for viewing results.
+  * `webhost::AbstractString`: If using `web`, which host to launch the webserver on.
+  * `webport::Integer`: If using `web`, which port to launch the webserver on.
+  * `out::String`: Filename for output.
+  * `from_c::Bool`: If `false`, exclude frames that come from from_c. Defaults to `true`.
+  * `drop_frames`: frames with function_name fully matching regexp string will be dropped from the samples,                along with their successors.
+  * `keep_frames`: frames with function*name fully matching regexp string will be kept, even if it matches drop*functions.
 """
 function pprof(
     data::Union{Nothing,Vector{UInt}} = nothing,
@@ -249,13 +251,15 @@ function pprof(
 end
 
 """
-    refresh(; webhost = "localhost", webport = 57599, file = "profile.pb.gz")
+```
+refresh(; webhost = "localhost", webport = 57599, file = "profile.pb.gz")
+```
 
 Start or restart the go pprof webserver.
 
-- `webhost::AbstractString`: Which host to launch the webserver on.
-- `webport::Integer`: Which port to launch the webserver on.
-- `file::String`: Profile file to open.
+  * `webhost::AbstractString`: Which host to launch the webserver on.
+  * `webport::Integer`: Which port to launch the webserver on.
+  * `file::String`: Profile file to open.
 """
 function refresh(;
     webhost::AbstractString = "localhost",
@@ -275,7 +279,9 @@ function refresh(;
 end
 
 """
-    pprof_kill()
+```
+pprof_kill()
+```
 
 Kills the pprof server if running.
 """
@@ -288,7 +294,9 @@ end
 
 
 """
-    @pprof ex
+```
+@pprof ex
+```
 
 Profiles the expression using `@profile` and starts or restarts `pprof`.
 """
