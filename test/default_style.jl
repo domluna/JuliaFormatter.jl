@@ -4880,8 +4880,7 @@ some_function(
                end;
         ```
         \"""
-        function test(x) x end
-        """
+        function test(x) x end"""
 
         formatted = """
         \"""
@@ -4930,8 +4929,7 @@ some_function(
             format_text(
             )
         \"""
-        function format_text() end
-        """
+        function format_text() end"""
 
         formatted = """
         \"""
@@ -4941,7 +4939,6 @@ some_function(
         ```
         \"""
         function format_text() end"""
-
         @test format_text(unformatted) == formatted
     end
     @testset "Empty line in docstring" begin
@@ -4949,14 +4946,12 @@ some_function(
         \"""
 
         \"""
-        function test() end
-        """
+        function test() end"""
 
         formatted = """
         \"""
         \"""
-        function format_text() end"""
-
+        function test() end"""
         @test format_text(unformatted) == formatted
     end
 end

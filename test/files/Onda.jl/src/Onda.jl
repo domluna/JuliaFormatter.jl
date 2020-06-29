@@ -80,23 +80,16 @@ include("printing.jl")
 end
 
 """
-    Onda.upgrade_onda_format_from_v0_2_to_v0_3!(path, combine_annotation_key_value)
+```
+Onda.upgrade_onda_format_from_v0_2_to_v0_3!(path, combine_annotation_key_value)
+```
 
-Upgrade the Onda v0.2 dataset at `path` to a Onda v0.3 dataset, returning the
-upgraded `Dataset`. This upgrade process overwrites `path/recordings.msgpack.zst`
-with a v0.3-compliant version of this file; for safety's sake, the old v0.2 file
-is preserved at `path/old.recordings.msgpack.zst.backup`.
+Upgrade the Onda v0.2 dataset at `path` to a Onda v0.3 dataset, returning the upgraded `Dataset`. This upgrade process overwrites `path/recordings.msgpack.zst` with a v0.3-compliant version of this file; for safety's sake, the old v0.2 file is preserved at `path/old.recordings.msgpack.zst.backup`.
 
 A couple of the Onda v0.2 -> v0.3 changes require some special handling:
 
-- The `custom` field was removed from recording objects. This function thus writes out
-  a file at `path/recordings_custom.msgpack.zst` that contains a map of UUIDs to
-  corresponding recordings' `custom` values before deleting the `custom` field. This
-  file can be deserialized via `MsgPack.unpack(Onda.zstd_decompress(read("recordings_custom.msgpack.zst")))`.
-
-- Annotations no longer have a `key` field. Thus, each annotation's existing `key` and `value`
-  fields are combined into the single new `value` field via the provided callback
-  `combine_annotation_key_value(annotation_key, annotation_value)`.
+  * The `custom` field was removed from recording objects. This function thus writes out a file at `path/recordings_custom.msgpack.zst` that contains a map of UUIDs to corresponding recordings' `custom` values before deleting the `custom` field. This file can be deserialized via `MsgPack.unpack(Onda.zstd_decompress(read("recordings_custom.msgpack.zst")))`.
+  * Annotations no longer have a `key` field. Thus, each annotation's existing `key` and `value` fields are combined into the single new `value` field via the provided callback `combine_annotation_key_value(annotation_key, annotation_value)`.
 """
 function upgrade_onda_format_from_v0_2_to_v0_3!(path, combine_annotation_key_value)
     file_path = joinpath(path, "recordings.msgpack.zst")

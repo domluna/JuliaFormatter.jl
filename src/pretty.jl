@@ -239,35 +239,34 @@ end
 function format_docstrings!(style, state, doctest::Code)
     language = doctest.language
     code = doctest.code
-    doctest.code = if startswith(language, "@example") ||
-        startswith(language, "@repl") ||
-        startswith(language, "@eval")
-        format_text(style, state, code)
-    elseif startswith(language, "jldoctest")
-        if occursin(r"^julia> "m, code)
-            join(
-                (
-                    string(
-                        "julia> ",
-                        join(
-                            (
-                                line for line in split(format_text(input), '\n')
+    doctest.code =
+        if startswith(language, "@example") ||
+           startswith(language, "@repl") ||
+           startswith(language, "@eval")
+            format_text(style, state, code)
+        elseif startswith(language, "jldoctest")
+            if occursin(r"^julia> "m, code)
+                join(
+                    (
+                        string(
+                            "julia> ",
+                            join(
+                                (line for line in split(format_text(input), '\n')),
+                                "\n       ",
                             ),
-                            "\n       "
-                        ),
-                        '\n',
-                        output
-                    ) for (input, output) in repl_splitter(code)
-                ),
-                "\n\n"
-            )
+                            '\n',
+                            output,
+                        ) for (input, output) in repl_splitter(code)
+                    ),
+                    "\n\n",
+                )
+            else
+                an_input, output = split(code, "# output\n", limit = 2)
+                string(format_text(style, state, String(an_input)), "# output\n", output)
+            end
         else
-            an_input, output = split(code, "# output\n", limit = 2)
-            string(format_text(style, state, String(an_input)),  "# output\n", output)
+            code
         end
-    else
-        code
-    end
     nothing
 end
 
@@ -281,7 +280,12 @@ function format_docstrings(style, state, text)
     string("\"\"\"\n", plain(parsed), "\"\"\"")
 end
 
-@inline function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstring = false)
+@inline function p_literal(
+    ds::DefaultStyle,
+    cst::CSTParser.EXPR,
+    s::State;
+    from_docstring = false,
+)
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst.kind)
         val = cst.val
@@ -353,10 +357,17 @@ end
         )
         add_node!(t, tt, s)
     end
+    # make sure endline matches up with source code
+    t.endline = endline
     t
 end
-p_literal(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_literal(DefaultStyle(style), cst, s)
+p_literal(
+    style::S,
+    cst::CSTParser.EXPR,
+    s::State;
+    from_docstring = false,
+) where {S<:AbstractStyle} =
+    p_literal(DefaultStyle(style), cst, s; from_docstring = from_docstring)
 
 # StringH
 function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -414,7 +425,12 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     if cst[1].typ === CSTParser.GlobalRefDoc
         # cst[1] is empty and fullspan is 0 so we can skip it
         if cst[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(style, cst[2], s, from_docstring = true), s, max_padding = 0)
+            add_node!(
+                t,
+                p_literal(style, cst[2], s, from_docstring = true),
+                s,
+                max_padding = 0,
+            )
         elseif cst[2].typ == CSTParser.StringH
             add_node!(t, p_stringh(style, cst[2], s), s)
         end

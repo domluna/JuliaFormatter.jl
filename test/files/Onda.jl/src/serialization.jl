@@ -3,26 +3,27 @@
 #####
 
 """
-    AbstractLPCMSerializer
+```
+AbstractLPCMSerializer
+```
 
 A type whose subtypes support:
 
-- [`deserialize_lpcm`](@ref)
-- [`serialize_lpcm`](@ref)
+  * [`deserialize_lpcm`](@ref)
+  * [`serialize_lpcm`](@ref)
 
-All definitions of subtypes of the form `S<:AbstractLPCMSerializer` must also support
-a constructor of the form `S(::Signal)` and overload `Onda.serializer_constructor_for_file_extension`
-with the appropriate file extension.
+All definitions of subtypes of the form `S<:AbstractLPCMSerializer` must also support a constructor of the form `S(::Signal)` and overload `Onda.serializer_constructor_for_file_extension` with the appropriate file extension.
 
 See also: [`serializer`](@ref), [`LPCM`](@ref), [`LPCMZst`](@ref)
 """
 abstract type AbstractLPCMSerializer end
 
 """
-    Onda.serializer_constructor_for_file_extension(::Val{:extension_symbol})
+```
+Onda.serializer_constructor_for_file_extension(::Val{:extension_symbol})
+```
 
-Return a constructor of the form `S(::Signal)::AbstractLPCMSerializer`
-corresponding to the provided extension.
+Return a constructor of the form `S(::Signal)::AbstractLPCMSerializer` corresponding to the provided extension.
 
 This function should be overloaded for new `AbstractLPCMSerializer` subtypes.
 """
@@ -39,11 +40,11 @@ function register_file_extension_for_serializer(extension::Symbol,
 end
 
 """
-    serializer(signal::Signal; kwargs...)
+```
+serializer(signal::Signal; kwargs...)
+```
 
-Return `S(signal; kwargs...)` where `S` is the `AbstractLPCMSerializer` that
-corresponds to `signal.file_extension` (as determined by the serializer author
-via `serializer_constructor_for_file_extension`).
+Return `S(signal; kwargs...)` where `S` is the `AbstractLPCMSerializer` that corresponds to `signal.file_extension` (as determined by the serializer author via `serializer_constructor_for_file_extension`).
 
 See also: [`deserialize_lpcm`](@ref), [`serialize_lpcm`](@ref)
 """
@@ -53,58 +54,56 @@ function serializer(signal::Signal; kwargs...)
 end
 
 """
-    deserialize_lpcm(bytes, serializer::AbstractLPCMSerializer)
+```
+deserialize_lpcm(bytes, serializer::AbstractLPCMSerializer)
+```
 
-Return a channels-by-timesteps `AbstractMatrix` of interleaved LPCM-encoded
-sample data by deserializing the provided `bytes` from the given `serializer`.
+Return a channels-by-timesteps `AbstractMatrix` of interleaved LPCM-encoded sample data by deserializing the provided `bytes` from the given `serializer`.
 
-Note that this operation may be performed in a zero-copy manner such that the
-returned sample matrix directly aliases `bytes`.
+Note that this operation may be performed in a zero-copy manner such that the returned sample matrix directly aliases `bytes`.
 
-This function is the inverse of the corresponding [`serialize_lpcm`](@ref)
-method, i.e.:
+This function is the inverse of the corresponding [`serialize_lpcm`](@ref) method, i.e.:
 
 ```
 serialize_lpcm(deserialize_lpcm(bytes, serializer), serializer) == bytes
 ```
 
-    deserialize_lpcm(bytes, serializer::AbstractLPCMSerializer, sample_offset, sample_count)
+```
+deserialize_lpcm(bytes, serializer::AbstractLPCMSerializer, sample_offset, sample_count)
+```
 
-Similar to `deserialize_lpcm(bytes, serializer)`, but deserialize only the segment requested
-via `sample_offset` and `sample_count`.
+Similar to `deserialize_lpcm(bytes, serializer)`, but deserialize only the segment requested via `sample_offset` and `sample_count`.
 
-    deserialize_lpcm(io::IO, serializer::AbstractLPCMSerializer[, sample_offset, sample_count])
+```
+deserialize_lpcm(io::IO, serializer::AbstractLPCMSerializer[, sample_offset, sample_count])
+```
 
-Similar to the corresponding `deserialize_lpcm(bytes, ...)` methods, but the bytes
-to be deserialized are read directly from `io`.
+Similar to the corresponding `deserialize_lpcm(bytes, ...)` methods, but the bytes to be deserialized are read directly from `io`.
 
-If `sample_offset`/`sample_count` is provided and `io`/`serializer` support
-seeking, implementations of this method may read only the bytes required to
-extract the requested segment instead of reading the entire stream.
+If `sample_offset`/`sample_count` is provided and `io`/`serializer` support seeking, implementations of this method may read only the bytes required to extract the requested segment instead of reading the entire stream.
 """
 function deserialize_lpcm end
 
 """
-    serialize_lpcm(samples::AbstractMatrix, serializer::AbstractLPCMSerializer)
+```
+serialize_lpcm(samples::AbstractMatrix, serializer::AbstractLPCMSerializer)
+```
 
-Return the `AbstractVector{UInt8}` of bytes that results from serializing `samples`
-to the given `serializer`, where `samples` is a channels-by-timesteps matrix of
-interleaved LPCM-encoded sample data.
+Return the `AbstractVector{UInt8}` of bytes that results from serializing `samples` to the given `serializer`, where `samples` is a channels-by-timesteps matrix of interleaved LPCM-encoded sample data.
 
-Note that this operation may be performed in a zero-copy manner such that the
-returned `AbstractVector{UInt8}` directly aliases `samples`.
+Note that this operation may be performed in a zero-copy manner such that the returned `AbstractVector{UInt8}` directly aliases `samples`.
 
-This function is the inverse of the corresponding [`deserialize_lpcm`](@ref)
-method, i.e.:
+This function is the inverse of the corresponding [`deserialize_lpcm`](@ref) method, i.e.:
 
 ```
 deserialize_lpcm(serialize_lpcm(samples, serializer), serializer) == samples
 ```
 
-    serialize_lpcm(io::IO, samples::AbstractMatrix, serializer::AbstractLPCMSerializer)
+```
+serialize_lpcm(io::IO, samples::AbstractMatrix, serializer::AbstractLPCMSerializer)
+```
 
-Similar to the corresponding `serialize_lpcm(samples, serializer)` method, but serializes
-directly to `io`.
+Similar to the corresponding `serialize_lpcm(samples, serializer)` method, but serializes directly to `io`.
 """
 function serialize_lpcm end
 
@@ -138,17 +137,16 @@ end
 const LPCM_SAMPLE_TYPE_UNION = Union{Int8,Int16,Int32,Int64,UInt8,UInt16,UInt32,UInt64}
 
 """
-    LPCM{S}(channel_count)
-    LPCM(signal::Signal)
+```
+LPCM{S}(channel_count)
+LPCM(signal::Signal)
+```
 
-Return a `LPCM<:AbstractLPCMSerializer` instance corresponding to Onda's default
-interleaved LPCM format assumed for signal files with the ".lpcm" extension.
+Return a `LPCM<:AbstractLPCMSerializer` instance corresponding to Onda's default interleaved LPCM format assumed for signal files with the ".lpcm" extension.
 
-`S` corresponds to `signal.sample_type`, while `channel_count` corresponds to
-`signal.channel_names`.
+`S` corresponds to `signal.sample_type`, while `channel_count` corresponds to `signal.channel_names`.
 
-Note that bytes (de)serialized via this serializer are little-endian per the
-Onda specification.
+Note that bytes (de)serialized via this serializer are little-endian per the Onda specification.
 """
 struct LPCM{S<:LPCM_SAMPLE_TYPE_UNION} <: AbstractLPCMSerializer
     channel_count::Int
@@ -201,15 +199,14 @@ end
 #####
 
 """
-    LPCMZst(lpcm::LPCM; level=3)
-    LPCMZst(signal::Signal; level=3)
+```
+LPCMZst(lpcm::LPCM; level=3)
+LPCMZst(signal::Signal; level=3)
+```
 
-Return a `LPCMZst<:AbstractLPCMSerializer` instance that corresponds to
-Onda's default interleaved LPCM format compressed by `zstd`. This serializer
-is assumed for signal files with the ".lpcm.zst" extension.
+Return a `LPCMZst<:AbstractLPCMSerializer` instance that corresponds to Onda's default interleaved LPCM format compressed by `zstd`. This serializer is assumed for signal files with the ".lpcm.zst" extension.
 
-The `level` keyword argument sets the same compression level parameter as the
-corresponding flag documented by the `zstd` command line utility.
+The `level` keyword argument sets the same compression level parameter as the corresponding flag documented by the `zstd` command line utility.
 
 See https://facebook.github.io/zstd/ for details about `zstd`.
 """

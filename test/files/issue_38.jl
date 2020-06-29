@@ -9,7 +9,9 @@ free_space(path) = shutil.disk_usage(path)[3] / 1000_000_000
 settings = ArgParseSettings()
 
 @add_arg_table settings begin
-    "--file"
+    """
+–file
+"""
     help = """
     path to the file.
     ...
@@ -21,8 +23,10 @@ end
     help = "output..."
     default = "."
     """
-    --file
-    """
+```
+--file
+```
+"""
     help = """
     path to the file.
     ...

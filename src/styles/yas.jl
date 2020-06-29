@@ -1,20 +1,21 @@
 """
-    YASStyle()
+```
+YASStyle()
+```
 
-Formatting style based on https://github.com/jrevels/YASGuide
-and https://github.com/domluna/JuliaFormatter.jl/issues/198.
+Formatting style based on https://github.com/jrevels/YASGuide and https://github.com/domluna/JuliaFormatter.jl/issues/198.
 
 Recommended options are:
 
-- `always_for_in` = true
-- `whitespace_ops_in_indices` = true
-- `whitespace_typedefs` = false
-- `remove_extra_newlines` = true
-- `import_to_using` = true
-- `pipe_to_function_call` = true
-- `short_to_long_function_def` = true
-- `always_use_return` = true
-- `whitespace_in_kwargs` = false
+  * `always_for_in` = true
+  * `whitespace_ops_in_indices` = true
+  * `whitespace_typedefs` = false
+  * `remove_extra_newlines` = true
+  * `import_to_using` = true
+  * `pipe_to_function_call` = true
+  * `short_to_long_function_def` = true
+  * `always_use_return` = true
+  * `whitespace_in_kwargs` = false
 """
 struct YASStyle <: AbstractStyle end
 @inline getstyle(s::YASStyle) = s
