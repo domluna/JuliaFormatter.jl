@@ -244,13 +244,30 @@ block_modifier(rule::FormatRule) =
                startswith(language, "@eval")
                 block.literal = format_text(code)
             elseif startswith(language, "jldoctest")
+                indended_state = State(
+                    state.doc,
+                    state.indent_size,
+                    state.indent + 4,
+                    state.offset,
+                    state.line_offset,
+                    state.margin,
+                    state.on,
+                    state.opts,
+                )
                 block.literal = if occursin(r"^julia> "m, code)
                     join(
                         (
                             string(
                                 "julia> ",
                                 join(
-                                    (line for line in split(format_text(an_input), '\n')),
+                                    (
+                                        line
+                                        for
+                                        line in split(
+                                            format_text(style, indended_state, an_input),
+                                            '\n',
+                                        )
+                                    ),
                                     "\n       ",
                                 ),
                                 '\n',
@@ -274,17 +291,6 @@ block_modifier(rule::FormatRule) =
             end
         end
     end
-
-function format_docstrings(style, state, text)
-    boundaries = findall(text) do character
-        character != '"'
-    end
-    string(
-        "\"\"\"\n",
-        markdown(enable!(Parser(), FormatRule(style, state))(text[boundaries[1]:boundaries[end]]),),
-        "\"\"\"",
-    )
-end
 
 @inline function p_literal(
     ds::DefaultStyle,
@@ -324,7 +330,14 @@ end
     # @debug "" loc startline endline str
 
     if from_docstring
-        str = format_docstrings(ds, s, str)
+        boundaries = findall(str) do character
+            character != '"'
+        end
+        str = string(
+            "\"\"\"\n",
+            markdown(enable!(Parser(), FormatRule(ds, s))(str[boundaries[1]:boundaries[end]]),),
+            "\"\"\"",
+        )
     end
 
     s.offset += cst.fullspan

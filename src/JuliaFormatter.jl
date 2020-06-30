@@ -135,13 +135,13 @@ If true, `x |> f` is rewritten to `f(x)`.
 
 ### `short_to_long_function_def`
 
-Transforms a _short_ function definition
+Transforms a *short* function definition
 
 ```julia
 f(arg1, arg2) = body
 ```
 
-to a _long_ function definition
+to a *long* function definition
 
 ```julia
 function f(arg2, arg2)
@@ -208,7 +208,6 @@ struct A
     arg1::Any
 end
 ```
-
 """
 function format_text(
     text::AbstractString;
@@ -392,7 +391,7 @@ files by calling `format_file` on them.
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
 This function will look for `.JuliaFormatter.toml` in the location of the file being
-formatted, and searching _up_ the file tree until a config file is (or isn't) found.
+formatted, and searching *up* the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
 See ["Configuration File"](@id) for more details.
 

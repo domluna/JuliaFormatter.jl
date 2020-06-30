@@ -182,13 +182,13 @@ end
 """
     short_to_long_function_def!(fst::FST, s::State)
 
-Transforms a _short_ function definition
+Transforms a *short* function definition
 
 ```julia
 f(arg1, arg2) = body
 ```
 
-to a _long_ function definition
+to a *long* function definition
 
 ```julia
 function f(arg2, arg2)
@@ -266,7 +266,6 @@ end
 
 """
     binaryop_to_whereop(fst::FST, s::State)
-
 
 Handles the case of a function def defined
 as:

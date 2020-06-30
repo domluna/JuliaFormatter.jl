@@ -7,15 +7,14 @@
 
 Return a `Samples` instance with the following fields:
 
-- `signal::Signal`: The `Signal` object that describes the `Samples` instance.
+  - `signal::Signal`: The `Signal` object that describes the `Samples` instance.
 
-- `encoded::Bool`: If `true`, the values in `data` are LPCM-encoded as
-   prescribed by the `Samples` instance's `signal`. If `false`, the values in
-   `data` have been decoded into the `signal`'s canonical units.
-
-- `data::AbstractMatrix`: A matrix of sample data. The `i` th row of the matrix
-   corresponds to the `i`th channel in `signal.channel_names`, while the `j`th
-   column corresponds to the `j`th multichannel sample.
+  - `encoded::Bool`: If `true`, the values in `data` are LPCM-encoded as
+    prescribed by the `Samples` instance's `signal`. If `false`, the values in
+    `data` have been decoded into the `signal`'s canonical units.
+  - `data::AbstractMatrix`: A matrix of sample data. The `i` th row of the matrix
+    corresponds to the `i`th channel in `signal.channel_names`, while the `j`th
+    column corresponds to the `j`th multichannel sample.
 
 Note that `getindex` and `view` are defined on `Samples` to accept normal integer
 indices, but also accept channel names for row indices and [`TimeSpan`](@ref)
@@ -108,10 +107,10 @@ channel(samples::Samples, i::Integer) = channel(samples.signal, i)
 Returns the `Nanosecond` value for which `samples[TimeSpan(0, duration(samples))] == samples.data`.
 
 !!! warning
-    `duration(samples)` is not generally equivalent to `duration(samples.signal)`;
-    the former is the duration of the entire original signal in the context of its
-    parent recording, whereas the latter is the actual duration of `samples.data`
-    given `samples.signal.sample_rate`.
+`duration(samples)` is not generally equivalent to `duration(samples.signal)`;
+the former is the duration of the entire original signal in the context of its
+parent recording, whereas the latter is the actual duration of `samples.data`
+given `samples.signal.sample_rate`.
 """
 function duration(samples::Samples)
     return time_from_index(samples.signal.sample_rate, size(samples.data, 2) + 1)
@@ -130,9 +129,9 @@ channel_count(samples::Samples) = channel_count(samples.signal)
 Return the number of multichannel samples in `samples` (i.e. `size(samples.data, 2)`)
 
 !!! warning
-    `sample_count(samples)` is not generally equivalent to `sample_count(samples.signal)`;
-    the former is the sample count of the entire original signal in the context of its parent
-    recording, whereas the latter is actual number of multichannel samples in `samples.data`.
+`sample_count(samples)` is not generally equivalent to `sample_count(samples.signal)`;
+the former is the sample count of the entire original signal in the context of its parent
+recording, whereas the latter is actual number of multichannel samples in `samples.data`.
 """
 sample_count(samples::Samples) = size(samples.data, 2)
 

@@ -5,8 +5,8 @@ A type repesenting a continuous, inclusive span between two points in time.
 
 All subtypes of `AbstractTimeSpan` must implement:
 
-- `first(::AbstractTimeSpan)::Nanosecond`: return the first nanosecond contained in `span`
-- `last(::AbstractTimeSpan)::Nanosecond`: return the last nanosecond contained in `span`
+  - `first(::AbstractTimeSpan)::Nanosecond`: return the first nanosecond contained in `span`
+  - `last(::AbstractTimeSpan)::Nanosecond`: return the last nanosecond contained in `span`
 
 For convenience, many Onda functions that accept `AbstractTimeSpan` values also accept
 `Dates.Period` values.

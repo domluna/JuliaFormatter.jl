@@ -7,7 +7,9 @@ using PyCall
 
 const shutil = pyimport("shutil")
 
-"Free space in Gb at the given path."
+"""
+Free space in Gb at the given path.
+"""
 free_space(path) = shutil.disk_usage(path)[3] / 1000_000_000
 
 function check_space(free, min_space, database_name)
@@ -35,24 +37,32 @@ function parse_commandline()
         "--output", "-o"
         help = "path where the database folder is going to be created."
         default = "."
-        "`--pdb`"
+        """
+`--pdb`
+"""
         help = """
         path to an already existing local folder containing the entire pdb
         in mmCIF format.
         """
         default = ""
-        "`--uniclust`"
+        """
+`--uniclust`
+"""
         help = """
         path to an already existing local folder containing the uniclust
         database from the HH-suite databases.
         """
         default = ""
-        "`--uniclust_version`"
+        """
+`--uniclust_version`
+"""
         help = """
         Uniclust30 version to be downloaded: YYYY_MM
         """
         default = "2018_08"
-        "`--pdb70`"
+        """
+`--pdb70`
+"""
         help = """
         path to an already existing local folder containing the
         pdb70_from_mmcif database from the HH-suite databases.

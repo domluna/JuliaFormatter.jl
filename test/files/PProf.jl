@@ -75,18 +75,20 @@ If you manually edit the output file, `PProf.refresh()` will refresh the server 
 overwriting the output file. `PProf.kill()` will kill the server.
 
 # Arguments:
-- `data::Vector{UInt}`: The data provided by `Profile.fetch` [optional].
-- `period::UInt64`: The sampling period in nanoseconds [optional].
+
+  - `data::Vector{UInt}`: The data provided by `Profile.fetch` \[optional\].
+  - `period::UInt64`: The sampling period in nanoseconds \[optional\].
 
 # Keyword Arguments
-- `web::Bool`: Whether to launch the `go tool pprof` interactive webserver for viewing results.
-- `webhost::AbstractString`: If using `web`, which host to launch the webserver on.
-- `webport::Integer`: If using `web`, which port to launch the webserver on.
-- `out::String`: Filename for output.
-- `from_c::Bool`: If `false`, exclude frames that come from from_c. Defaults to `true`.
-- `drop_frames`: frames with function_name fully matching regexp string will be dropped from the samples,
-                 along with their successors.
-- `keep_frames`: frames with function_name fully matching regexp string will be kept, even if it matches drop_functions.
+
+  - `web::Bool`: Whether to launch the `go tool pprof` interactive webserver for viewing results.
+  - `webhost::AbstractString`: If using `web`, which host to launch the webserver on.
+  - `webport::Integer`: If using `web`, which port to launch the webserver on.
+  - `out::String`: Filename for output.
+  - `from_c::Bool`: If `false`, exclude frames that come from from\_c. Defaults to `true`.
+  - `drop_frames`: frames with function\_name fully matching regexp string will be dropped from the samples,
+    along with their successors.
+  - `keep_frames`: frames with function\_name fully matching regexp string will be kept, even if it matches drop\_functions.
 """
 function pprof(
     data::Union{Nothing,Vector{UInt}} = nothing,
@@ -253,9 +255,9 @@ end
 
 Start or restart the go pprof webserver.
 
-- `webhost::AbstractString`: Which host to launch the webserver on.
-- `webport::Integer`: Which port to launch the webserver on.
-- `file::String`: Profile file to open.
+  - `webhost::AbstractString`: Which host to launch the webserver on.
+  - `webport::Integer`: Which port to launch the webserver on.
+  - `file::String`: Profile file to open.
 """
 function refresh(;
     webhost::AbstractString = "localhost",
