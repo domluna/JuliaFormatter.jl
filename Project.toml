@@ -4,14 +4,18 @@ authors = ["Dominique Luna <dluna132@gmail.com>"]
 version = "0.6.5"
 
 [deps]
+CommonMark = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
 CSTParser = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
+CommonMark = "0.4"
 CSTParser = "1, 2"
 DataStructures = "0.17"
+Documenter = "0.24"
 Tokenize = "^0.5.5"
 julia = "1"

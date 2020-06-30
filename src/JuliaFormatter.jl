@@ -4,6 +4,9 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Documenter.DocTests: repl_splitter
+import CommonMark: block_modifier
+using CommonMark: CodeBlock, enable!, markdown, Parser, Rule
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
@@ -244,6 +247,18 @@ function format_text(
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
     )
     s = State(Document(text), indent, margin, opts)
+    _format_text(style, s, x)
+end
+
+function format_text(style, state, text)
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input:\n\n$text")
+    s = State(Document(text), state.indent, state.margin, state.opts)
+    _format_text(style, s, x)
+end
+
+function _format_text(style, s, x)
+    opts = s.opts
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
@@ -300,9 +315,9 @@ to `stdout`.
 See [`format_text`](@ref) for description of formatting options.
 
 ### Output
- 
+
 Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+or not (`false`).
 """
 function format_file(
     filename::AbstractString;
@@ -382,9 +397,9 @@ When found, the configurations in the file will overwrite the given `options`.
 See ["Configuration File"](@id) for more details.
 
 ### Output
- 
+
 Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+or not (`false`).
 """
 function format(paths; options...)::Bool
     dir2config = Dict{String,Any}()
