@@ -7,6 +7,8 @@ using Pkg.TOML: parsefile
 using Markdown: Markdown, MD, Code, plain
 using Documenter.DocTests: repl_splitter
 import Markdown
+import CommonMark: block_modifier
+using CommonMark: CodeBlock, enable!, markdown, Parser, Rule
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 

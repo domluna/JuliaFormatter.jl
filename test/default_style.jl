@@ -1526,7 +1526,7 @@
         \\\\
         \"""
         x"""
-        @test_broken fmt(str) == str
+        @test fmt(str) == str
 
         str = """
         begin
@@ -4862,7 +4862,6 @@ some_function(
         julia> function test(x)
                    x + 1
                end;
-
         ```
         \"""
         function test(x)
@@ -4880,10 +4879,8 @@ some_function(
 
         formatted = """
         \"""
-        ```
-        format_text(
-        )
-        ```
+            format_text(
+            )
         \"""
         function format_text() end"""
         @test format_text(unformatted) == formatted

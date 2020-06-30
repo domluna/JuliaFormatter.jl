@@ -227,57 +227,56 @@ end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
 
-format_docstrings!(style, state, _) = nothing
-
-function format_docstrings!(style, state, document::MD)
-    for clause in document.content
-        format_docstrings!(style, state, clause)
-    end
-    nothing
+struct FormatRule{Style, State}
+   style::Style
+   state::State
 end
 
-function format_docstrings!(style, state, doctest::Code)
-    language = doctest.language
-    code = doctest.code
-    doctest.code =
+block_modifier(rule::FormatRule) = Rule(1) do parser, block
+    if block.t isa CodeBlock
+        style = rule.style
+        state = rule.state
+        language = block.t.info
+        code = block.literal
         if startswith(language, "@example") ||
-           startswith(language, "@repl") ||
-           startswith(language, "@eval")
-            format_text(style, state, code)
+            startswith(language, "@repl") ||
+            startswith(language, "@eval")
+            block.literal = format_text(code)
         elseif startswith(language, "jldoctest")
-            if occursin(r"^julia> "m, code)
+            block.literal = if occursin(r"^julia> "m, code)
                 join(
                     (
                         string(
                             "julia> ",
                             join(
-                                (line for line in split(format_text(input), '\n')),
+                                (line for line in split(format_text(an_input), '\n')),
                                 "\n       ",
                             ),
                             '\n',
                             output,
-                        ) for (input, output) in repl_splitter(code)
+                        ) for (an_input, output) in repl_splitter(code)
                     ),
                     "\n\n",
                 )
             else
-                an_input, output = split(code, "# output\n", limit = 2)
-                string(format_text(style, state, String(an_input)), "# output\n", output)
+                an_input, output = split(code, r"\n+# output\n+", limit = 2)
+                string(format_text(style, state, format_text(style, state, String(an_input))), "\n\n# output\n\n", output)
             end
-        else
-            code
         end
-    nothing
+    end
 end
 
 function format_docstrings(style, state, text)
     boundaries = findall(text) do character
         character != '"'
     end
-    parsed = Markdown.parse(text[boundaries[1]:boundaries[end]])
-    format_docstrings!(style, state, parsed)
-    # put all docstrings in triple quotes
-    string("\"\"\"\n", plain(parsed), "\"\"\"")
+    string(
+        "\"\"\"\n",
+        markdown(
+            enable!(Parser(), FormatRule(style, state))(text[boundaries[1]:boundaries[end]]),
+        ),
+        "\"\"\"",
+    )
 end
 
 @inline function p_literal(
