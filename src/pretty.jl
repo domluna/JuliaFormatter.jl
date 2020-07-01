@@ -244,17 +244,17 @@ block_modifier(rule::FormatRule) =
                startswith(language, "@eval")
                 block.literal = format_text(code)
             elseif startswith(language, "jldoctest")
-                indended_state = State(
-                    state.doc,
-                    state.indent_size,
-                    state.indent + 4,
-                    state.offset,
-                    state.line_offset,
-                    state.margin,
-                    state.on,
-                    state.opts,
-                )
                 block.literal = if occursin(r"^julia> "m, code)
+                    indended_state = State(
+                        state.doc,
+                        state.indent_size,
+                        state.indent + 4,
+                        state.offset,
+                        state.line_offset,
+                        state.margin,
+                        state.on,
+                        state.opts,
+                    )
                     join(
                         (
                             string(
