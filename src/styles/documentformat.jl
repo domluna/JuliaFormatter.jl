@@ -366,9 +366,6 @@ function n_call!(ds::DocumentFormatSyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
-        elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ds, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -398,9 +395,6 @@ function n_tupleh!(ds::DocumentFormatSyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
-        elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ds, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
@@ -434,9 +428,6 @@ function n_generator!(ds::DocumentFormatSyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
-        elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ds, fst, s, i; stop_idx = si)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
@@ -459,9 +450,6 @@ function n_whereopcall!(ds::DocumentFormatSyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
-        elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ds, fst, s, i; stop_idx = si)
         elseif is_opener(n) && n.val == "{"
             fst.indent = s.line_offset + 1
             nest!(ds, n, s)
@@ -483,10 +471,7 @@ function n_using!(ds::DocumentFormatSyle, fst::FST, s::State)
         fst.indent += sum(length.(fst[1:idx+1]))
     end
     for (i, n) in enumerate(fst.nodes)
-        if n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ds, fst, s, i; stop_idx = si)
-        elseif n.typ === NEWLINE
+        if n.typ === NEWLINE
             s.line_offset = fst.indent
         else
             nest!(ds, n, s)
