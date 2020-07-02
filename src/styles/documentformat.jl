@@ -50,7 +50,6 @@ function p_curly(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
         end
     end
     t
-    remove_superflous_whitespace!(t)
 end
 @inline p_braces(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
     p_curly(ds, cst, s)
