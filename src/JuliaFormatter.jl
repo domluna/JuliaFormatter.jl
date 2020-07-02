@@ -32,6 +32,7 @@ include("nest.jl")
 include("print.jl")
 
 include("styles/yas.jl")
+include("styles/documentformat.jl")
 
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")

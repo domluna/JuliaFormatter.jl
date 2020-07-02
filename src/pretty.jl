@@ -67,6 +67,10 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_curly(style, cst, s)
     elseif cst.typ === CSTParser.Call
         return p_call(style, cst, s)
+    elseif cst.typ === CSTParser.MacroCall && cst[1].typ === CSTParser.GlobalRefDoc
+        return p_globalrefdoc(style, cst, s)
+    elseif cst.typ === CSTParser.MacroCall && is_macrodoc(cst)
+        return p_macrodoc(style, cst, s)
     elseif cst.typ === CSTParser.MacroCall
         return p_macrocall(style, cst, s)
     elseif cst.typ === CSTParser.WhereOpCall
@@ -349,25 +353,28 @@ end
 p_stringh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_stringh(DefaultStyle(style), cst, s)
 
-# MacroCall
-function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+# GlobalRefDoc (docstring)
+function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    if cst[1].typ === CSTParser.GlobalRefDoc
-        # cst[1] is empty and fullspan is 0 so we can skip it
-        if cst[2].typ === CSTParser.LITERAL
-            add_node!(t, p_literal(style, cst[2], s), s, max_padding = 0)
-        elseif cst[2].typ == CSTParser.StringH
-            add_node!(t, p_stringh(style, cst[2], s), s)
-        end
-        add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
-        # change the node type
+    t.typ = CSTParser.GlobalRefDoc
+
+    # cst[1] is empty and fullspan is 0 so we can skip it
+    if cst[2].typ === CSTParser.LITERAL
+        add_node!(t, p_literal(style, cst[2], s), s, max_padding = 0)
+    elseif cst[2].typ == CSTParser.StringH
+        add_node!(t, p_stringh(style, cst[2], s), s)
+    end
+    add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
+    return t
+end
+
+# @doc "example"
+function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
         t.typ = CSTParser.GlobalRefDoc
-        return t
-    elseif length(cst) == 3 &&
-           cst[1].typ === CSTParser.MacroName &&
-           cst[1][2].val == "doc" &&
-           is_str(cst[2])
 
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
@@ -376,14 +383,19 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         join_lines = t.endline == n.startline
         join_lines && add_node!(t, Whitespace(1), s)
         add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
-        # change the node type
-        t.typ = CSTParser.GlobalRefDoc
         return t
-    end
+end
+
+# MacroCall
+function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(cst, nspaces(s))
 
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
     has_closer = is_closer(cst.args[end])
+
+    !has_closer && (t.typ = MacroBlock)
 
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(cst)
@@ -430,7 +442,6 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # @Module.macro -> Module.@macro
     t[1] = move_at_sign_to_the_end(t[1], s)
 
-    !has_closer && (t.typ = MacroBlock)
     t
 end
 p_macrocall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

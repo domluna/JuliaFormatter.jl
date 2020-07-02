@@ -406,3 +406,21 @@ function move_at_sign_to_the_end(fst::FST, s::State)
 
     return macroname
 end
+
+"""
+    remove_superflous_whitespace!(fst::FST)
+
+Removes whitespace that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
+
+NOTE: Instead of explicitly removing the `WHITESPACE` node it's replaced with another `WHITESPACE`
+node of length 0.
+
+"""
+function remove_superflous_whitespace!(fst::FST)
+    is_leaf(fst) && return
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === WHITESPACE && i < length(fst.nodes) && (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
+            fst[i] = Whitespace(0)
+        end
+    end
+end
