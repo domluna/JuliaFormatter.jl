@@ -124,7 +124,8 @@ function is_importer_exporter(fst::FST)
 end
 
 function is_macrodoc(cst::CSTParser.EXPR)
-    return cst.typ === CSTParser.MacroCall && length(cst) == 3 &&
+    return cst.typ === CSTParser.MacroCall &&
+           length(cst) == 3 &&
            cst[1].typ === CSTParser.MacroName &&
            cst[1][2].val == "doc" &&
            is_str(cst[2])

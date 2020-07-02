@@ -368,23 +368,27 @@ function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
     return t
 end
+p_globalrefdoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_globalrefdoc(DefaultStyle(style), cst, s)
 
 # @doc "example"
 function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-        t.typ = CSTParser.GlobalRefDoc
+    t.typ = CSTParser.GlobalRefDoc
 
-        add_node!(t, pretty(style, cst[1], s), s)
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-        n = pretty(style, cst[3], s)
-        join_lines = t.endline == n.startline
-        join_lines && add_node!(t, Whitespace(1), s)
-        add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
-        return t
+    add_node!(t, pretty(style, cst[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    n = pretty(style, cst[3], s)
+    join_lines = t.endline == n.startline
+    join_lines && add_node!(t, Whitespace(1), s)
+    add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
+    return t
 end
+p_macrodoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_macrodoc(DefaultStyle(style), cst, s)
 
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)

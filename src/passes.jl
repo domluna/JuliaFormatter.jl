@@ -419,7 +419,9 @@ node of length 0.
 function remove_superflous_whitespace!(fst::FST)
     is_leaf(fst) && return
     for (i, n) in enumerate(fst.nodes)
-        if n.typ === WHITESPACE && i < length(fst.nodes) && (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
+        if n.typ === WHITESPACE &&
+           i < length(fst.nodes) &&
+           (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
             fst[i] = Whitespace(0)
         end
     end

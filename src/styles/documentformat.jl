@@ -32,8 +32,10 @@ function p_import(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     remove_superflous_whitespace!(t)
     t
 end
-@inline p_using(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_import(ds, cst, s)
-@inline p_export(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_import(ds, cst, s)
+@inline p_using(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+    p_import(ds, cst, s)
+@inline p_export(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+    p_import(ds, cst, s)
 
 function p_curly(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
@@ -50,7 +52,8 @@ function p_curly(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
     remove_superflous_whitespace!(t)
 end
-@inline p_braces(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_curly(ds, cst, s)
+@inline p_braces(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+    p_curly(ds, cst, s)
 
 function p_tupleh(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
@@ -73,7 +76,7 @@ function p_tupleh(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
             jl = n.startline == t.endline
             add_node!(t, n, s, join_lines = jl)
         else
-n = pretty(ds, a, s)
+            n = pretty(ds, a, s)
             jl = n.startline == t.endline
             add_node!(t, n, s, join_lines = jl)
         end
@@ -148,7 +151,6 @@ function p_ref(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(cst)
-
         if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(ds, a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
@@ -158,9 +160,9 @@ function p_ref(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
                a.typ === CSTParser.Comparison
 
             n = pretty(ds, a, s, nonest = true, nospace = nospace)
-        add_node!(t, n, s, join_lines = n.startline == t.endline)
+            add_node!(t, n, s, join_lines = n.startline == t.endline)
         else
-n = pretty(ds, a, s)
+            n = pretty(ds, a, s)
             add_node!(t, n, s, join_lines = n.startline == t.endline)
         end
     end
@@ -266,7 +268,7 @@ function p_parameters(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
-        add_node!(t, n, s, join_lines = n.startline == t.endline)
+            add_node!(t, n, s, join_lines = n.startline == t.endline)
         end
     end
     remove_superflous_whitespace!(t)
@@ -350,8 +352,10 @@ function p_generator(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
 
     t
 end
-@inline p_filter(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
-@inline p_flatten(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
+@inline p_filter(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+    p_generator(ds, cst, s)
+@inline p_flatten(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+    p_generator(ds, cst, s)
 
 #
 # Nesting
@@ -385,7 +389,8 @@ end
 @inline n_curly!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
 @inline n_ref!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
 @inline n_macrocall!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
-@inline n_typedcomprehension!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
+@inline n_typedcomprehension!(ds::DocumentFormatSyle, fst::FST, s::State) =
+    n_call!(ds, fst, s)
 
 function n_tupleh!(ds::DocumentFormatSyle, fst::FST, s::State)
     fst.indent = s.line_offset
