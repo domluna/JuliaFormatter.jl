@@ -5,7 +5,7 @@ using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
 
-export format, format_text, format_file, DefaultStyle, YASStyle
+export format, format_text, format_file, DefaultStyle, YASStyle, DocumentFormatStyle
 
 abstract type AbstractStyle end
 

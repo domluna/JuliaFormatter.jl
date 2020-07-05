@@ -3,16 +3,16 @@
 
 Formatting style based on DocumentFormat.jl
 """
-struct DocumentFormatSyle <: AbstractStyle end
-@inline getstyle(s::DocumentFormatSyle) = s
+struct DocumentFormatStyle <: AbstractStyle end
+@inline getstyle(s::DocumentFormatStyle) = s
 
-function nestable(::DocumentFormatSyle, cst::CSTParser.EXPR)
+function nestable(::DocumentFormatStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
     (cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC) && return false
     return true
 end
 
-function p_import(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_import(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(ds, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
@@ -32,12 +32,12 @@ function p_import(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     remove_superflous_whitespace!(t)
     t
 end
-@inline p_using(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+@inline p_using(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_import(ds, cst, s)
-@inline p_export(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+@inline p_export(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_import(ds, cst, s)
 
-function p_curly(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_curly(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ds, a, s)
@@ -51,10 +51,10 @@ function p_curly(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
-@inline p_braces(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+@inline p_braces(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_curly(ds, cst, s)
 
-function p_tupleh(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_tupleh(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
@@ -84,7 +84,7 @@ function p_tupleh(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_tupleh(ds::DocumentFormatSyle, nodes::Vector{CSTParser.EXPR}, s::State)
+function p_tupleh(ds::DocumentFormatStyle, nodes::Vector{CSTParser.EXPR}, s::State)
     t = FST(CSTParser.TupleH, nspaces(s))
     for (i, a) in enumerate(nodes)
         n = pretty(ds, a, s)
@@ -110,7 +110,7 @@ end
 
 # InvisBrackets
 function p_invisbrackets(
-    ds::DocumentFormatSyle,
+    ds::DocumentFormatStyle,
     cst::CSTParser.EXPR,
     s::State;
     nonest = false,
@@ -125,7 +125,7 @@ function p_invisbrackets(
     t
 end
 
-function p_call(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_call(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ds, a, s)
@@ -143,9 +143,9 @@ function p_call(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     remove_superflous_whitespace!(t)
     t
 end
-@inline p_vect(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) = p_call(ds, cst, s)
+@inline p_vect(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) = p_call(ds, cst, s)
 
-function p_ref(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_ref(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
 
@@ -169,7 +169,7 @@ function p_ref(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_comprehension(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_comprehension(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[2])
@@ -184,7 +184,7 @@ function p_comprehension(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_typedcomprehension(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_typedcomprehension(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[3])
@@ -200,7 +200,7 @@ function p_typedcomprehension(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::St
     t
 end
 
-function p_macrocall(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_macrocall(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     args = get_args(cst)
@@ -257,7 +257,7 @@ function p_macrocall(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_parameters(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_parameters(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(ds, a, s)
@@ -274,7 +274,7 @@ function p_parameters(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_whereopcall(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_whereopcall(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(ds, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
@@ -308,7 +308,7 @@ function p_whereopcall(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_generator(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
+function p_generator(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
@@ -351,16 +351,16 @@ function p_generator(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State)
 
     t
 end
-@inline p_filter(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+@inline p_filter(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_generator(ds, cst, s)
-@inline p_flatten(ds::DocumentFormatSyle, cst::CSTParser.EXPR, s::State) =
+@inline p_flatten(ds::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_generator(ds, cst, s)
 
 #
 # Nesting
 #
 
-function n_call!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_call!(ds::DocumentFormatStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
     for (i, n) in enumerate(fst.nodes)
@@ -382,13 +382,13 @@ function n_call!(ds::DocumentFormatSyle, fst::FST, s::State)
         end
     end
 end
-@inline n_curly!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
-@inline n_ref!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
-@inline n_macrocall!(ds::DocumentFormatSyle, fst::FST, s::State) = n_call!(ds, fst, s)
-@inline n_typedcomprehension!(ds::DocumentFormatSyle, fst::FST, s::State) =
+@inline n_curly!(ds::DocumentFormatStyle, fst::FST, s::State) = n_call!(ds, fst, s)
+@inline n_ref!(ds::DocumentFormatStyle, fst::FST, s::State) = n_call!(ds, fst, s)
+@inline n_macrocall!(ds::DocumentFormatStyle, fst::FST, s::State) = n_call!(ds, fst, s)
+@inline n_typedcomprehension!(ds::DocumentFormatStyle, fst::FST, s::State) =
     n_call!(ds, fst, s)
 
-function n_tupleh!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_tupleh!(ds::DocumentFormatStyle, fst::FST, s::State)
     fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
@@ -411,13 +411,13 @@ function n_tupleh!(ds::DocumentFormatSyle, fst::FST, s::State)
         end
     end
 end
-@inline n_braces!(ds::DocumentFormatSyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-@inline n_vect!(ds::DocumentFormatSyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-@inline n_parameters!(ds::DocumentFormatSyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-@inline n_invisbrackets!(ds::DocumentFormatSyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
-@inline n_comprehension!(ds::DocumentFormatSyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_braces!(ds::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_vect!(ds::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_parameters!(ds::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_invisbrackets!(ds::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_comprehension!(ds::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
 
-function n_generator!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_generator!(ds::DocumentFormatStyle, fst::FST, s::State)
     diff = s.line_offset - fst[1].indent
 
     # if the first argument is not a leaf
@@ -438,10 +438,10 @@ function n_generator!(ds::DocumentFormatSyle, fst::FST, s::State)
         end
     end
 end
-@inline n_filter!(ds::DocumentFormatSyle, fst::FST, s::State) = n_generator!(ds, fst, s)
-@inline n_flatten!(ds::DocumentFormatSyle, fst::FST, s::State) = n_generator!(ds, fst, s)
+@inline n_filter!(ds::DocumentFormatStyle, fst::FST, s::State) = n_generator!(ds, fst, s)
+@inline n_flatten!(ds::DocumentFormatStyle, fst::FST, s::State) = n_generator!(ds, fst, s)
 
-function n_whereopcall!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_whereopcall!(ds::DocumentFormatStyle, fst::FST, s::State)
     fst.indent = s.line_offset
     # after "A where "
     Blen = sum(length.(fst[2:end]))
@@ -462,7 +462,7 @@ function n_whereopcall!(ds::DocumentFormatSyle, fst::FST, s::State)
     end
 end
 
-function n_using!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_using!(ds::DocumentFormatStyle, fst::FST, s::State)
     idx = findfirst(n -> n.val == ":", fst.nodes)
     fst.indent = s.line_offset
     if idx === nothing
@@ -478,15 +478,15 @@ function n_using!(ds::DocumentFormatSyle, fst::FST, s::State)
         end
     end
 end
-@inline n_export!(ds::DocumentFormatSyle, fst::FST, s::State) = n_using!(ds, fst, s)
-@inline n_import!(ds::DocumentFormatSyle, fst::FST, s::State) = n_using!(ds, fst, s)
+@inline n_export!(ds::DocumentFormatStyle, fst::FST, s::State) = n_using!(ds, fst, s)
+@inline n_import!(ds::DocumentFormatStyle, fst::FST, s::State) = n_using!(ds, fst, s)
 
-n_chainopcall!(ds::DocumentFormatSyle, fst::FST, s::State) =
+n_chainopcall!(ds::DocumentFormatStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ds), fst, s, indent = s.line_offset)
-n_comparison!(ds::DocumentFormatSyle, fst::FST, s::State) =
+n_comparison!(ds::DocumentFormatStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ds), fst, s, indent = s.line_offset)
 
-function n_binaryopcall!(ds::DocumentFormatSyle, fst::FST, s::State)
+function n_binaryopcall!(ds::DocumentFormatStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
 
     if idx !== nothing

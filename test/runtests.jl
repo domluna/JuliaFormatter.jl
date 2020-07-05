@@ -37,8 +37,6 @@ function run_nest(text::String, print_width::Int; opts = Options(), style = Defa
     t, s
 end
 
-yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
-yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 
 include("default_style.jl")
 include("yas_style.jl")
