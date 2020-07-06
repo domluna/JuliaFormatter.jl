@@ -336,6 +336,10 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             nest!(ys, n, s)
         end
     end
+
+    if is_closer(fst[end])
+        fst[end].indent = fst.indent -1 
+    end
 end
 @inline n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
@@ -366,6 +370,10 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
             n.extra_margin = 1
             nest!(ys, n, s)
         end
+    end
+
+    if is_closer(fst[end])
+        fst[end].indent = fst.indent -1 
     end
 end
 @inline n_braces!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)

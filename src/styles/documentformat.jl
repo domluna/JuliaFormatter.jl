@@ -160,6 +160,10 @@ function p_ref(df::DocumentFormatStyle, cst::CSTParser.EXPR, s::State)
 
             n = pretty(df, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = n.startline == t.endline)
+            # elseif i > 1 && is_opener(cst[i-1])
+            #     add_node!(t, pretty(df, a, s), s, join_lines = true)
+            # elseif is_closer(a)
+            #     add_node!(t, pretty(df, a, s), s, join_lines = true)
         else
             n = pretty(df, a, s)
             add_node!(t, n, s, join_lines = n.startline == t.endline)
@@ -470,17 +474,16 @@ end
 
 # ChainOpCall/Comparison
 function p_chainopcall(
-    ds::DefaultStyle,
+    df::DocumentFormatStyle,
     cst::CSTParser.EXPR,
     s::State;
     nonest = false,
     nospace = false,
 )
-    style = getstyle(ds)
     t = FST(cst, nspaces(s))
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
-        n = pretty(style, a, s)
+        n = pretty(df, a, s)
         if a.typ === CSTParser.OPERATOR
             !nospace && add_node!(t, Whitespace(1), s)
             add_node!(t, n, s, join_lines = true)
