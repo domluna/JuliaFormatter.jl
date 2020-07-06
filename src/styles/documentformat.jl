@@ -356,7 +356,13 @@ end
 @inline p_flatten(df::DocumentFormatStyle, cst::CSTParser.EXPR, s::State) =
     p_generator(df, cst, s)
 
-function p_binaryopcall(df::DocumentFormatStyle, cst::CSTParser.EXPR, s::State; nonest=false, nospace=false)
+function p_binaryopcall(
+    df::DocumentFormatStyle,
+    cst::CSTParser.EXPR,
+    s::State;
+    nonest = false,
+    nospace = false,
+)
     style = getstyle(df)
     t = FST(cst, nspaces(s))
     op = cst[2]
@@ -547,8 +553,10 @@ end
 @inline n_braces!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
 @inline n_vect!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
 @inline n_parameters!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
-@inline n_invisbrackets!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
-@inline n_comprehension!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
+@inline n_invisbrackets!(df::DocumentFormatStyle, fst::FST, s::State) =
+    n_tupleh!(df, fst, s)
+@inline n_comprehension!(df::DocumentFormatStyle, fst::FST, s::State) =
+    n_tupleh!(df, fst, s)
 
 function n_generator!(df::DocumentFormatStyle, fst::FST, s::State)
     diff = s.line_offset - fst[1].indent
@@ -627,23 +635,23 @@ function n_binaryopcall!(df::DocumentFormatStyle, fst::FST, s::State)
     nest!(df, fst.nodes[1:end-1], s, fst.indent)
 
     if idx !== nothing
- 
-    cst = fst.ref[]
 
-    indent_nest =
-        CSTParser.defines_function(cst) ||
-        nest_assignment(cst) ||
-        cst[2].kind === Tokens.PAIR_ARROW ||
-        cst[2].kind === Tokens.ANON_FUNC ||
-        is_standalone_shortcircuit(cst)
+        cst = fst.ref[]
 
-    if indent_nest
-        s.line_offset = fst.indent + s.indent_size
-        fst[idx] = Whitespace(s.indent_size)
-        add_indent!(fst[end], s, s.indent_size)
-    else
-        fst.indent = line_offset
-    end
+        indent_nest =
+            CSTParser.defines_function(cst) ||
+            nest_assignment(cst) ||
+            cst[2].kind === Tokens.PAIR_ARROW ||
+            cst[2].kind === Tokens.ANON_FUNC ||
+            is_standalone_shortcircuit(cst)
+
+        if indent_nest
+            s.line_offset = fst.indent + s.indent_size
+            fst[idx] = Whitespace(s.indent_size)
+            add_indent!(fst[end], s, s.indent_size)
+        else
+            fst.indent = line_offset
+        end
 
     end
 
