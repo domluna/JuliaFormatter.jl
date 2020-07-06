@@ -31,7 +31,8 @@ include("passes.jl")
 # styles
 include("pretty.jl")
 include("nest.jl")
-include("styles/yas.jl")
+include("styles/yas/pretty.jl")
+include("styles/yas/nest.jl")
 include("styles/documentformat/pretty.jl")
 include("styles/documentformat/nest.jl")
 

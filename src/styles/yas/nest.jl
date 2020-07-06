@@ -1,7 +1,3 @@
-#
-# Nesting
-#
-
 function n_call!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
@@ -158,12 +154,6 @@ function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
         return
     end
 
-    # line_offset = s.line_offset
     walk(reset_line_offset!, fst.nodes[1:end-1], s, fst.indent)
     nest!(ys, fst[end], s)
-    # s.line_offset = line_offset
-    # nest!(ys, fst[1], s)
-    # s.line_offset = line_offset
-    # walk(reset_line_offset!, fst, s)
-
 end
