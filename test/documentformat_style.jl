@@ -417,7 +417,7 @@ dffmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = DocumentForm
     end
 
     @testset "inline comments with arguments" begin
-        # parsing error is newline is placed front of `for` here
+        # parsing error when newline is placed front of `for` here
         str_ = "var = (x, y) for x = 1:10, y = 1:10"
         str = """
         var = (x, y) for x = 1:10,
