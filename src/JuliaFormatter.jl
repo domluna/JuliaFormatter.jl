@@ -27,12 +27,15 @@ include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
+
+# styles
 include("pretty.jl")
 include("nest.jl")
-include("print.jl")
-
 include("styles/yas.jl")
-include("styles/documentformat.jl")
+include("styles/documentformat/pretty.jl")
+include("styles/documentformat/nest.jl")
+
+include("print.jl")
 
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
