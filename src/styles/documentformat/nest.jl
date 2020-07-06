@@ -1,4 +1,5 @@
 function n_call!(df::DocumentFormatStyle, fst::FST, s::State)
+    n_call!(typeof(df.indentstyle)(df), fst, s)
 end
 
 @inline n_curly!(df::DocumentFormatStyle, fst::FST, s::State) = n_call!(df, fst, s)
@@ -8,6 +9,7 @@ end
     n_call!(df, fst, s)
 
 function n_tupleh!(df::DocumentFormatStyle, fst::FST, s::State)
+    n_call!(typeof(df.indentstyle)(df), fst, s)
 end
 @inline n_braces!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
 @inline n_vect!(df::DocumentFormatStyle, fst::FST, s::State) = n_tupleh!(df, fst, s)
@@ -18,14 +20,17 @@ end
     n_tupleh!(df, fst, s)
 
 function n_generator!(df::DocumentFormatStyle, fst::FST, s::State)
+    n_call!(typeof(df.indentstyle)(df), fst, s)
 end
 @inline n_filter!(df::DocumentFormatStyle, fst::FST, s::State) = n_generator!(df, fst, s)
 @inline n_flatten!(df::DocumentFormatStyle, fst::FST, s::State) = n_generator!(df, fst, s)
 
 function n_whereopcall!(df::DocumentFormatStyle, fst::FST, s::State)
+    n_call!(typeof(df.indentstyle)(df), fst, s)
 end
 
 function n_using!(df::DocumentFormatStyle, fst::FST, s::State)
+    n_call!(typeof(df.indentstyle)(df), fst, s)
 end
 @inline n_export!(df::DocumentFormatStyle, fst::FST, s::State) = n_using!(df, fst, s)
 @inline n_import!(df::DocumentFormatStyle, fst::FST, s::State) = n_using!(df, fst, s)

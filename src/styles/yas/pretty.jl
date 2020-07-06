@@ -16,8 +16,11 @@ Recommended options are:
 - `always_use_return` = true
 - `whitespace_in_kwargs` = false
 """
-struct YASStyle <: AbstractStyle end
-@inline getstyle(s::YASStyle) = s
+struct YASStyle <: AbstractStyle 
+    innerstyle::Union{Nothing,AbstractStyle}
+end
+@inline getstyle(s::YASStyle) = s.innerstyle === nothing ? s : s.innerstyle
+YASStyle() = YASStyle(nothing)
 
 function nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
