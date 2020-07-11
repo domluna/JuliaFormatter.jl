@@ -1,7 +1,5 @@
 module JuliaFormatter
 
-# TODO: enable admonitions
-
 using CSTParser
 using Tokenize
 using DataStructures
