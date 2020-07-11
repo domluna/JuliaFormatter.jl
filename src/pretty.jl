@@ -345,7 +345,7 @@ block_modifier(rule::FormatRule) =
             "\"\"\"\n",
             markdown(enable!(
                 Parser(),
-                [AdmonitionRule(), FootnoteRule(), FormatRule(ds, s), TableRule()],
+                [AdmonitionRule(), FootnoteRule(), FormatRule(ds, s)],
             )(str[boundaries[1]:boundaries[end]]),),
             "\"\"\"",
         )
