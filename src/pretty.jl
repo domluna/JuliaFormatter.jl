@@ -232,6 +232,7 @@ struct FormatRule{Style,State}
     state::State
 end
 
+# TODO: avoid allocations
 block_modifier(rule::FormatRule) =
     Rule(1) do parser, block
         if block.t isa CodeBlock
@@ -248,33 +249,40 @@ block_modifier(rule::FormatRule) =
                     indended_state = State(
                         state.doc,
                         state.indent_size,
-                        state.indent + 4,
+                        state.indent + state.indent_size,
                         state.offset,
                         state.line_offset,
                         state.margin,
                         state.on,
                         state.opts,
                     )
-                    join(
-                        (
-                            string(
-                                "julia> ",
-                                join(
-                                    (
-                                        line
-                                        for
-                                        line in split(
-                                            format_text(style, indended_state, an_input),
-                                            '\n',
-                                        )
+                    string(
+                        join(
+                            (
+                                string(
+                                    "julia> ",
+                                    join(
+                                        (
+                                            line
+                                            for
+                                            line in split(
+                                                format_text(
+                                                    style,
+                                                    indended_state,
+                                                    an_input,
+                                                ),
+                                                '\n',
+                                            )
+                                        ),
+                                        "\n       ",
                                     ),
-                                    "\n       ",
-                                ),
-                                '\n',
-                                output,
-                            ) for (an_input, output) in repl_splitter(code)
+                                    '\n',
+                                    output,
+                                ) for (an_input, output) in repl_splitter(code)
+                            ),
+                            "\n\n",
                         ),
-                        "\n\n",
+                        '\n',
                     )
                 else
                     an_input, output = split(code, r"\n+# output\n+", limit = 2)
@@ -335,7 +343,10 @@ block_modifier(rule::FormatRule) =
         end
         str = string(
             "\"\"\"\n",
-            markdown(enable!(Parser(), FormatRule(ds, s))(str[boundaries[1]:boundaries[end]]),),
+            markdown(enable!(
+                Parser(),
+                [AdmonitionRule(), FootnoteRule(), FormatRule(ds, s), TableRule()],
+            )(str[boundaries[1]:boundaries[end]]),),
             "\"\"\"",
         )
     end

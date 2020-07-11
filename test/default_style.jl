@@ -4873,6 +4873,7 @@ some_function(
         julia> function test(x)
                    x + 1
                end;
+
         ```
         \"""
         function test(x)

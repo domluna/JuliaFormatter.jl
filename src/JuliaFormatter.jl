@@ -1,12 +1,23 @@
 module JuliaFormatter
 
+# TODO: enable admonitions
+
 using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
 using Documenter.DocTests: repl_splitter
 import CommonMark: block_modifier
-using CommonMark: CodeBlock, enable!, markdown, Parser, Rule
+using CommonMark:
+    AdmonitionRule,
+    CodeBlock,
+    enable!,
+    FootnoteRule,
+    markdown,
+    MathRule,
+    Parser,
+    Rule,
+    TableRule
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
