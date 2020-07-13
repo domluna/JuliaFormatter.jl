@@ -232,7 +232,6 @@ struct FormatRule{Style,State}
     state::State
 end
 
-# TODO: avoid allocations
 block_modifier(rule::FormatRule) =
     Rule(1) do parser, block
         if block.t isa CodeBlock
@@ -256,34 +255,29 @@ block_modifier(rule::FormatRule) =
                         state.on,
                         state.opts,
                     )
-                    string(
-                        join(
-                            (
-                                string(
-                                    "julia> ",
-                                    join(
-                                        (
-                                            line
-                                            for
-                                            line in split(
-                                                format_text(
-                                                    style,
-                                                    indended_state,
-                                                    an_input,
-                                                ),
-                                                '\n',
-                                            )
-                                        ),
-                                        "\n       ",
-                                    ),
-                                    '\n',
-                                    output,
-                                ) for (an_input, output) in repl_splitter(code)
-                            ),
-                            "\n\n",
-                        ),
-                        '\n',
-                    )
+                    doctests = IOBuffer()
+                    first_test = true
+                    for (an_input, output) in repl_splitter(code)
+                        if first_test
+                            first_test = false
+                        else
+                            write(doctests, "\n\n")
+                        end
+                        write(doctests, "julia> ")
+                        first_line = true
+                        for line in split(format_text(style, indended_state, an_input), '\n')
+                            if first_line
+                                first_line = false
+                            else
+                                write(doctests, "\n       ")
+                            end
+                            write(doctests, line)
+                        end
+                        write(doctests, '\n')
+                        write(doctests, output)
+                    end
+                    write(doctests, '\n')
+                    String(take!(doctests))
                 else
                     an_input, output = split(code, r"\n+# output\n+", limit = 2)
                     string(
@@ -341,14 +335,32 @@ block_modifier(rule::FormatRule) =
         boundaries = findall(str) do character
             character != '"'
         end
-        str = string(
-            "\"\"\"\n",
-            markdown(enable!(
-                Parser(),
-                [AdmonitionRule(), FootnoteRule(), FormatRule(ds, s)],
-            )(str[boundaries[1]:boundaries[end]]),),
-            "\"\"\"",
-        )
+        unindented = markdown(enable!(
+            Parser(),
+            [
+                AdmonitionRule(),
+                FootnoteRule(),
+                MathRule(),
+                TableRule(),
+                FormatRule(ds, s),
+            ],
+        )(str[boundaries[1]:boundaries[end]]),)
+        indented = IOBuffer()
+        # indent all subsequent lines to match the indent of the first
+        indent = ' '^s.indent
+        write(indented, "\"\"\"\n")
+        first_line = true
+        for line in split(unindented, '\n')
+            if first_line
+                first_line = false
+            else
+                write(indented, '\n')
+            end
+            write(indented, indent)
+            write(indented, line)
+        end
+        write(indented, "\"\"\"")
+        str = String(take!(indented))
     end
 
     s.offset += cst.fullspan

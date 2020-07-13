@@ -4835,6 +4835,7 @@ some_function(
 
         julia> function test(x)
                x + 1
+               x + 2
                end;
         ```
         \"""
@@ -4872,6 +4873,7 @@ some_function(
 
         julia> function test(x)
                    x + 1
+                   x + 2
                end;
 
         ```
@@ -4909,5 +4911,21 @@ some_function(
         \"""
         function test() end"""
         @test format_text(unformatted) == formatted
+    end
+    @testset "Indented docstring" begin
+        unformatted = """
+        begin
+            "Indented docstring"
+            indented_item
+        end"""
+        formatted = """
+        begin
+            \"""
+            Indented docstring
+            \"""
+            indented_item
+        end"""
+        @test format_text(unformatted) == formatted
+        @test_broken format_text(formatted) == formatted
     end
 end
