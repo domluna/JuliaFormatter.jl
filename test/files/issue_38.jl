@@ -10,8 +10,8 @@ settings = ArgParseSettings()
 
 @add_arg_table settings begin
     """
---file
-"""
+    --file
+    """
     help = """
     path to the file.
     ...
@@ -23,8 +23,8 @@ end
     help = "output..."
     default = "."
     """
-    --file
-"""
+        --file
+    """
     help = """
     path to the file.
     ...

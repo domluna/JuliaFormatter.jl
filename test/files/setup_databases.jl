@@ -38,31 +38,31 @@ function parse_commandline()
         help = "path where the database folder is going to be created."
         default = "."
         """
-`--pdb`
-"""
+        `--pdb`
+        """
         help = """
         path to an already existing local folder containing the entire pdb
         in mmCIF format.
         """
         default = ""
         """
-`--uniclust`
-"""
+        `--uniclust`
+        """
         help = """
         path to an already existing local folder containing the uniclust
         database from the HH-suite databases.
         """
         default = ""
         """
-`--uniclust_version`
-"""
+        `--uniclust_version`
+        """
         help = """
         Uniclust30 version to be downloaded: YYYY_MM
         """
         default = "2018_08"
         """
-`--pdb70`
-"""
+        `--pdb70`
+        """
         help = """
         path to an already existing local folder containing the
         pdb70_from_mmcif database from the HH-suite databases.

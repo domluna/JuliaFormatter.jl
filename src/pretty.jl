@@ -265,7 +265,8 @@ block_modifier(rule::FormatRule) =
                         end
                         write(doctests, "julia> ")
                         first_line = true
-                        for line in split(format_text(style, indended_state, an_input), '\n')
+                        for line in
+                            split(format_text(style, indended_state, an_input), '\n')
                             if first_line
                                 first_line = false
                             else
@@ -337,13 +338,7 @@ block_modifier(rule::FormatRule) =
         end
         unindented = markdown(enable!(
             Parser(),
-            [
-                AdmonitionRule(),
-                FootnoteRule(),
-                MathRule(),
-                TableRule(),
-                FormatRule(ds, s),
-            ],
+            [AdmonitionRule(), FootnoteRule(), MathRule(), TableRule(), FormatRule(ds, s)],
         )(str[boundaries[1]:boundaries[end]]),)
         indented = IOBuffer()
         # indent all subsequent lines to match the indent of the first
