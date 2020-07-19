@@ -19,12 +19,6 @@
     MacroBlock,
 )
 
-# nesting
-# DEFAULT
-# NEST
-# UNNEST
-# @enum()
-
 """
 Formatted Syntax Tree
 """
