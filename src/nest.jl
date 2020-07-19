@@ -439,10 +439,6 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             else
                 nest_if_over_margin!(style, fst, s, i)
             end
-        elseif n.typ === TRAILINGSEMICOLON
-            n.val = ""
-            n.len = 0
-            nest!(style, n, s)
         elseif i == length(fst.nodes) && !closer
             nest!(style, n, s)
         else
@@ -807,10 +803,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === TRAILINGSEMICOLON
-                n.val = ""
-                n.len = 0
                 nest!(style, n, s)
             elseif i < length(fst.nodes) - 1 && fst[i+2].typ === CSTParser.OPERATOR
                 # chainopcall / comparison
