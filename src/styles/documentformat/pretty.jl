@@ -3,7 +3,7 @@
 
 Formatting style based on DocumentFormat.jl
 """
-struct DocumentFormatStyle <: AbstractStyle 
+struct DocumentFormatStyle <: AbstractStyle
     indentstyle::AbstractStyle
 end
 @inline getstyle(s::DocumentFormatStyle) = s

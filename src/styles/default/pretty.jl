@@ -1662,7 +1662,8 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
             if i != length(cst) - 1
-                has_semicolon(s.doc, n.startline) && add_node!(t, InverseTrailingSemicolon(), s)
+                has_semicolon(s.doc, n.startline) &&
+                    add_node!(t, InverseTrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif n_args(cst) == 1
@@ -1703,7 +1704,7 @@ function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
-            if i != length(cst) -1 
+            if i != length(cst) - 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(1), s)
             end

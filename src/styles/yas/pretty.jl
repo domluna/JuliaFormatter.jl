@@ -16,7 +16,7 @@ Recommended options are:
 - `always_use_return` = true
 - `whitespace_in_kwargs` = false
 """
-struct YASStyle <: AbstractStyle 
+struct YASStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
 @inline getstyle(s::YASStyle) = s.innerstyle === nothing ? s : s.innerstyle
