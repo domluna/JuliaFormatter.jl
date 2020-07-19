@@ -4807,7 +4807,7 @@ some_function(
           2;
           3;
         }"""
-        @test fmt(str_, 2, length(str_)-1) == str
+        @test fmt(str_, 2, length(str_) - 1) == str
         @test fmt(str, 2, length(str_)) == str_
     end
 end

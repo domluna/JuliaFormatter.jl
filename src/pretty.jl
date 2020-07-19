@@ -1500,7 +1500,7 @@ function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
-            if i != length(cst) -1 
+            if i != length(cst) - 1
                 add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(1), s)
             end
@@ -1510,7 +1510,6 @@ function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_bracescat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_bracescat(DefaultStyle(style), cst, s)
-
 
 # Vect
 function p_vect(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -1676,7 +1675,8 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
             if i != length(cst) - 1
-                has_semicolon(s.doc, n.startline) && add_node!(t, InverseTrailingSemicolon(), s)
+                has_semicolon(s.doc, n.startline) &&
+                    add_node!(t, InverseTrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif n_args(cst) == 1
@@ -1721,8 +1721,6 @@ p_hcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline p_typedhcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_hcat(ds, cst, s)
 p_typedhcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_typedhcat(DefaultStyle(style), cst, s)
-
-
 
 # Row
 function p_row(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
