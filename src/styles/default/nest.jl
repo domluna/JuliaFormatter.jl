@@ -61,10 +61,10 @@ function unnest!(fst::FST, nl_inds::Vector{Int})
     for (i, ind) in enumerate(nl_inds)
         fst[ind] = Whitespace(fst[ind].len)
         i == length(nl_inds) || continue
-        if fst[ind-1].typ === TRAILINGCOMMA
+        if fst[ind-1].typ === TRAILINGCOMMA || fst[ind-1].typ === TRAILINGSEMICOLON
             fst[ind-1].val = ""
             fst[ind-1].len = 0
-        elseif fst[ind-1].typ === TRAILINGSEMICOLON
+        elseif fst[ind-1].typ === INVERSETRAILINGSEMICOLON
             fst[ind-1].val = ";"
             fst[ind-1].len = 1
         elseif fst.typ === CSTParser.BinaryOpCall && fst[ind+1].typ === WHITESPACE
@@ -210,6 +210,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_vcat!(style, fst, s)
     elseif fst.typ === CSTParser.Braces
         n_braces!(style, fst, s)
+    elseif fst.typ === CSTParser.BracesCat
+        n_bracescat!(style, fst, s)
     elseif fst.typ === CSTParser.InvisBrackets
         n_invisbrackets!(style, fst, s)
     elseif fst.typ === CSTParser.Comprehension
@@ -355,6 +357,10 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
                 n.len = 1
                 nest!(style, n, s)
             elseif n.typ === TRAILINGSEMICOLON
+                n.val = ";"
+                n.len = 1
+                nest!(style, n, s)
+            elseif n.typ === INVERSETRAILINGSEMICOLON
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
@@ -392,6 +398,10 @@ n_vcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_braces!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_braces!(DefaultStyle(style), fst, s)
 
+@inline n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_bracescat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_bracescat!(DefaultStyle(style), fst, s)
+
 @inline n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
 n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_parameters!(DefaultStyle(style), fst, s)
@@ -428,10 +438,6 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             else
                 nest_if_over_margin!(style, fst, s, i)
             end
-        elseif n.typ === TRAILINGSEMICOLON
-            n.val = ""
-            n.len = 0
-            nest!(style, n, s)
         elseif i == length(fst.nodes) && !closer
             nest!(style, n, s)
         else
@@ -488,7 +494,7 @@ function n_call!(ds::DefaultStyle, fst::FST, s::State)
                 n.val = ","
                 n.len = 1
                 nest!(style, n, s)
-            elseif n.typ === TRAILINGSEMICOLON
+            elseif n.typ === INVERSETRAILINGSEMICOLON
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
@@ -796,10 +802,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === TRAILINGSEMICOLON
-                n.val = ""
-                n.len = 0
                 nest!(style, n, s)
             elseif i < length(fst.nodes) - 1 && fst[i+2].typ === CSTParser.OPERATOR
                 # chainopcall / comparison

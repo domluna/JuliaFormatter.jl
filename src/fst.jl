@@ -13,6 +13,7 @@
     INLINECOMMENT,
     TRAILINGCOMMA,
     TRAILINGSEMICOLON,
+INVERSETRAILINGSEMICOLON,
 
     # no equivalent in CSTParser
     MacroBlock,
@@ -77,7 +78,9 @@ end
 @inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
 @inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
 @inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 1, "", nothing, nothing, false, 0)
+@inline InverseTrailingSemicolon() =
+    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
 @inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 @inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
 @inline Notcode(startline, endline) =
@@ -160,6 +163,7 @@ function get_args(cst::CSTParser.EXPR)
         return get_args(cst.args[3:end])
     elseif cst.typ === CSTParser.Braces ||
            cst.typ === CSTParser.Vcat ||
+           cst.typ === CSTParser.BracesCat ||
            cst.typ === CSTParser.TupleH ||
            cst.typ === CSTParser.Vect ||
            cst.typ === CSTParser.InvisBrackets ||
