@@ -1,5 +1,5 @@
 module JuliaFormatter
-# TODO: format markdown documents too
+
 using CSTParser
 using Tokenize
 using DataStructures

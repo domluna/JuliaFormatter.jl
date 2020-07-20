@@ -304,8 +304,8 @@ function format_docstring(style, state, text)
         character != '"'
     end
     # first, we need to remove any user indent
-    # one some lines will "count" towards increasing the user indent
-    # start at at a very big guess
+    # only some lines will "count" towards increasing the user indent
+    # start at a very big guess
     user_indent = typemax(Int)
     user_indented = text[boundaries[1]:boundaries[end]]
     deindented = IOBuffer()
