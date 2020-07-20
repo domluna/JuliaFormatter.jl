@@ -318,7 +318,7 @@ function format_docstring(style, state, text)
             if first_character === nothing
                 # if the line is only spaces, it only counts if is the last line
                 if index == length(user_lines)
-                    user_indent = length(line)
+                    user_indent = min(user_indent, length(line))
                 end
             else
                 user_indent = min(user_indent, first_character - 1)
