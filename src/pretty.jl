@@ -247,6 +247,7 @@ block_modifier(rule::FormatRule) =
                startswith(language, "julia")
                 block.literal = format_text(code)
             elseif startswith(language, "jldoctest")
+                # TODO: figure out why an extra indent is necessary
                 indented_state = State(
                     state.doc,
                     state.indent_size,
