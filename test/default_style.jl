@@ -4803,7 +4803,7 @@ some_function(
             )"""
         @test fmt(str_, 4, 1) == str
     end
-  
+
     @testset "Format docstrings" begin
         unformatted = """
         \"""
