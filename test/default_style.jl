@@ -4803,6 +4803,7 @@ some_function(
             )"""
         @test fmt(str_, 4, 1) == str
     end
+  
     @testset "Format docstrings" begin
         unformatted = """
         \"""
@@ -4947,5 +4948,20 @@ some_function(
         end
         """
         @test fmt(short) == short_formatted
+    end
+
+    @testset "issue 260 - BracesCat" begin
+        str = "{1; 2; 3}"
+        @test fmt(str, 4, length(str)) == str
+
+        str_ = "{1; 2; 3}"
+        str = """
+        {
+          1;
+          2;
+          3;
+        }"""
+        @test fmt(str_, 2, length(str_) - 1) == str
+        @test fmt(str, 2, length(str_)) == str_
     end
 end

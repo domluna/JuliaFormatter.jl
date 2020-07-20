@@ -12,6 +12,7 @@ Recommended options for confirming with the above guide are:
 - `pipe_to_function_call` = true
 - `short_to_long_function_def` = true
 - `always_use_return` = true
+- `whitespace_in_kwargs` = false
 
 ## Configuration File Example
 
