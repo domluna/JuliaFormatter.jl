@@ -38,7 +38,7 @@ function parse_commandline()
         help = "path where the database folder is going to be created."
         default = "."
         """
-        `--pdb`
+        --pdb
         """
         help = """
         path to an already existing local folder containing the entire pdb
@@ -46,7 +46,7 @@ function parse_commandline()
         """
         default = ""
         """
-        `--uniclust`
+        --uniclust
         """
         help = """
         path to an already existing local folder containing the uniclust
@@ -54,14 +54,14 @@ function parse_commandline()
         """
         default = ""
         """
-        `--uniclust_version`
+        --uniclust_version
         """
         help = """
         Uniclust30 version to be downloaded: YYYY_MM
         """
         default = "2018_08"
         """
-        `--pdb70`
+        --pdb70
         """
         help = """
         path to an already existing local folder containing the

@@ -23,7 +23,7 @@ end
     help = "output..."
     default = "."
     """
-        --file
+    --file
     """
     help = """
     path to the file.
