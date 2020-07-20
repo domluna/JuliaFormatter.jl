@@ -4886,18 +4886,18 @@ some_function(
     @testset "Multi-line indented code-blocks" begin
         unformatted = """
         \"""
-            format_text(
+            fmt(
             )
         \"""
-        function format_text() end"""
+        function fmt() end"""
 
         formatted = """
         \"""
-            format_text(
+            fmt(
             )
         \"""
-        function format_text() end"""
-        @test format_text(unformatted) == formatted
+        function fmt() end"""
+        @test fmt(unformatted) == formatted
     end
     @testset "Empty line in docstring" begin
         unformatted = """
@@ -4910,22 +4910,42 @@ some_function(
         \"""
         \"""
         function test() end"""
-        @test format_text(unformatted) == formatted
+        @test fmt(unformatted) == formatted
     end
     @testset "Indented docstring" begin
         unformatted = """
         begin
-            "Indented docstring"
+            \"""
+            Indented docstring
+
+            with multiple paragraphs
+            \"""
             indented_item
         end"""
         formatted = """
         begin
             \"""
             Indented docstring
+
+            with multiple paragraphs
             \"""
             indented_item
         end"""
-        @test format_text(unformatted) == formatted
-        @test_broken format_text(formatted) == formatted
+        @test fmt(unformatted) == formatted
+        short = """
+        begin
+            "Short docstring"
+            item
+        end
+        """
+        short_formatted = """
+        begin
+            \"""
+            Short docstring
+            \"""
+            item
+        end
+        """
+        @test fmt(short) == short_formatted
     end
 end

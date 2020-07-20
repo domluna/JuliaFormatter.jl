@@ -271,7 +271,7 @@ Handles the case of a function def defined
 as:
 
 ```julia
-foo(a::A)::R where A = body
+foo(a::A)::R where {A} = body
 ```
 
 In this case instead of it being parsed as (1):
@@ -300,7 +300,7 @@ CSTParser.BinaryOpCall
 (1) is preferrable since it's the same parsed result as:
 
 ```julia
-foo(a::A) where A = body
+foo(a::A) where {A} = body
 ```
 
 This transformation converts (2) to (1).
@@ -376,7 +376,7 @@ Moves `@` to the last indentifier.
 Example:
 
 ```julia
-@Module.macro
+Module.@macro
 ```
 
 to

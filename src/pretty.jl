@@ -241,20 +241,21 @@ block_modifier(rule::FormatRule) =
             code = block.literal
             if startswith(language, "@example") ||
                startswith(language, "@repl") ||
-               startswith(language, "@eval")
+               startswith(language, "@eval") ||
+               startswith(language, "julia")
                 block.literal = format_text(code)
             elseif startswith(language, "jldoctest")
+                indented_state = State(
+                    state.doc,
+                    state.indent_size,
+                    state.indent + state.indent_size,
+                    state.offset,
+                    state.line_offset,
+                    state.margin,
+                    state.on,
+                    state.opts,
+                )
                 block.literal = if occursin(r"^julia> "m, code)
-                    indended_state = State(
-                        state.doc,
-                        state.indent_size,
-                        state.indent + state.indent_size,
-                        state.offset,
-                        state.line_offset,
-                        state.margin,
-                        state.on,
-                        state.opts,
-                    )
                     doctests = IOBuffer()
                     first_test = true
                     for (an_input, output) in repl_splitter(code)
@@ -266,7 +267,7 @@ block_modifier(rule::FormatRule) =
                         write(doctests, "julia> ")
                         first_line = true
                         for line in
-                            split(format_text(style, indended_state, an_input), '\n')
+                            split(format_text(style, indented_state, an_input), '\n')
                             if first_line
                                 first_line = false
                             else
@@ -284,7 +285,7 @@ block_modifier(rule::FormatRule) =
                     string(
                         format_text(
                             style,
-                            state,
+                            indented_state,
                             format_text(style, state, String(an_input)),
                         ),
                         "\n\n# output\n\n",
@@ -294,6 +295,79 @@ block_modifier(rule::FormatRule) =
             end
         end
     end
+
+function format_docstring(style, state, text)
+    state_indent = state.indent
+    boundaries = findall(text) do character
+        character != '"'
+    end
+    # first, we need to remove any user indent
+    # one some lines will "count" towards increasing the user indent
+    # start at at a very big guess
+    user_indent = typemax(Int)
+    user_indented = text[boundaries[1]:boundaries[end]]
+    deindented = IOBuffer()
+    first_line = true
+    user_lines = split(user_indented, '\n')
+    for (index, line) in enumerate(user_lines)
+        # the first line doesn't count
+        if index != 1
+            first_character = findfirst(character -> !isspace(character), line)
+            if first_character === nothing
+                # if the line is only spaces, it only counts if is the last line
+                if index == length(user_lines)
+                    user_indent = length(line)
+                end
+            else
+                user_indent = min(user_indent, first_character - 1)
+            end
+        end
+    end
+    deindented_string =
+    # if there are no lines at all, or if the user indend is zero, we don't have to change anything
+        if user_indent == typemax(Int) || user_indent == 0
+            user_indented
+        else
+            # else, deindent non-first lines
+            first_line = true
+            for line in split(user_indented, '\n')
+                if first_line
+                    first_line = false
+                    write(deindented, line)
+                else
+                    write(deindented, '\n')
+                    write(deindented, SubString(line, user_indent + 1, length(line)))
+                end
+            end
+            String(take!(deindented))
+        end
+    # then, we format
+    formatted = markdown(enable!(
+        Parser(),
+        [
+            AdmonitionRule(),
+            FootnoteRule(),
+            MathRule(),
+            TableRule(),
+            FormatRule(style, state),
+        ],
+    )(
+        deindented_string,
+    ))
+    # Indent all non-first lines to match the current parser indent
+    state_indented = IOBuffer()
+    indent = " "^state_indent
+    # This is the first line, so the rest have to be indented. A newline for it will be added below
+    write(state_indented, "\"\"\"")
+    for line in split(formatted, '\n')
+        # The last line will be empty and will turn into an indent, so no need to indent the last line below
+        write(state_indented, '\n')
+        write(state_indented, indent)
+        write(state_indented, line)
+    end
+    write(state_indented, "\"\"\"")
+    String(take!(state_indented))
+end
 
 @inline function p_literal(
     ds::DefaultStyle,
@@ -333,29 +407,7 @@ block_modifier(rule::FormatRule) =
     # @debug "" loc startline endline str
 
     if from_docstring
-        boundaries = findall(str) do character
-            character != '"'
-        end
-        unindented = markdown(enable!(
-            Parser(),
-            [AdmonitionRule(), FootnoteRule(), MathRule(), TableRule(), FormatRule(ds, s)],
-        )(str[boundaries[1]:boundaries[end]]),)
-        indented = IOBuffer()
-        # indent all subsequent lines to match the indent of the first
-        indent = ' '^s.indent
-        write(indented, "\"\"\"\n")
-        first_line = true
-        for line in split(unindented, '\n')
-            if first_line
-                first_line = false
-            else
-                write(indented, '\n')
-            end
-            write(indented, indent)
-            write(indented, line)
-        end
-        write(indented, "\"\"\"")
-        str = String(take!(indented))
+        str = format_docstring(ds, s, str)
     end
 
     s.offset += cst.fullspan
