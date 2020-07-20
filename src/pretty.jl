@@ -309,7 +309,6 @@ function format_docstring(style, state, text)
     user_indent = typemax(Int)
     user_indented = text[boundaries[1]:boundaries[end]]
     deindented = IOBuffer()
-    first_line = true
     user_lines = split(user_indented, '\n')
     for (index, line) in enumerate(user_lines)
         # the first line doesn't count
