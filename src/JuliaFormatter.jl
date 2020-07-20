@@ -339,14 +339,15 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    if ext == "md"
+    if ext == ".md"
         verbose && println("Formatting $filename")
         str = String(read(filename))
         style, parsed, state = initial_processing(""; format_options...)
-        formatted_str = format_docstring(style, state, str)
+        formatted_str = format_docstring(style, state, str)[5:end-4]
         formatted_str = replace(formatted_str, r"\n*$" => "\n")
         overwrite ? write(filename, formatted_str) :
         write(path * "_fmt" * ext, formatted_str)
+        return formatted_str == str
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
         verbose && println("Formatting $filename")
         str = String(read(filename))
@@ -356,7 +357,7 @@ function format_file(
         write(path * "_fmt" * ext, formatted_str)
         return formatted_str == str
     else
-        error("$filename must be a Julia (.jl) source file")
+        error("$filename must be a Julia (.jl) or Markdown (.md) source file")
     end
 end
 
@@ -456,7 +457,7 @@ function format(paths; options...)::Bool
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext == ".jl" && !(".git" in splitpath(full_path))
+                    if ext in (".jl", ".md") && !(".git" in splitpath(full_path))
                         dir = realpath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)

@@ -67,4 +67,3 @@ format(
 The `text` argument to `format_text` is a string containing the code to be formatted; the formatted code is retuned as a new string. The `file` argument to `format_file` is the path of a file to be formatted. The `format` function is either called with a singe string to format if it is a `.jl` file or to recuse into looking for `.jl` files if it is a directory. It can also be called with a collection of such paths to iterate over. The `format_file` and `format` functions will return `true` if the file(s) are already formatted (i.e. if no changes were made to the file(s)) and `false` if changes were required to format the file(s).
 
 [`format`](@ref) calls [`format_file`](@ref) which in turn calls [`format_text`](@ref).
-

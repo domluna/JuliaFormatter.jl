@@ -243,8 +243,7 @@ block_modifier(rule::FormatRule) =
             code = block.literal
             if startswith(language, "@example") ||
                startswith(language, "@repl") ||
-               startswith(language, "@eval") ||
-               startswith(language, "julia")
+               startswith(language, "@eval")
                 block.literal = format_text(code)
             elseif startswith(language, "jldoctest")
                 # TODO: figure out why an extra indent is necessary

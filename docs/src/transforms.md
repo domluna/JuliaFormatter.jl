@@ -10,7 +10,6 @@ Alternative to the above - setting `always_for_in` to `true`, i.e. `format_text(
 
 If the node is _iterable_, for example a function call or list and is nested, a trailing comma is added to the last argument. The trailing comma is removed if unnested:
 
-
 ```julia
 func(a, b, c)
 
@@ -70,7 +69,6 @@ See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/66) for mor
 
 If the arguments of a `where` call are not surrounded by curly brackets, they are added:
 
-
 ```julia
 foo(x::T) where T = ...
 
@@ -96,7 +94,6 @@ end
 ```
 
 ## Move `@` in macro calls to the final identifier
-
 
 ```julia
 @Module.macro
