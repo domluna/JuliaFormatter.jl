@@ -222,7 +222,7 @@ end
 If true, `=` in keyword arguments will be surrounded by whitespace.
 
 ```julia
-f(; a = 4)
+f(; a=4)
 ```
 
 to
@@ -242,7 +242,7 @@ Annotates fields in a type definitions with `::Any` if no type annotation is pro
 
 ```julia
 struct A
-    arg1::Any
+    arg1
 end
 ```
 
