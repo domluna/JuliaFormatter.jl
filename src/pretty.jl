@@ -315,7 +315,7 @@ function format_docstring(style, state, text)
         if index != 1
             first_character = findfirst(character -> !isspace(character), line)
             if first_character === nothing
-                # if the line is only spaces, it only counts if is the last line
+                # if the line is only spaces, it only counts if it is the last line
                 if index == length(user_lines)
                     user_indent = min(user_indent, length(line))
                 end
@@ -325,7 +325,7 @@ function format_docstring(style, state, text)
         end
     end
     deindented_string =
-    # if there are no lines at all, or if the user indend is zero, we don't have to change anything
+    # if there are no lines at all, or if the user indent is zero, we don't have to change anything
         if user_indent == typemax(Int) || user_indent == 0
             user_indented
         else
