@@ -300,7 +300,7 @@ CSTParser.BinaryOpCall
 (1) is preferrable since it's the same parsed result as:
 
 ```julia
-foo(a::A) where {A} = body
+foo(a::A) where A = body
 ```
 
 This transformation converts (2) to (1).
