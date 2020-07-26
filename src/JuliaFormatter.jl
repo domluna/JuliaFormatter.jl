@@ -256,22 +256,22 @@ end
 """
 function format_text(text::AbstractString; options...)
     isempty(text) && return text
-    style, x, s = initial_processing(text; options...)
+    style, cst, s = initial_processing(text; options...)
     # no actual code
-    x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
-    _format_text(style, s, x)
+    cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
+    _format_text(style, s, cst)
 end
 
-function format_text(style, state, text)
-    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+function format_text(style::AbstractStyle, state::State, text::AbstractString)
+    cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
     s = State(Document(text), state.indent, state.margin, state.opts)
-    _format_text(style, s, x)
+    _format_text(style, s, cst)
 end
 
-function _format_text(style, s, x)
+function _format_text(style::AbstractStyle, s::State, cst::CSTParser.EXPR)
     opts = s.opts
-    t = pretty(style, x, s)
+    t = pretty(style, cst, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
     opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
