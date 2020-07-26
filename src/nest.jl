@@ -37,21 +37,34 @@ function walk(f, nodes::Vector{FST}, s::State, indent::Int)
     end
 end
 
+"""
+    walk(f, fst::FST, s::State)
+
+Walks `fst` calling `f` on each node.
+
+In situations where descending further into the FST is not desirable
+"""
 function walk(f, fst::FST, s::State)
-    f(fst, s)
-    is_leaf(fst) && return
+    stop = f(fst, s)
+    # @info "" cont
+    (stop != nothing || is_leaf(fst)) && return
+    # is_leaf(fst) && return
     walk(f, fst.nodes, s, fst.indent)
 end
 
 function reset_line_offset!(fst::FST, s::State)
     is_leaf(fst) || return
     s.line_offset += length(fst)
+    return nothing
 end
 
 function add_indent!(fst::FST, s::State, indent)
     indent == 0 && return
     lo = s.line_offset
-    f = (fst::FST, s::State) -> fst.indent += indent
+    f = (fst::FST, s::State) -> begin
+fst.indent += indent
+return nothing
+        end
     walk(f, fst, s)
     s.line_offset = lo
 end

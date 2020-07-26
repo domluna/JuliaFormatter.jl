@@ -388,7 +388,15 @@ Module.@macro
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
     t = FST[]
-    f = (t) -> (n, s) -> is_leaf(n) && push!(t, n)
+    f = (t) -> (n, s) -> begin
+        if is_macrocall(n)
+            # do not remove @ of nested macro calls
+            push!(t, n)
+            return false
+        elseif is_leaf(n)
+                push!(t, n)
+        end 
+    end
     walk(f(t), fst, s)
 
     macroname = FST(CSTParser.MacroName, fst.indent)

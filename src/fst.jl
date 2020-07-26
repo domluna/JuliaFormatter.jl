@@ -120,6 +120,8 @@ function is_importer_exporter(fst::FST)
     return false
 end
 
+@inline is_macrocall(fst::FST) = fst.typ === CSTParser.MacroCall || fst.typ === MacroBlock
+
 # f a function which returns a bool
 function parent_is(cst::CSTParser.EXPR, valid; ignore = (n) -> false)
     p = cst.parent

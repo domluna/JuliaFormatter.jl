@@ -432,6 +432,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # @Module.macro -> Module.@macro
     t[1] = move_at_sign_to_the_end(t[1], s)
 
+    # !has_closer && length(t.nodes) > 1 && (t.typ = MacroBlock)
     !has_closer && (t.typ = MacroBlock)
     t
 end

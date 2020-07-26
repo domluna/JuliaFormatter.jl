@@ -4810,4 +4810,23 @@ some_function(
         @test fmt(str_, 2, length(str_) - 1) == str
         @test fmt(str, 2, length(str_)) == str_
     end
+
+    @testset "issue 262 - removal of @ in nested macrocall" begin
+        str = raw":($(@__MODULE__).@macro)"
+        @test fmt(str) == str
+
+        str = raw":($(@__MODULE__).property)"
+        @test fmt(str) == str
+
+        str = raw":($(@__MODULE__))"
+        @test fmt(str) == str
+
+        str_ = raw":($(@__MODULE__).@field.macro)"
+        str = raw":($(@__MODULE__).field.@macro)"
+        @test fmt(str_) == str
+
+        str_ = raw":($(@__MODULE__.macro).@field.macro)"
+        str = raw":($(__MODULE__.@macro).field.@macro)"
+        @test fmt(str) == str
+    end
 end
