@@ -63,6 +63,7 @@ function initial_processing(
     always_use_return::Bool = false,
     whitespace_in_kwargs::Bool = true,
     annotate_untyped_fields_with_any::Bool = true,
+    format_docstrings::Bool = false,
 )
     x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
@@ -78,6 +79,7 @@ function initial_processing(
         always_use_return = always_use_return,
         whitespace_in_kwargs = whitespace_in_kwargs,
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
+        format_docstrings = format_docstrings,
     )
     s = State(Document(text), indent, margin, opts)
     style, x, s
@@ -99,6 +101,7 @@ end
         always_use_return::Bool = false,
         whitespace_in_kwargs::Bool = true,
         annotate_untyped_fields_with_any::Bool = true,
+        format_docstrings::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -253,6 +256,12 @@ struct A
     arg1::Any
 end
 ```
+
+### `format_docstrings`
+
+Format code docstrings with the same options used for the code source.
+
+Markdown is formatted with `CommonMark` alongside Julia code.
 """
 function format_text(text::AbstractString; options...)
     isempty(text) && return text

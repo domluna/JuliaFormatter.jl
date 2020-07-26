@@ -407,7 +407,7 @@ end
     startline, endline, str = str_info
     # @debug "" loc startline endline str
 
-    if from_docstring
+    if from_docstring && s.opts.format_docstrings
         str = format_docstring(ds, s, str)
     end
 
