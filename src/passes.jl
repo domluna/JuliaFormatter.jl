@@ -388,17 +388,19 @@ Module.@macro
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
     t = FST[]
-    f = (t) -> (n, s) -> begin
-        if is_macrocall(n) || (n.typ === CSTParser.Quotenode && !is_leaf(n[1]))
-            # 1. Do not move "@" in nested macro calls 
-            # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
-            # since it's semantically different to "@a.b.c" and "a.b.@c"
-            push!(t, n)
-            return false
-        elseif is_leaf(n)
-            push!(t, n)
-        end
-    end
+    f =
+        (t) ->
+            (n, s) -> begin
+                if is_macrocall(n) || (n.typ === CSTParser.Quotenode && !is_leaf(n[1]))
+                    # 1. Do not move "@" in nested macro calls
+                    # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
+                    # since it's semantically different to "@a.b.c" and "a.b.@c"
+                    push!(t, n)
+                    return false
+                elseif is_leaf(n)
+                    push!(t, n)
+                end
+            end
     walk(f(t), fst, s)
 
     macroname = FST(CSTParser.MacroName, fst.indent)
