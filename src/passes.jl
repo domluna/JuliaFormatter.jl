@@ -394,8 +394,8 @@ function move_at_sign_to_the_end(fst::FST, s::State)
             push!(t, n)
             return false
         elseif is_leaf(n)
-                push!(t, n)
-        end 
+            push!(t, n)
+        end
     end
     walk(f(t), fst, s)
 
