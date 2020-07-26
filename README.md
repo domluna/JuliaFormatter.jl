@@ -1,12 +1,8 @@
 # JuliaFormatter.jl
 
-[![Documenter: stable][docs-stable-img]](https://domluna.github.io/JuliaFormatter.jl/stable)
-[![Documenter: dev][docs-dev-img]](https://domluna.github.io/JuliaFormatter.jl/dev)
-[![Build Status][travis-img]](https://travis-ci.org/domluna/JuliaFormatter.jl)
-
-[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[travis-img]: https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master
+[![Documenter: stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable)
+[![Documenter: dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev)
+[![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
 
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 
@@ -41,6 +37,6 @@ Check out the docs for further description of the formatter and its options.
 
 For integration with other editors:
 
-- [Atom](https://github.com/JunoLab/Atom.jl)
-- [VSCode](https://github.com/singularitti/vscode-julia-formatter/)
-- [Vim](https://github.com/kdheepak/JuliaFormatter.vim)
+  - [Atom](https://github.com/JunoLab/Atom.jl)
+  - [VSCode](https://github.com/singularitti/vscode-julia-formatter/)
+  - [Vim](https://github.com/kdheepak/JuliaFormatter.vim)

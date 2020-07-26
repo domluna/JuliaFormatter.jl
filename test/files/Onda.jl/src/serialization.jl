@@ -7,8 +7,8 @@
 
 A type whose subtypes support:
 
-- [`deserialize_lpcm`](@ref)
-- [`serialize_lpcm`](@ref)
+  - [`deserialize_lpcm`](@ref)
+  - [`serialize_lpcm`](@ref)
 
 All definitions of subtypes of the form `S<:AbstractLPCMSerializer` must also support
 a constructor of the form `S(::Signal)` and overload `Onda.serializer_constructor_for_file_extension`

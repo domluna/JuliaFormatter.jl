@@ -12,7 +12,7 @@ is a one-to-one mapping of the language to a tree form. In most cases a more com
 representation is desired. However, since formatting manipulate the source text itself, the richer representation
 of a CST is incredibly useful.
 
-Once the CST is created it's then used to generate a `FST` (Formatted Syntax Tree). 
+Once the CST is created it's then used to generate a `FST` (Formatted Syntax Tree).
 
 > Note: this is not an actual term, just something I made up. Essentially it's a CST with additional formatting specific metadata.
 
@@ -20,7 +20,6 @@ The important part of an FST is any `.jl` file that is syntactically the same (w
 `FST`.
 
 For example:
-
 
 ```julia
 # p1.jl
@@ -40,19 +39,18 @@ c,d)
 
 will produce the **same FST**, which printed would look like:
 
-
 ```julia
 # fst output
 a = foo(a, b, c, d)
 ```
 
-So what does a typical `FST` look like? 
+So what does a typical `FST` look like?
 
 Code and comments are indented to match surrounding code blocks.
 Uncessary whitespace is removed. Newlines in between code blocks are untouched.
 
-If the expression can be put on a single line it will be. It doesn't matter 
-it's a function call which 120 arguments, making it 1000 characters long. 
+If the expression can be put on a single line it will be. It doesn't matter
+it's a function call which 120 arguments, making it 1000 characters long.
 During this initial stage it will be put on a single line.
 
 If the expression has a structure to it, such as a `try`, `if`, or 'struct'
@@ -81,7 +79,6 @@ end
 With this `FST` representation it's much easier to determine when and how
 lines should be broken.
 
-
 ## Nesting - breaking lines
 
 During the nesting stage and original `FST` is mutated to adhere to the margin specification.
@@ -91,7 +88,6 @@ being inserted at various points. These can be converted to `NEWLINE` nodes duri
 is how lines are broken.
 
 Assume we had a function call which went over the margin.
-
 
 ```julia
 begin

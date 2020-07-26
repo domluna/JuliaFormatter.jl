@@ -4,19 +4,20 @@ Formatting style based on [YASGuide](https://github.com/jrevels/YASGuide) and ht
 
 Recommended options for confirming with the above guide are:
 
-- `always_for_in` = true
-- `whitespace_ops_in_indices` = true
-- `whitespace_typedefs` = false
-- `remove_extra_newlines` = true
-- `import_to_using` = true
-- `pipe_to_function_call` = true
-- `short_to_long_function_def` = true
-- `always_use_return` = true
-- `whitespace_in_kwargs` = false
+  - `always_for_in` = true
+  - `whitespace_ops_in_indices` = true
+  - `whitespace_typedefs` = false
+  - `remove_extra_newlines` = true
+  - `import_to_using` = true
+  - `pipe_to_function_call` = true
+  - `short_to_long_function_def` = true
+  - `always_use_return` = true
+  - `whitespace_in_kwargs` = false
 
 ## Configuration File Example
 
 The `.JuliaFormatter.toml` which represents these settings is
+
 ```toml
 style = "yas"
 indent = 4
@@ -42,17 +43,17 @@ format("file.jl", style=YASStyle(), ...)
 There are three main differences between `YASStyle` and `DefaultStyle`. They are based
 on alignment and line break behaviors.
 
-1. Arguments are aligned to just after the start of the *opener* `[, {, (, etc`.
+ 1. Arguments are aligned to just after the start of the *opener* `[, {, (, etc`.
 
 ```julia
 function_call(arg1,
               arg2)
 ```
 
-2. As you can see from the above the *closer* sticks to the final argument.
+ 2. As you can see from the above the *closer* sticks to the final argument.
 
-3. Nesting (line breaks) only occur when the margin of the next argument exceeds
-the maximim limit.
+ 3. Nesting (line breaks) only occur when the margin of the next argument exceeds
+    the maximim limit.
 
 ```julia
 function_call(arg1, arg2,
@@ -60,7 +61,6 @@ function_call(arg1, arg2,
 ```
 
 `arg3` exceeded the margin limit and so it was placed on the following line.
-
 
 ### Nesting `=`
 
@@ -72,7 +72,6 @@ my_function(arg1, arg2) = arg1 * arg2
 ```
 
 Is not nested to
-
 
 ```julia
 my_function(arg1, arg2) =

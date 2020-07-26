@@ -60,9 +60,9 @@ end
 A type representing an individual Onda annotation object. Instances contain
 the following fields, following the Onda specification for annotation objects:
 
-- `value::String`
-- `start_nanosecond::Nanosecond`
-- `stop_nanosecond::Nanosecond`
+  - `value::String`
+  - `start_nanosecond::Nanosecond`
+  - `stop_nanosecond::Nanosecond`
 """
 struct Annotation <: AbstractTimeSpan
     value::String
@@ -94,16 +94,16 @@ Base.last(annotation::Annotation) = annotation.stop_nanosecond
 A type representing an individual Onda signal object. Instances contain
 the following fields, following the Onda specification for signal objects:
 
-- `channel_names::Vector{Symbol}`
-- `start_nanosecond::Nanosecond`
-- `stop_nanosecond::Nanosecond`
-- `sample_unit::Symbol`
-- `sample_resolution_in_unit::Float64`
-- `sample_offset_in_unit::Float64`
-- `sample_type::DataType`
-- `sample_rate::Float64`
-- `file_extension::Symbol`
-- `file_options::Union{Nothing,Dict{Symbol,Any}}`
+  - `channel_names::Vector{Symbol}`
+  - `start_nanosecond::Nanosecond`
+  - `stop_nanosecond::Nanosecond`
+  - `sample_unit::Symbol`
+  - `sample_resolution_in_unit::Float64`
+  - `sample_offset_in_unit::Float64`
+  - `sample_type::DataType`
+  - `sample_rate::Float64`
+  - `file_extension::Symbol`
+  - `file_options::Union{Nothing,Dict{Symbol,Any}}`
 """
 Base.@kwdef struct Signal
     channel_names::Vector{Symbol}
@@ -243,8 +243,8 @@ end
 A type representing an individual Onda recording object. Instances contain
 the following fields, following the Onda specification for recording objects:
 
-- `signals::Dict{Symbol,Signal}`
-- `annotations::Set{Annotation}`
+  - `signals::Dict{Symbol,Signal}`
+  - `annotations::Set{Annotation}`
 """
 struct Recording
     signals::Dict{Symbol,Signal}

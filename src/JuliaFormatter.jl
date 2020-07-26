@@ -4,6 +4,18 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Documenter.DocTests: repl_splitter
+import CommonMark: block_modifier
+using CommonMark:
+    AdmonitionRule,
+    CodeBlock,
+    enable!,
+    FootnoteRule,
+    markdown,
+    MathRule,
+    Parser,
+    Rule,
+    TableRule
 
 export format, format_text, format_file, DefaultStyle, YASStyle
 
@@ -36,6 +48,41 @@ include("styles/yas.jl")
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 
+function initial_processing(
+    text;
+    indent::Int = 4,
+    margin::Int = 92,
+    style::AbstractStyle = DefaultStyle(),
+    always_for_in::Bool = false,
+    whitespace_typedefs::Bool = false,
+    whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
+    whitespace_in_kwargs::Bool = true,
+    annotate_untyped_fields_with_any::Bool = true,
+)
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input:\n\n$text")
+
+    opts = Options(
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        import_to_using = import_to_using,
+        pipe_to_function_call = pipe_to_function_call,
+        short_to_long_function_def = short_to_long_function_def,
+        always_use_return = always_use_return,
+        whitespace_in_kwargs = whitespace_in_kwargs,
+        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
+    )
+    s = State(Document(text), indent, margin, opts)
+    style, x, s
+end
+
 """
     format_text(
         text::AbstractString;
@@ -51,6 +98,7 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         short_to_long_function_def::Bool = false,
         always_use_return::Bool = false,
         whitespace_in_kwargs::Bool = true,
+        annotate_untyped_fields_with_any::Bool = true,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -132,13 +180,13 @@ If true, `x |> f` is rewritten to `f(x)`.
 
 ### `short_to_long_function_def`
 
-Transforms a _short_ function definition
+Transforms a *short* function definition
 
 ```julia
 f(arg1, arg2) = body
 ```
 
-to a _long_ function definition
+to a *long* function definition
 
 ```julia
 function f(arg2, arg2)
@@ -205,45 +253,24 @@ struct A
     arg1::Any
 end
 ```
-
 """
-function format_text(
-    text::AbstractString;
-    indent::Int = 4,
-    margin::Int = 92,
-    style::AbstractStyle = DefaultStyle(),
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    import_to_using::Bool = false,
-    pipe_to_function_call::Bool = false,
-    short_to_long_function_def::Bool = false,
-    always_use_return::Bool = false,
-    whitespace_in_kwargs::Bool = true,
-    annotate_untyped_fields_with_any::Bool = true,
-)
+function format_text(text::AbstractString; options...)
     isempty(text) && return text
-
-    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    ps.errored && error("Parsing error for input:\n\n$text")
-
+    style, x, s = initial_processing(text; options...)
     # no actual code
     x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
+    _format_text(style, s, x)
+end
 
-    opts = Options(
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        import_to_using = import_to_using,
-        pipe_to_function_call = pipe_to_function_call,
-        short_to_long_function_def = short_to_long_function_def,
-        always_use_return = always_use_return,
-        whitespace_in_kwargs = whitespace_in_kwargs,
-        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
-    )
-    s = State(Document(text), indent, margin, opts)
+function format_text(style, state, text)
+    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+    ps.errored && error("Parsing error for input:\n\n$text")
+    s = State(Document(text), state.indent, state.margin, state.opts)
+    _format_text(style, s, x)
+end
+
+function _format_text(style, s, x)
+    opts = s.opts
     t = pretty(style, x, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
@@ -300,9 +327,9 @@ to `stdout`.
 See [`format_text`](@ref) for description of formatting options.
 
 ### Output
- 
+
 Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+or not (`false`).
 """
 function format_file(
     filename::AbstractString;
@@ -312,15 +339,26 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    if ext != ".jl" && match(shebang_pattern, readline(filename)) === nothing
-        error("$filename must be a Julia (.jl) source file")
+    if ext == ".md"
+        verbose && println("Formatting $filename")
+        str = String(read(filename))
+        style, parsed, state = initial_processing(""; format_options...)
+        formatted_str = format_docstring(style, state, str)[5:end-4]
+        formatted_str = replace(formatted_str, r"\n*$" => "\n")
+        overwrite ? write(filename, formatted_str) :
+        write(path * "_fmt" * ext, formatted_str)
+        return formatted_str == str
+    elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
+        verbose && println("Formatting $filename")
+        str = String(read(filename))
+        formatted_str = format_text(str; format_options...)
+        formatted_str = replace(formatted_str, r"\n*$" => "\n")
+        overwrite ? write(filename, formatted_str) :
+        write(path * "_fmt" * ext, formatted_str)
+        return formatted_str == str
+    else
+        error("$filename must be a Julia (.jl) or Markdown (.md) source file")
     end
-    verbose && println("Formatting $filename")
-    str = String(read(filename))
-    formatted_str = format_text(str; format_options...)
-    formatted_str = replace(formatted_str, r"\n*$" => "\n")
-    overwrite ? write(filename, formatted_str) : write(path * "_fmt" * ext, formatted_str)
-    return formatted_str == str
 end
 
 if VERSION < v"1.1.0"
@@ -377,14 +415,14 @@ files by calling `format_file` on them.
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
 This function will look for `.JuliaFormatter.toml` in the location of the file being
-formatted, and searching _up_ the file tree until a config file is (or isn't) found.
+formatted, and searching *up* the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
 See ["Configuration File"](@id) for more details.
 
 ### Output
- 
+
 Returns a boolean indicating whether the file was already formatted (`true`)
-or not (`false`). 
+or not (`false`).
 """
 function format(paths; options...)::Bool
     dir2config = Dict{String,Any}()
@@ -419,7 +457,7 @@ function format(paths; options...)::Bool
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext == ".jl" && !(".git" in splitpath(full_path))
+                    if ext in (".jl", ".md") && !(".git" in splitpath(full_path))
                         dir = realpath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)

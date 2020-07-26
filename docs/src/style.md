@@ -60,7 +60,6 @@ a,b
 Foo{a,b,c}
 ```
 
-
 Blocks and their bodies are spread across multiple lines properly indented.
 
 Example 1:
@@ -130,7 +129,7 @@ list[a + b]
 list[a+b]
 ```
 
-Conditionals are placed on a single line and separated by whitespace. 
+Conditionals are placed on a single line and separated by whitespace.
 
 ```julia
 cond1 ?
@@ -217,8 +216,7 @@ foo() =
 Lazy `&&` and `||` operations are nested according to [`is_standalone_shortcircuit`](@ref) rules.
 
 All arguments of a function call (applies to any opening/closing punctuation type) are nested
-if the expression exceeds the margin. The arguments are indented one level. 
-
+if the expression exceeds the margin. The arguments are indented one level.
 
 ```julia
 function longfunctionname_that_is_long(lots, of, args, even, more, args)
@@ -350,4 +348,3 @@ var = funccall(
     arg3,
 )
 ```
-

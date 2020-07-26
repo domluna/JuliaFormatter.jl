@@ -527,7 +527,7 @@ is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
 
 Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`)
-and is _standalone_, meaning it's not directly associated with another statement or
+and is *standalone*, meaning it's not directly associated with another statement or
 expression.
 
 ### Examples

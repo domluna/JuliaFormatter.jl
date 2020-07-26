@@ -36,16 +36,17 @@ The `->` is not required if the object is on the same line, e.g.
     @doc "foo" foo
 
 ## Documenting objects after they are defined
+
 You can document an object after its definition by
 
     @doc "foo" function_to_doc
     @doc "bar" TypeToDoc
 
-For macros, the syntax is `@doc "macro doc" :(@Module.macro)` or `@doc "macro doc"
-:(string_macro"")` for string macros. Without the quote `:()` the expansion of the macro
+For macros, the syntax is `@doc "macro doc" :(@Module.macro)` or `@doc "macro doc" :(string_macro"")` for string macros. Without the quote `:()` the expansion of the macro
 will be documented.
 
 ## Retrieving Documentation
+
 You can retrieve docs for functions, macros and other objects as follows:
 
     @doc foo
@@ -53,6 +54,7 @@ You can retrieve docs for functions, macros and other objects as follows:
     @doc md""
 
 ## Functions & Methods
+
 Placing documentation before a method definition (e.g. `function foo() ...` or `foo() = ...`)
 will cause that specific method to be documented, as opposed to the whole function. Method
 docs are concatenated together in the order they were defined to provide docs for the
@@ -312,10 +314,10 @@ Build a `Dict` expression containing metadata captured from the expression `expr
 
 Fields that may be included in the returned `Dict`:
 
-- `:path`:       Symbol representing the file where `expr` is defined.
-- `:linenumber`: Linenumber where `expr` is defined.
-- `:module`:     Module where the docstring is defined.
-- `:fields`:     `Dict` of all field docs found in `expr`. Only for concrete types.
+  - `:path`:       Symbol representing the file where `expr` is defined.
+  - `:linenumber`: Linenumber where `expr` is defined.
+  - `:module`:     Module where the docstring is defined.
+  - `:fields`:     `Dict` of all field docs found in `expr`. Only for concrete types.
 """
 function metadata(__source__, __module__, expr, ismodule)
     args = []
