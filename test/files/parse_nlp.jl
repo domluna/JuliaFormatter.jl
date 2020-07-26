@@ -19,7 +19,9 @@ end
 # parent is the index of the parent expression
 # values is the name of the list of constants which appear in the expression
 function _parse_NL_expr(m, x, tapevar, parent, values)
-    if isexpr(x,:call) && length(x.args) >= 2 && (isexpr(x.args[2],:generator) || isexpr(x.args[2],:flatten))
+    if isexpr(x, :call) &&
+       length(x.args) >= 2 &&
+       (isexpr(x.args[2], :generator) || isexpr(x.args[2], :flatten))
         header = x.args[1]
         if _is_sum(header)
             operatorid = operator_to_id[:+]
@@ -28,14 +30,20 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
         else
             error("Unrecognized expression $header(...)")
         end
-        codeblock = :(let; end)
+        codeblock = :(
+            let
+            end
+        )
         block = _let_code_block(codeblock)
         push!(block.args, :(push!($tapevar, NodeData(CALL, $operatorid, $parent))))
         parentvar = gensym()
         push!(block.args, :($parentvar = length($tapevar)))
 
 
-        code = _MA.rewrite_generator(x.args[2], t -> _parse_NL_expr(m, t, tapevar, parentvar, values))
+        code = _MA.rewrite_generator(
+            x.args[2],
+            t -> _parse_NL_expr(m, t, tapevar, parentvar, values),
+        )
         push!(block.args, code)
         return codeblock
     end
@@ -44,24 +52,32 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
         if isexpr(x.args[1], :.)
             # Functions like foo.bar cannot possibly be registered, because you
             # can register only with a symbol name.
-            errorstring = "Unexpected function $(x.args[1]). See the " *
-            "documentation on how to register a function."
+            errorstring =
+                "Unexpected function $(x.args[1]). See the " *
+                "documentation on how to register a function."
             return :(error($errorstring))
         end
         if _is_sum(x.args[1]) || _is_prod(x.args[1])
             opname = x.args[1]
-            errorstring = "$opname() can appear in nonlinear expressions " *
-            " only if the argument is a generator statement, for example, " *
-            "$opname(x[i] for i in 1:N)."
+            errorstring =
+                "$opname() can appear in nonlinear expressions " *
+                " only if the argument is a generator statement, for example, " *
+                "$opname(x[i] for i in 1:N)."
             return :(error($errorstring))
         end
         if length(x.args) == 2 && !isexpr(x.args[2], :...) # univariate
-            code = :(let; end)
+            code = :(
+                let
+                end
+            )
             block = _let_code_block(code)
             @assert isexpr(block, :block)
-            if haskey(univariate_operator_to_id,x.args[1])
+            if haskey(univariate_operator_to_id, x.args[1])
                 operatorid = univariate_operator_to_id[x.args[1]]
-                push!(block.args, :(push!($tapevar, NodeData(CALLUNIVAR, $operatorid, $parent))))
+                push!(
+                    block.args,
+                    :(push!($tapevar, NodeData(CALLUNIVAR, $operatorid, $parent))),
+                )
             else
                 opname = quot(x.args[1])
                 errorstring = "Unrecognized function \"$(x.args[1])\" used in nonlinear expression."
@@ -70,31 +86,53 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
                     if $(esc(m)).nlp_data === nothing
                         error($errorstring)
                     end
-                    if !haskey($(esc(m)).nlp_data.user_operators.univariate_operator_to_id,$opname)
-                        if haskey($(esc(m)).nlp_data.user_operators.multivariate_operator_to_id,$opname)
+                    if !haskey(
+                        $(esc(m)).nlp_data.user_operators.univariate_operator_to_id,
+                        $opname,
+                    )
+                        if haskey(
+                            $(esc(m)).nlp_data.user_operators.multivariate_operator_to_id,
+                            $opname,
+                        )
                             error($errorstring2)
                         else
                             error($errorstring)
                         end
                     end
-                    operatorid = $(esc(m)).nlp_data.user_operators.univariate_operator_to_id[$opname] + _Derivatives.USER_UNIVAR_OPERATOR_ID_START - 1
+                    operatorid =
+                        $(esc(m)).nlp_data.user_operators.univariate_operator_to_id[$opname] +
+                        _Derivatives.USER_UNIVAR_OPERATOR_ID_START - 1
                 end
-                push!(block.args, :($lookupcode; push!($tapevar, NodeData(CALLUNIVAR, operatorid, $parent))))
+                push!(
+                    block.args,
+                    :(
+                        $lookupcode; push!(
+                            $tapevar,
+                            NodeData(CALLUNIVAR, operatorid, $parent),
+                        )
+                    ),
+                )
             end
             parentvar = gensym()
             push!(block.args, :($parentvar = length($tapevar)))
             push!(block.args, _parse_NL_expr(m, x.args[2], tapevar, parentvar, values))
             return code
         else
-            code = :(let; end)
+            code = :(
+                let
+                end
+            )
             block = _let_code_block(code)
             @assert isexpr(block, :block)
-            if haskey(operator_to_id,x.args[1]) # fast compile-time lookup
+            if haskey(operator_to_id, x.args[1]) # fast compile-time lookup
                 operatorid = operator_to_id[x.args[1]]
                 push!(block.args, :(push!($tapevar, NodeData(CALL, $operatorid, $parent))))
-            elseif haskey(comparison_operator_to_id,x.args[1])
+            elseif haskey(comparison_operator_to_id, x.args[1])
                 operatorid = comparison_operator_to_id[x.args[1]]
-                push!(block.args, :(push!($tapevar, NodeData(COMPARISON, $operatorid, $parent))))
+                push!(
+                    block.args,
+                    :(push!($tapevar, NodeData(COMPARISON, $operatorid, $parent))),
+                )
             else # could be user defined
                 opname = quot(x.args[1])
                 errorstring = "Unrecognized function \"$(x.args[1])\" used in nonlinear expression."
@@ -103,60 +141,86 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
                     if $(esc(m)).nlp_data === nothing
                         error($errorstring)
                     end
-                    if !haskey($(esc(m)).nlp_data.user_operators.multivariate_operator_to_id,$opname)
-                        if haskey($(esc(m)).nlp_data.user_operators.univariate_operator_to_id,$opname)
+                    if !haskey(
+                        $(esc(m)).nlp_data.user_operators.multivariate_operator_to_id,
+                        $opname,
+                    )
+                        if haskey(
+                            $(esc(m)).nlp_data.user_operators.univariate_operator_to_id,
+                            $opname,
+                        )
                             error($errorstring2)
                         else
                             error($errorstring)
                         end
                     end
-                    operatorid = $(esc(m)).nlp_data.user_operators.multivariate_operator_to_id[$opname] + _Derivatives.USER_OPERATOR_ID_START - 1
+                    operatorid =
+                        $(esc(m)).nlp_data.user_operators.multivariate_operator_to_id[$opname] +
+                        _Derivatives.USER_OPERATOR_ID_START - 1
                 end
-                push!(block.args, :($lookupcode; push!($tapevar, NodeData(CALL, operatorid, $parent))))
+                push!(
+                    block.args,
+                    :($lookupcode; push!($tapevar, NodeData(CALL, operatorid, $parent))),
+                )
             end
             parentvar = gensym()
             push!(block.args, :($parentvar = length($tapevar)))
-            for i in 1:length(x.args)-1
-                arg = x.args[i + 1]
+            for i = 1:length(x.args)-1
+                arg = x.args[i+1]
                 if isexpr(arg, :...)
                     if !isa(arg.args[1], Symbol)
-                        error("Unexpected expression in $x. JuMP supports " *
-                              "splatting only symbols. For example, x... is " *
-                              "ok, but (x + 1)..., [x; y]... and g(f(y)...) " *
-                              "are not.")
+                        error(
+                            "Unexpected expression in $x. JuMP supports " *
+                            "splatting only symbols. For example, x... is " *
+                            "ok, but (x + 1)..., [x; y]... and g(f(y)...) " *
+                            "are not.",
+                        )
                     end
-                    push!(block.args, quote
-                        for val in $(esc(arg.args[1]))
-                            _parse_NL_expr_runtime($(esc(m)), val,
-                                                $tapevar, $parentvar, $values)
-                        end
-                    end)
+                    push!(
+                        block.args,
+                        quote
+                            for val in $(esc(arg.args[1]))
+                                _parse_NL_expr_runtime(
+                                    $(esc(m)),
+                                    val,
+                                    $tapevar,
+                                    $parentvar,
+                                    $values,
+                                )
+                            end
+                        end,
+                    )
                 else
-                    push!(block.args, _parse_NL_expr(m, arg, tapevar, parentvar,
-                                                  values))
+                    push!(block.args, _parse_NL_expr(m, arg, tapevar, parentvar, values))
                 end
             end
             return code
         end
     end
     if isexpr(x, :comparison)
-        code = :(let; end)
+        code = :(
+            let
+            end
+        )
         block = _let_code_block(code)
         op = x.args[2]
         operatorid = comparison_operator_to_id[op]
-        for k in 2:2:length(x.args)-1
+        for k = 2:2:length(x.args)-1
             @assert x.args[k] == op # don't handle a <= b >= c
         end
         parentvar = gensym()
         push!(block.args, :(push!($tapevar, NodeData(COMPARISON, $operatorid, $parent))))
         push!(block.args, :($parentvar = length($tapevar)))
-        for k in 1:2:length(x.args)
+        for k = 1:2:length(x.args)
             push!(block.args, _parse_NL_expr(m, x.args[k], tapevar, parentvar, values))
         end
         return code
     end
     if isexpr(x, :&&) || isexpr(x, :||)
-        code = :(let; end)
+        code = :(
+            let
+            end
+        )
         block = _let_code_block(code)
         op = x.head
         operatorid = logic_operator_to_id[op]
@@ -174,7 +238,7 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
         error("Unexpected splatting expression $x.")
     end
     # at the lowest level?
-    return :( _parse_NL_expr_runtime($(esc(m)),$(esc(x)), $tapevar, $parent, $values) )
+    return :(_parse_NL_expr_runtime($(esc(m)), $(esc(x)), $tapevar, $parent, $values))
 
 end
 
@@ -186,8 +250,10 @@ end
 
 function _parse_NL_expr_runtime(m::Model, x::VariableRef, tape, parent, values)
     if owner_model(x) !== m
-        error("Variable in nonlinear expression does not belong to the " *
-              "corresponding model")
+        error(
+            "Variable in nonlinear expression does not belong to the " *
+            "corresponding model",
+        )
     end
     push!(tape, NodeData(MOIVARIABLE, x.index.value, parent))
     nothing
@@ -208,15 +274,19 @@ function _parse_NL_expr_runtime(m::Model, x::AbstractArray, tape, parent, values
 end
 
 function _parse_NL_expr_runtime(m::Model, x::GenericQuadExpr, tape, parent, values)
-    error("Unexpected quadratic expression $x in nonlinear expression. " *
-          "Quadratic expressions (e.g., created using @expression) and " *
-          "nonlinear expressions cannot be mixed.")
+    error(
+        "Unexpected quadratic expression $x in nonlinear expression. " *
+        "Quadratic expressions (e.g., created using @expression) and " *
+        "nonlinear expressions cannot be mixed.",
+    )
 end
 
 function _parse_NL_expr_runtime(m::Model, x::GenericAffExpr, tape, parent, values)
-    error("Unexpected affine expression $x in nonlinear expression. " *
-          "Affine expressions (e.g., created using @expression) and " *
-          "nonlinear expressions cannot be mixed.")
+    error(
+        "Unexpected affine expression $x in nonlinear expression. " *
+        "Affine expressions (e.g., created using @expression) and " *
+        "nonlinear expressions cannot be mixed.",
+    )
 end
 
 function _parse_NL_expr_runtime(m::Model, x, tape, parent, values)
@@ -253,26 +323,35 @@ macro _process_NL_expr(model, ex)
     return _process_NL_expr(model, ex)
 end
 
-function _Derivatives.expr_to_nodedata(ex::VariableRef,
-                                       nd::Vector{NodeData},
-                                       values::Vector{Float64}, parentid,
-                                       r::_Derivatives.UserOperatorRegistry)
+function _Derivatives.expr_to_nodedata(
+    ex::VariableRef,
+    nd::Vector{NodeData},
+    values::Vector{Float64},
+    parentid,
+    r::_Derivatives.UserOperatorRegistry,
+)
     push!(nd, NodeData(MOIVARIABLE, ex.index.value, parentid))
     nothing
 end
 
-function _Derivatives.expr_to_nodedata(ex::NonlinearExpression,
-                                       nd::Vector{NodeData},
-                                       values::Vector{Float64}, parentid,
-                                       r::_Derivatives.UserOperatorRegistry)
+function _Derivatives.expr_to_nodedata(
+    ex::NonlinearExpression,
+    nd::Vector{NodeData},
+    values::Vector{Float64},
+    parentid,
+    r::_Derivatives.UserOperatorRegistry,
+)
     push!(nd, NodeData(SUBEXPRESSION, ex.index, parentid))
     nothing
 end
 
-function _Derivatives.expr_to_nodedata(ex::NonlinearParameter,
-                                       nd::Vector{NodeData},
-                                       values::Vector{Float64}, parentid,
-                                       r::_Derivatives.UserOperatorRegistry)
+function _Derivatives.expr_to_nodedata(
+    ex::NonlinearParameter,
+    nd::Vector{NodeData},
+    values::Vector{Float64},
+    parentid,
+    r::_Derivatives.UserOperatorRegistry,
+)
     push!(nd, NodeData(PARAMETER, ex.index, parentid))
     nothing
 end
@@ -281,8 +360,8 @@ end
 # VariableRef objects should be spliced into the expression.
 function _NonlinearExprData(m::Model, ex::Expr)
     _init_NLP(m)
-    _check_expr(m,ex)
-    nd, values = _Derivatives.expr_to_nodedata(ex,m.nlp_data.user_operators)
+    _check_expr(m, ex)
+    nd, values = _Derivatives.expr_to_nodedata(ex, m.nlp_data.user_operators)
     return _NonlinearExprData(nd, values)
 end
 _NonlinearExprData(m::Model, ex) = _NonlinearExprData(m, :($ex + 0))
