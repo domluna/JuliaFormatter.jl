@@ -345,16 +345,22 @@ function format_file(
         style, parsed, state = initial_processing(""; format_options...)
         formatted_str = format_docstring(style, state, str)[5:end-4]
         formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        overwrite ? write(filename, formatted_str) :
-        write(path * "_fmt" * ext, formatted_str)
+        if overwite
+            write(filename, formatted_str)
+        else
+            write(path * "_fmt" * ext, formatted_str)
+        end
         return formatted_str == str
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
         verbose && println("Formatting $filename")
         str = String(read(filename))
         formatted_str = format_text(str; format_options...)
         formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        overwrite ? write(filename, formatted_str) :
-        write(path * "_fmt" * ext, formatted_str)
+        if overwite
+            write(filename, formatted_str)
+        else
+            write(path * "_fmt" * ext, formatted_str)
+        end
         return formatted_str == str
     else
         error("$filename must be a Julia (.jl) or Markdown (.md) source file")
