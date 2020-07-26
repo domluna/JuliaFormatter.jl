@@ -42,13 +42,12 @@ end
 
 Walks `fst` calling `f` on each node.
 
-In situations where descending further into the FST is not desirable
+In situations where descending further into a subtree is not desirable `f`
+should return a value other than `nothing`.
 """
 function walk(f, fst::FST, s::State)
     stop = f(fst, s)
-    # @info "" cont
     (stop != nothing || is_leaf(fst)) && return
-    # is_leaf(fst) && return
     walk(f, fst.nodes, s, fst.indent)
 end
 
