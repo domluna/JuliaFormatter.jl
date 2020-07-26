@@ -339,32 +339,26 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    if ext == ".md"
+    formatted_str = if ext == ".md"
         verbose && println("Formatting $filename")
         str = String(read(filename))
         style, parsed, state = initial_processing(""; format_options...)
-        formatted_str = format_docstring(style, state, str)[5:end-4]
-        formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        if overwite
-            write(filename, formatted_str)
-        else
-            write(path * "_fmt" * ext, formatted_str)
-        end
-        return formatted_str == str
+        format_docstring(style, state, str)[5:end-4]
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
         verbose && println("Formatting $filename")
         str = String(read(filename))
-        formatted_str = format_text(str; format_options...)
-        formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        if overwite
-            write(filename, formatted_str)
-        else
-            write(path * "_fmt" * ext, formatted_str)
-        end
-        return formatted_str == str
+        format_text(str; format_options...)
     else
         error("$filename must be a Julia (.jl) or Markdown (.md) source file")
     end
+    formatted_str = replace(formatted_str, r"\n*$" => "\n")
+
+    if overwrite
+        write(filename, formatted_str)
+    else
+        write(path * "_fmt" * ext, formatted_str)
+    end
+    return formatted_str == str
 end
 
 if VERSION < v"1.1.0"
