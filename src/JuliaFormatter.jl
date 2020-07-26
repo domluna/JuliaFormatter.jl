@@ -261,7 +261,7 @@ end
 
 Format code docstrings with the same options used for the code source.
 
-Markdown is formatted with `CommonMark` alongside Julia code.
+Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/CommonMark.jl) alongside Julia code.
 """
 function format_text(text::AbstractString; options...)
     isempty(text) && return text
