@@ -9,4 +9,5 @@ Base.@kwdef struct Options
     always_use_return::Bool = false
     whitespace_in_kwargs::Bool = true
     annotate_untyped_fields_with_any::Bool = true
+    format_docstrings::Bool = false
 end
