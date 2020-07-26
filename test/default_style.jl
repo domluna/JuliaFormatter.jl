@@ -4854,7 +4854,6 @@ some_function(
         @test fmt(str) == str
     end
 
-
     @testset "issue 264 - `let` empty block body" begin
         str_ = "let; end"
         str = """
