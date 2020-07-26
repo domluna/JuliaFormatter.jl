@@ -770,7 +770,7 @@ n_binaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_for!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     block_idx = findfirst(n -> !is_leaf(n), fst.nodes)
-    if block_idx === nothing
+    if block_idx === nothing || length(fst[block_idx]) == 0
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
         return
     end
