@@ -4827,6 +4827,6 @@ some_function(
 
         str_ = raw":($(@__MODULE__.macro).@field.macro)"
         str = raw":($(__MODULE__.@macro).field.@macro)"
-        @test fmt(str) == str
+        @test fmt(str_) == str
     end
 end
