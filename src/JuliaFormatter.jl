@@ -264,11 +264,7 @@ function format_text(
     return format_text(text, style, opts)
 end
 
-function format_text(
-    text::AbstractString,
-    style::AbstractStyle,
-    opts::Options,
-)
+function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
     s = State(Document(text), opts)

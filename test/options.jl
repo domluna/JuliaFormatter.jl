@@ -109,7 +109,7 @@
         using .B: B
         using ...C: C"""
         @test fmt(str_, import_to_using = true) == str
-        t = run_pretty(str_, opts = Options(max_margin=80,import_to_using = true))
+        t = run_pretty(str_, opts = Options(max_margin = 80, import_to_using = true))
         @test t.len == 13
 
         # #232
@@ -353,7 +353,10 @@
             end"""
         @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, opts = Options(max_margin=80,annotate_untyped_fields_with_any = false))
+        t = run_pretty(
+            str_,
+            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+        )
         @test length(t) == 11
 
         str = """
@@ -379,7 +382,10 @@
             end"""
         @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, opts = Options(max_margin=80,annotate_untyped_fields_with_any = false))
+        t = run_pretty(
+            str_,
+            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+        )
         @test length(t) == 23
     end
 

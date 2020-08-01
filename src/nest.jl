@@ -564,7 +564,8 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
             fst[end].indent = fst.indent
         end
 
-        over = (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || fst.force_nest
+        over =
+            (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || fst.force_nest
         fst.indent += s.opts.indent_size
         for (i, n) in enumerate(fst[2:end])
             if n.typ === NEWLINE
@@ -673,7 +674,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
-    if length(idxs) == 2 && (line_margin > s.opts.max_margin || fst.force_nest || rhs.force_nest)
+    if length(idxs) == 2 &&
+       (line_margin > s.opts.max_margin || fst.force_nest || rhs.force_nest)
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]

@@ -233,8 +233,7 @@ struct FormatRule{T<:AbstractStyle}
     style::T
     opts::Options
 end
-format_text(text::AbstractString, fr::FormatRule) =
-    format_text(text, fr.style, fr.opts)
+format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, fr.opts)
 
 block_modifier(rule::FormatRule) =
     Rule(1) do parser, block

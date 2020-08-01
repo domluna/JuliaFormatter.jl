@@ -15,20 +15,15 @@ function fmt(s; i = 4, m = 80, kwargs...)
 end
 fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
-function run_pretty(
-    text::String;
-    style = DefaultStyle(),
-    opts = Options(),
-)
+function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
     x = CSTParser.parse(text, true)
     t = JuliaFormatter.pretty(style, x, s)
     t
 end
-run_pretty(
-text::String, max_margin::Int) = run_pretty(text, opts=Options(max_margin=max_margin))
-    
+run_pretty(text::String, max_margin::Int) =
+    run_pretty(text, opts = Options(max_margin = max_margin))
 
 function run_nest(text::String; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
@@ -38,8 +33,8 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
     JuliaFormatter.nest!(style, t, s)
     t, s
 end
-run_nest(
-text::String, max_margin::Int) = run_nest(text, opts=Options(max_margin=max_margin))
+run_nest(text::String, max_margin::Int) =
+    run_nest(text, opts = Options(max_margin = max_margin))
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
 yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
