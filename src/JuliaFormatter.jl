@@ -228,7 +228,8 @@ Format code docstrings with the same options used for the code source.
 
 Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/CommonMark.jl) alongside Julia code.
 """
-function format_text(text::AbstractString;
+function format_text(
+    text::AbstractString;
     indent::Int = 4,
     margin::Int = 92,
     style::AbstractStyle = DefaultStyle(),
@@ -243,7 +244,7 @@ function format_text(text::AbstractString;
     whitespace_in_kwargs::Bool = true,
     annotate_untyped_fields_with_any::Bool = true,
     format_docstrings::Bool = false,
-                    )
+)
     isempty(text) && return text
     opts = Options(
         always_for_in = always_for_in,
@@ -266,8 +267,8 @@ function format_text(
     style::AbstractStyle,
     indent::Int,
     margin::Int,
-    opts::Options
-   )
+    opts::Options,
+)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
     s = State(Document(text), indent, margin, opts)
@@ -350,7 +351,8 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if format_markdown && ext == ".md"
+    formatted_str = if ext == ".md"
+        format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
         format_md(str; format_options...)

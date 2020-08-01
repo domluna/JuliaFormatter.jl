@@ -5,7 +5,6 @@
     after2 = "begin\n  rand()\nend\n"
     after4 = "begin\n    rand()\nend\n"
 
-
     # test basic configuration case
     # test_basic_config
     # ├─ .JuliaFormatter.toml (config2)

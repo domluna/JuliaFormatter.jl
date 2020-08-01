@@ -229,13 +229,14 @@ end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
 
-struct FormatRule{T <: AbstractStyle}
+struct FormatRule{T<:AbstractStyle}
     style::T
     indent_size::Int
     margin::Int
     opts::Options
 end
-format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, fr.indent_size, fr.margin, fr.opts)
+format_text(text::AbstractString, fr::FormatRule) =
+    format_text(text, fr.style, fr.indent_size, fr.margin, fr.opts)
 
 block_modifier(rule::FormatRule) =
     Rule(1) do parser, block
@@ -259,8 +260,7 @@ block_modifier(rule::FormatRule) =
                     end
                     write(doctests, "julia> ")
                     first_line = true
-                    for line in
-                        split(format_text(an_input, rule), '\n')
+                    for line in split(format_text(an_input, rule), '\n')
                         if first_line
                             first_line = false
                         else
@@ -276,10 +276,7 @@ block_modifier(rule::FormatRule) =
             else
                 an_input, output = split(code, r"\n+# output\n+", limit = 2)
                 string(
-                    format_text(
-                        format_text(String(an_input), rule),
-                        rule,
-                    ),
+                    format_text(format_text(String(an_input), rule), rule),
                     "\n\n# output\n\n",
                     output,
                 )

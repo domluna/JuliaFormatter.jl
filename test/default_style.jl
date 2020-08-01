@@ -1372,7 +1372,6 @@
 
     end
 
-
     @testset "strings" begin
         str = """
         \"""
@@ -4666,7 +4665,6 @@ some_function(
             )"""
         @test fmt(str_, 4, 1) == str
     end
-
 
     @testset "issue 260 - BracesCat" begin
         str = "{1; 2; 3}"

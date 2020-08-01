@@ -21,7 +21,8 @@ Normalizes the Markdown source and formats Julia code blocks.
 
 See [`format_text`](@ref) for description of formatting options.
 """
-function format_md(text::AbstractString;
+function format_md(
+    text::AbstractString;
     indent::Int = 4,
     margin::Int = 92,
     style::AbstractStyle = DefaultStyle(),
@@ -36,7 +37,7 @@ function format_md(text::AbstractString;
     whitespace_in_kwargs::Bool = true,
     annotate_untyped_fields_with_any::Bool = true,
     format_docstrings::Bool = false,
-                    )
+)
     isempty(text) && return text
     opts = Options(
         always_for_in = always_for_in,
