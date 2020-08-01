@@ -109,7 +109,7 @@
         using .B: B
         using ...C: C"""
         @test fmt(str_, import_to_using = true) == str
-        t = run_pretty(str_, 80, opts = Options(import_to_using = true))
+        t = run_pretty(str_, opts = Options(max_margin = 80, import_to_using = true))
         @test t.len == 13
 
         # #232
@@ -353,7 +353,10 @@
             end"""
         @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
+        t = run_pretty(
+            str_,
+            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+        )
         @test length(t) == 11
 
         str = """
@@ -379,8 +382,311 @@
             end"""
         @test fmt(str_, annotate_untyped_fields_with_any = false) == str
 
-        t = run_pretty(str_, 80, opts = Options(annotate_untyped_fields_with_any = false))
+        t = run_pretty(
+            str_,
+            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+        )
         @test length(t) == 23
     end
 
+    @testset "format docstrings - basic" begin
+        str = """
+        \"""
+        doc
+        \"""
+        function f()
+            20
+        end"""
+        t = run_pretty(str, 80)
+        @test length(t) == 12
+
+        normalized = """
+        \"""
+        doc
+        \"""
+        function f()
+            20
+        end"""
+
+        str = """
+        \"""doc
+        \"""
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        str = """
+        \"""
+        doc\"""
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        str = """
+        \"""doc\"""
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        str = """
+        "doc
+        "
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        str = """
+        "
+        doc"
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        str = """
+        "doc"
+        function f()
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == normalized
+
+        # test aligning to function identation
+        str_ = """
+            "doc"
+        function f()
+            20
+        end"""
+        str = """
+        "doc"
+        function f()
+            20
+        end"""
+        @test fmt(str_) == str
+        @test fmt(str_, format_docstrings = true) == normalized
+
+        str = """\"""
+                 doc for Foo
+                 \"""
+                 Foo"""
+        @test fmt(str) == str
+        t = run_pretty(str, 80)
+        @test length(t) == 11
+
+        str = """
+        \"""
+        doc
+        \"""
+        function f()    #  comment
+            20
+        end"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        # Issue 157
+        str = raw"""
+        @doc \"""
+           foo()
+        \"""
+        foo() = bar()"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        str = raw"""
+        @doc doc\"""
+           foo()
+        \"""
+        foo() = bar()"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        str = raw"""@doc "doc for foo" foo"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        str = raw"""@doc \"""doc for foo\""" foo"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        str = raw"""@doc doc\"""doc for foo\""" foo()"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        str = raw"""@doc foo"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+
+        # issue 160
+        str = """
+        module MyModule
+
+        import Markdown: @doc_str
+
+        @doc doc\"""
+            foo()
+        \"""
+        foo() = bar()
+
+        end # module"""
+        @test fmt(str) == str
+        @test fmt(str, format_docstrings = true) == str
+    end
+
+    @testset "format docstrings - with code" begin
+        unformatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a =  1
+         b  = 2
+         a + b
+        ```
+
+        ```jldoctest
+        a =  1
+        b  = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a =  1
+        1
+
+        julia> b  = 2;
+
+        julia>  a + b
+        3
+
+        julia> function test(x)
+               x + 1
+               x + 2
+               end;
+        ```
+        \"""
+        function test(x) x end"""
+
+        formatted = """
+        \"""
+        This is a docstring
+
+        ```@example
+        a = 1
+        b = 2
+        a + b
+        ```
+
+        ```jldoctest
+        a = 1
+        b = 2
+        a + b
+
+        # output
+
+        3
+        ```
+
+        ```jldoctest
+        julia> a = 1
+        1
+
+        julia> b = 2;
+
+
+        julia> a + b
+        3
+
+        julia> function test(x)
+                   x + 1
+                   x + 2
+               end;
+
+        ```
+        \"""
+        function test(x)
+            x
+        end"""
+        @test fmt(unformatted, format_docstrings = true) == formatted
+    end
+
+    @testset "format docstrings - Multi-line indented code-blocks" begin
+        unformatted = """
+        \"""
+            fmt(
+            )
+        \"""
+        function fmt() end"""
+
+        formatted = """
+        \"""
+            fmt(
+            )
+        \"""
+        function fmt() end"""
+        @test fmt(unformatted, format_docstrings = true) == formatted
+    end
+    @testset "format docstrings - Empty line in docstring" begin
+        unformatted = """
+        \"""
+
+        \"""
+        function test() end"""
+
+        formatted = """
+        \"""
+        \"""
+        function test() end"""
+        @test fmt(unformatted, format_docstrings = true) == formatted
+    end
+
+    @testset "format docstrings - Indented docstring" begin
+        unformatted = """
+        begin
+            \"""
+            Indented docstring
+
+            with multiple paragraphs
+            \"""
+            indented_item
+        end"""
+        formatted = """
+        begin
+            \"""
+            Indented docstring
+
+            with multiple paragraphs
+            \"""
+            indented_item
+        end"""
+        @test fmt(unformatted, format_docstrings = true) == formatted
+
+        short = """
+        begin
+            "Short docstring"
+            item
+        end
+        """
+        short_formatted = """
+        begin
+            \"""
+            Short docstring
+            \"""
+            item
+        end
+        """
+        @test fmt(short, format_docstrings = true) == short_formatted
+    end
 end

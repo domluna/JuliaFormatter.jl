@@ -43,45 +43,12 @@ include("pretty.jl")
 include("nest.jl")
 include("print.jl")
 
+include("markdown.jl")
+
 include("styles/yas.jl")
 
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
-
-function initial_processing(
-    text;
-    indent::Int = 4,
-    margin::Int = 92,
-    style::AbstractStyle = DefaultStyle(),
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    import_to_using::Bool = false,
-    pipe_to_function_call::Bool = false,
-    short_to_long_function_def::Bool = false,
-    always_use_return::Bool = false,
-    whitespace_in_kwargs::Bool = true,
-    annotate_untyped_fields_with_any::Bool = true,
-)
-    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    ps.errored && error("Parsing error for input:\n\n$text")
-
-    opts = Options(
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        import_to_using = import_to_using,
-        pipe_to_function_call = pipe_to_function_call,
-        short_to_long_function_def = short_to_long_function_def,
-        always_use_return = always_use_return,
-        whitespace_in_kwargs = whitespace_in_kwargs,
-        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
-    )
-    s = State(Document(text), indent, margin, opts)
-    style, x, s
-end
 
 """
     format_text(
@@ -99,6 +66,7 @@ end
         always_use_return::Bool = false,
         whitespace_in_kwargs::Bool = true,
         annotate_untyped_fields_with_any::Bool = true,
+        format_docstrings::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -253,28 +221,61 @@ struct A
     arg1::Any
 end
 ```
+
+### `format_docstrings`
+
+Format code docstrings with the same options used for the code source.
+
+Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/CommonMark.jl) alongside Julia code.
 """
-function format_text(text::AbstractString; options...)
+function format_text(
+    text::AbstractString;
+    indent::Int = 4,
+    margin::Int = 92,
+    style::AbstractStyle = DefaultStyle(),
+    always_for_in::Bool = false,
+    whitespace_typedefs::Bool = false,
+    whitespace_ops_in_indices::Bool = false,
+    remove_extra_newlines::Bool = false,
+    import_to_using::Bool = false,
+    pipe_to_function_call::Bool = false,
+    short_to_long_function_def::Bool = false,
+    always_use_return::Bool = false,
+    whitespace_in_kwargs::Bool = true,
+    annotate_untyped_fields_with_any::Bool = true,
+    format_docstrings::Bool = false,
+)
     isempty(text) && return text
-    style, x, s = initial_processing(text; options...)
-    # no actual code
-    x.args[1].kind === Tokens.NOTHING && length(x) == 1 && return text
-    _format_text(style, s, x)
+    opts = Options(
+        indent_size = indent,
+        max_margin = margin,
+        always_for_in = always_for_in,
+        whitespace_typedefs = whitespace_typedefs,
+        whitespace_ops_in_indices = whitespace_ops_in_indices,
+        remove_extra_newlines = remove_extra_newlines,
+        import_to_using = import_to_using,
+        pipe_to_function_call = pipe_to_function_call,
+        short_to_long_function_def = short_to_long_function_def,
+        always_use_return = always_use_return,
+        whitespace_in_kwargs = whitespace_in_kwargs,
+        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
+        format_docstrings = format_docstrings,
+    )
+    return format_text(text, style, opts)
 end
 
-function format_text(style, state, text)
-    x, ps = CSTParser.parse(CSTParser.ParseState(text), true)
+function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
+    cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
-    s = State(Document(text), state.indent, state.margin, state.opts)
-    _format_text(style, s, x)
+    cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
+    return format_text(cst, style, State(Document(text), opts))
 end
 
-function _format_text(style, s, x)
-    opts = s.opts
-    t = pretty(style, x, s)
+function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
+    t = pretty(style, cst, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
-    opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
+    s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
     nest!(style, t, s)
@@ -308,10 +309,13 @@ end
         filename::AbstractString;
         overwrite::Bool = true,
         verbose::Bool = false,
+        format_markdown::Bool = false,
         format_options...,
     )::Bool
 
-Formats the contents of `filename` assuming it's a Julia source file.
+Formats the contents of `filename` assuming it's a `.jl` or `.md` file. If it's a
+`.md` file, Julia code blocks will be formatted in addition to the markdown being
+normalized.
 
 ### File Options
 
@@ -321,6 +325,8 @@ be written to `foo_fmt.jl` instead.
 
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
+
+If `format_markdown` is `.md` files are formatted.
 
 ### Formatting Options
 
@@ -335,30 +341,31 @@ function format_file(
     filename::AbstractString;
     overwrite::Bool = true,
     verbose::Bool = false,
+    format_markdown::Bool = false,
     format_options...,
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    if ext == ".md"
+    formatted_str = if ext == ".md"
+        format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
-        style, parsed, state = initial_processing(""; format_options...)
-        formatted_str = format_docstring(style, state, str)[5:end-4]
-        formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        overwrite ? write(filename, formatted_str) :
-        write(path * "_fmt" * ext, formatted_str)
-        return formatted_str == str
+        format_md(str; format_options...)
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
         verbose && println("Formatting $filename")
         str = String(read(filename))
-        formatted_str = format_text(str; format_options...)
-        formatted_str = replace(formatted_str, r"\n*$" => "\n")
-        overwrite ? write(filename, formatted_str) :
-        write(path * "_fmt" * ext, formatted_str)
-        return formatted_str == str
+        format_text(str; format_options...)
     else
         error("$filename must be a Julia (.jl) or Markdown (.md) source file")
     end
+    formatted_str = replace(formatted_str, r"\n*$" => "\n")
+
+    if overwrite
+        write(filename, formatted_str)
+    else
+        write(path * "_fmt" * ext, formatted_str)
+    end
+    return formatted_str == str
 end
 
 if VERSION < v"1.1.0"

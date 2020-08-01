@@ -69,7 +69,7 @@ function print_tree(
             if notcode_indent > -1
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
-                n.indent += s.indent_size
+                n.indent += s.opts.indent_size
             elseif i + 1 < length(nodes) && (
                 nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin
             )
