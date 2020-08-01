@@ -4,8 +4,7 @@
     before = "begin rand() end\n"
     after2 = "begin\n  rand()\nend\n"
     after4 = "begin\n    rand()\nend\n"
-    before_markdown = "- 1\n- 2"
-    after_markdown = "  - 1\n  - 2\n"
+
 
     # test basic configuration case
     # test_basic_config
@@ -16,15 +15,11 @@
     try
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
         code_path = joinpath(sandbox_dir, "code.jl")
-        markdown_path = joinpath(sandbox_dir, "markdown.md")
         open(io -> write(io, config2), config_path, "w")
         open(io -> write(io, before), code_path, "w")
-        open(io -> write(io, before_markdown), markdown_path, "w")
 
         @test format(code_path) == false
         @test read(code_path, String) == after2
-        @test format(markdown_path) == false
-        @test read(markdown_path, String) == after_markdown
     finally
         rm(sandbox_dir; recursive = true)
     end
@@ -74,16 +69,13 @@
         sub_dir = joinpath(sandbox_dir, "sub")
         mkdir(sub_dir)
         sub_code_path = joinpath(sub_dir, "sub_code.jl")
-        sub_markdown_path = joinpath(sub_dir, "sub_markdown.md")
         open(io -> write(io, config2), config_path, "w")
         open(io -> write(io, before), code_path, "w")
         open(io -> write(io, before), sub_code_path, "w")
-        open(io -> write(io, before_markdown), sub_markdown_path, "w")
 
         @test format(sandbox_dir) == false
         @test read(code_path, String) == after2
         @test read(sub_code_path, String) == after2
-        @test read(sub_markdown_path, String) == after_markdown
         @test format(sandbox_dir) == true
     finally
         rm(sandbox_dir; recursive = true)
@@ -164,6 +156,50 @@
         @test format(".") == true
     finally
         cd(original_dir)
+        rm(sandbox_dir; recursive = true)
+    end
+
+    config2 = """
+    indent = 2
+    format_markdown = true
+    """
+
+    before = """
+    # hello world
+
+    ```julia
+    begin body end
+    ```
+    - a
+    -             b
+    """
+    after2 = """
+    # hello world
+
+    ```julia
+    begin
+      body
+    end
+    ```
+
+      - a
+      -             b
+    """
+    # test formatting a markdown file
+    # test_basic_markdown_format
+    # ├─ .JuliaFormatter.toml (config2)
+    # └─ file.md (before -> after2)
+    sandbox_dir = joinpath(@__DIR__, "test_basic_config")
+    mkdir(sandbox_dir)
+    try
+        config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
+        md_path = joinpath(sandbox_dir, "file.md")
+        open(io -> write(io, config2), config_path, "w")
+        open(io -> write(io, before), md_path, "w")
+
+        @test format(md_path) == false
+        @test read(md_path, String) == after2
+    finally
         rm(sandbox_dir; recursive = true)
     end
 end

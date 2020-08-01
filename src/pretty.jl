@@ -229,76 +229,65 @@ end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
 
-struct FormatRule{Style,State}
-    style::Style
-    state::State
+struct FormatRule{T <: AbstractStyle}
+    style::T
+    indent_size::Int
+    margin::Int
+    opts::Options
 end
+format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, fr.indent_size, fr.margin, fr.opts)
 
 block_modifier(rule::FormatRule) =
     Rule(1) do parser, block
-        if block.t isa CodeBlock
-            style = rule.style
-            state = rule.state
-            language = block.t.info
-            code = block.literal
-            if startswith(language, "@example") ||
-               startswith(language, "@repl") ||
-               startswith(language, "@eval")
-                block.literal = format_text(code)
-            elseif startswith(language, "jldoctest")
-                # TODO: figure out why an extra indent is necessary
-                indented_state = State(
-                    state.doc,
-                    state.indent_size,
-                    state.indent + state.indent_size,
-                    state.offset,
-                    state.line_offset,
-                    state.margin,
-                    state.on,
-                    state.opts,
-                )
-                block.literal = if occursin(r"^julia> "m, code)
-                    doctests = IOBuffer()
-                    first_test = true
-                    for (an_input, output) in repl_splitter(code)
-                        if first_test
-                            first_test = false
+        block.t isa CodeBlock || return
+        language = block.t.info
+        code = block.literal
+        if startswith(language, "@example") ||
+           startswith(language, "@repl") ||
+           startswith(language, "@eval") ||
+           startswith(language, "julia")
+            block.literal = format_text(code, rule)
+        elseif startswith(language, "jldoctest")
+            block.literal = if occursin(r"^julia> "m, code)
+                doctests = IOBuffer()
+                first_test = true
+                for (an_input, output) in repl_splitter(code)
+                    if first_test
+                        first_test = false
+                    else
+                        write(doctests, "\n\n")
+                    end
+                    write(doctests, "julia> ")
+                    first_line = true
+                    for line in
+                        split(format_text(an_input, rule), '\n')
+                        if first_line
+                            first_line = false
                         else
-                            write(doctests, "\n\n")
+                            write(doctests, "\n       ")
                         end
-                        write(doctests, "julia> ")
-                        first_line = true
-                        for line in
-                            split(format_text(style, indented_state, an_input), '\n')
-                            if first_line
-                                first_line = false
-                            else
-                                write(doctests, "\n       ")
-                            end
-                            write(doctests, line)
-                        end
-                        write(doctests, '\n')
-                        write(doctests, output)
+                        write(doctests, line)
                     end
                     write(doctests, '\n')
-                    String(take!(doctests))
-                else
-                    an_input, output = split(code, r"\n+# output\n+", limit = 2)
-                    string(
-                        format_text(
-                            style,
-                            indented_state,
-                            format_text(style, state, String(an_input)),
-                        ),
-                        "\n\n# output\n\n",
-                        output,
-                    )
+                    write(doctests, output)
                 end
+                write(doctests, '\n')
+                String(take!(doctests))
+            else
+                an_input, output = split(code, r"\n+# output\n+", limit = 2)
+                string(
+                    format_text(
+                        format_text(String(an_input), rule),
+                        rule,
+                    ),
+                    "\n\n# output\n\n",
+                    output,
+                )
             end
         end
     end
 
-function format_docstring(style, state, text)
+function format_docstring(style::AbstractStyle, state::State, text::AbstractString)
     state_indent = state.indent
     boundaries = findall(text) do character
         character != '"'
@@ -350,24 +339,24 @@ function format_docstring(style, state, text)
             FootnoteRule(),
             MathRule(),
             TableRule(),
-            FormatRule(style, state),
+            FormatRule(style, state.indent_size, state.margin, state.opts),
         ],
     )(
         deindented_string,
     ))
     # Indent all non-first lines to match the current parser indent
-    state_indented = IOBuffer()
+    buf = IOBuffer()
     indent = " "^state_indent
     # This is the first line, so the rest have to be indented. A newline for it will be added below
-    write(state_indented, "\"\"\"")
+    write(buf, "\"\"\"")
     for line in split(formatted, '\n')
         # The last line will be empty and will turn into an indent, so no need to indent the last line below
-        write(state_indented, '\n')
-        write(state_indented, indent)
-        write(state_indented, line)
+        write(buf, '\n')
+        write(buf, indent)
+        write(buf, line)
     end
-    write(state_indented, "\"\"\"")
-    String(take!(state_indented))
+    write(buf, "\"\"\"")
+    String(take!(buf))
 end
 
 @inline function p_literal(
