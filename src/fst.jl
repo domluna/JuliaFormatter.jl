@@ -99,6 +99,11 @@ end
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
     cst.typ === CSTParser.ColonOpCall
 
+@inline function is_number(cst::CSTParser.EXPR) 
+    cst.typ === CSTParser.LITERAL || return false
+    return cst.kind === Tokens.INTEGER || cst.kind === Tokens.FLOAT
+end
+
 function is_multiline(fst::FST)
     fst.typ === CSTParser.StringH && return true
     if fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringH

@@ -1178,21 +1178,33 @@ function p_chainopcall(
 )
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
+
+    # Check if there's a number literal on the LHS of a dot operator.
+    # In this case we need to surround the dot operator with whitespace
+    # in order to avoid ambiguity.
+    for (i, a) in enumerate(cst)
+        if a.typ === CSTParser.OPERATOR && a.dot && is_number(cst[i-1])
+            nospace = false
+            break
+        end
+    end
+
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
-        n = pretty(style, a, s)
         if a.typ === CSTParser.OPERATOR
-            !nospace && add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Whitespace(nws), s)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
             if nonest
                 add_node!(t, Whitespace(nws), s)
             else
                 add_node!(t, Placeholder(nws), s)
             end
+        elseif is_opcall(a)
+            add_node!(t, pretty(style, a, s, nospace=nospace, nonest=nonest), s, join_lines = true)
         elseif i == length(cst) - 1 && is_punc(a) && is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
     t
@@ -1322,7 +1334,7 @@ function p_binaryopcall(
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
-    elseif op.kind === Tokens.CIRCUMFLEX_ACCENT && op.dot
+    elseif (is_number(cst[1]) || op.kind === Tokens.CIRCUMFLEX_ACCENT) && op.dot
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)

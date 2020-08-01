@@ -4731,4 +4731,12 @@ some_function(
         end"""
         @test fmt(str_) == str
     end
+
+    @testset "issue 268 - whitespace around dot op if LHS is number literal" begin
+        str = "xs[-5 .<= xs .& xs .<= 5]"
+        @test fmt(str) == str
+        str_ = "xs[(-5 .<= xs) .& (xs .<= 5)]"
+        str = "xs[(-5 .<= xs).&(xs.<=5)]"
+        @test fmt(str_) == str
+    end
 end
