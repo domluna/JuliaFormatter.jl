@@ -267,12 +267,11 @@ end
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
-    s = State(Document(text), opts)
     cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
-    return format_text(style, s, cst)
+    return format_text(cst, style, State(Document(text), opts))
 end
 
-function format_text(style::AbstractStyle, s::State, cst::CSTParser.EXPR)
+function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     t = pretty(style, cst, s)
     hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
 
