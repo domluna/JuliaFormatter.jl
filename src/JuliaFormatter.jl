@@ -247,6 +247,8 @@ function format_text(
 )
     isempty(text) && return text
     opts = Options(
+        indent_size = indent,
+        max_margin = margin,
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
@@ -259,19 +261,17 @@ function format_text(
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
         format_docstrings = format_docstrings,
     )
-    return format_text(text, style, indent, margin, opts)
+    return format_text(text, style, opts)
 end
 
 function format_text(
     text::AbstractString,
     style::AbstractStyle,
-    indent::Int,
-    margin::Int,
     opts::Options,
 )
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     ps.errored && error("Parsing error for input:\n\n$text")
-    s = State(Document(text), indent, margin, opts)
+    s = State(Document(text), opts)
     cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
     return format_text(style, s, cst)
 end

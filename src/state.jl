@@ -1,17 +1,15 @@
 mutable struct State
     doc::Document
-    indent_size::Int
     indent::Int
     offset::Int
     line_offset::Int
-    margin::Int
 
     # If true, output is formatted text otherwise
     # it's source text
     on::Bool
     opts::Options
 end
-State(doc, indent_size, margin, opts) = State(doc, indent_size, 0, 1, 0, margin, true, opts)
+State(doc, opts) = State(doc, 0, 1, 0, true, opts)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)

@@ -1,4 +1,6 @@
 Base.@kwdef struct Options
+    indent_size::Int = 4
+    max_margin::Int = 92
     always_for_in::Bool = false
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
