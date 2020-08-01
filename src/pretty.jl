@@ -1200,7 +1200,12 @@ function p_chainopcall(
                 add_node!(t, Placeholder(nws), s)
             end
         elseif is_opcall(a)
-            add_node!(t, pretty(style, a, s, nospace=nospace, nonest=nonest), s, join_lines = true)
+            add_node!(
+                t,
+                pretty(style, a, s, nospace = nospace, nonest = nonest),
+                s,
+                join_lines = true,
+            )
         elseif i == length(cst) - 1 && is_punc(a) && is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         else

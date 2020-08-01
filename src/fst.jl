@@ -99,7 +99,7 @@ end
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
     cst.typ === CSTParser.ColonOpCall
 
-@inline function is_number(cst::CSTParser.EXPR) 
+@inline function is_number(cst::CSTParser.EXPR)
     cst.typ === CSTParser.LITERAL || return false
     return cst.kind === Tokens.INTEGER || cst.kind === Tokens.FLOAT
 end
