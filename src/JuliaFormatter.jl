@@ -39,6 +39,7 @@ include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
+include("align.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
@@ -281,6 +282,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
+    align_fst!(t)
     nest!(style, t, s)
 
     s.line_offset = 0

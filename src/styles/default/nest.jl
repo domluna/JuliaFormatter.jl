@@ -646,7 +646,6 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 else
                     width += sum(length.(fst[i+1:i+3]))
                 end
-                # @debug "" s.line_offset l  s.opts.max_margin
                 if width <= s.opts.max_margin
                     fst[i] = Whitespace(1)
                 else

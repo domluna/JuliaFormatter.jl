@@ -64,6 +64,10 @@ FST(typ::CSTParser.Head, indent::Integer) =
     fst.nodes[ind] = node
     fst.len += node.len
 end
+@inline function Base.insert!(fst::FST, ind::Int, node::FST)
+    insert!(fst.nodes, ind, node)
+    fst.len += node.len
+end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
@@ -532,7 +536,12 @@ function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
     return nothing
 end
 op_kind(::Nothing) = nothing
-op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
+function op_kind(fst::FST)::Union{Nothing,Tokens.Kind}
+    fst.ref === nothing ? nothing : op_kind(fst.ref[])
+end
+
+get_op(fst::FST) = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
+get_op(cst::CSTParser.EXPR) = cst[2]
 
 is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
 

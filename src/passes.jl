@@ -49,6 +49,19 @@ function flatten_binaryopcall(fst::FST; top = true)
     return nodes
 end
 
+function flatten_conditionalopcall(fst::FST)
+    nodes = FST[]
+    for n in fst.nodes
+        if n.typ === CSTParser.ConditionalOpCall
+            push!(nodes, flatten_conditionalopcall(n)...)
+        else
+            flatten_fst!(n)
+            push!(nodes, n)
+        end
+    end
+    return nodes
+end
+
 function flatten_fst!(fst::FST)
     is_leaf(fst) && return
     for n in fst.nodes
@@ -63,6 +76,10 @@ function flatten_fst!(fst::FST)
             else
                 flatten_fst!(n)
             end
+        elseif n.typ === CSTParser.ConditionalOpCall
+            @info "" length(n)
+            n.nodes = flatten_conditionalopcall(n)
+            @info "" length(n)
         else
             flatten_fst!(n)
         end
