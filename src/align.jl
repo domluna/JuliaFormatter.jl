@@ -5,7 +5,8 @@ function align_fst!(fst::FST, opts::Options)
             continue
         elseif n.typ === CSTParser.ConditionalOpCall
             align_conditionalopcall!(n)
-        elseif opts.align_struct_fields && (n.typ === CSTParser.Struct || n.typ === CSTParser.Mutable)
+        elseif opts.align_struct_fields &&
+               (n.typ === CSTParser.Struct || n.typ === CSTParser.Mutable)
             align_struct!(n)
         else
             align_fst!(n, opts)
@@ -60,22 +61,32 @@ function align_struct!(fst::FST)
     length(fst[idx]) == 0 && return
 
     # determine the longest field name in the struct
+    bn = fst[idx]
     max_fname_length = 0
-    for n in fst[idx].nodes
+    for n in bn.nodes
         if n.typ === CSTParser.BinaryOpCall && length(n[1]) > max_fname_length
             max_fname_length = length(n[1])
         end
     end
 
-    for n in fst[idx].nodes
+    for n in bn.nodes
         if n.typ === CSTParser.BinaryOpCall
             diff = max_fname_length - length(n[1]) + 1
             # insert whitespace before and after operator
-            insert!(n, 2, Whitespace(diff))
-            insert!(n, 4, Whitespace(1))
+            fidx = findfirst(x -> x.typ === WHITESPACE,n.nodes)
+            lidx = findlast(x -> x.typ === WHITESPACE,n.nodes)
+
+            if fidx === nothing
+                insert!(n, 2, Whitespace(diff))
+            else
+                n[fidx] = Whitespace(diff)
+            end
+
+            if lidx === nothing
+                insert!(n, 4, Whitespace(1))
+            end
         end
     end
 end
 
-function align_conditionalopcall!(fst::FST)
-end
+function align_conditionalopcall!(fst::FST) end
