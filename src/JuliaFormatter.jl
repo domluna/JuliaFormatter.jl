@@ -34,7 +34,6 @@ DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
-
 include("document.jl")
 include("options.jl")
 include("state.jl")
