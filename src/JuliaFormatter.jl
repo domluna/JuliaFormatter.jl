@@ -17,7 +17,7 @@ using CommonMark:
     Rule,
     TableRule
 
-export format, format_text, format_file, DefaultStyle, YASStyle
+export format, format_text, format_file, format_md, DefaultStyle, YASStyle
 
 abstract type AbstractStyle end
 
@@ -34,18 +34,21 @@ DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
+
 include("document.jl")
 include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
-include("pretty.jl")
-include("nest.jl")
+
+include("styles/default/pretty.jl")
+include("styles/default/nest.jl")
+include("styles/yas/pretty.jl")
+include("styles/yas/nest.jl")
+
 include("print.jl")
 
 include("markdown.jl")
-
-include("styles/yas.jl")
 
 # on Windows lines can end in "\r\n"
 normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
