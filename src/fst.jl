@@ -19,6 +19,11 @@
     MacroBlock,
 )
 
+# struct Meta
+#     op_kind::Tokens.Kind
+#     is_function::Bool
+# end
+
 """
 Formatted Syntax Tree
 """

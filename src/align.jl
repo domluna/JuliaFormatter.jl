@@ -62,19 +62,26 @@ function align_struct!(fst::FST)
 
     # determine the longest field name in the struct
     bn = fst[idx]
-    max_fname_length = 0
+    max_field_len = 0
+    nfields = 0
     for n in bn.nodes
-        if n.typ === CSTParser.BinaryOpCall && length(n[1]) > max_fname_length
-            max_fname_length = length(n[1])
+        if n.typ === CSTParser.BinaryOpCall
+            nfields += 1
+            if length(n[1]) > max_field_len
+                max_field_len = length(n[1])
+            end
         end
     end
 
+    # Don't align unless there are multiple fields
+    nfields > 1 || return
+
     for n in bn.nodes
-        if n.typ === CSTParser.BinaryOpCall
-            diff = max_fname_length - length(n[1]) + 1
+        if n.typ === CSTParser.BinaryOpCall && !CSTParser.defines_function(n.ref[])
+            diff = max_field_len - length(n[1]) + 1
             # insert whitespace before and after operator
-            fidx = findfirst(x -> x.typ === WHITESPACE,n.nodes)
-            lidx = findlast(x -> x.typ === WHITESPACE,n.nodes)
+            fidx = findfirst(x -> x.typ === WHITESPACE, n.nodes)
+            lidx = findlast(x -> x.typ === WHITESPACE, n.nodes)
 
             if fidx === nothing
                 insert!(n, 2, Whitespace(diff))
@@ -89,4 +96,9 @@ function align_struct!(fst::FST)
     end
 end
 
-function align_conditionalopcall!(fst::FST) end
+"""
+    align_conditionalopcall!(fst::FST) 
+"""
+function align_conditionalopcall!(fst::FST)
+    return 0
+end

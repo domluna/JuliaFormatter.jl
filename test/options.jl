@@ -724,6 +724,16 @@
         str_ = """
         struct Foo
             a::T
+        end"""
+        str = """
+        struct Foo
+            a::T
+        end"""
+        @test fmt(str_, align_struct_fields = true) == str
+
+        str_ = """
+        struct Foo
+            a::T
             longfieldname::B
         end"""
         str = """
@@ -750,6 +760,8 @@
             annotate_untyped_fields_with_any::Bool = true
             format_docstrings::Bool = false
             align_struct_fields::Bool = false
+
+            Options() = new()
         end"""
         str = """
         Base.@kwdef struct Options
@@ -767,6 +779,8 @@
             annotate_untyped_fields_with_any::Bool = true
             format_docstrings::Bool                = false
             align_struct_fields::Bool              = false
+
+            Options() = new()
         end"""
         @test fmt(str_, align_struct_fields = true) == str
         @test fmt(str, align_struct_fields = false) == str_
