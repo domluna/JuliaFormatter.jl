@@ -127,6 +127,14 @@ end
 
 @inline is_macrocall(fst::FST) = fst.typ === CSTParser.MacroCall || fst.typ === MacroBlock
 
+function is_macrodoc(cst::CSTParser.EXPR)
+    return cst.typ === CSTParser.MacroCall &&
+           length(cst) == 3 &&
+           cst[1].typ === CSTParser.MacroName &&
+           cst[1][2].val == "doc" &&
+           is_str(cst[2])
+end
+
 # f a function which returns a bool
 function parent_is(cst::CSTParser.EXPR, valid; ignore = (n) -> false)
     p = cst.parent
