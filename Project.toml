@@ -15,7 +15,7 @@ Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 [compat]
 CSTParser = "1, 2"
 CommonMark = "0.5, 0.6"
-DataStructures = "0.17"
+DataStructures = "0.17, 0.18"
 Documenter = "0.24"
 Tokenize = "^0.5.5"
 julia = "1"
