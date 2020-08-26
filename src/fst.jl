@@ -23,6 +23,10 @@
 #     op_kind::Tokens.Kind
 #     is_function::Bool
 # end
+#
+@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest)
+# can_nest(nb::NestBehavior) = nb === AllowNest || nb === AlwaysNest
+
 
 """
 Formatted Syntax Tree
@@ -40,7 +44,7 @@ mutable struct FST
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
-    force_nest::Bool
+    nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
     # i.e. `(f(arg))`
@@ -51,18 +55,18 @@ mutable struct FST
 end
 
 FST(cst::CSTParser.EXPR, indent::Integer) =
-    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), false, 0)
+    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0)
 
 function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
-    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
+    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), AllowNest, 0)
 end
 
 function FST(typ::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
+    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, AllowNest, 0)
 end
 
 FST(typ::CSTParser.Head, indent::Integer) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, false, 0)
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0)
 
 @inline function Base.setindex!(fst::FST, node::FST, ind::Int)
     fst.len -= fst.nodes[ind].len
@@ -76,20 +80,20 @@ end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
-@inline Newline(; length = 0, force_nest = false) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
+@inline Newline(; length = 0, nest_behavior = AllowNest) =
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0)
+@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0)
+@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0)
 @inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, false, 0)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0)
 @inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
-@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
+    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0)
+@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0)
+@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0)
 @inline Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0)
 @inline InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0)
 
 @inline Base.length(fst::FST) = fst.len
 
@@ -329,7 +333,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                 end
             end
 
-            t.force_nest = true
+            t.nest_behavior = AlwaysNest
 
             # If the previous node type is WHITESPACE - reset it.
             # This fixes cases similar to the one shown in issue #51.
@@ -338,23 +342,23 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             hs = hascomment(s.doc, current_line)
             hs && add_node!(t, InlineComment(current_line), s)
             if nt !== PLACEHOLDER
-                add_node!(t, Newline(force_nest = true), s)
+                add_node!(t, Newline(nest_behavior = AlwaysNest), s)
             elseif hs && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
-            add_node!(t, Newline(force_nest = true), s)
+            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         elseif !join_lines
             if hascomment(s.doc, current_line) && current_line != n.startline
                 add_node!(t, InlineComment(current_line), s)
             end
-            add_node!(t, Newline(force_nest = true), s)
+            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         elseif nt === PLACEHOLDER &&
                current_line != n.startline &&
                hascomment(s.doc, current_line)
-            t.force_nest = true
+            t.nest_behavior = AlwaysNest
             add_node!(t, InlineComment(current_line), s)
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
@@ -380,7 +384,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
     elseif is_multiline(n)
-        is_iterable(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
+        is_iterable(t) && n_args(t.ref[]) > 1 && (t.nest_behavior = AlwaysNest)
         t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)

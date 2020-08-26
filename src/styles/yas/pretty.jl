@@ -166,10 +166,8 @@ end
 function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
-    if is_block(cst[2])
-        t.force_nest = true
-    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
-        t.force_nest = true
+    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+        t.nest_behavior = AlwaysNest
     end
 
     add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
@@ -181,10 +179,8 @@ end
 function p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
-    if is_block(cst[3])
-        t.force_nest = true
-    elseif cst[3].typ === CSTParser.Generator && is_block(cst[3][1])
-        t.force_nest = true
+    if is_block(cst[3]) || (cst[3].typ === CSTParser.Generator && is_block(cst[3][1]))
+        t.nest_behavior = AlwaysNest
     end
 
     add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
