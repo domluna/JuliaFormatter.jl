@@ -11,7 +11,7 @@ function align_fst!(fst::FST, opts::Options)
         elseif opts.align_struct_fields &&
                (n.typ === CSTParser.Struct || n.typ === CSTParser.Mutable)
             align_struct!(n)
-        # elseif n.typ === CSTParser.FileH
+            # elseif n.typ === CSTParser.FileH
             # align_short_function!(n)
         else
             align_fst!(n, opts)
@@ -104,17 +104,16 @@ function align_consts!(fst::FST)
     fidx = findfirst(n -> n.typ === CSTParser.Const, fst.nodes)
     lidx = findlast(n -> n.typ === CSTParser.Const, fst.nodes)
 
-    d = Tuple{Int,Vector{Int}}[]
+    groups = Tuple{Int,Vector{Int}}[]
     group = Int[]
 
     prev_endline = fst[fidx].endline
     max_len = 0
 
-
     for (i, n) in enumerate(fst.nodes[fidx:lidx])
         if n.typ === CSTParser.Const && n[3].typ === CSTParser.BinaryOpCall
             if n.startline - prev_endline > 1
-                push!(d, (max_len, group))
+                push!(groups, (max_len, group))
                 max_len = 0
                 group = Int[]
             end
@@ -127,34 +126,33 @@ function align_consts!(fst::FST)
             prev_endline = n.endline
         end
     end
-                push!(d, (max_len, group))
+    push!(groups, (max_len, group))
 
-    for a in d
-        len = a[1]
-        idxs = a[2]
+    for g in groups
+        len = g[1]
+        idxs = g[2]
         for i in idxs
+            @info "group" fst[i][3]
             align_binaryopcall!(fst[i][3], len)
         end
     end
-
 
     return
 end
 
 function align_binaryopcall!(fst::FST, align_len::Int)
+    diff = align_len - length(fst[1]) + 1
+    # insert whitespace before and after operator
+    fidx = findfirst(x -> x.typ === WHITESPACE, fst.nodes)
+    lidx = findlast(x -> x.typ === WHITESPACE, fst.nodes)
 
-            diff = align_len - length(fst[1]) + 1
-            # insert whitespace before and after operator
-            fidx = findfirst(x -> x.typ === WHITESPACE, fst.nodes)
-            lidx = findlast(x -> x.typ === WHITESPACE, fst.nodes)
+    if fidx === nothing
+        insert!(fst, 2, Whitespace(diff))
+    else
+        fst[fidx] = Whitespace(diff)
+    end
 
-            if fidx === nothing
-                insert!(fst, 2, Whitespace(diff))
-            else
-                fst[fidx] = Whitespace(diff)
-            end
-
-            if lidx === nothing
-                insert!(fst, 4, Whitespace(1))
-            end
-        end
+    if lidx === nothing
+        insert!(fst, 4, Whitespace(1))
+    end
+end
