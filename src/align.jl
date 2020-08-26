@@ -132,7 +132,6 @@ function align_consts!(fst::FST)
         len = g[1]
         idxs = g[2]
         for i in idxs
-            @info "group" fst[i][3]
             align_binaryopcall!(fst[i][3], len)
         end
     end
