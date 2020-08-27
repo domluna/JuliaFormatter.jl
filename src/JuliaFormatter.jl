@@ -39,7 +39,7 @@ include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
-include("align.jl")
+# include("align.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")

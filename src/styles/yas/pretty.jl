@@ -234,8 +234,10 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         cst[3].typ !== CSTParser.Curly &&
         cst[3].typ !== CSTParser.BracesCat
 
-    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
-    add_braces && add_node!(t, brace, s, join_lines = true)
+    if add_braces
+        brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "{")
+        add_node!(t, brace, s, join_lines = true)
+    end
 
     for (i, a) in enumerate(cst.args[3:end])
         n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
@@ -251,8 +253,10 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         end
     end
 
-    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}")
-    add_braces && add_node!(t, brace, s, join_lines = true)
+    if add_braces
+        brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "}")
+        add_node!(t, brace, s, join_lines = true)
+    end
     t
 end
 
@@ -260,8 +264,6 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
-        # n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nonest = true) :
-        #     pretty(ys, a, s)
         n = pretty(ys, a, s)
         if a.typ === CSTParser.KEYWORD
             incomp = parent_is(

@@ -19,6 +19,8 @@
     MacroBlock,
 )
 
+# @enum(NestBehavior, ALLOW, ALWAYS, NEVER)
+
 # struct Meta
 #     op_kind::Tokens.Kind
 #     is_function::Bool
@@ -50,21 +52,22 @@ mutable struct FST
     # `f(arg)` would have `extra_margin` = 1
     # due to `)` after `f(arg)`.
     extra_margin::Int
+    line_offset::Int
 end
 
-FST(cst::CSTParser.EXPR, indent::Integer) =
-    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0)
+FST(cst::CSTParser.EXPR, indent::Int) =
+    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1)
 
-function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
-    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), AllowNest, 0)
+FST(typ::CSTParser.Head, indent::Int) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1)
+
+function FST(cst::CSTParser.EXPR, line_offset::Int, startline::Int, endline::Int, val::AbstractString)
+    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), AllowNest, 0, line_offset)
 end
 
-function FST(typ::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, AllowNest, 0)
+function FST(typ::CSTParser.Head, line_offset::Int, startline::Int, endline::Int, val::AbstractString)
+    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, AllowNest, 0, line_offset)
 end
-
-FST(typ::CSTParser.Head, indent::Integer) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0)
 
 @inline function Base.setindex!(fst::FST, node::FST, ind::Int)
     fst.len -= fst.nodes[ind].len
@@ -79,19 +82,19 @@ end
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0)
-@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0)
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
+@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0)
-@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0)
-@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0)
+    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
 @inline Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0)
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 
 @inline Base.length(fst::FST) = fst.len
 
@@ -306,6 +309,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.len += length(n)
         push!(t.nodes, n)
         return
+    end
+
+    if t.line_offset <= 0
+        t.line_offset = n.line_offset
     end
 
     if !is_prev_newline(t.nodes[end])
