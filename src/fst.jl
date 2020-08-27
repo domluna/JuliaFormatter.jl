@@ -25,8 +25,6 @@
 # end
 #
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest)
-# can_nest(nb::NestBehavior) = nb === AllowNest || nb === AlwaysNest
-
 
 """
 Formatted Syntax Tree
@@ -38,8 +36,8 @@ mutable struct FST
     # in the original source file.
     startline::Int
     endline::Int
-    indent::Int
 
+    indent::Int
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
