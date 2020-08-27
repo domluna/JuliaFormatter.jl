@@ -98,6 +98,10 @@ end
 
 @inline Base.length(fst::FST) = fst.len
 
+must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+can_nest(fst::FST) = fst.nest_behavior === AllowNest
+
 @inline is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
 @inline is_leaf(fst::FST) = fst.nodes === nothing
 

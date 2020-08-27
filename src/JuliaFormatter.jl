@@ -39,7 +39,7 @@ include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
-# include("align.jl")
+include("align.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
@@ -249,6 +249,7 @@ function format_text(
     annotate_untyped_fields_with_any::Bool = true,
     format_docstrings::Bool = false,
     align_struct_fields::Bool = false,
+    align_conditionals::Bool = false,
 )
     isempty(text) && return text
     opts = Options(
@@ -266,6 +267,7 @@ function format_text(
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
         format_docstrings = format_docstrings,
         align_struct_fields = align_struct_fields,
+        align_conditionals = align_conditionals,
     )
     return format_text(text, style, opts)
 end
@@ -285,9 +287,8 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
-    align_fst_before_nest!(t, s.opts)
+    align_fst!(t, s.opts)
     nest!(style, t, s)
-    align_fst_after_nest!(t, s.opts)
 
     s.line_offset = 0
     io = IOBuffer()

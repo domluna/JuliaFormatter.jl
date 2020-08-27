@@ -1,4 +1,4 @@
-function align_fst_before_nest!(fst::FST, opts::Options)
+function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
     nconsts = 0
     for n in fst.nodes
@@ -11,26 +11,14 @@ function align_fst_before_nest!(fst::FST, opts::Options)
             align_struct!(n)
             # elseif n.typ === CSTParser.FileH
             # align_short_function!(n)
+        elseif opts.align_conditionals && n.typ === CSTParser.ConditionalOpCall
+            align_conditionalopcall!(n)
         else
-            align_fst_before_nest!(n, opts)
+            align_fst!(n, opts)
         end
     end
 
     nconsts > 0 && align_consts!(fst)
-end
-
-function align_fst_after_nest!(fst::FST, opts::Options)
-    is_leaf(fst) && return
-    nconsts = 0
-    for n in fst.nodes
-        if is_leaf(n)
-            continue
-        elseif n.typ === CSTParser.ConditionalOpCall
-            align_conditionalopcall!(n)
-        else
-            align_fst_after_nest!(n, opts)
-        end
-    end
 end
 
 """
@@ -189,12 +177,41 @@ function align_conditionalopcall!(fst::FST)
     # joined to the line of `var = cond`
     #
     # ignoring the first ? and : might solve this
-    conditional_idxs = findall(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
+    cond_idxs = findall(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
+    length(cond_idxs) == 1 && return
     colon_idxs = findall(n -> n.typ === CSTParser.OPERATOR && n.val == ":", fst.nodes)
-    conditional_ops = fst[conditional_idxs]
-    colon_ops = fst[colon_idxs]
 
-    # @info "" conditional_ops colon_ops
-    # fst.nest_behavior = NeverNest
+    offset1 = fst[cond_idxs[1]].line_offset
+    cond_aligned_idxs = filter(i -> fst[i].line_offset == offset1, cond_idxs)
+    offset1 = fst[colon_idxs[1]].line_offset
+    colon_aligned_idxs = filter(i -> fst[i].line_offset == offset1, colon_idxs)
+
+    @info "" cond_aligned_idxs colon_aligned_idxs colon_idxs
+
+    # (cond_aligned && colon_aligned) || return
+
+    max_len = 0
+    for i in cond_aligned_idxs
+        length(fst[i-2]) > max_len && (max_len = length(fst[i-2]))
+    end
+    for i in cond_aligned_idxs
+        diff = max_len - length(fst[i-2]) + 1
+        fst[i-1] = Whitespace(diff)
+    end
+
+    max_len = 0
+    for i in colon_aligned_idxs
+        length(fst[i-2]) > max_len && (max_len = length(fst[i-2]))
+        if fst[i+2].startline != fst[i].startline
+            fst[i+1] = Newline(nest_behavior=AlwaysNest)
+        end
+    end
+    for i in colon_aligned_idxs
+        diff = max_len - length(fst[i-2]) + 1
+        fst[i-1] = Whitespace(diff)
+    end
+
+    # @info "" cond_ops colon_ops cond_aligned colon_aligned
+    fst.nest_behavior = NeverNest
     return
 end
