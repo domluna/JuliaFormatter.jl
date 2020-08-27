@@ -285,8 +285,9 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
+    align_fst_before_nest!(t, s.opts)
     nest!(style, t, s)
-    align_fst!(t, s.opts)
+    align_fst_after_nest!(t, s.opts)
 
     s.line_offset = 0
     io = IOBuffer()

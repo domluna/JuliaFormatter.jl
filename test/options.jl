@@ -762,6 +762,9 @@
             align_struct_fields::Bool = false
 
             Options() = new()
+
+            another_field1::BlahBlahBlah = 10
+            field2::Foo = 10
         end"""
         str = """
         Base.@kwdef struct Options
@@ -781,6 +784,9 @@
             align_struct_fields::Bool              = false
 
             Options() = new()
+
+            another_field1::BlahBlahBlah = 10
+            field2::Foo                  = 10
         end"""
         @test fmt(str_, align_struct_fields = true) == str
         @test fmt(str, align_struct_fields = false) == str_
