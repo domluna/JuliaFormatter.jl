@@ -354,14 +354,17 @@ end
 """
 function prepend_return!(fst::FST, s::State)
     fst.typ === CSTParser.Block || return
-    fst[end].typ !== CSTParser.Return || return
+    ln = fst[end]
+    is_block(ln) && return
+    ln.typ === CSTParser.Return && return
+    ln.typ === CSTParser.MacroCall && return
+    ln.typ === MacroBlock && return
 
     ret = FST(CSTParser.Return, fst.indent)
-    ln = fst[end]
-    kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "return")
+    kw = FST(CSTParser.KEYWORD, ln.startline, ln.endline, "return")
     add_node!(ret, kw, s)
     add_node!(ret, Whitespace(1), s)
-    add_node!(ret, fst[end], s, join_lines = true)
+    add_node!(ret, ln, s, join_lines = true)
     fst[end] = ret
 end
 

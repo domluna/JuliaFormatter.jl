@@ -251,6 +251,36 @@
             return expr2
         end"""
         @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+
+        str = """
+        function foo()
+            @macrocall(expr2)
+        end"""
+        @test fmt(str, 4, 92, always_use_return = true) == str
+
+        str = """
+        function foo()
+            @macroblock expr2
+        end"""
+        @test fmt(str, 4, 92, always_use_return = true) == str
+
+        str = """
+        function foo()
+            for i = 1:10
+                println(i)
+            end
+        end"""
+        @test fmt(str, 4, 92, always_use_return = true) == str
+
+        str = """
+        function f(a)
+            if a > 0
+                return -1
+            else
+                return 1
+            end
+        end"""
+        @test fmt(str, 4, 92, always_use_return = true) == str
     end
 
     @testset "whitespace in keyword arguments" begin
