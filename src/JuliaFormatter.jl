@@ -248,8 +248,10 @@ function format_text(
     whitespace_in_kwargs::Bool = true,
     annotate_untyped_fields_with_any::Bool = true,
     format_docstrings::Bool = false,
-    align_struct_fields::Bool = false,
-    align_conditionals::Bool = false,
+    align_struct_field::Bool = false,
+    align_conditional::Bool = false,
+    align_const::Bool = false,
+    align_short_function_def::Bool = false,
 )
     isempty(text) && return text
     opts = Options(
@@ -266,8 +268,10 @@ function format_text(
         whitespace_in_kwargs = whitespace_in_kwargs,
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
         format_docstrings = format_docstrings,
-        align_struct_fields = align_struct_fields,
-        align_conditionals = align_conditionals,
+        align_struct_field = align_struct_field,
+        align_conditional = align_conditional,
+        align_const = align_const,
+        align_short_function_def = align_short_function_def,
     )
     return format_text(text, style, opts)
 end

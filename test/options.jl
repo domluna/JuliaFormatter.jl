@@ -729,42 +729,42 @@
         struct Foo
             a::T
         end"""
-        @test fmt(str_, align_struct_fields = true) == str
+        @test fmt(str_, align_struct_field = true) == str
 
-        str_ = """
-        struct Foo
-            a::T
-            longfieldname::B
-        end"""
         str = """
         struct Foo
             a             :: T
             longfieldname :: B
         end"""
-        @test fmt(str_, align_struct_fields = true) == str
-        @test fmt(str, align_struct_fields = false) == str_
+        str_ = """
+        struct Foo
+            a::T
+            longfieldname::B
+        end"""
+        @test fmt(str, align_struct_field = true) == str
+        @test fmt(str, align_struct_field = false) == str_
 
         str_ = """
         Base.@kwdef struct Options
-            indent_size::Int = 4
-            max_margin::Int = 92
-            always_for_in::Bool = false
-            whitespace_typedefs::Bool = false
-            whitespace_ops_in_indices::Bool = false
-            remove_extra_newlines::Bool = false
-            import_to_using::Bool = false
-            pipe_to_function_call::Bool = false
-            short_to_long_function_def::Bool = false
-            always_use_return::Bool = false
-            whitespace_in_kwargs::Bool = true
+            indent_size::Int                       = 4
+            max_margin::Int                        = 92
+            always_for_in::Bool                 = false
+            whitespace_typedefs::Bool          = false
+            whitespace_ops_in_indices::Bool        = false
+            remove_extra_newlines::Bool            = false
+            import_to_using::Bool                  = false
+            pipe_to_function_call::Bool            = false
+            short_to_long_function_def::Bool      = false
+            always_use_return::Bool           = false
+            whitespace_in_kwargs::Bool          = true
             annotate_untyped_fields_with_any::Bool = true
-            format_docstrings::Bool = false
-            align_struct_fields::Bool = false
-
-            Options() = new()
+            format_docstrings::Bool             = false
+            align_struct_fields::Bool           = false
 
             another_field1::BlahBlahBlah = 10
-            field2::Foo = 10
+            field2::Foo                          = 10
+
+            Options() = new()
         end"""
         str = """
         Base.@kwdef struct Options
@@ -783,12 +783,159 @@
             format_docstrings::Bool                = false
             align_struct_fields::Bool              = false
 
+            another_field1::BlahBlahBlah = 10
+            field2::Foo = 10
+
             Options() = new()
+        end"""
+        @test fmt(str_, align_struct_field = true) == str
+
+        str_ = """
+        Base.@kwdef struct Options
+            indent_size::Int = 4
+            max_margin::Int = 92
+            always_for_in::Bool = false
+            whitespace_typedefs::Bool = false
+            whitespace_ops_in_indices::Bool = false
+            remove_extra_newlines::Bool = false
+            import_to_using::Bool = false
+            pipe_to_function_call::Bool = false
+            short_to_long_function_def::Bool = false
+            always_use_return::Bool = false
+            whitespace_in_kwargs::Bool = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool = false
+            align_struct_fields::Bool = false
 
             another_field1::BlahBlahBlah = 10
-            field2::Foo                  = 10
+            field2::Foo = 10
+
+            Options() = new()
         end"""
-        @test fmt(str_, align_struct_fields = true) == str
-        @test fmt(str, align_struct_fields = false) == str_
+        @test fmt(str, align_struct_field = true) == str
+        @test fmt(str, align_struct_field = false) == str_
+
+        str = """
+        Base.@kwdef struct Options
+            indent_size::Int                       = 4
+            max_margin::Int                        = 92
+            always_for_in::Bool                    = false
+            whitespace_typedefs::Bool              = false
+            whitespace_ops_in_indices::Bool        = false
+            remove_extra_newlines::Bool            = false
+            import_to_using::Bool                  = false
+            pipe_to_function_call::Bool            = false
+            short_to_long_function_def::Bool       = false
+            always_use_return::Bool                = false
+            whitespace_in_kwargs::Bool             = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool                = false
+            align_struct_fields::Bool              = false
+
+            another_field1::BlahBlahBlah =
+                10
+            field2::Foo =
+                10
+
+            Options() =
+                new()
+        end"""
+        @test fmt(str, 4, 1, align_struct_field = true) == str
+    end
+
+    @testset "align consts" begin
+        str_ = """
+        const variable1 = 1
+        const var2      = 2
+        const var3 = 3
+        const var4 = 4"""
+        str = """
+        const variable1 = 1
+        const var2      = 2
+        const var3      = 3
+        const var4      = 4"""
+        @test fmt(str_, align_const=true) == str
+
+        str = """
+        const variable1 = 1
+        const variable2 = 2
+        const var3 = 3
+        const var4 = 4"""
+        @test fmt(str, align_const=true) == str
+
+        str_ = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1<<1)
+        const UTF8PROC_COMPAT    = (1<<2)
+        const UTF8PROC_COMPOSE   = (1<<3)
+        const UTF8PROC_DECOMPOSE = (1<<4)
+        const UTF8PROC_IGNORE    = (1<<5)
+        const UTF8PROC_REJECTNA  = (1<<6)
+        const UTF8PROC_NLF2LS    = (1<<7)
+        const UTF8PROC_NLF2PS    = (1<<8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1<<9)
+        const UTF8PROC_CASEFOLD  = (1<<10)
+        const UTF8PROC_CHARBOUND = (1<<11)
+        const UTF8PROC_LUMP=(1<<12)
+        const UTF8PROC_STRIP         = (1<<13) # align this
+
+        const FOOBAR = 0
+        const FOO = 1
+
+        end"""
+
+        str = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1 << 1)
+        const UTF8PROC_COMPAT    = (1 << 2)
+        const UTF8PROC_COMPOSE   = (1 << 3)
+        const UTF8PROC_DECOMPOSE = (1 << 4)
+        const UTF8PROC_IGNORE    = (1 << 5)
+        const UTF8PROC_REJECTNA  = (1 << 6)
+        const UTF8PROC_NLF2LS    = (1 << 7)
+        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1 << 9)
+        const UTF8PROC_CASEFOLD  = (1 << 10)
+        const UTF8PROC_CHARBOUND = (1 << 11)
+        const UTF8PROC_LUMP      = (1 << 12)
+        const UTF8PROC_STRIP     = (1 << 13) # align this
+
+        const FOOBAR = 0
+        const FOO = 1
+
+        end"""
+        # @test fmt(str_, align_consts = false) == str
+        @test fmt(str_, align_const=true) == str
+
+        # the aligned consts will NOT be nestable
+        str = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1 << 1)
+        const UTF8PROC_COMPAT    = (1 << 2)
+        const UTF8PROC_COMPOSE   = (1 << 3)
+        const UTF8PROC_DECOMPOSE = (1 << 4)
+        const UTF8PROC_IGNORE    = (1 << 5)
+        const UTF8PROC_REJECTNA  = (1 << 6)
+        const UTF8PROC_NLF2LS    = (1 << 7)
+        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1 << 9)
+        const UTF8PROC_CASEFOLD  = (1 << 10)
+        const UTF8PROC_CHARBOUND = (1 << 11)
+        const UTF8PROC_LUMP      = (1 << 12)
+        const UTF8PROC_STRIP     = (1 << 13) # align this
+
+        const FOOBAR =
+            0
+        const FOO =
+            1
+
+        end"""
+        @test fmt(str_, 4, 1, align_const=true) == str
     end
 end
