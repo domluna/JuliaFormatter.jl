@@ -18,16 +18,15 @@ function flatten_binaryopcall(fst::FST; top = true)
     nodes = FST[]
     kind = op_kind(fst)
 
-    # @info "a" top kind
-
     lhs = fst[1]
     rhs = fst[end]
     lhs_kind = op_kind(lhs)
     rhs_kind = op_kind(rhs)
     lhs_same_op = lhs_kind === kind
     rhs_same_op = rhs_kind === kind
+    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
 
-    if top && !lhs_same_op && !rhs_same_op
+    if (top && !lhs_same_op && !rhs_same_op) || idx === nothing
         return nodes
     end
 
@@ -38,7 +37,7 @@ function flatten_binaryopcall(fst::FST; top = true)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
-    push!(nodes, fst[2:end-2]...)
+    push!(nodes, fst[2:idx-1]...)
 
     if rhs_same_op
         push!(nodes, flatten_binaryopcall(rhs, top = false)...)
