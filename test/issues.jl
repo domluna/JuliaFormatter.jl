@@ -243,8 +243,6 @@
 
     end
 
-
-
     @testset "issue #183" begin
         str_ = """
         function f(args...)
@@ -347,8 +345,6 @@
         @test fmt(str_, m = 81) == str
         @test fmt(str, m = 82) == str_
     end
-
-
 
     @testset "issue #202" begin
         str_ = """
@@ -549,7 +545,6 @@
         @test fmt(str) == str
     end
 
-
     @testset "issue 264 - `let` empty block body" begin
         str_ = "let; end"
         str = """
@@ -571,6 +566,6 @@
         str_ = "get_actions(env)[env |> π.learner |> π.explorer]"
         str = "get_actions(env)[env|>π.learner|>π.explorer]"
         @test fmt(str_) == str
-        @test fmt(str, whitespace_ops_in_indices=true) == str_
+        @test fmt(str, whitespace_ops_in_indices = true) == str_
     end
 end

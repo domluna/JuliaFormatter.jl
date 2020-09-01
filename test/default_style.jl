@@ -3545,7 +3545,6 @@
         @test fmt(str_, 4, 50) == str
     end
 
-
     @testset "invisbrackets" begin
         str = """
         some_function(
@@ -3712,10 +3711,6 @@ some_function(
         @test fmt(str) == str
     end
 
-
-
-
-
     @testset "remove excess newlines" begin
         str_ = """
         var = foo(a,
@@ -3879,9 +3874,6 @@ some_function(
         @test fmt(str_, remove_extra_newlines = true) == str
     end
 
-
-
-
     @testset "align ChainOpCall indent" begin
         str_ = """
         function _()
@@ -3968,8 +3960,6 @@ some_function(
         end"""
         @test fmt(str_, m = 42) == str
     end
-
-
 
     @testset "standalone lazy expr indent" begin
         str = """
@@ -4187,6 +4177,5 @@ some_function(
                arg2"""
         @test fmt(str_, 4, 1) == str
     end
-
 
 end
