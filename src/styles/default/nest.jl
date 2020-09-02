@@ -96,7 +96,7 @@ function dedent!(fst::FST, s::State)
         return
     end
     fst.typ === CSTParser.StringH && return
-    # fst.typ === CSTParser.ConditionalOpCall && return
+    fst.typ === CSTParser.ConditionalOpCall && return
 
     # dedent
     fst.indent -= s.opts.indent_size
