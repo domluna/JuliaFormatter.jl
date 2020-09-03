@@ -269,7 +269,7 @@ end
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
-    ps.errored && error("Parsing error for input occured on line $line, offset: $offset")
+    ps.errored && error("Parsing error for input occurred on line $line, offset: $offset")
     cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
     return format_text(cst, style, State(Document(text), opts))
 end
