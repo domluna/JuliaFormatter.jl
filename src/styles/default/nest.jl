@@ -94,7 +94,7 @@ function dedent!(fst::FST, s::State)
             fst.indent -= s.opts.indent_size
         end
         return
-    elseif fst.typ === CSTParser.StringH 
+    elseif fst.typ === CSTParser.StringH
         return
     elseif fst.typ === CSTParser.ConditionalOpCall && !cant_nest(fst)
         return
@@ -572,7 +572,8 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
             fst[end].indent = fst.indent
         end
 
-        over = (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || must_nest(fst)
+        over =
+            (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || must_nest(fst)
         fst.indent += s.opts.indent_size
         for (i, n) in enumerate(fst[2:end])
             if n.typ === NEWLINE
@@ -681,7 +682,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
     if length(idxs) == 2 &&
-        (line_margin > s.opts.max_margin || must_nest(fst) || must_nest(rhs))
+       (line_margin > s.opts.max_margin || must_nest(fst) || must_nest(rhs))
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]

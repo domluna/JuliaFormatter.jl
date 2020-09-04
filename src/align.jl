@@ -69,20 +69,20 @@ struct AlignGroup
 end
 
 function align_to(g::AlignGroup)::Union{Nothing,Int}
-        # determine whether alignment might be warranted
-        max_len, max_idx =findmax(g.lens)
-        max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets) 
-        length(max_idxs) > 1 || return nothing
-        # @info "" max_len max_idxs
+    # determine whether alignment might be warranted
+    max_len, max_idx = findmax(g.lens)
+    max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets)
+    length(max_idxs) > 1 || return nothing
+    # @info "" max_len max_idxs
 
-        # is there custom whitespace?
-        for i in max_idxs
-            if max_len - g.lens[i] + 1 > 1
-                return max_len
-            end
+    # is there custom whitespace?
+    for i in max_idxs
+        if max_len - g.lens[i] + 1 > 1
+            return max_len
         end
+    end
 
-        return nothing
+    return nothing
 end
 
 function align_binaryopcall!(fst::FST, diff::Int)
@@ -186,7 +186,6 @@ function align_struct!(fst::FST)
     end
 end
 
-
 """
     align_const!(fst::FST) 
 
@@ -237,8 +236,6 @@ function align_consts!(fst::FST)
     return
 end
 
-
-
 """
 """
 function align_conditionalopcall!(fst::FST)
@@ -285,16 +282,16 @@ function align_conditionalopcall!(fst::FST)
 
     len = align_to(colon_group)
     for (i, idx) in enumerate(colon_group.node_idxs)
-            # the placeholder would be i+1 if not for a possible inline comment
-            nidx = findnext(n -> n.typ === PLACEHOLDER, nodes, idx+1)
-            if nodes[nidx+1].startline != nodes[nidx].startline
-                nodes[nidx] = Newline(nest_behavior=AlwaysNest)
-            end
+        # the placeholder would be i+1 if not for a possible inline comment
+        nidx = findnext(n -> n.typ === PLACEHOLDER, nodes, idx + 1)
+        if nodes[nidx+1].startline != nodes[nidx].startline
+            nodes[nidx] = Newline(nest_behavior = AlwaysNest)
+        end
 
-            if len !== nothing
-                diff = len - colon_group.lens[i] + 1
-                nodes[idx-1] = Whitespace(diff)
-            end
+        if len !== nothing
+            diff = len - colon_group.lens[i] + 1
+            nodes[idx-1] = Whitespace(diff)
+        end
     end
 
     fst.nodes = nodes

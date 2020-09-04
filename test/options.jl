@@ -854,14 +854,14 @@
         const var2      = 2
         const var3      = 3
         const var4      = 4"""
-        @test fmt(str_, align_const=true) == str
+        @test fmt(str_, align_const = true) == str
 
         str = """
         const variable1 = 1
         const variable2 = 2
         const var3 = 3
         const var4 = 4"""
-        @test fmt(str, align_const=true) == str
+        @test fmt(str, align_const = true) == str
 
         str_ = """
         module Foo
@@ -909,7 +909,7 @@
 
         end"""
         # @test fmt(str_, align_consts = false) == str
-        @test fmt(str_, align_const=true) == str
+        @test fmt(str_, align_const = true) == str
 
         # the aligned consts will NOT be nestable
         str = """
@@ -936,9 +936,8 @@
             1
 
         end"""
-        @test fmt(str_, 4, 1, align_const=true) == str
+        @test fmt(str_, 4, 1, align_const = true) == str
     end
-
 
     @testset "align conditionals" begin
         str_ = """
@@ -955,7 +954,7 @@
             n,
         )
         """
-        @test fmt(str_, align_conditional=true) == str
+        @test fmt(str_, align_conditional = true) == str
 
         str = """
         index =
@@ -966,8 +965,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional=true) == str
-
+        @test fmt(str_, 4, 1, align_conditional = true) == str
 
         str_ = """
         index = zeros(n <= typemax(Int8)  ? Int8 :   # inline
@@ -989,8 +987,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional=true) == str
-
+        @test fmt(str_, 4, 1, align_conditional = true) == str
 
         str_ = """
         index = zeros(n <= typemax(Int8)  ? Int8  :    # inline
@@ -1005,8 +1002,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional=true) == str
-
+        @test fmt(str_, 4, 1, align_conditional = true) == str
 
         str_ = """
         index =
@@ -1026,7 +1022,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional=true) == str
+        @test fmt(str_, 4, 1, align_conditional = true) == str
 
     end
 end

@@ -54,12 +54,48 @@ FST(cst::CSTParser.EXPR, indent::Int) =
 FST(typ::CSTParser.Head, indent::Int) =
     FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1)
 
-function FST(cst::CSTParser.EXPR, line_offset::Int, startline::Int, endline::Int, val::AbstractString)
-    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), AllowNest, 0, line_offset)
+function FST(
+    cst::CSTParser.EXPR,
+    line_offset::Int,
+    startline::Int,
+    endline::Int,
+    val::AbstractString,
+)
+    FST(
+        cst.typ,
+        startline,
+        endline,
+        0,
+        length(val),
+        val,
+        nothing,
+        Ref(cst),
+        AllowNest,
+        0,
+        line_offset,
+    )
 end
 
-function FST(typ::CSTParser.Head, line_offset::Int, startline::Int, endline::Int, val::AbstractString)
-    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, AllowNest, 0, line_offset)
+function FST(
+    typ::CSTParser.Head,
+    line_offset::Int,
+    startline::Int,
+    endline::Int,
+    val::AbstractString,
+)
+    FST(
+        typ,
+        startline,
+        endline,
+        0,
+        length(val),
+        val,
+        nothing,
+        nothing,
+        AllowNest,
+        0,
+        line_offset,
+    )
 end
 
 @inline function Base.setindex!(fst::FST, node::FST, ind::Int)
@@ -71,11 +107,11 @@ end
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
 @inline Base.firstindex(fst::FST) = 1
 @inline Base.length(fst::FST) = fst.len
-@inline function Base.iterate(fst::FST, state=1)
+@inline function Base.iterate(fst::FST, state = 1)
     if state > length(fst.nodes)
         return nothing
     end
-    return fst.nodes[state], state+1
+    return fst.nodes[state], state + 1
 end
 
 @inline function Base.insert!(fst::FST, ind::Int, node::FST)
@@ -86,13 +122,16 @@ end
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
 @inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
-@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+@inline TrailingComma() =
+    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline TrailingSemicolon() =
     FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline InverseTrailingSemicolon() =
     FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
-@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
-@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+@inline Whitespace(n) =
+    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+@inline Placeholder(n) =
+    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
 @inline Notcode(startline, endline) =
     FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 @inline InlineComment(line) =

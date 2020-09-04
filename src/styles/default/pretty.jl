@@ -429,7 +429,19 @@ end
         end
     end
 
-    t = FST(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, FST[], Ref(cst), AllowNest, 0, loc[2])
+    t = FST(
+        CSTParser.StringH,
+        -1,
+        -1,
+        loc[2] - 1,
+        0,
+        nothing,
+        FST[],
+        Ref(cst),
+        AllowNest,
+        0,
+        loc[2],
+    )
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
