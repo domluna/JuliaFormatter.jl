@@ -62,13 +62,13 @@ function align_fst!(fst::FST, opts::Options)
     opts.align_const && nconsts > 0 && align_consts!(fst)
 end
 
-struct AlignmentGroup
+struct AlignGroup
     lens::Vector{Int}
     line_offsets::Vector{Int}
     node_idxs::Vector{Int}
 end
 
-function align_to(g::AlignmentGroup)::Union{Nothing,Int}
+function align_to(g::AlignGroup)::Union{Nothing,Int}
         # determine whether alignment might be warranted
         max_len, max_idx =findmax(g.lens)
         max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets) 
@@ -81,6 +81,7 @@ function align_to(g::AlignmentGroup)::Union{Nothing,Int}
                 return max_len
             end
         end
+
         return nothing
 end
 
@@ -147,7 +148,7 @@ function align_struct!(fst::FST)
     length(fst[idx]) == 0 && return
 
     block_fst = fst[idx]
-    groups = AlignmentGroup[]
+    groups = AlignGroup[]
     src_line_offsets = Int[]
     idxs = Int[]
     lens = Int[]
@@ -157,7 +158,7 @@ function align_struct!(fst::FST)
         if n.typ === CSTParser.BinaryOpCall
             if n.startline - prev_endline > 1
                 if length(lens) > 1
-                    push!(groups, AlignmentGroup(lens, src_line_offsets, idxs))
+                    push!(groups, AlignGroup(lens, src_line_offsets, idxs))
                 end
                 idxs = Int[]
                 src_line_offsets = Int[]
@@ -171,7 +172,7 @@ function align_struct!(fst::FST)
         end
     end
     if length(lens) > 1
-        push!(groups, AlignmentGroup(lens, src_line_offsets, idxs))
+        push!(groups, AlignGroup(lens, src_line_offsets, idxs))
     end
 
     for g in groups
@@ -195,7 +196,7 @@ function align_consts!(fst::FST)
     fidx = findfirst(n -> n.typ === CSTParser.Const, fst.nodes)
     lidx = findlast(n -> n.typ === CSTParser.Const, fst.nodes)
 
-    groups = AlignmentGroup[]
+    groups = AlignGroup[]
     src_line_offsets = Int[]
     idxs = Int[]
     lens = Int[]
@@ -205,7 +206,7 @@ function align_consts!(fst::FST)
         if n.typ === CSTParser.Const && n[3].typ === CSTParser.BinaryOpCall
             if n.startline - prev_endline > 1
                 if length(lens) > 1
-                    push!(groups, AlignmentGroup(lens, src_line_offsets, idxs))
+                    push!(groups, AlignGroup(lens, src_line_offsets, idxs))
                 end
                 idxs = Int[]
                 src_line_offsets = Int[]
@@ -219,7 +220,7 @@ function align_consts!(fst::FST)
         end
     end
     if length(lens) > 1
-        push!(groups, AlignmentGroup(lens, src_line_offsets, idxs))
+        push!(groups, AlignGroup(lens, src_line_offsets, idxs))
     end
 
     for g in groups
@@ -230,9 +231,6 @@ function align_consts!(fst::FST)
             diff = align_len - g.lens[i] + 1
             align_binaryopcall!(fst[idx][3], diff)
             fst[idx].nest_behavior = NeverNest
-            # if !always_nest(fst[idx])
-            #     fst[idx].nest_behavior = NeverNest
-            # end
         end
     end
 
@@ -244,48 +242,58 @@ end
 """
 """
 function align_conditionalopcall!(fst::FST)
-    # findall ? tokens
-    # findall : tokens
-    #
-    # align all ? tokens
-    # align all : tokens
-    #
-    # corner case would be when the initial conditional is
-    # joined to the line of `var = cond`
-    #
-    # ignoring the first ? and : might solve this
-    cond_idxs = findall(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
-    length(cond_idxs) == 1 && return
-    colon_idxs = findall(n -> n.typ === CSTParser.OPERATOR && n.val == ":", fst.nodes)
+    cond_src_line_offsets = Int[]
+    cond_idxs = Int[]
+    cond_lens = Int[]
+    cond_prev_endline = 0
 
-    offset1 = fst[cond_idxs[1]].line_offset
-    cond_aligned_idxs = filter(i -> fst[i].line_offset == offset1, cond_idxs)
-    offset1 = fst[colon_idxs[1]].line_offset
-    colon_aligned_idxs = filter(i -> fst[i].line_offset == offset1, colon_idxs)
+    colon_src_line_offsets = Int[]
+    colon_idxs = Int[]
+    colon_lens = Int[]
+    colon_prev_endline = 0
 
-    # @info "" cond_aligned_idxs colon_aligned_idxs colon_idxs
-
-    # (cond_aligned && colon_aligned) || return
-
-    max_len = 0
-    for i in cond_aligned_idxs
-        length(fst[i-2]) > max_len && (max_len = length(fst[i-2]))
-    end
-    for i in cond_aligned_idxs
-        diff = max_len - length(fst[i-2]) + 1
-        fst[i-1] = Whitespace(diff)
-    end
-
-    max_len = 0
-    for i in colon_aligned_idxs
-        length(fst[i-2]) > max_len && (max_len = length(fst[i-2]))
-        if fst[i+2].startline != fst[i].startline
-            fst[i+1] = Newline(nest_behavior=AlwaysNest)
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === CSTParser.OPERATOR && n.val == "?"
+            if cond_prev_endline != n.endline
+                push!(cond_idxs, i)
+                push!(cond_src_line_offsets, n.line_offset)
+                push!(cond_lens, length(fst[i-2]))
+            end
+            cond_prev_endline = n.endline
+        elseif n.typ === CSTParser.OPERATOR && n.val == ":"
+            if colon_prev_endline != n.endline
+                push!(colon_idxs, i)
+                push!(colon_src_line_offsets, n.line_offset)
+                push!(colon_lens, length(fst[i-2]))
+            end
+            colon_prev_endline = n.endline
         end
     end
-    for i in colon_aligned_idxs
-        diff = max_len - length(fst[i-2]) + 1
-        fst[i-1] = Whitespace(diff)
+    length(cond_idxs) > 1 || return
+
+    cond_group = AlignGroup(cond_lens, cond_src_line_offsets, cond_idxs)
+    colon_group = AlignGroup(colon_lens, colon_src_line_offsets, colon_idxs)
+
+    len = align_to(cond_group)
+    if len !== nothing
+        for (i, idx) in enumerate(cond_group.node_idxs)
+            diff = len - cond_group.lens[i] + 1
+            fst[idx-1] = Whitespace(diff)
+        end
+    end
+
+    len = align_to(colon_group)
+    for (i, idx) in enumerate(colon_group.node_idxs)
+            # the placeholder would be i+1 if not for a possible inline comment
+            nidx = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, idx+1)
+            if fst[nidx+1].startline != fst[nidx].startline
+                fst[nidx] = Newline(nest_behavior=AlwaysNest)
+            end
+
+            if len !== nothing
+                diff = len - colon_group.lens[i] + 1
+                fst[idx-1] = Whitespace(diff)
+            end
     end
 
     fst.nest_behavior = NeverNest

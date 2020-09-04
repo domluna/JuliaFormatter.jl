@@ -94,14 +94,17 @@ function dedent!(fst::FST, s::State)
             fst.indent -= s.opts.indent_size
         end
         return
+    elseif fst.typ === CSTParser.StringH 
+        return
+    elseif fst.typ === CSTParser.ConditionalOpCall && !cant_nest(fst)
+        return
     end
-    fst.typ === CSTParser.StringH && return
-    fst.typ === CSTParser.ConditionalOpCall && return
 
     # dedent
     fst.indent -= s.opts.indent_size
 
-    must_nest(fst) && return
+    # only unnest if it's allowed
+    can_nest(fst) || return
 
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     length(nl_inds) > 0 || return

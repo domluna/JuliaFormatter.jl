@@ -19,13 +19,6 @@
     MacroBlock,
 )
 
-# @enum(NestBehavior, ALLOW, ALWAYS, NEVER)
-
-# struct Meta
-#     op_kind::Tokens.Kind
-#     is_function::Bool
-# end
-#
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest)
 
 """
@@ -74,12 +67,21 @@ end
     fst.nodes[ind] = node
     fst.len += node.len
 end
+@inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
+@inline Base.lastindex(fst::FST) = length(fst.nodes)
+@inline Base.firstindex(fst::FST) = 1
+@inline Base.length(fst::FST) = fst.len
+@inline function Base.iterate(fst::FST, state=1)
+    if state > length(fst.nodes)
+        return nothing
+    end
+    return fst.nodes[state], state+1
+end
+
 @inline function Base.insert!(fst::FST, ind::Int, node::FST)
     insert!(fst.nodes, ind, node)
     fst.len += node.len
 end
-@inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
-@inline Base.lastindex(fst::FST) = length(fst.nodes)
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
@@ -96,11 +98,9 @@ end
 @inline InlineComment(line) =
     FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
 
-@inline Base.length(fst::FST) = fst.len
-
-must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
-cant_nest(fst::FST) = fst.nest_behavior === NeverNest
-can_nest(fst::FST) = fst.nest_behavior === AllowNest
+@inline must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+@inline cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+@inline can_nest(fst::FST) = fst.nest_behavior === AllowNest
 
 @inline is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
 @inline is_leaf(fst::FST) = fst.nodes === nothing
