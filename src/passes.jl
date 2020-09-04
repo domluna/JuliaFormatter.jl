@@ -76,8 +76,8 @@ function flatten_fst!(fst::FST)
             else
                 flatten_fst!(n)
             end
-        elseif n.typ === CSTParser.ConditionalOpCall
-            n.nodes = flatten_conditionalopcall(n)
+        # elseif n.typ === CSTParser.ConditionalOpCall
+        #     n.nodes = flatten_conditionalopcall(n)
         else
             flatten_fst!(n)
         end

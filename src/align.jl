@@ -242,6 +242,7 @@ end
 """
 """
 function align_conditionalopcall!(fst::FST)
+    nodes = flatten_conditionalopcall(fst)
     cond_src_line_offsets = Int[]
     cond_idxs = Int[]
     cond_lens = Int[]
@@ -252,19 +253,19 @@ function align_conditionalopcall!(fst::FST)
     colon_lens = Int[]
     colon_prev_endline = 0
 
-    for (i, n) in enumerate(fst.nodes)
+    for (i, n) in enumerate(nodes)
         if n.typ === CSTParser.OPERATOR && n.val == "?"
             if cond_prev_endline != n.endline
                 push!(cond_idxs, i)
                 push!(cond_src_line_offsets, n.line_offset)
-                push!(cond_lens, length(fst[i-2]))
+                push!(cond_lens, length(nodes[i-2]))
             end
             cond_prev_endline = n.endline
         elseif n.typ === CSTParser.OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
                 push!(colon_idxs, i)
                 push!(colon_src_line_offsets, n.line_offset)
-                push!(colon_lens, length(fst[i-2]))
+                push!(colon_lens, length(nodes[i-2]))
             end
             colon_prev_endline = n.endline
         end
@@ -278,24 +279,25 @@ function align_conditionalopcall!(fst::FST)
     if len !== nothing
         for (i, idx) in enumerate(cond_group.node_idxs)
             diff = len - cond_group.lens[i] + 1
-            fst[idx-1] = Whitespace(diff)
+            nodes[idx-1] = Whitespace(diff)
         end
     end
 
     len = align_to(colon_group)
     for (i, idx) in enumerate(colon_group.node_idxs)
             # the placeholder would be i+1 if not for a possible inline comment
-            nidx = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, idx+1)
-            if fst[nidx+1].startline != fst[nidx].startline
-                fst[nidx] = Newline(nest_behavior=AlwaysNest)
+            nidx = findnext(n -> n.typ === PLACEHOLDER, nodes, idx+1)
+            if nodes[nidx+1].startline != nodes[nidx].startline
+                nodes[nidx] = Newline(nest_behavior=AlwaysNest)
             end
 
             if len !== nothing
                 diff = len - colon_group.lens[i] + 1
-                fst[idx-1] = Whitespace(diff)
+                nodes[idx-1] = Whitespace(diff)
             end
     end
 
+    fst.nodes = nodes
     fst.nest_behavior = NeverNest
     return
 end
