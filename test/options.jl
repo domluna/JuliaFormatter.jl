@@ -1006,5 +1006,27 @@
             )
         """
         @test fmt(str_, 4, 1, align_conditional=true) == str
+
+
+        str_ = """
+        index =
+            zeros(
+                n <= typemax(Int8)     ? Int8  :
+                n <= typemax(Int16A) ? Int16  :
+                n <= typemax(Int32)  ? Int322 : Int64,
+                n,
+            )
+        """
+        str = """
+        index =
+            zeros(
+                n <= typemax(Int8)   ? Int8   :
+                n <= typemax(Int16A) ? Int16  :
+                n <= typemax(Int32)  ? Int322 : Int64,
+                n,
+            )
+        """
+        @test fmt(str_, 4, 1, align_conditional=true) == str
+
     end
 end
