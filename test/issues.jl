@@ -568,4 +568,24 @@
         @test fmt(str_) == str
         @test fmt(str, whitespace_ops_in_indices = true) == str_
     end
+
+    @testset "issue 286 - Float32 leading/trailing zeros" begin
+        str_ = """
+        a = 3.f0
+        b = 3f0
+        c = 30f0
+        d = 30.0f0
+        e = 30.123f0
+        f = .123f0
+        """
+        str = """
+        a = 3.0f0
+        b = 3.0f0
+        c = 30.0f0
+        d = 30.0f0
+        e = 30.123f0
+        f = 0.123f0
+        """
+        @test fmt(str_) == str
+    end
 end
