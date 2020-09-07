@@ -368,7 +368,7 @@ end
         val = cst.val
 
         if cst.kind === Tokens.FLOAT && endswith(cst.val, "f0")
-        # Float32
+            # Float32
             val = val[1:end-2]
             dotidx = findlast(c -> c == '.', val)
             if dotidx === nothing
