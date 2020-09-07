@@ -22,7 +22,11 @@ a = 1.0</code></pre><p>If a float literal is missing a <em>leading</em> 0 it is 
 
 -&gt;
 
-a = 0.1</code></pre><p>See <a href="https://github.com/domluna/JuliaFormatter.jl/issues/66">this issue</a> for more details.</p><h2 id="Surround-where-arguments-with-curly-brackets-1"><a class="docs-heading-anchor" href="#Surround-where-arguments-with-curly-brackets-1">Surround <code>where</code> arguments with curly brackets</a><a class="docs-heading-anchor-permalink" href="#Surround-where-arguments-with-curly-brackets-1" title="Permalink"></a></h2><p>If the arguments of a <code>where</code> call are not surrounded by curly brackets, they are added:</p><pre><code class="language-julia">foo(x::T) where T = ...
+a = 0.1</code></pre><p>For <code>Float32</code> if there is no decimal point, <code>.0</code> is added:</p><pre><code class="language-julia">a = 1f0
+
+-&gt;
+
+a = 1.0f0</code></pre><p>See <a href="https://github.com/domluna/JuliaFormatter.jl/issues/66">this issue</a> for more details.</p><h2 id="Surround-where-arguments-with-curly-brackets-1"><a class="docs-heading-anchor" href="#Surround-where-arguments-with-curly-brackets-1">Surround <code>where</code> arguments with curly brackets</a><a class="docs-heading-anchor-permalink" href="#Surround-where-arguments-with-curly-brackets-1" title="Permalink"></a></h2><p>If the arguments of a <code>where</code> call are not surrounded by curly brackets, they are added:</p><pre><code class="language-julia">foo(x::T) where T = ...
 
 -&gt;
 
@@ -38,4 +42,4 @@ end</code></pre><h2 id="Move-@-in-macro-calls-to-the-final-identifier-1"><a clas
 
 -&gt;
 
-Module.@macro</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../skipping_formatting/">« Skipping Formatting</a><a class="docs-footer-nextpage" href="../custom_styles/">Custom Styles »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 3 September 2020 18:02">Thursday 3 September 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Module.@macro</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../skipping_formatting/">« Skipping Formatting</a><a class="docs-footer-nextpage" href="../custom_styles/">Custom Styles »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 7 September 2020 16:14">Monday 7 September 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
