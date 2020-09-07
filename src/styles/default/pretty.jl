@@ -366,12 +366,28 @@ end
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst.kind)
         val = cst.val
-        if cst.kind === Tokens.FLOAT && cst.val[end] == '.'
-            # If a floating point ends in `.`, add trailing zero.
-            val *= '0'
-        elseif cst.kind === Tokens.FLOAT && cst.val[1] == '.'
-            val = '0' * val
+
+        if cst.kind === Tokens.FLOAT && endswith(cst.val, "f0")
+            # Float32
+            val = val[1:end-2]
+            dotidx = findlast(c -> c == '.', val)
+            if dotidx === nothing
+                val *= ".0"
+            elseif dotidx == length(val)
+                val *= '0'
+            elseif dotidx == 1
+                val = '0' * val
+            end
+            val *= "f0"
+        elseif cst.kind === Tokens.FLOAT
+            if endswith(cst.val, ".")
+                # If a floating point ends in `.`, add trailing zero.
+                val *= '0'
+            elseif startswith(cst.val, ".")
+                val = '0' * val
+            end
         end
+
         s.offset += cst.fullspan
         return FST(cst, loc[1], loc[1], val)
     end

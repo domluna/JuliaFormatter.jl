@@ -63,6 +63,16 @@ a = .1
 a = 0.1
 ```
 
+For `Float32` if there is no decimal point, `.0` is added:
+
+```julia
+a = 1f0
+
+->
+
+a = 1.0f0
+```
+
 See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/66) for more details.
 
 ## Surround `where` arguments with curly brackets
