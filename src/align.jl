@@ -1,65 +1,29 @@
-# Alignment is determined by a whitespace heuristic. Since the formatter
-# separates operators by either 0 and 1 whitespaces if there there are
-# aligned nodes and one of the nodes has >= 2 whitespaces before the aligned
-# operator then alignment will occur.
-#
-# Suppose the source text is as follows
-#
-# ```julia
-# const variable1 = 1
-# const var2      = 2
-# const var3 = 3
-# const var4 = 4
-# ```
-#
-# If aligning `const`s is enabled the formatter will detect that `var2`
-# and `variable1` are aligned AND `var2` has several whitespaces prior to
-# `=`. Since `var3` and `var4` are part of the same code block (no comments
-# newlines separating code they will be aligned to `=`.
-#
-# So the output would be
-#
-# ```julia
-# const variable1 = 1
-# const var2      = 2
-# const var3      = 3
-# const var4      = 4
-# ```
-#
-# However if the source code is
-#
-# ```julia
-# const variable1 = 1
-# const variable2 = 2
-# const var3 = 3
-# const var4 = 4
-# ```
-#
-# It's now ambigious whether this is meant to be aligned and no nothing will
-# occur.
-#
 
 function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
-    nconsts = 0
-    for n in fst.nodes
+    const_idxs = Int[]
+    assignment_idxs = Int[]
+
+    for (i, n) in enumerate(fst.nodes)
         if is_leaf(n)
             continue
-        elseif n.typ === CSTParser.Const
-            nconsts += 1
         elseif opts.align_struct_field &&
                (n.typ === CSTParser.Struct || n.typ === CSTParser.Mutable)
             align_struct!(n)
-            # elseif n.typ === CSTParser.FileH
-            # align_short_function!(n)
         elseif opts.align_conditional && n.typ === CSTParser.ConditionalOpCall
-            align_conditionalopcall!(n)
+            align_conditional!(n)
         else
             align_fst!(n, opts)
         end
+
+        if is_assignment(n)
+            push!(assignment_idxs, i)
+        end
     end
 
-    opts.align_const && nconsts > 0 && align_consts!(fst)
+    if opts.align_assignment
+        align_assignments!(fst, assignment_idxs)
+    end
 end
 
 struct AlignGroup
@@ -73,7 +37,6 @@ function align_to(g::AlignGroup)::Union{Nothing,Int}
     max_len, max_idx = findmax(g.lens)
     max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets)
     length(max_idxs) > 1 || return nothing
-    # @info "" max_len max_idxs
 
     # is there custom whitespace?
     for i in max_idxs
@@ -186,37 +149,34 @@ function align_struct!(fst::FST)
     end
 end
 
-"""
-    align_const!(fst::FST) 
-
-_Assumes `fst` has nodes of type `CSTParser.Const`._
-"""
-function align_consts!(fst::FST)
-    fidx = findfirst(n -> n.typ === CSTParser.Const, fst.nodes)
-    lidx = findlast(n -> n.typ === CSTParser.Const, fst.nodes)
-
+function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
+    length(assignment_idxs) > 1 || return
     groups = AlignGroup[]
     src_line_offsets = Int[]
     idxs = Int[]
     lens = Int[]
-    prev_endline = fst[fidx].endline
+    prev_endline = fst[assignment_idxs[1]].endline
 
-    for (i, n) in enumerate(fst.nodes[fidx:lidx])
-        if n.typ === CSTParser.Const && n[3].typ === CSTParser.BinaryOpCall
-            if n.startline - prev_endline > 1
-                if length(lens) > 1
-                    push!(groups, AlignGroup(lens, src_line_offsets, idxs))
-                end
-                idxs = Int[]
-                src_line_offsets = Int[]
-                lens = Int[]
+    for i in assignment_idxs
+        n = fst[i]
+        if n.startline - prev_endline > 1
+            if length(lens) > 1
+                push!(groups, AlignGroup(lens, src_line_offsets, idxs))
             end
-            push!(idxs, fidx + i - 1)
-            push!(src_line_offsets, n.line_offset)
-            push!(lens, length(n[3][1]))
-
-            prev_endline = n.endline
+            idxs = Int[]
+            src_line_offsets = Int[]
+            lens = Int[]
         end
+        push!(idxs, i)
+        push!(src_line_offsets, n.line_offset)
+
+        if n.typ === CSTParser.BinaryOpCall
+            push!(lens, length(n[1]))
+        else
+            push!(lens, length(n[3][1]))
+        end
+
+        prev_endline = n.endline
     end
     if length(lens) > 1
         push!(groups, AlignGroup(lens, src_line_offsets, idxs))
@@ -228,7 +188,12 @@ function align_consts!(fst::FST)
 
         for (i, idx) in enumerate(g.node_idxs)
             diff = align_len - g.lens[i] + 1
-            align_binaryopcall!(fst[idx][3], diff)
+
+            if fst[idx].typ === CSTParser.BinaryOpCall
+                align_binaryopcall!(fst[idx], diff)
+            else
+                align_binaryopcall!(fst[idx][3], diff)
+            end
             fst[idx].nest_behavior = NeverNest
         end
     end
@@ -238,7 +203,7 @@ end
 
 """
 """
-function align_conditionalopcall!(fst::FST)
+function align_conditional!(fst::FST)
     nodes = flatten_conditionalopcall(fst)
     cond_src_line_offsets = Int[]
     cond_idxs = Int[]

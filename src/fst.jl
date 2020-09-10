@@ -537,6 +537,22 @@ function is_gen(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
+function is_assignment(x::Union{CSTParser.EXPR,FST})
+    if x.typ === CSTParser.BinaryOpCall && is_assignment(op_kind(x))
+        return true
+    end
+    if (x.typ === CSTParser.Const ||
+    x.typ === CSTParser.Local  ||
+    x.typ === CSTParser.Global ||
+    x.typ === CSTParser.Outer
+       ) && is_assignment(x[3])
+        return true
+    end
+    return false
+end
+is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == 1
+is_assignment(::Nothing) = false
+
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
     cst.typ === CSTParser.Do && return true

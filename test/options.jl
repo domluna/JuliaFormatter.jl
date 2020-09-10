@@ -854,14 +854,14 @@
         const var2      = 2
         const var3      = 3
         const var4      = 4"""
-        @test fmt(str_, align_const = true) == str
+        @test fmt(str_, align_assignment = true) == str
 
         str = """
         const variable1 = 1
         const variable2 = 2
         const var3 = 3
         const var4 = 4"""
-        @test fmt(str, align_const = true) == str
+        @test fmt(str, align_assignment = true) == str
 
         str_ = """
         module Foo
@@ -908,8 +908,8 @@
         const FOO = 1
 
         end"""
-        # @test fmt(str_, align_consts = false) == str
-        @test fmt(str_, align_const = true) == str
+        # @test fmt(str_, align_assignment = false) == str
+        @test fmt(str_, align_assignment = true) == str
 
         # the aligned consts will NOT be nestable
         str = """
@@ -936,7 +936,24 @@
             1
 
         end"""
-        @test fmt(str_, 4, 1, align_const = true) == str
+        @test fmt(str_, 4, 1, align_assignment = true) == str
+
+        str = """
+        a  = 1
+        bc = 2
+
+        long_variable = 1
+        other_var     = 2
+        """
+        @test fmt(str, 4, 1, align_assignment = true) == str
+
+        str = """
+        vcat(X::T...) where {T}         = T[X[i] for i = 1:length(X)]
+        vcat(X::T...) where {T<:Number} = T[X[i] for i = 1:length(X)]
+        hcat(X::T...) where {T}         = T[X[j] for i = 1:1, j = 1:length(X)]
+        hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
+        """
+        @test fmt(str, 4, 1, align_assignment = true) == str
     end
 
     @testset "align conditionals" begin

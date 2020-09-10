@@ -250,8 +250,7 @@ function format_text(
     format_docstrings::Bool = false,
     align_struct_field::Bool = false,
     align_conditional::Bool = false,
-    align_const::Bool = false,
-    align_short_function_def::Bool = false,
+    align_assignment::Bool = false,
 )
     isempty(text) && return text
     opts = Options(
@@ -270,8 +269,7 @@ function format_text(
         format_docstrings = format_docstrings,
         align_struct_field = align_struct_field,
         align_conditional = align_conditional,
-        align_const = align_const,
-        align_short_function_def = align_short_function_def,
+        align_assignment = align_assignment,
     )
     return format_text(text, style, opts)
 end
@@ -291,7 +289,11 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
+
+    if s.opts.align_struct_field || s.opts.align_conditional || s.opts.align_assignment
     align_fst!(t, s.opts)
+    end
+
     nest!(style, t, s)
 
     s.line_offset = 0
