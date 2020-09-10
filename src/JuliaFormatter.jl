@@ -291,7 +291,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     flatten_fst!(t)
 
     if s.opts.align_struct_field || s.opts.align_conditional || s.opts.align_assignment
-    align_fst!(t, s.opts)
+        align_fst!(t, s.opts)
     end
 
     nest!(style, t, s)

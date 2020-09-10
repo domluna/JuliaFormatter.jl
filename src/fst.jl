@@ -541,11 +541,12 @@ function is_assignment(x::Union{CSTParser.EXPR,FST})
     if x.typ === CSTParser.BinaryOpCall && is_assignment(op_kind(x))
         return true
     end
-    if (x.typ === CSTParser.Const ||
-    x.typ === CSTParser.Local  ||
-    x.typ === CSTParser.Global ||
-    x.typ === CSTParser.Outer
-       ) && is_assignment(x[3])
+    if (
+        x.typ === CSTParser.Const ||
+        x.typ === CSTParser.Local ||
+        x.typ === CSTParser.Global ||
+        x.typ === CSTParser.Outer
+    ) && is_assignment(x[3])
         return true
     end
     return false
