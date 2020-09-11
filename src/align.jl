@@ -236,16 +236,21 @@ function align_conditional!(fst::FST)
 
     cond_group = AlignGroup(cond_lens, cond_src_line_offsets, cond_idxs)
     colon_group = AlignGroup(colon_lens, colon_src_line_offsets, colon_idxs)
+    # @info "" cond_group colon_group
 
-    len = align_to(cond_group)
-    if len !== nothing
+    cond_len = align_to(cond_group)
+    colon_len = align_to(colon_group)
+    if cond_len === nothing && colon_len === nothing
+        return
+    end
+
+    if cond_len !== nothing
         for (i, idx) in enumerate(cond_group.node_idxs)
-            diff = len - cond_group.lens[i] + 1
+            diff = cond_len - cond_group.lens[i] + 1
             nodes[idx-1] = Whitespace(diff)
         end
     end
 
-    len = align_to(colon_group)
     for (i, idx) in enumerate(colon_group.node_idxs)
         # the placeholder would be i+1 if not for a possible inline comment
         nidx = findnext(n -> n.typ === PLACEHOLDER, nodes, idx + 1)
@@ -253,8 +258,8 @@ function align_conditional!(fst::FST)
             nodes[nidx] = Newline(nest_behavior = AlwaysNest)
         end
 
-        if len !== nothing
-            diff = len - colon_group.lens[i] + 1
+        if colon_len !== nothing
+            diff = colon_len - colon_group.lens[i] + 1
             nodes[idx-1] = Whitespace(diff)
         end
     end
