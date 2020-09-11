@@ -19,7 +19,7 @@
     MacroBlock,
 )
 
-@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest)
+@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
 
 """
 Formatted Syntax Tree
@@ -350,13 +350,15 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.startline = n.startline
         t.endline = n.endline
         t.len += length(n)
+        t.line_offset = n.line_offset
         push!(t.nodes, n)
+        # @info "" t.typ n.typ t.line_offset n.line_offset n.val
         return
     end
 
-    if t.line_offset <= 0
-        t.line_offset = n.line_offset
-    end
+    # if t.line_offset <= 0
+    #     t.line_offset = n.line_offset
+    # end
 
     if !is_prev_newline(t.nodes[end])
         current_line = t.endline
