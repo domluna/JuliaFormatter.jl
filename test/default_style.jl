@@ -164,6 +164,7 @@
         @test fmt("10.0 .^ a") == "10.0 .^ a"
         @test fmt("a.^b") == "a .^ b"
         @test fmt("a.^10.") == "a .^ 10.0"
+        @test fmt("a.//10") == "a .// 10"
     end
 
     @testset "toplevel" begin
@@ -375,6 +376,9 @@
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
+
+        # `//` and `^` are binary ops without whitespace around them
+        @test fmt("1 // 2 + 3 ^ 4") == "1//2 + 3^4"
 
         # Function def
 
