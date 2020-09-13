@@ -96,8 +96,6 @@ function dedent!(fst::FST, s::State)
         return
     elseif fst.typ === CSTParser.StringH
         return
-    elseif fst.typ === CSTParser.ConditionalOpCall && !cant_nest(fst)
-        return
     end
 
     # dedent
@@ -656,11 +654,13 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 end
                 if width <= s.opts.max_margin
                     fst[i] = Whitespace(1)
+                    s.line_offset += length(fst[i])
                 else
                     s.line_offset = fst.indent
                 end
+            else
+                s.line_offset += length(fst[i])
             end
-            s.line_offset += length(fst[i])
         end
 
         s.line_offset = line_offset
@@ -672,7 +672,15 @@ end
 n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_conditionalopcall!(DefaultStyle(style), fst, s)
 
-no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
+function no_unnest(fst::FST) 
+    if fst.typ === CSTParser.BinaryOpCall ||
+        fst.typ === CSTParser.ConditionalOpCall  ||
+               fst.typ === CSTParser.ChainOpCall ||
+               fst.typ === CSTParser.Comparison
+        return contains_comment(fst)
+    end
+    return false
+end
 
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -681,6 +689,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
+
     if length(idxs) == 2 &&
        (line_margin > s.opts.max_margin || must_nest(fst) || must_nest(rhs))
         line_offset = s.line_offset
@@ -699,6 +708,11 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent_size
             fst[i2] = Whitespace(s.opts.indent_size)
+
+            # reset the indent of the RHS
+            if fst[end].indent > fst.indent
+                fst[end].indent = fst.indent
+            end
             add_indent!(fst[end], s, s.opts.indent_size)
         else
             fst.indent = s.line_offset
@@ -726,7 +740,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             if (rhs.typ === CSTParser.BinaryOpCall && cst[2].kind !== Tokens.IN) ||
                rhs.typ === CSTParser.UnaryOpCall ||
                rhs.typ === CSTParser.ChainOpCall ||
-               rhs.typ === CSTParser.Comparison
+               rhs.typ === CSTParser.Comparison ||
+               rhs.typ === CSTParser.ConditionalOpCall
                 line_margin += length(fst[end])
             elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
