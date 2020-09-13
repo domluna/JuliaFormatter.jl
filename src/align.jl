@@ -131,7 +131,7 @@ function align_struct!(fst::FST)
     for (i, n) in enumerate(block_fst.nodes)
         if n.typ === CSTParser.BinaryOpCall
             if n.startline - prev_endline > 1
-                    push!(groups, g)
+                push!(groups, g)
                 g = AlignGroup()
             end
 
@@ -139,7 +139,7 @@ function align_struct!(fst::FST)
             idx = findfirst(x -> x.typ === CSTParser.OPERATOR, n.nodes)
             ws = n[idx].line_offset - (n.line_offset + nlen)
 
-        # @info "" ws nlen n[idx].line_offset n.line_offset
+            # @info "" ws nlen n[idx].line_offset n.line_offset
             push!(g, i, n[idx].line_offset, nlen, ws)
 
             prev_endline = n.endline
@@ -169,11 +169,11 @@ function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
     for i in assignment_idxs
         n = fst[i]
         if n.startline - prev_endline > 1
-                push!(groups, g)
+            push!(groups, g)
             g = AlignGroup()
         end
 
-        binop = n.typ === CSTParser.BinaryOpCall ?  n : n[3]
+        binop = n.typ === CSTParser.BinaryOpCall ? n : n[3]
         nlen = length(binop[1])
 
         ws = binop[3].line_offset - (binop.line_offset + nlen)

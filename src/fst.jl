@@ -252,7 +252,8 @@ end
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
-        loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
+        loc =
+            s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
             cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)

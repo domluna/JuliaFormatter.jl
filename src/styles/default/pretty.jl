@@ -178,7 +178,8 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 @inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+    val =
+        cst.kind === Tokens.ABSTRACT ? "abstract" :
         cst.kind === Tokens.BAREMODULE ? "baremodule" :
         cst.kind === Tokens.BEGIN ? "begin" :
         cst.kind === Tokens.BREAK ? "break" :
@@ -218,7 +219,8 @@ p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 @inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val = cst.kind === Tokens.LPAREN ? "(" :
+    val =
+        cst.kind === Tokens.LPAREN ? "(" :
         cst.kind === Tokens.LBRACE ? "{" :
         cst.kind === Tokens.LSQUARE ? "[" :
         cst.kind === Tokens.RPAREN ? ")" :
@@ -631,7 +633,8 @@ function p_block(
 )
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    single_line = ignore_single_line ? false :
+    single_line =
+        ignore_single_line ? false :
         cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]
 
     for (i, a) in enumerate(cst)

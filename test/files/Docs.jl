@@ -557,7 +557,8 @@ function docm(source::LineNumberNode, mod::Module, meta, ex, define::Bool = true
     #   "..."
     #   kw"if", kw"else"
     #
-    doc = isa(x, Base.BaseDocs.Keyword) ? keyworddoc(source, mod, meta, x) :
+    doc =
+        isa(x, Base.BaseDocs.Keyword) ? keyworddoc(source, mod, meta, x) :
 
         # Method / macro definitions and "call" syntax.
         #

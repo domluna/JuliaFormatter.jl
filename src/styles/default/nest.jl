@@ -672,11 +672,11 @@ end
 n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_conditionalopcall!(DefaultStyle(style), fst, s)
 
-function no_unnest(fst::FST) 
+function no_unnest(fst::FST)
     if fst.typ === CSTParser.BinaryOpCall ||
-        fst.typ === CSTParser.ConditionalOpCall  ||
-               fst.typ === CSTParser.ChainOpCall ||
-               fst.typ === CSTParser.Comparison
+       fst.typ === CSTParser.ConditionalOpCall ||
+       fst.typ === CSTParser.ChainOpCall ||
+       fst.typ === CSTParser.Comparison
         return contains_comment(fst)
     end
     return false

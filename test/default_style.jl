@@ -584,7 +584,7 @@
         str = """
         a, b =
             cond ? e1 : e2"""
-        @test fmt(str_, 4, length(str_)- 1) == str
+        @test fmt(str_, 4, length(str_) - 1) == str
         @test fmt(str_, 4, 18) == str
 
         str = """

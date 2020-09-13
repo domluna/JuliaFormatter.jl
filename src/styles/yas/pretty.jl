@@ -240,7 +240,8 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
 
     for (i, a) in enumerate(cst.args[3:end])
-        n = a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
+        n =
+            a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
             pretty(ys, a, s)
 
         if CSTParser.is_comma(a) && i + 2 == length(cst) - 1
