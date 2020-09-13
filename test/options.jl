@@ -1,4 +1,4 @@
-@testset "Format Options" begin
+@testset "Formatting Options" begin
     @testset "whitespace in typedefs" begin
         str_ = "Foo{A,B,C}"
         str = "Foo{A, B, C}"
