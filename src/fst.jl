@@ -554,7 +554,7 @@ function is_assignment(x::Union{CSTParser.EXPR,FST})
     end
     return false
 end
-is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == 1
+is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
 
 function nest_block(cst::CSTParser.EXPR)
@@ -576,7 +576,7 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-nest_assignment(cst::CSTParser.EXPR) = CSTParser.precedence(cst[2].kind) == 1
+nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
 
 function unnestable_arg(cst::CSTParser.EXPR)
     is_iterable(cst) && return true
