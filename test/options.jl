@@ -1041,5 +1041,31 @@
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
 
+        str_ = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+            cst.kind === Tokens.BAREMODULE ? "baremodule" : ""
+        """
+        str = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" : cst.kind === Tokens.BAREMODULE ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 100, align_conditional = true) == str
+
+        str_ = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+            cst.kind === Tokens.BAREMODUL  ? "baremodule" : ""
+        """
+        str = """
+        val = cst.kind === Tokens.ABSTRACT  ? "abstract" :
+              cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 100, align_conditional = true) == str
+
+        str = """
+        val =
+            cst.kind === Tokens.ABSTRACT  ? "abstract" :
+            cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
     end
 end

@@ -580,16 +580,33 @@
         @test fmt(str_, 2, 1) == str
 
         str_ = """a, b = cond ? e1 : e2"""
+
         str = """
-        a, b = cond ?
-            e1 : e2"""
-        @test fmt(str_, 4, 13) == str
+        a, b =
+            cond ? e1 : e2"""
+        @test fmt(str_, 4, length(str_)- 1) == str
+        @test fmt(str_, 4, 18) == str
+
+        str = """
+        a, b =
+            cond ? e1 :
+            e2"""
+        @test fmt(str_, 4, 17) == str
+        @test fmt(str_, 4, 15) == str
 
         str = """
         a, b =
             cond ?
             e1 : e2"""
-        @test fmt(str_, 4, 12) == str
+        @test fmt(str_, 4, 14) == str
+        @test fmt(str_, 4, 11) == str
+
+        str = """
+        a, b =
+            cond ?
+            e1 :
+            e2"""
+        @test fmt(str_, 4, 10) == str
 
         str = """
         begin
@@ -623,10 +640,12 @@
 
         str = """
         begin
-            variable_name = conditional ?
+            variable_name =
+                conditional ?
                 expression1 : expression2
         end"""
         @test fmt(str, 4, 34) == str
+        @test fmt(str, 4, 33) == str
 
         str = """
         begin
@@ -1694,35 +1713,44 @@
         C"""
         @test fmt(str) == str
 
-        str = """
-        foo() = A ?
-            # comment 1
-
-            B : C"""
-        @test fmt(str) == str
         str_ = """
-        foo() =
-           A ?
-           # comment 1
-
-           B :
-           C"""
-        @test fmt(str, 3, 1) == str_
-
-        str = """
         foo = A ?
             # comment 1
 
             B : C"""
-        @test fmt(str) == str
-        str_ = """
+
+        str = """
+        foo =
+            A ?
+            # comment 1
+
+            B : C"""
+        @test fmt(str_) == str
+
+        str = """
         foo =
            A ?
            # comment 1
 
            B :
            C"""
-        @test fmt(str, 3, 1) == str_
+        @test fmt(str_, 3, 1) == str
+
+        str_ = """
+        foo = A +
+            # comment 1
+
+            B + C"""
+
+        str = """
+        foo =
+           A +
+           # comment 1
+
+           B +
+           C"""
+        @test fmt(str_, 3, 100) == str
+        @test fmt(str_, 3, 1) == str
 
         str = """
         begin

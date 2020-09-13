@@ -26,23 +26,36 @@ function align_fst!(fst::FST, opts::Options)
     end
 end
 
+"""
+Aligns nodes of an FST (`node_idxs`) to the maximum `op_line_offsets`
+"""
 struct AlignGroup
-    lens::Vector{Int}
-    line_offsets::Vector{Int}
     node_idxs::Vector{Int}
+    src_line_offsets::Vector{Int}
+    lens::Vector{Int}
+    whitespaces::Vector{Int}
+end
+AlignGroup() = AlignGroup(Int[], Int[], Int[], Int[])
+
+function Base.push!(g::AlignGroup, idx::Int, src_line_offset::Int, len::Int, ws::Int)
+    push!(g.node_idxs, idx)
+    push!(g.src_line_offsets, src_line_offset)
+    push!(g.lens, len)
+    push!(g.whitespaces, ws)
+    return
 end
 
 function align_to(g::AlignGroup)::Union{Nothing,Int}
     # determine whether alignment might be warranted
     max_len, max_idx = findmax(g.lens)
-    max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets)
+    max_idxs = findall(==(g.src_line_offsets[max_idx]), g.src_line_offsets)
     length(max_idxs) > 1 || return nothing
+
+    # @info "" max_idxs max_len max_idx g.src_line_offsets[max_idx]
 
     # is there custom whitespace?
     for i in max_idxs
-        if max_len - g.lens[i] + 1 > 1
-            return max_len
-        end
+        g.whitespaces[i] > 1 && return max_len
     end
 
     return nothing
@@ -111,31 +124,29 @@ function align_struct!(fst::FST)
     length(fst[idx]) == 0 && return
 
     block_fst = fst[idx]
-    groups = AlignGroup[]
-    src_line_offsets = Int[]
-    idxs = Int[]
-    lens = Int[]
     prev_endline = block_fst[1].endline
+    groups = AlignGroup[]
+    g = AlignGroup()
 
     for (i, n) in enumerate(block_fst.nodes)
         if n.typ === CSTParser.BinaryOpCall
             if n.startline - prev_endline > 1
-                if length(lens) > 1
-                    push!(groups, AlignGroup(lens, src_line_offsets, idxs))
-                end
-                idxs = Int[]
-                src_line_offsets = Int[]
-                lens = Int[]
+                    push!(groups, g)
+                g = AlignGroup()
             end
-            push!(idxs, i)
-            push!(src_line_offsets, n.line_offset)
-            push!(lens, length(n[1]))
+
+            nlen = length(n[1])
+            idx = findfirst(x -> x.typ === CSTParser.OPERATOR, n.nodes)
+            ws = n[idx].line_offset - (n.line_offset + nlen)
+
+        # @info "" ws nlen n[idx].line_offset n.line_offset
+            push!(g, i, n[idx].line_offset, nlen, ws)
 
             prev_endline = n.endline
         end
     end
-    if length(lens) > 1
-        push!(groups, AlignGroup(lens, src_line_offsets, idxs))
+    if length(g.lens) > 1
+        push!(groups, g)
     end
 
     for g in groups
@@ -151,35 +162,28 @@ end
 
 function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
     length(assignment_idxs) > 1 || return
-    groups = AlignGroup[]
-    src_line_offsets = Int[]
-    idxs = Int[]
-    lens = Int[]
     prev_endline = fst[assignment_idxs[1]].endline
+    groups = AlignGroup[]
+    g = AlignGroup()
 
     for i in assignment_idxs
         n = fst[i]
         if n.startline - prev_endline > 1
-            if length(lens) > 1
-                push!(groups, AlignGroup(lens, src_line_offsets, idxs))
-            end
-            idxs = Int[]
-            src_line_offsets = Int[]
-            lens = Int[]
+                push!(groups, g)
+            g = AlignGroup()
         end
-        push!(idxs, i)
-        push!(src_line_offsets, n.line_offset)
 
-        if n.typ === CSTParser.BinaryOpCall
-            push!(lens, length(n[1]))
-        else
-            push!(lens, length(n[3][1]))
-        end
+        binop = n.typ === CSTParser.BinaryOpCall ?  n : n[3]
+        nlen = length(binop[1])
+
+        ws = binop[3].line_offset - (binop.line_offset + nlen)
+        # @info "" ws nlen binop[3].line_offset binop.line_offset
+        push!(g, i, binop[3].line_offset, nlen, ws)
 
         prev_endline = n.endline
     end
-    if length(lens) > 1
-        push!(groups, AlignGroup(lens, src_line_offsets, idxs))
+    if length(g.lens) > 1
+        push!(groups, g)
     end
 
     for g in groups
@@ -205,44 +209,38 @@ end
 """
 function align_conditional!(fst::FST)
     nodes = flatten_conditionalopcall(fst)
-    cond_src_line_offsets = Int[]
-    cond_idxs = Int[]
-    cond_lens = Int[]
+
+    cond_group = AlignGroup()
     cond_prev_endline = 0
 
-    colon_src_line_offsets = Int[]
-    colon_idxs = Int[]
-    colon_lens = Int[]
+    colon_group = AlignGroup()
     colon_prev_endline = 0
 
     for (i, n) in enumerate(nodes)
         if n.typ === CSTParser.OPERATOR && n.val == "?"
             if cond_prev_endline != n.endline
-                push!(cond_idxs, i)
-                push!(cond_src_line_offsets, n.line_offset)
-                push!(cond_lens, length(nodes[i-2]))
+                nlen = length(nodes[i-2])
+                ws = n.line_offset - (nodes[i-2].line_offset + nlen)
+                push!(cond_group, i, n.line_offset, nlen, ws)
             end
             cond_prev_endline = n.endline
         elseif n.typ === CSTParser.OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
-                push!(colon_idxs, i)
-                push!(colon_src_line_offsets, n.line_offset)
-                push!(colon_lens, length(nodes[i-2]))
+                nlen = length(nodes[i-2])
+                ws = n.line_offset - (nodes[i-2].line_offset + nlen)
+                push!(colon_group, i, n.line_offset, nlen, ws)
             end
             colon_prev_endline = n.endline
         end
     end
-    length(cond_idxs) > 1 || return
-
-    cond_group = AlignGroup(cond_lens, cond_src_line_offsets, cond_idxs)
-    colon_group = AlignGroup(colon_lens, colon_src_line_offsets, colon_idxs)
-    # @info "" cond_group colon_group
+    length(cond_group.lens) > 1 || return
 
     cond_len = align_to(cond_group)
     colon_len = align_to(colon_group)
-    if cond_len === nothing && colon_len === nothing
-        return
-    end
+
+    # @info "" cond_group colon_group cond_len colon_len
+
+    cond_len === nothing && colon_len === nothing && return
 
     if cond_len !== nothing
         for (i, idx) in enumerate(cond_group.node_idxs)
@@ -266,5 +264,8 @@ function align_conditional!(fst::FST)
 
     fst.nodes = nodes
     fst.nest_behavior = NeverNest
+    fst.indent = fst.line_offset - 1
+    # @info "" fst.indent fst.nest_behavior
+
     return
 end
