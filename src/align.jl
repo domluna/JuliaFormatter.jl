@@ -51,8 +51,6 @@ function align_to(g::AlignGroup)::Union{Nothing,Int}
     max_idxs = findall(==(g.src_line_offsets[max_idx]), g.src_line_offsets)
     length(max_idxs) > 1 || return nothing
 
-    # @info "" max_idxs max_len max_idx g.src_line_offsets[max_idx]
-
     # is there custom whitespace?
     for i in max_idxs
         g.whitespaces[i] > 1 && return max_len
@@ -139,15 +137,11 @@ function align_struct!(fst::FST)
             idx = findfirst(x -> x.typ === CSTParser.OPERATOR, n.nodes)
             ws = n[idx].line_offset - (n.line_offset + nlen)
 
-            # @info "" ws nlen n[idx].line_offset n.line_offset
             push!(g, i, n[idx].line_offset, nlen, ws)
-
             prev_endline = n.endline
         end
     end
-    if length(g.lens) > 1
-        push!(groups, g)
-    end
+    push!(groups, g)
 
     for g in groups
         align_len = align_to(g)
@@ -177,14 +171,11 @@ function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
         nlen = length(binop[1])
 
         ws = binop[3].line_offset - (binop.line_offset + nlen)
-        # @info "" ws nlen binop[3].line_offset binop.line_offset
         push!(g, i, binop[3].line_offset, nlen, ws)
 
         prev_endline = n.endline
     end
-    if length(g.lens) > 1
-        push!(groups, g)
-    end
+    push!(groups, g)
 
     for g in groups
         align_len = align_to(g)
@@ -238,8 +229,6 @@ function align_conditional!(fst::FST)
     cond_len = align_to(cond_group)
     colon_len = align_to(colon_group)
 
-    # @info "" cond_group colon_group cond_len colon_len
-
     cond_len === nothing && colon_len === nothing && return
 
     if cond_len !== nothing
@@ -265,7 +254,6 @@ function align_conditional!(fst::FST)
     fst.nodes = nodes
     fst.nest_behavior = NeverNest
     fst.indent = fst.line_offset - 1
-    # @info "" fst.indent fst.nest_behavior
 
     return
 end
