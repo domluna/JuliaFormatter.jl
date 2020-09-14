@@ -954,6 +954,16 @@
         hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
         """
         @test fmt(str, 4, 1, align_assignment = true) == str
+
+        # Unicode symbols count as extra characters in Tokenize.jl
+        # which leads to misinterpretation of the operator line offset,
+        # so this will be aligned when it shouldn't.
+        str = """
+        μs, ns = divrem(ns, 1000)
+        ms, μs = divrem(μs, 1000)
+        s, ms = divrem(ms, 1000)
+        """
+        @test_broken fmt(str, 4, 100, align_assignment = true) == str
     end
 
     @testset "align conditionals" begin
