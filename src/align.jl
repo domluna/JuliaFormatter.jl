@@ -3,6 +3,7 @@ function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
     const_idxs = Int[]
     assignment_idxs = Int[]
+    pair_arrow_idxs = Int[]
 
     for (i, n) in enumerate(fst.nodes)
         if is_leaf(n)
@@ -21,10 +22,18 @@ function align_fst!(fst::FST, opts::Options)
         if is_assignment(n)
             push!(assignment_idxs, i)
         end
+
+        if n.typ === CSTParser.BinaryOpCall && n[3].val == "=>"
+            push!(pair_arrow_idxs, i)
+        end 
     end
 
     if opts.align_assignment
-        align_assignments!(fst, assignment_idxs)
+        align_binaryopcalls!(fst, assignment_idxs)
+    end
+
+    if opts.align_pair_arrow
+        align_binaryopcalls!(fst, pair_arrow_idxs)
     end
 end
 
@@ -93,42 +102,6 @@ end
     align_struct!(fst::FST)
 
 Aligns struct fields.
-
-### Example 1
-
-```julia
-struct Foo
-    a::T
-    longfieldname::B
-end
-```
-
-aligns into
-
-```julia
-struct Foo
-    a             :: T
-    longfieldname :: B
-end
-```
-
-### Example 2
-
-```julia
-Base.@kwdef struct Foo
-    a::T = 10
-    longfieldname::B = false
-end
-```
-
-aligns into
-
-```julia
-Base.@kwdef struct Foo
-    a::T             = 10
-    longfieldname::B = false
-end
-```
 """
 function align_struct!(fst::FST)
     idx = findfirst(n -> n.typ === CSTParser.Block, fst.nodes)
@@ -169,34 +142,20 @@ function align_struct!(fst::FST)
 end
 
 """
-    align_assignments!(fst::FST, assignment_idxs::Vector{Int})
+    align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
 
-Aligns assignment expressions.
+Aligns binary operator expressions.
 
-### Example
-
-```julia
-abc = 1
-d   = 2
-e = 3
-```
-
-aligns to
-
-```julia
-abc = 1
-d   = 2
-e   = 3
-```
-
+Additionally handles the case where a keyword such as `const` is used
+prior to the binary op call.
 """
-function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
-    length(assignment_idxs) > 1 || return
-    prev_endline = fst[assignment_idxs[1]].endline
+function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
+    length(op_idxs) > 1 || return
+    prev_endline = fst[op_idxs[1]].endline
     groups = AlignGroup[]
     g = AlignGroup()
 
-    for i in assignment_idxs
+    for i in op_idxs
         n = fst[i]
         if n.startline - prev_endline > 1
             push!(groups, g)

@@ -56,17 +56,38 @@ proceed with normal behavior.
 
 ## Alignment Options
 
+
 In order for alignment to occur the option must be set to `true`. Available options:
 
 - `align_assignment`
 - `align_struct_field`
 - `align_conditional`
+- `align_pair_arrow`
+
+> **Caveat: Since nesting is disabled when alignment occurs be careful when adding comments to the RHS expression. This will be fixed in a future release**
+
+For example:
+
+```julia
+const variable1 = 1
+const var2      = foo(10,
+    # comment,
+    20)
+```
+
+This will be formatted to
+
+```julia
+const variable1 = 1
+const var2      = foo(10, # comment, 20)
+```
+
+which causes a parsing error.
 
 ### `align_assignment`
 
 Align to `=`-like operators. This covers variable assignments and short definition functions.
 
-> **Caveat: since nesting is disabled when alignment occurs be careful when adding comments to the RHS expression.**
 
 ```julia
 const UTF8PROC_STABLE    = (1 << 1)
@@ -162,3 +183,23 @@ index =
     )
 
 ```
+
+### `align_assignment`
+
+Align pair arrows (`=>`).
+
+```julia
+pages = [
+    "Introduction"        => "index.md",
+    "How It Works"        => "how_it_works.md",
+    "Code Style"          => "style.md",
+    "Skipping Formatting" => "skipping_formatting.md",
+    "Syntax Transforms"   => "transforms.md",
+    "Custom Alignment"    => "custom_alignment.md",
+    "Custom Styles"       => "custom_styles.md",
+    "YAS Style"           => "yas_style.md",
+    "Configuration File"  => "config.md",
+    "API Reference"       => "api.md",
+]
+```
+

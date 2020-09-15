@@ -255,6 +255,7 @@ function format_text(
     align_struct_field::Bool = false,
     align_conditional::Bool = false,
     align_assignment::Bool = false,
+    align_pair_arrow::Bool = false,
 )
     isempty(text) && return text
     opts = Options(
@@ -274,6 +275,7 @@ function format_text(
         align_struct_field = align_struct_field,
         align_conditional = align_conditional,
         align_assignment = align_assignment,
+        align_pair_arrow = align_pair_arrow,
     )
     return format_text(text, style, opts)
 end
@@ -294,7 +296,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     flatten_fst!(t)
 
-    if s.opts.align_struct_field || s.opts.align_conditional || s.opts.align_assignment
+    if s.opts.align_struct_field || s.opts.align_conditional || s.opts.align_assignment || s.opts.align_pair_arrow
         align_fst!(t, s.opts)
     end
 

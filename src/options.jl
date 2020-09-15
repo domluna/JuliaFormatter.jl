@@ -15,4 +15,5 @@ Base.@kwdef struct Options
     align_struct_field::Bool = false
     align_assignment::Bool = false
     align_conditional::Bool = false
+    align_pair_arrow::Bool = false
 end
