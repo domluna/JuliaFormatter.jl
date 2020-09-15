@@ -139,7 +139,7 @@ end
 Align conditional expressions to either `?`, `:`, or both.
 
 ```julia
-# This will remain like if using YASStyle
+# This will remain like this if using YASStyle
 index = zeros(n <= typemax(Int8)  ? Int8  :
               n <= typemax(Int16) ? Int16 :
               n <= typemax(Int32) ? Int32 : Int64, n)
@@ -153,7 +153,6 @@ index = zeros(
 )
 
 # Note even if the maximum margin is set to 1, the alignment remains intact
-
 index = 
     zeros(
         n <= typemax(Int8)  ? Int8  :
