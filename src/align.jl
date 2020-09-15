@@ -16,6 +16,8 @@ function align_fst!(fst::FST, opts::Options)
             align_fst!(n, opts)
         end
 
+        # gather all assignments within the current code block
+        # they will be aligned at the end
         if is_assignment(n)
             push!(assignment_idxs, i)
         end
@@ -27,19 +29,29 @@ function align_fst!(fst::FST, opts::Options)
 end
 
 """
-Aligns nodes of an FST (`node_idxs`) to the maximum `op_line_offsets`
+Group of FST node indices and required metadata to potentially align them.
+
+- `node_idxs`. Indices of FST nodes affected by alignment.
+- `line_offsets`. Line offset of the character nodes may be aligned to
+in the source file.
+- `lens`. Length of the FST node prior to the alignment character. Used
+to calculate extra whitespace padding.
+- `whitespaces`. Number of whitespaces between the alignment character and
+the prior FST node. If this is > 1 it signifies additional whitespace was
+manually added by the user since the formatter would only use 0 or 1 whitespaces.
+
 """
 struct AlignGroup
     node_idxs::Vector{Int}
-    src_line_offsets::Vector{Int}
+    line_offsets::Vector{Int}
     lens::Vector{Int}
     whitespaces::Vector{Int}
 end
 AlignGroup() = AlignGroup(Int[], Int[], Int[], Int[])
 
-function Base.push!(g::AlignGroup, idx::Int, src_line_offset::Int, len::Int, ws::Int)
+function Base.push!(g::AlignGroup, idx::Int, line_offset::Int, len::Int, ws::Int)
     push!(g.node_idxs, idx)
-    push!(g.src_line_offsets, src_line_offset)
+    push!(g.line_offsets, line_offset)
     push!(g.lens, len)
     push!(g.whitespaces, ws)
     return
@@ -48,10 +60,12 @@ end
 function align_to(g::AlignGroup)::Union{Nothing,Int}
     # determine whether alignment might be warranted
     max_len, max_idx = findmax(g.lens)
-    max_idxs = findall(==(g.src_line_offsets[max_idx]), g.src_line_offsets)
+    max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets)
     length(max_idxs) > 1 || return nothing
 
-    # is there custom whitespace?
+    # Is there custom whitespace?
+    # Formatter would only add 0 or 1 whitespaces.
+    # > 2 implies a manual edit in the source file.
     for i in max_idxs
         g.whitespaces[i] > 1 && return max_len
     end
@@ -80,7 +94,7 @@ end
 
 Aligns struct fields.
 
-#### Example 1
+### Example 1
 
 ```julia
 struct Foo
@@ -98,7 +112,7 @@ struct Foo
 end
 ```
 
-#### Example 2
+### Example 2
 
 ```julia
 Base.@kwdef struct Foo
@@ -154,6 +168,28 @@ function align_struct!(fst::FST)
     end
 end
 
+"""
+    align_assignments!(fst::FST, assignment_idxs::Vector{Int})
+
+Aligns assignment expressions.
+
+### Example
+
+```julia
+abc = 1
+d   = 2
+e = 3
+```
+
+aligns to
+
+```julia
+abc = 1
+d   = 2
+e   = 3
+```
+
+"""
 function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
     length(assignment_idxs) > 1 || return
     prev_endline = fst[assignment_idxs[1]].endline
@@ -197,6 +233,9 @@ function align_assignments!(fst::FST, assignment_idxs::Vector{Int})
 end
 
 """
+    align_conditional!(fst::FST)
+
+Aligns a conditional expression.
 """
 function align_conditional!(fst::FST)
     nodes = flatten_conditionalopcall(fst)
