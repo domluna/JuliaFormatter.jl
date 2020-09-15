@@ -65,7 +65,7 @@ end
 mutable struct Foo
     a             :: T
     longfieldname :: T
-end</code></pre><h3 id="align_conditional-1"><a class="docs-heading-anchor" href="#align_conditional-1"><code>align_conditional</code></a><a class="docs-heading-anchor-permalink" href="#align_conditional-1" title="Permalink"></a></h3><p>Align conditional expressions to either <code>?</code>, <code>:</code>, or both.</p><pre><code class="language-julia"># This will remain like if using YASStyle
+end</code></pre><h3 id="align_conditional-1"><a class="docs-heading-anchor" href="#align_conditional-1"><code>align_conditional</code></a><a class="docs-heading-anchor-permalink" href="#align_conditional-1" title="Permalink"></a></h3><p>Align conditional expressions to either <code>?</code>, <code>:</code>, or both.</p><pre><code class="language-julia"># This will remain like this if using YASStyle
 index = zeros(n &lt;= typemax(Int8)  ? Int8  :
               n &lt;= typemax(Int16) ? Int16 :
               n &lt;= typemax(Int32) ? Int32 : Int64, n)
@@ -79,7 +79,6 @@ index = zeros(
 )
 
 # Note even if the maximum margin is set to 1, the alignment remains intact
-
 index = 
     zeros(
         n &lt;= typemax(Int8)  ? Int8  :
@@ -87,4 +86,4 @@ index =
         n &lt;= typemax(Int32) ? Int32 : Int64,
         n,
     )
-</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../transforms/">« Syntax Transforms</a><a class="docs-footer-nextpage" href="../custom_styles/">Custom Styles »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 15 September 2020 19:13">Tuesday 15 September 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../transforms/">« Syntax Transforms</a><a class="docs-footer-nextpage" href="../custom_styles/">Custom Styles »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 15 September 2020 19:15">Tuesday 15 September 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
