@@ -237,15 +237,15 @@
         end"""
         @test fmt(str_) == str
 
-        str = """
-        for i = 1:30, j = 100:-2:1
-            println(i, j)
-        end"""
         str_ = """
         for i = 1:30, j in 100:-2:1
             println(i, j)
         end"""
-        @test fmt(str) == str
+        str = """
+        for i = 1:30, j = 100:-2:1
+            println(i, j)
+        end"""
+        @test fmt(str_) == str
 
         str_ = "[(i,j) for i=I1,j=I2]"
         str = "[(i, j) for i in I1, j in I2]"
@@ -4208,6 +4208,38 @@ some_function(
         return arg1 ||
                arg2"""
         @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "source file line offset with unicode" begin
+        # These just check to see formatting runs without error
+
+        str = """
+        a = 10
+        # └─ code.jl (before -> after2)
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_str = "α10′"
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_op = 5 ⪅ 10.0
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_identifier′ = 10
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
     end
 
 end

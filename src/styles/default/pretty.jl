@@ -161,7 +161,7 @@ p_fileh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += cst.fullspan
+    s.offset += length(cst.val) + (cst.fullspan - cst.span)
     FST(cst, loc[2], loc[1], loc[1], cst.val)
 end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -170,7 +170,7 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
-    s.offset += cst.fullspan
+    s.offset += length(val) + (cst.fullspan - cst.span)
     FST(cst, loc[2], loc[1], loc[1], val)
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -400,22 +400,23 @@ end
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
+    # @info "" str_info loc s.offset
+
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
     if str_info === nothing &&
        (cst.parent.typ === CSTParser.x_Str || cst.parent.typ === CSTParser.x_Cmd)
-        s.offset += cst.fullspan
+        s.offset += length(cst.val) + (cst.fullspan - cst.span)
         return FST(cst, loc[2], loc[1], loc[1], cst.val)
     end
 
     startline, endline, str = str_info
+    s.offset += length(str) + (cst.fullspan - cst.span)
 
     if from_docstring && s.opts.format_docstrings
         str = format_docstring(ds, s, str)
     end
-
-    s.offset += cst.fullspan
 
     lines = split(str, "\n")
 
@@ -479,8 +480,7 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-
-    s.offset += cst.fullspan
+    s.offset += length(str) + (cst.fullspan - cst.span)
 
     lines = split(str, "\n")
 
@@ -1028,22 +1028,54 @@ function eq_to_in_normalization!(cst::CSTParser.EXPR, always_for_in::Bool)
     end
 end
 
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+    if fst.typ === CSTParser.BinaryOpCall
+        idx = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
+        idx === nothing && return
+        op = fst[idx]
+
+        if always_for_in
+            op.val = "in"
+            op.len = length(op.val)
+            return
+        end
+
+        if op.val == "=" && !is_colon_op(fst[end])
+            op.val = "in"
+            op.len = length(op.val)
+        elseif op.val == "in" && is_colon_op(fst[end])
+            op.val = "="
+            op.len = length(op.val)
+        end
+    elseif fst.typ === CSTParser.Block || fst.typ === CSTParser.InvisBrackets
+        for n in fst.nodes
+            eq_to_in_normalization!(n, always_for_in)
+        end
+    end
+end
+
 # For/While
 function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
-    if cst[1].kind === Tokens.FOR
-        eq_to_in_normalization!(cst[2], s.opts.always_for_in)
-    end
-    if cst[2].typ === CSTParser.Block
+    # if cst[1].kind === Tokens.FOR
+    #     eq_to_in_normalization!(cst[2], s.opts.always_for_in)
+    # end
+
+    n = if cst[2].typ === CSTParser.Block
         s.indent += s.opts.indent_size
-        add_node!(t, pretty(style, cst[2], s, join_body = true), s, join_lines = true)
+        n = pretty(style, cst[2], s, join_body = true)
         s.indent -= s.opts.indent_size
+        n
     else
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+        n = pretty(style, cst[2], s)
     end
+
+    cst[1].kind === Tokens.FOR && eq_to_in_normalization!(n, s.opts.always_for_in)
+    add_node!(t, n, s, join_lines = true)
+
     idx = length(t.nodes)
     s.indent += s.opts.indent_size
     add_node!(
@@ -1961,8 +1993,14 @@ p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
+    has_for_kw = false
     for (i, a) in enumerate(cst)
+        n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
+            if !has_for_kw && a.kind === Tokens.FOR
+                has_for_kw = true
+            end
+
             if a.kind === Tokens.FOR && parent_is(
                 a,
                 is_iterable,
@@ -1973,19 +2011,15 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Whitespace(1), s)
             end
 
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-            if a.kind === Tokens.FOR
-                for j = i+1:length(cst)
-                    eq_to_in_normalization!(cst[j], s.opts.always_for_in)
-                end
-            end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
+        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
     end
     t
 end

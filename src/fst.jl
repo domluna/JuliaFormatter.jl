@@ -156,6 +156,10 @@ end
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
     cst.typ === CSTParser.ColonOpCall
 
+@inline is_colon_op(fst::FST) =
+    (fst.typ === CSTParser.BinaryOpCall && op_kind(fst) === Tokens.COLON) ||
+    fst.typ === CSTParser.ColonOpCall
+
 @inline function is_number(cst::CSTParser.EXPR)
     cst.typ === CSTParser.LITERAL || return false
     return cst.kind === Tokens.INTEGER || cst.kind === Tokens.FLOAT
