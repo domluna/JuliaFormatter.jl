@@ -25,7 +25,7 @@ function align_fst!(fst::FST, opts::Options)
 
         if n.typ === CSTParser.BinaryOpCall && n[3].val == "=>"
             push!(pair_arrow_idxs, i)
-        end 
+        end
     end
 
     if opts.align_assignment
