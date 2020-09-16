@@ -843,7 +843,7 @@
         @test fmt(str, 4, 1, align_struct_field = true) == str
     end
 
-    @testset "align consts" begin
+    @testset "align assignment" begin
         str_ = """
         const variable1 = 1
         const var2      = 2
@@ -1077,5 +1077,54 @@
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
 
+    end
+
+    @testset "align pair arrow `=>`" begin
+        str_ = """
+        pages = [
+            "Introduction" => "index.md",
+            "How It Works" => "how_it_works.md",
+            "Code Style"          => "style.md",
+            "Skipping Formatting" => "skipping_formatting.md",
+            "Syntax Transforms" => "transforms.md",
+            "Custom Alignment" => "custom_alignment.md",
+            "Custom Styles" => "custom_styles.md",
+            "YAS Style" => "yas_style.md",
+            "Configuration File" => "config.md",
+            "API Reference" => "api.md",
+        ]
+        """
+        str = """
+        pages = [
+            "Introduction"        => "index.md",
+            "How It Works"        => "how_it_works.md",
+            "Code Style"          => "style.md",
+            "Skipping Formatting" => "skipping_formatting.md",
+            "Syntax Transforms"   => "transforms.md",
+            "Custom Alignment"    => "custom_alignment.md",
+            "Custom Styles"       => "custom_styles.md",
+            "YAS Style"           => "yas_style.md",
+            "Configuration File"  => "config.md",
+            "API Reference"       => "api.md",
+        ]
+        """
+        @test fmt(str_, 4, 100, align_pair_arrow = true) == str
+
+        str = """
+        pages =
+            [
+                "Introduction"        => "index.md",
+                "How It Works"        => "how_it_works.md",
+                "Code Style"          => "style.md",
+                "Skipping Formatting" => "skipping_formatting.md",
+                "Syntax Transforms"   => "transforms.md",
+                "Custom Alignment"    => "custom_alignment.md",
+                "Custom Styles"       => "custom_styles.md",
+                "YAS Style"           => "yas_style.md",
+                "Configuration File"  => "config.md",
+                "API Reference"       => "api.md",
+            ]
+        """
+        @test fmt(str_, 4, 1, align_pair_arrow = true) == str
     end
 end
