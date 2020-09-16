@@ -184,7 +184,7 @@ index =
 
 ```
 
-### `align_assignment`
+### `align_pair_arrow`
 
 Align pair arrows (`=>`).
 
