@@ -67,24 +67,14 @@ function Document(text::AbstractString)
         elseif t.kind === Tokens.ENDMARKER
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
             push!(ranges, s:goffset)
-            # push!(ranges, s:t.startbyte)
         elseif is_str_or_cmd(t.kind)
             offset = goffset
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
-            # @info "" offset
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
                 idx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                    # push!(ranges, s:offset+nl)
-
-                    # len_to_nl = length(t.val[idx:nl])
-                    # a = s + len_to_nl
-                    # if i == 1
-                    #     a += (offset - s)
-                    # end
-                    # push!(ranges, s:a)
 
                     # newline position in character length instead
                     # of byte length.
@@ -154,8 +144,6 @@ function Document(text::AbstractString)
         end
         prev_tok = t
 
-        # @info "" t.kind goffset t.startbyte
-
         if t.kind === Tokens.COMMENT
             goffset += (t.endbyte - t.startbyte + 1)
         else
@@ -183,10 +171,6 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" sort(line_to_range)
-    # for (l, r) in sort(line_to_range)
-    #     println("line: $l, range: $r")
-    # end
 
     return Document(
         text,
