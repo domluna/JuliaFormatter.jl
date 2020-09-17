@@ -12,4 +12,8 @@ Base.@kwdef struct Options
     whitespace_in_kwargs::Bool = true
     annotate_untyped_fields_with_any::Bool = true
     format_docstrings::Bool = false
+    align_struct_field::Bool = false
+    align_assignment::Bool = false
+    align_conditional::Bool = false
+    align_pair_arrow::Bool = false
 end

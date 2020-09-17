@@ -1,4 +1,4 @@
-@testset "Format Options" begin
+@testset "Formatting Options" begin
     @testset "whitespace in typedefs" begin
         str_ = "Foo{A,B,C}"
         str = "Foo{A, B, C}"
@@ -718,5 +718,410 @@
         end
         """
         @test fmt(short, format_docstrings = true) == short_formatted
+    end
+
+    @testset "align struct fields" begin
+        str_ = """
+        struct Foo
+            a::T
+        end"""
+        str = """
+        struct Foo
+            a::T
+        end"""
+        @test fmt(str_, align_struct_field = true) == str
+
+        str = """
+        struct Foo
+            a             :: T
+            longfieldname :: B
+        end"""
+        str_ = """
+        struct Foo
+            a::T
+            longfieldname::B
+        end"""
+        @test fmt(str, align_struct_field = true) == str
+        @test fmt(str, align_struct_field = false) == str_
+
+        str_ = """
+        Base.@kwdef struct Options
+            indent_size::Int                       = 4
+            max_margin::Int                        = 92
+            always_for_in::Bool                 = false
+            whitespace_typedefs::Bool          = false
+            whitespace_ops_in_indices::Bool        = false
+            remove_extra_newlines::Bool            = false
+            import_to_using::Bool                  = false
+            pipe_to_function_call::Bool            = false
+            short_to_long_function_def::Bool      = false
+            always_use_return::Bool           = false
+            whitespace_in_kwargs::Bool          = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool             = false
+            align_struct_fields::Bool           = false
+
+            another_field1::BlahBlahBlah = 10
+            field2::Foo                          = 10
+
+            Options() = new()
+        end"""
+        str = """
+        Base.@kwdef struct Options
+            indent_size::Int                       = 4
+            max_margin::Int                        = 92
+            always_for_in::Bool                    = false
+            whitespace_typedefs::Bool              = false
+            whitespace_ops_in_indices::Bool        = false
+            remove_extra_newlines::Bool            = false
+            import_to_using::Bool                  = false
+            pipe_to_function_call::Bool            = false
+            short_to_long_function_def::Bool       = false
+            always_use_return::Bool                = false
+            whitespace_in_kwargs::Bool             = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool                = false
+            align_struct_fields::Bool              = false
+
+            another_field1::BlahBlahBlah = 10
+            field2::Foo = 10
+
+            Options() = new()
+        end"""
+        @test fmt(str_, align_struct_field = true) == str
+
+        str_ = """
+        Base.@kwdef struct Options
+            indent_size::Int = 4
+            max_margin::Int = 92
+            always_for_in::Bool = false
+            whitespace_typedefs::Bool = false
+            whitespace_ops_in_indices::Bool = false
+            remove_extra_newlines::Bool = false
+            import_to_using::Bool = false
+            pipe_to_function_call::Bool = false
+            short_to_long_function_def::Bool = false
+            always_use_return::Bool = false
+            whitespace_in_kwargs::Bool = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool = false
+            align_struct_fields::Bool = false
+
+            another_field1::BlahBlahBlah = 10
+            field2::Foo = 10
+
+            Options() = new()
+        end"""
+        @test fmt(str, align_struct_field = true) == str
+        @test fmt(str, align_struct_field = false) == str_
+
+        str = """
+        Base.@kwdef struct Options
+            indent_size::Int                       = 4
+            max_margin::Int                        = 92
+            always_for_in::Bool                    = false
+            whitespace_typedefs::Bool              = false
+            whitespace_ops_in_indices::Bool        = false
+            remove_extra_newlines::Bool            = false
+            import_to_using::Bool                  = false
+            pipe_to_function_call::Bool            = false
+            short_to_long_function_def::Bool       = false
+            always_use_return::Bool                = false
+            whitespace_in_kwargs::Bool             = true
+            annotate_untyped_fields_with_any::Bool = true
+            format_docstrings::Bool                = false
+            align_struct_fields::Bool              = false
+
+            another_field1::BlahBlahBlah =
+                10
+            field2::Foo =
+                10
+
+            Options() =
+                new()
+        end"""
+        @test fmt(str, 4, 1, align_struct_field = true) == str
+    end
+
+    @testset "align assignment" begin
+        str_ = """
+        const variable1 = 1
+        const var2      = 2
+        const var3 = 3
+        const var4 = 4"""
+        str = """
+        const variable1 = 1
+        const var2      = 2
+        const var3      = 3
+        const var4      = 4"""
+        @test fmt(str_, align_assignment = true) == str
+
+        str = """
+        const variable1 = 1
+        const variable2 = 2
+        const var3 = 3
+        const var4 = 4"""
+        @test fmt(str, align_assignment = true) == str
+
+        str_ = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1<<1)
+        const UTF8PROC_COMPAT    = (1<<2)
+        const UTF8PROC_COMPOSE   = (1<<3)
+        const UTF8PROC_DECOMPOSE = (1<<4)
+        const UTF8PROC_IGNORE    = (1<<5)
+        const UTF8PROC_REJECTNA  = (1<<6)
+        const UTF8PROC_NLF2LS    = (1<<7)
+        const UTF8PROC_NLF2PS    = (1<<8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1<<9)
+        const UTF8PROC_CASEFOLD  = (1<<10)
+        const UTF8PROC_CHARBOUND = (1<<11)
+        const UTF8PROC_LUMP=(1<<12)
+        const UTF8PROC_STRIP         = (1<<13) # align this
+
+        const FOOBAR = 0
+        const FOO = 1
+
+        end"""
+
+        str = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1 << 1)
+        const UTF8PROC_COMPAT    = (1 << 2)
+        const UTF8PROC_COMPOSE   = (1 << 3)
+        const UTF8PROC_DECOMPOSE = (1 << 4)
+        const UTF8PROC_IGNORE    = (1 << 5)
+        const UTF8PROC_REJECTNA  = (1 << 6)
+        const UTF8PROC_NLF2LS    = (1 << 7)
+        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1 << 9)
+        const UTF8PROC_CASEFOLD  = (1 << 10)
+        const UTF8PROC_CHARBOUND = (1 << 11)
+        const UTF8PROC_LUMP      = (1 << 12)
+        const UTF8PROC_STRIP     = (1 << 13) # align this
+
+        const FOOBAR = 0
+        const FOO = 1
+
+        end"""
+        # @test fmt(str_, align_assignment = false) == str
+        @test fmt(str_, align_assignment = true) == str
+
+        # the aligned consts will NOT be nestable
+        str = """
+        module Foo
+
+        const UTF8PROC_STABLE    = (1 << 1)
+        const UTF8PROC_COMPAT    = (1 << 2)
+        const UTF8PROC_COMPOSE   = (1 << 3)
+        const UTF8PROC_DECOMPOSE = (1 << 4)
+        const UTF8PROC_IGNORE    = (1 << 5)
+        const UTF8PROC_REJECTNA  = (1 << 6)
+        const UTF8PROC_NLF2LS    = (1 << 7)
+        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
+        const UTF8PROC_STRIPCC   = (1 << 9)
+        const UTF8PROC_CASEFOLD  = (1 << 10)
+        const UTF8PROC_CHARBOUND = (1 << 11)
+        const UTF8PROC_LUMP      = (1 << 12)
+        const UTF8PROC_STRIP     = (1 << 13) # align this
+
+        const FOOBAR =
+            0
+        const FOO =
+            1
+
+        end"""
+        @test fmt(str_, 4, 1, align_assignment = true) == str
+
+        str = """
+        a  = 1
+        bc = 2
+
+        long_variable = 1
+        other_var     = 2
+        """
+        @test fmt(str, 4, 1, align_assignment = true) == str
+
+        str = """
+        vcat(X::T...) where {T}         = T[X[i] for i = 1:length(X)]
+        vcat(X::T...) where {T<:Number} = T[X[i] for i = 1:length(X)]
+        hcat(X::T...) where {T}         = T[X[j] for i = 1:1, j = 1:length(X)]
+        hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
+        """
+        @test fmt(str, 4, 1, align_assignment = true) == str
+
+        str = """
+        μs, ns = divrem(ns, 1000)
+        ms, μs = divrem(μs, 1000)
+        s, ms = divrem(ms, 1000)
+        """
+        @test fmt(str, 4, 100, align_assignment = true) == str
+    end
+
+    @testset "align conditionals" begin
+        str_ = """
+        index = zeros(n <= typemax(Int8)  ? Int8  :
+                      n <= typemax(Int16) ? Int16 :
+                      n <= typemax(Int32) ? Int32 : Int64, n)
+        """
+
+        str = """
+        index = zeros(
+            n <= typemax(Int8)  ? Int8  :
+            n <= typemax(Int16) ? Int16 :
+            n <= typemax(Int32) ? Int32 : Int64,
+            n,
+        )
+        """
+        @test fmt(str_, align_conditional = true) == str
+
+        str = """
+        index =
+            zeros(
+                n <= typemax(Int8)  ? Int8  :
+                n <= typemax(Int16) ? Int16 :
+                n <= typemax(Int32) ? Int32 : Int64,
+                n,
+            )
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
+        str_ = """
+        index = zeros(n <= typemax(Int8)  ? Int8 :   # inline
+                        #comment 1
+                      n <= typemax(Int16) ? Int16 :   # inline 2
+                              # comment 2
+                      n <= typemax(Int32) ? Int32 : # inline 3
+                      Int64, n)
+        """
+        str = """
+        index =
+            zeros(
+                n <= typemax(Int8)  ? Int8 :   # inline
+                #comment 1
+                n <= typemax(Int16) ? Int16 :   # inline 2
+                # comment 2
+                n <= typemax(Int32) ? Int32 : # inline 3
+                Int64,
+                n,
+            )
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
+        str_ = """
+        index = zeros(n <= typemax(Int8)  ? Int8  :    # inline
+                      n <= typemax(Int16) ? Int16 : n <= typemax(Int32) ? Int32 : Int64, n)
+        """
+
+        str = """
+        index =
+            zeros(
+                n <= typemax(Int8)  ? Int8  :    # inline
+                n <= typemax(Int16) ? Int16 : n <= typemax(Int32) ? Int32 : Int64,
+                n,
+            )
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
+        str_ = """
+        index =
+            zeros(
+                n <= typemax(Int8)     ? Int8  :
+                n <= typemax(Int16A) ? Int16  :
+                n <= typemax(Int32)  ? Int322 : Int64,
+                n,
+            )
+        """
+        str = """
+        index =
+            zeros(
+                n <= typemax(Int8)   ? Int8   :
+                n <= typemax(Int16A) ? Int16  :
+                n <= typemax(Int32)  ? Int322 : Int64,
+                n,
+            )
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
+        str_ = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+            cst.kind === Tokens.BAREMODULE ? "baremodule" : ""
+        """
+        str = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" : cst.kind === Tokens.BAREMODULE ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 100, align_conditional = true) == str
+
+        str_ = """
+        val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+            cst.kind === Tokens.BAREMODUL  ? "baremodule" : ""
+        """
+        str = """
+        val = cst.kind === Tokens.ABSTRACT  ? "abstract" :
+              cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 100, align_conditional = true) == str
+
+        str = """
+        val =
+            cst.kind === Tokens.ABSTRACT  ? "abstract" :
+            cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
+        """
+        @test fmt(str_, 4, 1, align_conditional = true) == str
+
+    end
+
+    @testset "align pair arrow `=>`" begin
+        str_ = """
+        pages = [
+            "Introduction" => "index.md",
+            "How It Works" => "how_it_works.md",
+            "Code Style"          => "style.md",
+            "Skipping Formatting" => "skipping_formatting.md",
+            "Syntax Transforms" => "transforms.md",
+            "Custom Alignment" => "custom_alignment.md",
+            "Custom Styles" => "custom_styles.md",
+            "YAS Style" => "yas_style.md",
+            "Configuration File" => "config.md",
+            "API Reference" => "api.md",
+        ]
+        """
+        str = """
+        pages = [
+            "Introduction"        => "index.md",
+            "How It Works"        => "how_it_works.md",
+            "Code Style"          => "style.md",
+            "Skipping Formatting" => "skipping_formatting.md",
+            "Syntax Transforms"   => "transforms.md",
+            "Custom Alignment"    => "custom_alignment.md",
+            "Custom Styles"       => "custom_styles.md",
+            "YAS Style"           => "yas_style.md",
+            "Configuration File"  => "config.md",
+            "API Reference"       => "api.md",
+        ]
+        """
+        @test fmt(str_, 4, 100, align_pair_arrow = true) == str
+
+        str = """
+        pages =
+            [
+                "Introduction"        => "index.md",
+                "How It Works"        => "how_it_works.md",
+                "Code Style"          => "style.md",
+                "Skipping Formatting" => "skipping_formatting.md",
+                "Syntax Transforms"   => "transforms.md",
+                "Custom Alignment"    => "custom_alignment.md",
+                "Custom Styles"       => "custom_styles.md",
+                "YAS Style"           => "yas_style.md",
+                "Configuration File"  => "config.md",
+                "API Reference"       => "api.md",
+            ]
+        """
+        @test fmt(str_, 4, 1, align_pair_arrow = true) == str
     end
 end

@@ -51,7 +51,7 @@ function walk(f, fst::FST, s::State)
     walk(f, fst.nodes, s, fst.indent)
 end
 
-function reset_line_offset!(fst::FST, s::State)
+function increment_line_offset!(fst::FST, s::State)
     is_leaf(fst) || return
     s.line_offset += length(fst)
     return nothing
@@ -94,16 +94,17 @@ function dedent!(fst::FST, s::State)
             fst.indent -= s.opts.indent_size
         end
         return
+    elseif fst.typ === CSTParser.StringH
+        return
     end
-    fst.typ === CSTParser.ConditionalOpCall && return
-    fst.typ === CSTParser.StringH && return
 
     # dedent
     fst.indent -= s.opts.indent_size
 
-    fst.force_nest && return
+    # only unnest if it's allowed
+    can_nest(fst) || return
 
-    nl_inds = findall(n -> n.typ === NEWLINE && !n.force_nest, fst.nodes)
+    nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     length(nl_inds) > 0 || return
     margin = s.line_offset + fst.extra_margin + length(fst)
     margin <= s.opts.max_margin || return
@@ -182,6 +183,11 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     if is_leaf(fst)
         s.line_offset += length(fst)
+        return
+    end
+
+    if cant_nest(fst)
+        walk(increment_line_offset!, fst, s)
         return
     end
 
@@ -306,13 +312,13 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if idx !== nothing && (line_margin > s.opts.max_margin || fst.force_nest)
+    if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         fst.indent += s.opts.indent_size
 
-        if !fst.force_nest
+        if can_nest(fst)
             if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.max_margin
                 fst[idx] = Newline(length = fst[idx].len)
-                walk(reset_line_offset!, fst, s)
+                walk(increment_line_offset!, fst, s)
                 return
             end
         end
@@ -350,7 +356,7 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = length(fst.nodes) > 0 ? is_opener(fst[1]) : false
-    if idx !== nothing && (line_margin > s.opts.max_margin || fst.force_nest)
+    if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         line_offset = s.line_offset
         if opener
             fst[end].indent = fst.indent
@@ -427,7 +433,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     closer = is_closer(fst[end])
-    if closer && (line_margin > s.opts.max_margin || fst.force_nest)
+    if closer && (line_margin > s.opts.max_margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         if idx !== nothing
             fst[idx] = Newline(length = fst[idx].len)
@@ -445,7 +451,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            if fst.force_nest
+            if must_nest(fst)
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
             else
@@ -492,7 +498,7 @@ function n_call!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
 
-    if idx !== nothing && (line_margin > s.opts.max_margin || fst.force_nest)
+    if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         line_offset = s.line_offset
         fst[end].indent = fst.indent
         fst.indent += s.opts.indent_size
@@ -551,7 +557,7 @@ n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    if line_margin > s.opts.max_margin || fst.force_nest
+    if line_margin > s.opts.max_margin || must_nest(fst)
         line_offset = s.line_offset
         Blen = sum(length.(fst[2:end]))
 
@@ -565,7 +571,7 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         over =
-            (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || fst.force_nest
+            (s.line_offset + Blen + fst.extra_margin > s.opts.max_margin) || must_nest(fst)
         fst.indent += s.opts.indent_size
         for (i, n) in enumerate(fst[2:end])
             if n.typ === NEWLINE
@@ -593,7 +599,7 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         s.line_offset = line_offset
-        walk(reset_line_offset!, fst, s)
+        walk(increment_line_offset!, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
@@ -604,7 +610,7 @@ n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    if line_margin > s.opts.max_margin || fst.force_nest
+    if line_margin > s.opts.max_margin || must_nest(fst)
         line_offset = s.line_offset
         fst.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
@@ -616,7 +622,7 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 l1 = sum(length.(fst[1:idx-1]))
                 l2 = sum(length.(fst[idx:nidx-1]))
                 width = line_offset + l1 + l2
-                if fst.force_nest || width > s.opts.max_margin
+                if must_nest(fst) || width > s.opts.max_margin
                     fst[idx] = Newline(length = fst[idx].len)
                 end
             end
@@ -646,18 +652,19 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 else
                     width += sum(length.(fst[i+1:i+3]))
                 end
-                # @debug "" s.line_offset l  s.opts.max_margin
                 if width <= s.opts.max_margin
                     fst[i] = Whitespace(1)
+                    s.line_offset += length(fst[i])
                 else
                     s.line_offset = fst.indent
                 end
+            else
+                s.line_offset += length(fst[i])
             end
-            s.line_offset += length(fst[i])
         end
 
         s.line_offset = line_offset
-        walk(reset_line_offset!, fst, s)
+        walk(increment_line_offset!, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
@@ -665,7 +672,15 @@ end
 n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_conditionalopcall!(DefaultStyle(style), fst, s)
 
-no_unnest(fst::FST) = fst.typ === CSTParser.BinaryOpCall && contains_comment(fst)
+function no_unnest(fst::FST)
+    if fst.typ === CSTParser.BinaryOpCall ||
+       fst.typ === CSTParser.ConditionalOpCall ||
+       fst.typ === CSTParser.ChainOpCall ||
+       fst.typ === CSTParser.Comparison
+        return contains_comment(fst)
+    end
+    return false
+end
 
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -674,8 +689,9 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     rhs = fst[end]
     rhs.typ === CSTParser.Block && (rhs = rhs[1])
+
     if length(idxs) == 2 &&
-       (line_margin > s.opts.max_margin || fst.force_nest || rhs.force_nest)
+       (line_margin > s.opts.max_margin || must_nest(fst) || must_nest(rhs))
         line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
@@ -692,6 +708,11 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent_size
             fst[i2] = Whitespace(s.opts.indent_size)
+
+            # reset the indent of the RHS
+            if fst[end].indent > fst.indent
+                fst[end].indent = fst.indent
+            end
             add_indent!(fst[end], s, s.opts.indent_size)
         else
             fst.indent = s.line_offset
@@ -712,14 +733,15 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         # Undo nest if possible
-        if !fst.force_nest && !no_unnest(rhs)
+        if can_nest(fst) && !no_unnest(rhs)
             cst = rhs.ref[]
             line_margin = s.line_offset
 
             if (rhs.typ === CSTParser.BinaryOpCall && cst[2].kind !== Tokens.IN) ||
                rhs.typ === CSTParser.UnaryOpCall ||
                rhs.typ === CSTParser.ChainOpCall ||
-               rhs.typ === CSTParser.Comparison
+               rhs.typ === CSTParser.Comparison ||
+               rhs.typ === CSTParser.ConditionalOpCall
                 line_margin += length(fst[end])
             elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
@@ -746,7 +768,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         s.line_offset = line_offset
-        walk(reset_line_offset!, fst, s)
+        walk(increment_line_offset!, fst, s)
     else
         # length of op and surrounding whitespace
         oplen = sum(length.(fst[2:end]))
@@ -800,7 +822,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if idx !== nothing && (line_margin > s.opts.max_margin || fst.force_nest)
+    if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         line_offset = s.line_offset
         indent >= 0 && (fst.indent = indent)
 

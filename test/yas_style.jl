@@ -1,4 +1,4 @@
-@testset "YAS style" begin
+@testset "YAS Style" begin
     @testset "basic" begin
         str_ = "foo(; k =v)"
         str = "foo(; k = v)"

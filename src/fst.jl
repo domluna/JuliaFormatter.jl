@@ -19,6 +19,8 @@
     MacroBlock,
 )
 
+@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
+
 """
 Formatted Syntax Tree
 """
@@ -29,13 +31,13 @@ mutable struct FST
     # in the original source file.
     startline::Int
     endline::Int
-    indent::Int
 
+    indent::Int
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
     ref::Union{Nothing,Ref{CSTParser.EXPR}}
-    force_nest::Bool
+    nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
     # i.e. `(f(arg))`
@@ -43,21 +45,58 @@ mutable struct FST
     # `f(arg)` would have `extra_margin` = 1
     # due to `)` after `f(arg)`.
     extra_margin::Int
+    line_offset::Int
 end
 
-FST(cst::CSTParser.EXPR, indent::Integer) =
-    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), false, 0)
+FST(cst::CSTParser.EXPR, indent::Int) =
+    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1)
 
-function FST(cst::CSTParser.EXPR, startline::Integer, endline::Integer, val::AbstractString)
-    FST(cst.typ, startline, endline, 0, length(val), val, nothing, Ref(cst), false, 0)
+FST(typ::CSTParser.Head, indent::Int) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1)
+
+function FST(
+    cst::CSTParser.EXPR,
+    line_offset::Int,
+    startline::Int,
+    endline::Int,
+    val::AbstractString,
+)
+    FST(
+        cst.typ,
+        startline,
+        endline,
+        0,
+        length(val),
+        val,
+        nothing,
+        Ref(cst),
+        AllowNest,
+        0,
+        line_offset,
+    )
 end
 
-function FST(typ::CSTParser.Head, startline::Integer, endline::Integer, val::AbstractString)
-    FST(typ, startline, endline, 0, length(val), val, nothing, nothing, false, 0)
+function FST(
+    typ::CSTParser.Head,
+    line_offset::Int,
+    startline::Int,
+    endline::Int,
+    val::AbstractString,
+)
+    FST(
+        typ,
+        startline,
+        endline,
+        0,
+        length(val),
+        val,
+        nothing,
+        nothing,
+        AllowNest,
+        0,
+        line_offset,
+    )
 end
-
-FST(typ::CSTParser.Head, indent::Integer) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, false, 0)
 
 @inline function Base.setindex!(fst::FST, node::FST, ind::Int)
     fst.len -= fst.nodes[ind].len
@@ -66,23 +105,41 @@ FST(typ::CSTParser.Head, indent::Integer) =
 end
 @inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
 @inline Base.lastindex(fst::FST) = length(fst.nodes)
-
-@inline Newline(; length = 0, force_nest = false) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, force_nest, 0)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-@inline TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, false, 0)
-@inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, false, 0)
-@inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, false, 0)
-@inline Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
-@inline Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, false, 0)
-@inline Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, false, 0)
-@inline InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, false, 0)
-
+@inline Base.firstindex(fst::FST) = 1
 @inline Base.length(fst::FST) = fst.len
+@inline function Base.iterate(fst::FST, state = 1)
+    if state > length(fst.nodes)
+        return nothing
+    end
+    return fst.nodes[state], state + 1
+end
+
+@inline function Base.insert!(fst::FST, ind::Int, node::FST)
+    insert!(fst.nodes, ind, node)
+    fst.len += node.len
+end
+
+@inline Newline(; length = 0, nest_behavior = AllowNest) =
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
+@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+@inline TrailingComma() =
+    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+@inline TrailingSemicolon() =
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+@inline InverseTrailingSemicolon() =
+    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+@inline Whitespace(n) =
+    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+@inline Placeholder(n) =
+    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+@inline Notcode(startline, endline) =
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+@inline InlineComment(line) =
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+
+@inline must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+@inline cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+@inline can_nest(fst::FST) = fst.nest_behavior === AllowNest
 
 @inline is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
 @inline is_leaf(fst::FST) = fst.nodes === nothing
@@ -98,6 +155,10 @@ end
 @inline is_colon_op(cst::CSTParser.EXPR) =
     (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
     cst.typ === CSTParser.ColonOpCall
+
+@inline is_colon_op(fst::FST) =
+    (fst.typ === CSTParser.BinaryOpCall && op_kind(fst) === Tokens.COLON) ||
+    fst.typ === CSTParser.ColonOpCall
 
 @inline function is_number(cst::CSTParser.EXPR)
     cst.typ === CSTParser.LITERAL || return false
@@ -195,7 +256,8 @@ end
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
-        loc = s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
+        loc =
+            s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
             cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
@@ -293,9 +355,15 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.startline = n.startline
         t.endline = n.endline
         t.len += length(n)
+        t.line_offset = n.line_offset
         push!(t.nodes, n)
+        # @info "" t.typ n.typ t.line_offset n.line_offset n.val
         return
     end
+
+    # if t.line_offset <= 0
+    #     t.line_offset = n.line_offset
+    # end
 
     if !is_prev_newline(t.nodes[end])
         current_line = t.endline
@@ -320,7 +388,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                 end
             end
 
-            t.force_nest = true
+            t.nest_behavior = AlwaysNest
 
             # If the previous node type is WHITESPACE - reset it.
             # This fixes cases similar to the one shown in issue #51.
@@ -329,23 +397,23 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             hs = hascomment(s.doc, current_line)
             hs && add_node!(t, InlineComment(current_line), s)
             if nt !== PLACEHOLDER
-                add_node!(t, Newline(force_nest = true), s)
+                add_node!(t, Newline(nest_behavior = AlwaysNest), s)
             elseif hs && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
             add_node!(t, Notcode(notcode_startline, notcode_endline), s)
-            add_node!(t, Newline(force_nest = true), s)
+            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         elseif !join_lines
             if hascomment(s.doc, current_line) && current_line != n.startline
                 add_node!(t, InlineComment(current_line), s)
             end
-            add_node!(t, Newline(force_nest = true), s)
+            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         elseif nt === PLACEHOLDER &&
                current_line != n.startline &&
                hascomment(s.doc, current_line)
-            t.force_nest = true
+            t.nest_behavior = AlwaysNest
             add_node!(t, InlineComment(current_line), s)
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
@@ -371,7 +439,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
     elseif is_multiline(n)
-        is_iterable(t) && n_args(t.ref[]) > 1 && (t.force_nest = true)
+        is_iterable(t) && n_args(t.ref[]) > 1 && (t.nest_behavior = AlwaysNest)
         t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
@@ -476,6 +544,25 @@ function is_gen(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
+function is_assignment(x::Union{FST,CSTParser.EXPR})
+    if x.typ === CSTParser.BinaryOpCall && is_assignment(op_kind(x))
+        return true
+    end
+
+    if (
+        x.typ === CSTParser.Const ||
+        x.typ === CSTParser.Local ||
+        x.typ === CSTParser.Global ||
+        x.typ === CSTParser.Outer
+    ) && is_assignment(x[end])
+        return true
+    end
+
+    return false
+end
+is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
+is_assignment(::Nothing) = false
+
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
     cst.typ === CSTParser.Do && return true
@@ -495,7 +582,7 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-nest_assignment(cst::CSTParser.EXPR) = CSTParser.precedence(cst[2].kind) == 1
+nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
 
 function unnestable_arg(cst::CSTParser.EXPR)
     is_iterable(cst) && return true
@@ -532,7 +619,12 @@ function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
     return nothing
 end
 op_kind(::Nothing) = nothing
-op_kind(fst::FST) = fst.ref === nothing ? nothing : op_kind(fst.ref[])
+function op_kind(fst::FST)::Union{Nothing,Tokens.Kind}
+    fst.ref === nothing ? nothing : op_kind(fst.ref[])
+end
+
+get_op(fst::FST) = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
+get_op(cst::CSTParser.EXPR) = cst[2]
 
 is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
 

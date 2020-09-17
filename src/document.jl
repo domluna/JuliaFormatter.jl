@@ -53,9 +53,10 @@ function Document(text::AbstractString)
     format_on = true
     str = ""
 
-    for t in CSTParser.Tokenize.tokenize(text)
+    goffset = 0
+    for (idx, t) in enumerate(CSTParser.Tokenize.tokenize(text))
         if t.kind === Tokens.WHITESPACE
-            offset = t.startbyte
+            offset = goffset
             for c in t.val
                 if c == '\n'
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
@@ -67,9 +68,10 @@ function Document(text::AbstractString)
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
             push!(ranges, s:t.startbyte)
         elseif is_str_or_cmd(t.kind)
-            lit_strings[t.startbyte] = (t.startpos[1], t.endpos[1], t.val)
+            # @info "" idx goffset t.startbyte t.startpos[1] t.val
+            offset = goffset
+            lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
-                offset = t.startbyte
                 nls = findall(x -> x == '\n', t.val)
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
@@ -96,7 +98,7 @@ function Document(text::AbstractString)
                 # #=
 
                 line = t.startpos[1]
-                offset = t.startbyte
+                offset = goffset
                 cs = ""
                 for (i, c) in enumerate(t.val)
                     cs *= c
@@ -136,6 +138,12 @@ function Document(text::AbstractString)
         end
         prev_tok = t
 
+        if t.kind === Tokens.COMMENT
+            goffset += (t.endbyte - t.startbyte + 1)
+        else
+            goffset += length(Tokenize.untokenize(t))
+        end
+
         if !format_on
             str *= Tokenize.untokenize(t)
         end
@@ -157,7 +165,9 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    Document(
+    # @info "" sort(lit_strings) sort(comments)
+
+    return Document(
         text,
         range_to_line,
         line_to_range,

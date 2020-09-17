@@ -49,6 +49,18 @@ function flatten_binaryopcall(fst::FST; top = true)
     return nodes
 end
 
+function flatten_conditionalopcall(fst::FST)
+    nodes = FST[]
+    for n in fst.nodes
+        if n.typ === CSTParser.ConditionalOpCall
+            push!(nodes, flatten_conditionalopcall(n)...)
+        else
+            push!(nodes, n)
+        end
+    end
+    return nodes
+end
+
 function flatten_fst!(fst::FST)
     is_leaf(fst) && return
     for n in fst.nodes
@@ -99,12 +111,12 @@ function pipe_to_function_call(fst::FST)
     nodes = FST[]
     arg2 = fst[end]
     push!(nodes, arg2)
-    paren = FST(CSTParser.PUNCTUATION, arg2.endline, arg2.endline, "(")
+    paren = FST(CSTParser.PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
     push!(nodes, paren)
     pipe_to_function_call_pass!(fst[1])
     arg1 = fst[1]
     push!(nodes, arg1)
-    paren = FST(CSTParser.PUNCTUATION, arg1.endline, arg1.endline, ")")
+    paren = FST(CSTParser.PUNCTUATION, -1, arg1.endline, arg1.endline, ")")
     push!(nodes, paren)
     return nodes
 end
@@ -124,7 +136,7 @@ function import_to_usings(fst::FST, s::State)
         use.startline = sl
         use.endline = el
 
-        add_node!(use, FST(CSTParser.KEYWORD, sl, el, "using"), s)
+        add_node!(use, FST(CSTParser.KEYWORD, -1, sl, el, "using"), s)
         add_node!(use, Whitespace(1), s)
 
         # collect the dots prior to a identifier
@@ -135,10 +147,10 @@ function import_to_usings(fst::FST, s::State)
             j -= 1
         end
 
-        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
-        add_node!(use, FST(CSTParser.OPERATOR, sl, el, ":"), s, join_lines = true)
+        add_node!(use, FST(CSTParser.IDENTIFIER, -1, sl, el, name), s, join_lines = true)
+        add_node!(use, FST(CSTParser.OPERATOR, -1, sl, el, ":"), s, join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, FST(CSTParser.IDENTIFIER, sl, el, name), s, join_lines = true)
+        add_node!(use, FST(CSTParser.IDENTIFIER, -1, sl, el, name), s, join_lines = true)
 
         push!(usings, use)
     end
@@ -159,15 +171,17 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             nn.startline = n.startline
             nn.endline = n.endline
             add_node!(nn, n, s)
+            line_offset = n.line_offset + length(n)
             add_node!(
                 nn,
-                FST(CSTParser.OPERATOR, n.startline, n.endline, "::"),
+                FST(CSTParser.OPERATOR, line_offset, n.startline, n.endline, "::"),
                 s,
                 join_lines = true,
             )
+            line_offset += 2
             add_node!(
                 nn,
-                FST(CSTParser.IDENTIFIER, n.startline, n.endline, "Any"),
+                FST(CSTParser.IDENTIFIER, line_offset, n.startline, n.endline, "Any"),
                 s,
                 join_lines = true,
             )
@@ -210,7 +224,7 @@ function short_to_long_function_def!(fst::FST, s::State)
     funcdef = FST(CSTParser.FunctionDef, fst.indent)
     if fst[1].typ === CSTParser.Call || fst[1].typ === CSTParser.WhereOpCall
         # function
-        kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
+        kw = FST(CSTParser.KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
         add_node!(funcdef, Whitespace(1), s)
 
@@ -225,7 +239,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_indent!(funcdef[end], s, s.opts.indent_size)
 
         # end
-        kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "end")
+        kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
         add_node!(funcdef, kw, s)
 
         fst.typ = funcdef.typ
@@ -234,7 +248,7 @@ function short_to_long_function_def!(fst::FST, s::State)
     elseif fst[1].typ === CSTParser.BinaryOpCall &&
            fst[1][end].typ === CSTParser.WhereOpCall
         # function
-        kw = FST(CSTParser.KEYWORD, fst[1].startline, fst[1].endline, "function")
+        kw = FST(CSTParser.KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
         add_node!(funcdef, Whitespace(1), s)
 
@@ -242,7 +256,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_node!(funcdef, fst[1][1], s, join_lines = true)
 
         whereop = fst[1][end]
-        decl = FST(CSTParser.OPERATOR, fst[1].startline, fst[1].endline, "::")
+        decl = FST(CSTParser.OPERATOR, -1, fst[1].startline, fst[1].endline, "::")
 
         # ::R where T
         add_node!(funcdef, decl, s, join_lines = true)
@@ -254,7 +268,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_indent!(funcdef[end], s, s.opts.indent_size)
 
         # end
-        kw = FST(CSTParser.KEYWORD, fst[end].startline, fst[end].endline, "end")
+        kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
         add_node!(funcdef, kw, s)
 
         fst.typ = funcdef.typ
@@ -360,7 +374,7 @@ function prepend_return!(fst::FST, s::State)
     ln.typ === MacroBlock && return
 
     ret = FST(CSTParser.Return, fst.indent)
-    kw = FST(CSTParser.KEYWORD, ln.startline, ln.endline, "return")
+    kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "return")
     add_node!(ret, kw, s)
     add_node!(ret, Whitespace(1), s)
     add_node!(ret, ln, s, join_lines = true)
@@ -413,7 +427,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
         elseif n.typ === CSTParser.Quotenode
             add_node!(macroname, n, s, join_lines = true)
         else
-            at = FST(CSTParser.PUNCTUATION, n.startline, n.endline, "@")
+            at = FST(CSTParser.PUNCTUATION, -1, n.startline, n.endline, "@")
             add_node!(macroname, at, s, join_lines = true)
             add_node!(macroname, n, s, join_lines = true)
         end

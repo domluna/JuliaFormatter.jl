@@ -1,4 +1,4 @@
-@testset "configuration" begin
+@testset ".JuliaFormatter.toml config" begin
     config2 = "indent = 2"
     config4 = "indent = 4"
     before = "begin rand() end\n"

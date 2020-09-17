@@ -39,6 +39,7 @@ include("options.jl")
 include("state.jl")
 include("fst.jl")
 include("passes.jl")
+include("align.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
@@ -69,6 +70,10 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         whitespace_in_kwargs::Bool = true,
         annotate_untyped_fields_with_any::Bool = true,
         format_docstrings::Bool = false,
+        align_struct_field::Bool = false,
+        align_conditional::Bool = false,
+        align_assignment::Bool = false,
+        align_pair_arrow::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -229,6 +234,10 @@ end
 Format code docstrings with the same options used for the code source.
 
 Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/CommonMark.jl) alongside Julia code.
+
+### `align_*`
+
+See `Custom Alignment` documentation.
 """
 function format_text(
     text::AbstractString;
@@ -246,6 +255,10 @@ function format_text(
     whitespace_in_kwargs::Bool = true,
     annotate_untyped_fields_with_any::Bool = true,
     format_docstrings::Bool = false,
+    align_struct_field::Bool = false,
+    align_conditional::Bool = false,
+    align_assignment::Bool = false,
+    align_pair_arrow::Bool = false,
 )
     isempty(text) && return text
     opts = Options(
@@ -262,6 +275,10 @@ function format_text(
         whitespace_in_kwargs = whitespace_in_kwargs,
         annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
         format_docstrings = format_docstrings,
+        align_struct_field = align_struct_field,
+        align_conditional = align_conditional,
+        align_assignment = align_assignment,
+        align_pair_arrow = align_pair_arrow,
     )
     return format_text(text, style, opts)
 end
@@ -281,6 +298,14 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
 
     flatten_fst!(t)
+
+    if s.opts.align_struct_field ||
+       s.opts.align_conditional ||
+       s.opts.align_assignment ||
+       s.opts.align_pair_arrow
+        align_fst!(t, s.opts)
+    end
+
     nest!(style, t, s)
 
     s.line_offset = 0

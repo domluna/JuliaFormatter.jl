@@ -259,7 +259,8 @@ function adjointcfg(pr::Primal)
         preds = predecessors(b)
         rb = block(ir, b.id)
         for i = 1:length(preds)
-            cond = i == length(preds) ? nothing :
+            cond =
+                i == length(preds) ? nothing :
                 push!(rb, xcall(Base, :(!==), alpha(pr.branches[b.id]), BranchNumber(i)))
             branch!(rb, preds[i].id, unless = cond)
         end
@@ -337,7 +338,7 @@ function adjoint(pr::Primal)
             Δ = push!(
                 rb,
                 pr.varargs == nothing ? xcall(Zygote, :tuple, gs...) :
-                    xcall(Zygote, :tuple_va, Val(pr.varargs), gs...),
+                xcall(Zygote, :tuple_va, Val(pr.varargs), gs...),
             )
             branches(rb)[1].args[1] = Δ
         end

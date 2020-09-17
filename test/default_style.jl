@@ -237,15 +237,15 @@
         end"""
         @test fmt(str_) == str
 
-        str = """
-        for i = 1:30, j = 100:-2:1
-            println(i, j)
-        end"""
         str_ = """
         for i = 1:30, j in 100:-2:1
             println(i, j)
         end"""
-        @test fmt(str) == str
+        str = """
+        for i = 1:30, j = 100:-2:1
+            println(i, j)
+        end"""
+        @test fmt(str_) == str
 
         str_ = "[(i,j) for i=I1,j=I2]"
         str = "[(i, j) for i in I1, j in I2]"
@@ -580,16 +580,33 @@
         @test fmt(str_, 2, 1) == str
 
         str_ = """a, b = cond ? e1 : e2"""
+
         str = """
-        a, b = cond ?
-            e1 : e2"""
-        @test fmt(str_, 4, 13) == str
+        a, b =
+            cond ? e1 : e2"""
+        @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 18) == str
+
+        str = """
+        a, b =
+            cond ? e1 :
+            e2"""
+        @test fmt(str_, 4, 17) == str
+        @test fmt(str_, 4, 15) == str
 
         str = """
         a, b =
             cond ?
             e1 : e2"""
-        @test fmt(str_, 4, 12) == str
+        @test fmt(str_, 4, 14) == str
+        @test fmt(str_, 4, 11) == str
+
+        str = """
+        a, b =
+            cond ?
+            e1 :
+            e2"""
+        @test fmt(str_, 4, 10) == str
 
         str = """
         begin
@@ -623,10 +640,12 @@
 
         str = """
         begin
-            variable_name = conditional ?
+            variable_name =
+                conditional ?
                 expression1 : expression2
         end"""
         @test fmt(str, 4, 34) == str
+        @test fmt(str, 4, 33) == str
 
         str = """
         begin
@@ -1694,35 +1713,44 @@
         C"""
         @test fmt(str) == str
 
-        str = """
-        foo() = A ?
-            # comment 1
-
-            B : C"""
-        @test fmt(str) == str
         str_ = """
-        foo() =
-           A ?
-           # comment 1
-
-           B :
-           C"""
-        @test fmt(str, 3, 1) == str_
-
-        str = """
         foo = A ?
             # comment 1
 
             B : C"""
-        @test fmt(str) == str
-        str_ = """
+
+        str = """
+        foo =
+            A ?
+            # comment 1
+
+            B : C"""
+        @test fmt(str_) == str
+
+        str = """
         foo =
            A ?
            # comment 1
 
            B :
            C"""
-        @test fmt(str, 3, 1) == str_
+        @test fmt(str_, 3, 1) == str
+
+        str_ = """
+        foo = A +
+            # comment 1
+
+            B + C"""
+
+        str = """
+        foo =
+           A +
+           # comment 1
+
+           B +
+           C"""
+        @test fmt(str_, 3, 100) == str
+        @test fmt(str_, 3, 1) == str
 
         str = """
         begin
@@ -4180,6 +4208,38 @@ some_function(
         return arg1 ||
                arg2"""
         @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "source file line offset with unicode" begin
+        # These just check to see formatting runs without error
+
+        str = """
+        a = 10
+        # └─ code.jl (before -> after2)
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_str = "α10′"
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_op = 5 ⪅ 10.0
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
+
+        str = """
+        a = 10
+        unicode_identifier′ = 10
+        v = "test_basic_config"
+        """
+        @test fmt(str) == str
     end
 
 end

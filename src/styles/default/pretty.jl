@@ -161,8 +161,8 @@ p_fileh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += cst.fullspan
-    FST(cst, loc[1], loc[1], cst.val)
+    s.offset += length(cst.val) + (cst.fullspan - cst.span)
+    FST(cst, loc[2], loc[1], loc[1], cst.val)
 end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
@@ -170,15 +170,16 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
-    s.offset += cst.fullspan
-    FST(cst, loc[1], loc[1], val)
+    s.offset += length(val) + (cst.fullspan - cst.span)
+    FST(cst, loc[2], loc[1], loc[1], val)
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
 @inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val = cst.kind === Tokens.ABSTRACT ? "abstract" :
+    val =
+        cst.kind === Tokens.ABSTRACT ? "abstract" :
         cst.kind === Tokens.BAREMODULE ? "baremodule" :
         cst.kind === Tokens.BEGIN ? "begin" :
         cst.kind === Tokens.BREAK ? "break" :
@@ -211,14 +212,15 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
         cst.kind === Tokens.TRY ? "try" :
         cst.kind === Tokens.USING ? "using" : cst.kind === Tokens.WHILE ? "while" : ""
     s.offset += cst.fullspan
-    FST(cst, loc[1], loc[1], val)
+    FST(cst, loc[2], loc[1], loc[1], val)
 end
 p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
 @inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val = cst.kind === Tokens.LPAREN ? "(" :
+    val =
+        cst.kind === Tokens.LPAREN ? "(" :
         cst.kind === Tokens.LBRACE ? "{" :
         cst.kind === Tokens.LSQUARE ? "[" :
         cst.kind === Tokens.RPAREN ? ")" :
@@ -228,7 +230,7 @@ p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
         cst.kind === Tokens.SEMICOLON ? ";" :
         cst.kind === Tokens.AT_SIGN ? "@" : cst.kind === Tokens.DOT ? "." : ""
     s.offset += cst.fullspan
-    FST(cst, loc[1], loc[1], val)
+    FST(cst, loc[2], loc[1], loc[1], val)
 end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
@@ -389,7 +391,7 @@ end
         end
 
         s.offset += cst.fullspan
-        return FST(cst, loc[1], loc[1], val)
+        return FST(cst, loc[2], loc[1], loc[1], val)
     end
 
     # Strings are unescaped by CSTParser
@@ -398,28 +400,28 @@ end
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
+    # @info "" str_info loc s.offset
+
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
     if str_info === nothing &&
        (cst.parent.typ === CSTParser.x_Str || cst.parent.typ === CSTParser.x_Cmd)
-        s.offset += cst.fullspan
-        return FST(cst, loc[1], loc[1], cst.val)
+        s.offset += length(cst.val) + (cst.fullspan - cst.span)
+        return FST(cst, loc[2], loc[1], loc[1], cst.val)
     end
 
     startline, endline, str = str_info
-    # @debug "" loc startline endline str
+    s.offset += length(str) + (cst.fullspan - cst.span)
 
     if from_docstring && s.opts.format_docstrings
         str = format_docstring(ds, s, str)
     end
 
-    s.offset += cst.fullspan
-
     lines = split(str, "\n")
 
     if length(lines) == 1
-        return FST(cst, loc[1], loc[1], lines[1])
+        return FST(cst, loc[2], loc[1], loc[1], lines[1])
     end
 
     sidx = loc[2]
@@ -430,9 +432,19 @@ end
         end
     end
 
-    # @debug "" lines cst.val loc loc[2] sidx
-
-    t = FST(CSTParser.StringH, -1, -1, loc[2] - 1, 0, nothing, FST[], Ref(cst), false, 0)
+    t = FST(
+        CSTParser.StringH,
+        -1,
+        -1,
+        loc[2] - 1,
+        0,
+        nothing,
+        FST[],
+        Ref(cst),
+        AllowNest,
+        0,
+        loc[2],
+    )
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
@@ -445,8 +457,9 @@ end
             l,
             nothing,
             nothing,
-            false,
+            AllowNest,
             0,
+            -1,
         )
         add_node!(t, tt, s)
     end
@@ -467,13 +480,12 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-
-    s.offset += cst.fullspan
+    s.offset += length(str) + (cst.fullspan - cst.span)
 
     lines = split(str, "\n")
 
     if length(lines) == 1
-        t = FST(cst, startline, startline, lines[1])
+        t = FST(cst, loc[2], startline, startline, lines[1])
         t.typ = CSTParser.LITERAL
         return t
     end
@@ -486,9 +498,8 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
     end
 
-    # @debug "" lines cst.val loc loc[2] sidx
-
     t = FST(cst, loc[2] - 1)
+    t.line_offset = loc[2]
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
@@ -501,8 +512,9 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             l,
             nothing,
             nothing,
-            false,
+            AllowNest,
             0,
+            -1,
         )
         add_node!(t, tt, s)
     end
@@ -621,7 +633,8 @@ function p_block(
 )
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    single_line = ignore_single_line ? false :
+    single_line =
+        ignore_single_line ? false :
         cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]
 
     for (i, a) in enumerate(cst)
@@ -1015,22 +1028,54 @@ function eq_to_in_normalization!(cst::CSTParser.EXPR, always_for_in::Bool)
     end
 end
 
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+    if fst.typ === CSTParser.BinaryOpCall
+        idx = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
+        idx === nothing && return
+        op = fst[idx]
+
+        if always_for_in
+            op.val = "in"
+            op.len = length(op.val)
+            return
+        end
+
+        if op.val == "=" && !is_colon_op(fst[end])
+            op.val = "in"
+            op.len = length(op.val)
+        elseif op.val == "in" && is_colon_op(fst[end])
+            op.val = "="
+            op.len = length(op.val)
+        end
+    elseif fst.typ === CSTParser.Block || fst.typ === CSTParser.InvisBrackets
+        for n in fst.nodes
+            eq_to_in_normalization!(n, always_for_in)
+        end
+    end
+end
+
 # For/While
 function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
-    if cst[1].kind === Tokens.FOR
-        eq_to_in_normalization!(cst[2], s.opts.always_for_in)
-    end
-    if cst[2].typ === CSTParser.Block
+    # if cst[1].kind === Tokens.FOR
+    #     eq_to_in_normalization!(cst[2], s.opts.always_for_in)
+    # end
+
+    n = if cst[2].typ === CSTParser.Block
         s.indent += s.opts.indent_size
-        add_node!(t, pretty(style, cst[2], s, join_body = true), s, join_lines = true)
+        n = pretty(style, cst[2], s, join_body = true)
         s.indent -= s.opts.indent_size
+        n
     else
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+        n = pretty(style, cst[2], s)
     end
+
+    cst[1].kind === Tokens.FOR && eq_to_in_normalization!(n, s.opts.always_for_in)
+    add_node!(t, n, s, join_lines = true)
+
     idx = length(t.nodes)
     s.indent += s.opts.indent_size
     add_node!(
@@ -1277,10 +1322,10 @@ function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
 
         if s.opts.whitespace_ops_in_indices && !is_leaf(n) && !is_iterable(n)
-            paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+            paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
             add_node!(t, paren, s, join_lines = true)
             add_node!(t, n, s, join_lines = true)
-            paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+            paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
             add_node!(t, paren, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
@@ -1345,17 +1390,17 @@ function p_binaryopcall(
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
 
-        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s)
     end
 
     nrhs = nest_rhs(cst)
-    nrhs && (t.force_nest = true)
+    nrhs && (t.nest_behavior = AlwaysNest)
     nest = (nestable(style, cst) && !nonest) || nrhs
 
     if op.fullspan == 0
@@ -1400,10 +1445,10 @@ function p_binaryopcall(
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[3]) &&
        !is_iterable(cst[3])
-        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, "(")
+        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, n.startline, n.startline, ")")
+        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s, join_lines = true)
@@ -1444,7 +1489,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         cst[3].typ !== CSTParser.Curly &&
         cst[3].typ !== CSTParser.BracesCat
 
-    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "{")
+    brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "{")
     add_braces && add_node!(t, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
@@ -1472,7 +1517,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
-    brace = FST(CSTParser.PUNCTUATION, t.endline, t.endline, "}")
+    brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "}")
     add_braces && add_node!(t, brace, s, join_lines = true)
     t
 end
@@ -1588,10 +1633,8 @@ function p_invisbrackets(
     t = FST(cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest
 
-    if is_block(cst[2])
-        t.force_nest = true
-    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
-        t.force_nest = true
+    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+        t.nest_behavior = AlwaysNest
     end
 
     for (i, a) in enumerate(cst)
@@ -1742,10 +1785,8 @@ function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
 
-    if is_block(cst[2])
-        t.force_nest = true
-    elseif cst[2].typ === CSTParser.Generator && is_block(cst[2][1])
-        t.force_nest = true
+    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+        t.nest_behavior = AlwaysNest
     end
 
     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
@@ -1763,10 +1804,8 @@ function p_typedcomprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
 
-    if is_block(cst[3])
-        t.force_nest = true
-    elseif cst[3].typ === CSTParser.Generator && is_block(cst[3][1])
-        t.force_nest = true
+    if is_block(cst[3]) || (cst[3].typ === CSTParser.Generator && is_block(cst[3][1]))
+        t.nest_behavior = AlwaysNest
     end
 
     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
@@ -1885,8 +1924,8 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Placeholder(0), s)
             end
         else
-            # If arguments are on different force nest
-            diff_line && (t.force_nest = true)
+            # If arguments are on different always nest
+            diff_line && (t.nest_behavior = AlwaysNest)
             add_node!(t, n, s, join_lines = true)
         end
     end
@@ -1954,8 +1993,14 @@ p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
+    has_for_kw = false
     for (i, a) in enumerate(cst)
+        n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
+            if !has_for_kw && a.kind === Tokens.FOR
+                has_for_kw = true
+            end
+
             if a.kind === Tokens.FOR && parent_is(
                 a,
                 is_iterable,
@@ -1966,19 +2011,15 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Whitespace(1), s)
             end
 
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-            if a.kind === Tokens.FOR
-                for j = i+1:length(cst)
-                    eq_to_in_normalization!(cst[j], s.opts.always_for_in)
-                end
-            end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
+        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
     end
     t
 end
