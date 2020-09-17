@@ -72,16 +72,19 @@ function Document(text::AbstractString)
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
-                idx = 1
+                bidx = 1
+                cidx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
 
                     # newline position in character length instead
                     # of byte length.
-                    nl2 = idx + length(t.val[idx:nl]) - 1
+                    nl2 = cidx + length(t.val[bidx:nl]) - 1
+                    # @info "" bidx cidx nl nl2
                     push!(ranges, s:offset+nl2)
 
-                    idx = nl + 1
+                    bidx = nl + 1
+                    cidx = nl2 + 1
                 end
             end
         elseif t.kind === Tokens.COMMENT
