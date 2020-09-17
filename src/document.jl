@@ -66,16 +66,31 @@ function Document(text::AbstractString)
             end
         elseif t.kind === Tokens.ENDMARKER
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-            push!(ranges, s:t.startbyte)
+            push!(ranges, s:goffset)
         elseif is_str_or_cmd(t.kind)
-            # @info "" idx goffset t.startbyte t.startpos[1] t.val
             offset = goffset
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
+            # @info "" offset
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
+                idx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                    push!(ranges, s:offset+nl)
+                    # push!(ranges, s:offset+nl)
+
+                    # len_to_nl = length(t.val[idx:nl])
+                    # a = s + len_to_nl
+                    # if i == 1
+                    #     a += (offset - s)
+                    # end
+                    # push!(ranges, s:a)
+
+                    # newline position in character length instead
+                    # of byte length.
+                    nl2 = idx+length(t.val[idx:nl])-1
+                    push!(ranges, s:offset+nl2)
+
+                    idx = nl + 1
                 end
             end
         elseif t.kind === Tokens.COMMENT
@@ -138,11 +153,14 @@ function Document(text::AbstractString)
         end
         prev_tok = t
 
+        # @info "" t.kind goffset t.startbyte
+
         if t.kind === Tokens.COMMENT
             goffset += (t.endbyte - t.startbyte + 1)
         else
             goffset += length(Tokenize.untokenize(t))
         end
+
 
         if !format_on
             str *= Tokenize.untokenize(t)
@@ -165,7 +183,7 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" sort(lit_strings) sort(comments)
+    # @info "" sort(line_to_range)
 
     return Document(
         text,
