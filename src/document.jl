@@ -66,16 +66,25 @@ function Document(text::AbstractString)
             end
         elseif t.kind === Tokens.ENDMARKER
             s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-            push!(ranges, s:t.startbyte)
+            push!(ranges, s:goffset)
         elseif is_str_or_cmd(t.kind)
-            # @info "" idx goffset t.startbyte t.startpos[1] t.val
             offset = goffset
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
+                bidx = 1
+                cidx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                    push!(ranges, s:offset+nl)
+
+                    # newline position in character length instead
+                    # of byte length.
+                    nl2 = cidx + length(t.val[bidx:nl]) - 1
+                    # @info "" bidx cidx nl nl2
+                    push!(ranges, s:offset+nl2)
+
+                    bidx = nl + 1
+                    cidx = nl2 + 1
                 end
             end
         elseif t.kind === Tokens.COMMENT
@@ -165,7 +174,6 @@ function Document(text::AbstractString)
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
-    # @info "" sort(lit_strings) sort(comments)
 
     return Document(
         text,

@@ -21,3 +21,8 @@ State(doc, opts) = State(doc, 0, 1, 0, true, opts)
     return (l, offset - first(r) + 1, length(r))
 end
 @inline cursor_loc(s::State) = cursor_loc(s, s.offset)
+@inline function on_same_line(s::State, offset1::Int, offset2::Int)
+    l = s.doc.range_to_line[offset1:offset1]
+    r = s.doc.line_to_range[l]
+    return offset2 in r
+end

@@ -634,8 +634,7 @@ function p_block(
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
     single_line =
-        ignore_single_line ? false :
-        cursor_loc(s)[1] == cursor_loc(s, s.offset + cst.span - 1)[1]
+        ignore_single_line ? false : on_same_line(s, s.offset, s.offset + cst.span - 1)
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
