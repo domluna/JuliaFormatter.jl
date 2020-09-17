@@ -70,7 +70,10 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         whitespace_in_kwargs::Bool = true,
         annotate_untyped_fields_with_any::Bool = true,
         format_docstrings::Bool = false,
-        align_struct_fields::Bool = false,
+        align_struct_field::Bool = false,
+        align_conditional::Bool = false,
+        align_assignment::Bool = false,
+        align_pair_arrow::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
