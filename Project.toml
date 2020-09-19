@@ -13,7 +13,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
-CSTParser = "^2.1"
+CSTParser = "^2.2"
 CommonMark = "0.5, 0.6"
 DataStructures = "0.17, 0.18"
 Documenter = "0.24, 0.25"
