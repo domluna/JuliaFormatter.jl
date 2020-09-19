@@ -594,18 +594,8 @@
         A =  [0. 1 0 0
            -k/Jm -c/Jm k/Jm c/Jm
             0 0 0 1
-            k/Ja c/Ja -k/Ja -c/Ja]
+            f(1,2) c/Ja -k/Ja -c/Ja]
         """
-
-        str = """
-        A = [
-            0.0 1 0 0
-            -k/Jm -c/Jm k/Jm c/Jm
-            0 0 0 1
-            k/Ja c/Ja -k/Ja -c/Ja
-        ]
-        """
-        @test fmt(str_) == str
 
         str = """
         A =
@@ -613,7 +603,7 @@
                 0.0 1 0 0
                 -k/Jm -c/Jm k/Jm c/Jm
                 0 0 0 1
-                k/Ja c/Ja -k/Ja -c/Ja
+                f(1, 2) c/Ja -k/Ja -c/Ja
             ]
         """
         @test fmt(str_, 4, 1) == str
