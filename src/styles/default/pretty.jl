@@ -1964,25 +1964,15 @@ function p_row(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
 
-    # Currently {A <:B} is parsed as a Row type with elements A and <:B
-    # instead of a BinaryOpCall A <: B, which is inconsistent with Meta.parse.
-    #
-    # This is used to overcome that current limitation.
-    in_braces = cst.parent === nothing ? false : cst.parent.typ === CSTParser.BracesCat
-    nospace = !s.opts.whitespace_typedefs
-
     for (i, a) in enumerate(cst)
-        if in_braces && i < length(cst) && cst[i+1].typ === CSTParser.UnaryOpCall
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(nospace ? 0 : 1), s)
-        elseif in_braces && a.typ === CSTParser.UnaryOpCall
-            add_node!(t, pretty(style, a, s, nospace = nospace), s, join_lines = true)
-            i < length(cst) && add_node!(t, Whitespace(1), s)
+        if is_opcall(a)
+            add_node!(t, pretty(style, a, s, nospace=true, nonest=true), s, join_lines = true)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            i < length(cst) && add_node!(t, Whitespace(1), s)
         end
+        i < length(cst) && add_node!(t, Whitespace(1), s)
     end
+    t.nest_behavior = NeverNest
     t
 end
 p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
