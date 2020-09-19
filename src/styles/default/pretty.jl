@@ -1966,7 +1966,12 @@ function p_row(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     for (i, a) in enumerate(cst)
         if is_opcall(a)
-            add_node!(t, pretty(style, a, s, nospace=true, nonest=true), s, join_lines = true)
+            add_node!(
+                t,
+                pretty(style, a, s, nospace = true, nonest = true),
+                s,
+                join_lines = true,
+            )
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
