@@ -17,7 +17,9 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
             end
         end
 
-        nest_to_oneline = (fst.indent + s.opts.indent_size + args_margin <= s.opts.max_margin) && !contains_comment(fst.nodes[args_range])
+        nest_to_oneline =
+            (fst.indent + s.opts.indent_size + args_margin <= s.opts.max_margin) &&
+            !contains_comment(fst.nodes[args_range])
 
         # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent_size + args_margin args_margin
 
@@ -79,5 +81,3 @@ end
 @inline n_invisbrackets!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
 @inline n_bracescat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
 # @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-
-

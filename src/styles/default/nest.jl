@@ -14,7 +14,6 @@
 #
 # the length of " op" will be considered when nesting LHS
 
-
 function nest!(
     ds::DefaultStyle,
     nodes::Vector{FST},
@@ -378,7 +377,6 @@ n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comprehension!(ds, fst, s, indent = fst.indent)
 n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_flatten!(DefaultStyle(style), fst, s)
-
 
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
