@@ -40,6 +40,7 @@ include("state.jl")
 include("fst.jl")
 include("passes.jl")
 include("align.jl")
+include("nest_utils.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
