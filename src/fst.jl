@@ -210,6 +210,7 @@ function contains_comment(fst::FST)
     is_leaf(fst) && return false
     findfirst(is_comment, fst.nodes) !== nothing
 end
+contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108

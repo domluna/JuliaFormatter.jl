@@ -17,7 +17,7 @@ using CommonMark:
     Rule,
     TableRule
 
-export format, format_text, format_file, format_md, DefaultStyle, YASStyle
+export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle
 
 abstract type AbstractStyle end
 
@@ -46,6 +46,8 @@ include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
 include("styles/yas/pretty.jl")
 include("styles/yas/nest.jl")
+include("styles/blue/pretty.jl")
+include("styles/blue/nest.jl")
 
 include("print.jl")
 
