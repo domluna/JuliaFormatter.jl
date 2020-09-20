@@ -19,11 +19,6 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
 
         nest_to_oneline = (fst.indent + s.opts.indent_size + args_margin <= s.opts.max_margin) && !contains_comment(fst.nodes[args_range])
 
-        if !nest_to_oneline
-            n_tupleh!(DefaultStyle(bs), fst, s)
-            return
-        end
-
         # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent_size + args_margin args_margin
 
         line_offset = s.line_offset
@@ -37,7 +32,10 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
-            elseif i == fidx || i == lidx
+            elseif nest_to_oneline && (i == fidx || i == lidx)
+                fst[i] = Newline(length = n.len)
+                s.line_offset = fst.indent
+            elseif !nest_to_oneline && n.typ === PLACEHOLDER
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
             elseif n.typ === TRAILINGCOMMA
@@ -66,7 +64,9 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
             s.line_offset = fst[end].indent + 1
         end
     else
-        n_tupleh!(DefaultStyle(bs), fst, s)
+        extra_margin = fst.extra_margin
+        opener && (extra_margin += 1)
+        nest!(bs, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
 @inline n_call!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
