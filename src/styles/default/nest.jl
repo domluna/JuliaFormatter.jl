@@ -14,140 +14,6 @@
 #
 # the length of " op" will be considered when nesting LHS
 
-function skip_indent(fst::FST)
-    if fst.typ === CSTParser.LITERAL && fst.val == ""
-        return true
-    elseif fst.typ === NEWLINE || fst.typ === NOTCODE
-        return true
-    end
-    false
-end
-
-function walk(f, nodes::Vector{FST}, s::State, indent::Int)
-    for (i, n) in enumerate(nodes)
-        if n.typ === NEWLINE && i < length(nodes)
-            if is_closer(nodes[i+1])
-                s.line_offset = nodes[i+1].indent
-            elseif !skip_indent(nodes[i+1])
-                s.line_offset = indent
-            end
-        else
-            walk(f, n, s)
-        end
-    end
-end
-
-"""
-    walk(f, fst::FST, s::State)
-
-Walks `fst` calling `f` on each node.
-
-In situations where descending further into a subtree is not desirable `f`
-should return a value other than `nothing`.
-"""
-function walk(f, fst::FST, s::State)
-    stop = f(fst, s)
-    (stop != nothing || is_leaf(fst)) && return
-    walk(f, fst.nodes, s, fst.indent)
-end
-
-function increment_line_offset!(fst::FST, s::State)
-    is_leaf(fst) || return
-    s.line_offset += length(fst)
-    return nothing
-end
-
-function add_indent!(fst::FST, s::State, indent)
-    indent == 0 && return
-    lo = s.line_offset
-    f = (fst::FST, s::State) -> begin
-        fst.indent += indent
-        return nothing
-    end
-    walk(f, fst, s)
-    s.line_offset = lo
-end
-
-# unnest, converts newlines to whitespace
-function unnest!(fst::FST, nl_inds::Vector{Int})
-    for (i, ind) in enumerate(nl_inds)
-        fst[ind] = Whitespace(fst[ind].len)
-        i == length(nl_inds) || continue
-        pn = fst[ind-1]
-        if pn.typ === TRAILINGCOMMA || pn.typ === TRAILINGSEMICOLON
-            pn.val = ""
-            pn.len = 0
-        elseif pn.typ === INVERSETRAILINGSEMICOLON
-            pn.val = ";"
-            pn.len = 1
-        elseif fst.typ === CSTParser.BinaryOpCall && fst[ind+1].typ === WHITESPACE
-            # remove additional indent
-            fst[ind+1] = Whitespace(0)
-        end
-    end
-end
-
-function dedent!(fst::FST, s::State)
-    if is_leaf(fst)
-        s.line_offset += length(fst)
-        if is_closer(fst) || fst.typ === NOTCODE
-            fst.indent -= s.opts.indent_size
-        end
-        return
-    elseif fst.typ === CSTParser.StringH
-        return
-    end
-
-    # dedent
-    fst.indent -= s.opts.indent_size
-
-    # only unnest if it's allowed
-    can_nest(fst) || return
-
-    nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
-    length(nl_inds) > 0 || return
-    margin = s.line_offset + fst.extra_margin + length(fst)
-    margin <= s.opts.max_margin || return
-    unnest!(fst, nl_inds)
-end
-
-"""
-    nest_if_over_margin!(
-        style,
-        fst::FST,
-        s::State,
-        idx::Int;
-        stop_idx::Union{Int,Nothing} = nothing,
-    )
-
-Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than
-the allowed margin.
-
-If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will
-be included.
-"""
-function nest_if_over_margin!(
-    style,
-    fst::FST,
-    s::State,
-    idx::Int;
-    stop_idx::Union{Int,Nothing} = nothing,
-)
-    @assert fst[idx].typ == PLACEHOLDER
-    margin = s.line_offset
-    if stop_idx === nothing
-        margin += sum(length.(fst[idx:end])) + fst.extra_margin
-    else
-        margin += sum(length.(fst[idx:stop_idx-1]))
-    end
-
-    if margin > s.opts.max_margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
-        fst[idx] = Newline(length = fst[idx].len)
-        s.line_offset = fst.indent
-    else
-        nest!(style, fst[idx], s)
-    end
-end
 
 function nest!(
     ds::DefaultStyle,
@@ -355,7 +221,7 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    opener = length(fst.nodes) > 0 ? is_opener(fst[1]) : false
+    opener = findfirst(is_opener, fst.nodes) !== nothing
     if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         line_offset = s.line_offset
         if opener
@@ -429,6 +295,26 @@ n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
 
+@inline n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_call!(DefaultStyle(style), fst, s)
+
+@inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_curly!(DefaultStyle(style), fst, s)
+
+@inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_macrocall!(DefaultStyle(style), fst, s)
+
+@inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_ref!(DefaultStyle(style), fst, s)
+
+@inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_typedvcat!(DefaultStyle(style), fst, s)
+
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -493,66 +379,6 @@ n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_flatten!(DefaultStyle(style), fst, s)
 
-function n_call!(ds::DefaultStyle, fst::FST, s::State)
-    style = getstyle(ds)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
-    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-
-    if idx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
-        line_offset = s.line_offset
-        fst[end].indent = fst.indent
-        fst.indent += s.opts.indent_size
-
-        for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
-            elseif n.typ === TRAILINGCOMMA
-                n.val = ","
-                n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === INVERSETRAILINGSEMICOLON
-                n.val = ""
-                n.len = 0
-                nest!(style, n, s)
-            elseif i == 1 || i == length(fst.nodes)
-                n.extra_margin = 1
-                nest!(style, n, s)
-            else
-                diff = fst.indent - fst[i].indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1
-                nest!(style, n, s)
-            end
-        end
-
-        s.line_offset = fst[end].indent + 1
-    else
-        extra_margin = fst.extra_margin
-        is_closer(fst[end]) && (extra_margin += 1)
-        nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
-    end
-end
-n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_call!(DefaultStyle(style), fst, s)
-
-@inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_curly!(DefaultStyle(style), fst, s)
-
-@inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_macrocall!(DefaultStyle(style), fst, s)
-
-@inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_ref!(DefaultStyle(style), fst, s)
-
-@inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_call!(ds, fst, s)
-n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_typedvcat!(DefaultStyle(style), fst, s)
 
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
