@@ -34,11 +34,11 @@ function separate_kwargs_with_semicolon!(fst::FST)
     if kw_idx !== nothing && sc_idx !== nothing && sc_idx > kw_idx
         fst[sc_idx].val = ","
         fst[sc_idx].typ = CSTParser.PUNCTUATION
-        insert!(fst, kw_idx-1, Semicolon())
+        insert!(fst, kw_idx - 1, Semicolon())
     elseif kw_idx !== nothing && sc_idx === nothing
         comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
         if comma_idx === nothing
-            insert!(fst, kw_idx-1, Semicolon())
+            insert!(fst, kw_idx - 1, Semicolon())
         else
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
@@ -52,4 +52,3 @@ function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     separate_kwargs_with_semicolon!(t)
     t
 end
-
