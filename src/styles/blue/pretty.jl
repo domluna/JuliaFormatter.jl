@@ -26,6 +26,27 @@ function p_do(style::BlueStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
+function separate_kwargs_with_semicolon!(fst::FST)
+    kw_idx = findfirst(n -> n.typ === CSTParser.Kw, fst.nodes)
+    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
+
+    # move ; prior to first kwarg
+    if kw_idx !== nothing && sc_idx !== nothing && sc_idx > kw_idx
+        fst[sc_idx].val = ","
+        fst[sc_idx].typ = CSTParser.PUNCTUATION
+        insert!(fst, kw_idx-1, Semicolon())
+    elseif kw_idx !== nothing && sc_idx === nothing
+        comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
+        if comma_idx === nothing
+            insert!(fst, kw_idx-1, Semicolon())
+        else
+            fst[comma_idx].val = ";"
+            fst[comma_idx].typ = SEMICOLON
+        end
+    end
+    return
+end
+
 
 function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
@@ -53,25 +74,8 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
     end
 
-    kw_idx = findfirst(n -> n.typ === CSTParser.Kw, t.nodes)
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, t.nodes)
-
-    # move ; prior to first kwarg
-    if kw_idx !== nothing && sc_idx !== nothing && sc_idx > kw_idx
-        t[sc_idx].val = ","
-        t[sc_idx].typ = CSTParser.PUNCTUATION
-
-        # insert!(t, kw_idx-1, Placeholder(1))
-        insert!(t, kw_idx-1, Semicolon())
-    elseif kw_idx !== nothing && sc_idx === nothing
-        comma_idx = findlast(is_comma, t.nodes[1:kw_idx-1])
-        if comma_idx === nothing
-            insert!(t, kw_idx-1, Semicolon())
-        else
-            t[comma_idx].val = ";"
-            t[comma_idx].typ = SEMICOLON
-        end
-    end
+    separate_kwargs_with_semicolon!(t)
 
     t
 end
+

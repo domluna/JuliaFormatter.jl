@@ -155,18 +155,5 @@
 
         str_ = "xy = f(x=1; y=2)"
         @test fmt(str_, style=BlueStyle()) == str
-
-        # str_ = "xy = @f(x, y=3)"
-        # str = "xy = @f(x; y = 3)"
-        # @test fmt(str_, style=BlueStyle()) == str
-        #
-        # str_ = "xy = @f(x=1, y=2)"
-        # str = "xy = @f(; x=1, y = 2)"
-        # @test fmt(str_, style=BlueStyle()) == str
-        # @test fmt(str, style=BlueStyle()) == str
-        #
-        # str_ = "xy = @f(x=1; y = 2)"
-        # @test fmt(str_, style=BlueStyle()) == str
-
     end
 end
