@@ -47,35 +47,9 @@ function separate_kwargs_with_semicolon!(fst::FST)
     return
 end
 
-
-function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-
-    args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
-
-    if nest
-        add_node!(t, Placeholder(0), s)
-    end
-
-    for (i, a) in enumerate(cst.args[3:end])
-        if i + 2 == length(cst) && nest
-            add_node!(t, TrailingComma(), s)
-            add_node!(t, Placeholder(0), s)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        elseif CSTParser.is_comma(a) && i < length(cst) - 3 && !is_punc(cst[i+3])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
-        else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        end
-    end
-
+function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    t = p_call(DefaultStyle(bs), cst, s)
     separate_kwargs_with_semicolon!(t)
-
     t
 end
 
