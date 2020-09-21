@@ -117,6 +117,7 @@ end
 @inline function Base.insert!(fst::FST, ind::Int, node::FST)
     insert!(fst.nodes, ind, node)
     fst.len += node.len
+    return
 end
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =

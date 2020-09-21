@@ -133,4 +133,40 @@
         @test fmt(str_, 4, 38, style=BlueStyle()) == str
 
     end
+
+    @testset "do not prepend return in `do` blocks" begin
+        str = """
+        map(arg1, arg2) do x, y
+            expr1
+            expr2
+        end"""
+        @test fmt(str, style=BlueStyle(), always_use_return = true) == str
+    end
+
+    @testset "separate kw args with semicolon" begin
+        str_ = "xy = f(x, y=3)"
+        str = "xy = f(x; y = 3)"
+        @test fmt(str_, style=BlueStyle()) == str
+
+        str_ = "xy = f(x=1, y=2)"
+        str = "xy = f(; x = 1, y = 2)"
+        @test fmt(str_, style=BlueStyle()) == str
+        @test fmt(str, style=BlueStyle()) == str
+
+        str_ = "xy = f(x=1; y=2)"
+        @test fmt(str_, style=BlueStyle()) == str
+
+        # str_ = "xy = @f(x, y=3)"
+        # str = "xy = @f(x; y = 3)"
+        # @test fmt(str_, style=BlueStyle()) == str
+        #
+        # str_ = "xy = @f(x=1, y=2)"
+        # str = "xy = @f(; x=1, y = 2)"
+        # @test fmt(str_, style=BlueStyle()) == str
+        # @test fmt(str, style=BlueStyle()) == str
+        #
+        # str_ = "xy = @f(x=1; y = 2)"
+        # @test fmt(str_, style=BlueStyle()) == str
+
+    end
 end
