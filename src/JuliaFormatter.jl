@@ -525,9 +525,15 @@ end
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)
     if (style = get(config_dict, "style", nothing)) !== nothing
-        @assert (style == "default" || style == "yas") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" for the style configuration"
+        @assert (style == "default" || style == "yas" || style == "blue") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" or \"blue\" for the style configuration"
         config_dict["style"] =
-            (style == "yas" && @isdefined(YASStyle)) ? YASStyle() : DefaultStyle()
+        if (style == "yas" && @isdefined(YASStyle))
+            YASStyle()
+        elseif (style == "blue" && @isdefined(BlueStyle))
+            BlueStyle()
+        else
+            DefaultStyle()
+        end
     end
     return kwargs(config_dict)
 end
