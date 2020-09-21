@@ -28,16 +28,20 @@ end
 
 function separate_kwargs_with_semicolon!(fst::FST)
     kw_idx = findfirst(n -> n.typ === CSTParser.Kw, fst.nodes)
+    kw_idx === nothing && return
     sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
+    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
 
     # move ; prior to first kwarg
     if kw_idx !== nothing && sc_idx !== nothing && sc_idx > kw_idx
         fst[sc_idx].val = ","
         fst[sc_idx].typ = CSTParser.PUNCTUATION
+        comma_idx === nothing && insert!(fst, kw_idx - 1, Placeholder(1))
         insert!(fst, kw_idx - 1, Semicolon())
     elseif kw_idx !== nothing && sc_idx === nothing
         comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
         if comma_idx === nothing
+            insert!(fst, kw_idx - 1, Placeholder(1))
             insert!(fst, kw_idx - 1, Semicolon())
         else
             fst[comma_idx].val = ";"

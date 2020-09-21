@@ -150,10 +150,12 @@
 
         str_ = "xy = f(x=1, y=2)"
         str = "xy = f(; x = 1, y = 2)"
+        @test fmt1(str_, style = BlueStyle()) == str
         @test fmt(str_, style = BlueStyle()) == str
         @test fmt(str, style = BlueStyle()) == str
 
         str_ = "xy = f(x=1; y=2)"
+        @test fmt1(str_, style = BlueStyle()) == str
         @test fmt(str_, style = BlueStyle()) == str
     end
 end
