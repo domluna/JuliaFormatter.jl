@@ -71,7 +71,7 @@ end
 
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t = p_call(DefaultStyle(bs), cst, s)
-    if !parent_is(cst, n -> CSTParser.defines_function(n) || n.typ === CSTParser.Macro || n.typ === CSTParser.WhereOpCall)
+    if !parent_is(cst, is_function_or_macro_def)
         separate_kwargs_with_semicolon!(t)
     end
     t

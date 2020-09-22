@@ -565,6 +565,13 @@ end
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
 
+function is_function_or_macro_def(cst::CSTParser.EXPR)
+    CSTParser.defines_function(n) && return true
+    n.typ === CSTParser.Macro && return true
+    n.typ === CSTParser.WhereOpCall && return true
+    return false
+end
+
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
     cst.typ === CSTParser.Do && return true
