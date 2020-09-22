@@ -198,7 +198,7 @@ function is_macrodoc(cst::CSTParser.EXPR)
 end
 
 # f a function which returns a bool
-function parent_is(cst::CSTParser.EXPR, valid; ignore = (n) -> false)
+function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     p = cst.parent
     p === nothing && return false
     while p !== nothing && ignore(p)

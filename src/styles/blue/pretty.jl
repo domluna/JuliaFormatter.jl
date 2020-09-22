@@ -16,7 +16,6 @@ Recommended options are:
 - `import_to_using` = true
 - `pipe_to_function_call` = true
 - `whitespace_in_kwargs` = false
-- `whitespace_typedefs` = true
 """
 struct BlueStyle <: AbstractStyle end
 @inline getstyle(s::BlueStyle) = s
@@ -72,6 +71,8 @@ end
 
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t = p_call(DefaultStyle(bs), cst, s)
-    separate_kwargs_with_semicolon!(t)
+    if !parent_is(cst, n -> CSTParser.defines_function(n) || n.typ === CSTParser.Macro || n.typ === CSTParser.WhereOpCall)
+        separate_kwargs_with_semicolon!(t)
+    end
     t
 end

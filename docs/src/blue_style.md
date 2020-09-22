@@ -13,7 +13,6 @@ Recommended options are:
 - `import_to_using` = true
 - `pipe_to_function_call` = true
 - `whitespace_in_kwargs` = false
-- `whitespace_typedefs` = true
 
 ## Configuration File Example
 
@@ -29,7 +28,6 @@ always_for_in = true
 import_to_using = true
 pipe_to_function_call = true
 whitespace_in_kwargs = false
-whitespace_typedefs = true
 ```
 
 

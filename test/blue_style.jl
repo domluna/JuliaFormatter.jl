@@ -157,5 +157,18 @@
         str_ = "xy = f(x=1; y=2)"
         @test fmt1(str_, style = BlueStyle()) == str
         @test fmt(str_, style = BlueStyle()) == str
+
+        str = """
+        function g(x, y = 1)
+            return x + y
+        end
+        macro h(x, y = 1)
+            nothing
+        end
+        shortdef1(MatrixT, VectorT = nothing) = nothing
+        shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
+        """
+        @test fmt1(str, style = BlueStyle()) == str
+        @test fmt(str, style = BlueStyle()) == str
     end
 end
