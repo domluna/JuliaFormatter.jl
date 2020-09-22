@@ -13,6 +13,7 @@ Recommended options are:
 - `import_to_using` = true
 - `pipe_to_function_call` = true
 - `whitespace_in_kwargs` = false
+- `annotate_untyped_fields_with_any` = false
 
 ## Configuration File Example
 
@@ -28,6 +29,7 @@ always_for_in = true
 import_to_using = true
 pipe_to_function_call = true
 whitespace_in_kwargs = false
+annotate_untyped_fields_with_any = false
 ```
 
 

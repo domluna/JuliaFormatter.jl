@@ -16,6 +16,7 @@ Recommended options are:
 - `import_to_using` = true
 - `pipe_to_function_call` = true
 - `whitespace_in_kwargs` = false
+- `annotate_untyped_fields_with_any` = false
 """
 struct BlueStyle <: AbstractStyle end
 @inline getstyle(s::BlueStyle) = s
