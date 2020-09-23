@@ -1408,11 +1408,7 @@ function p_binaryopcall(
     elseif op.kind === Tokens.EX_OR
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
-    elseif (
-        is_number(cst[1]) ||
-        op.kind === Tokens.FWDFWD_SLASH ||
-        op.kind === Tokens.CIRCUMFLEX_ACCENT
-    ) && op.dot
+    elseif (is_number(cst[1]) || op.kind === Tokens.CIRCUMFLEX_ACCENT) && op.dot
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
@@ -1420,7 +1416,6 @@ function p_binaryopcall(
         nospace || (
             op.kind !== Tokens.ANON_FUNC && CSTParser.precedence(op) in (
                 CSTParser.ColonOp,
-                CSTParser.RationalOp,
                 CSTParser.PowerOp,
                 CSTParser.DeclarationOp,
                 CSTParser.DotOp,
