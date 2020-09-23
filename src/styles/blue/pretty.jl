@@ -1,10 +1,12 @@
 """
     BlueStyle()
 
-> This style is a WIP/Experimental
+Formatting style based on [BlueStyle](https://github.com/invenia/BlueStyle)
+and [JuliaFormatter#283](https://github.com/domluna/JuliaFormatter.jl/issues/283).
 
-Formatting style based on https://github.com/invenia/BlueStyle
-and https://github.com/domluna/JuliaFormatter.jl/issues/283
+!!! note
+    This style is still work-in-progress, and does not yet implement all of the
+    BlueStyle guide.
 
 Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true

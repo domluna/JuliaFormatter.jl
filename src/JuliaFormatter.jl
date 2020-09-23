@@ -26,8 +26,10 @@ abstract type AbstractStyle end
 """
     DefaultStyle
 
-The default formatting style. See the style section of the documentation
+The default formatting style. See the [Style](@ref) section of the documentation
 for more details.
+
+See also: [`BlueStyle`](@ref), [`YASStyle`](@ref)
 """
 struct DefaultStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -446,7 +448,7 @@ See [`format_file`](@ref) and [`format_text`](@ref) for a description of the opt
 This function will look for `.JuliaFormatter.toml` in the location of the file being
 formatted, and searching *up* the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
-See ["Configuration File"](@id) for more details.
+See [Configuration File](@ref) for more details.
 
 ### Output
 

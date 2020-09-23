@@ -1,8 +1,8 @@
 """
     YASStyle()
 
-gormatting style based on https://github.com/jrevels/YASGuide
-and https://github.com/domluna/JuliaFormatter.jl/issues/198.
+Formatting style based on [YASGuide](https://github.com/jrevels/YASGuide)
+and [JuliaFormatter#198](https://github.com/domluna/JuliaFormatter.jl/issues/198).
 
 Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_for_in` = true
