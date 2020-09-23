@@ -117,6 +117,7 @@ end
 @inline function Base.insert!(fst::FST, ind::Int, node::FST)
     insert!(fst.nodes, ind, node)
     fst.len += node.len
+    return
 end
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
@@ -197,7 +198,7 @@ function is_macrodoc(cst::CSTParser.EXPR)
 end
 
 # f a function which returns a bool
-function parent_is(cst::CSTParser.EXPR, valid; ignore = (n) -> false)
+function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     p = cst.parent
     p === nothing && return false
     while p !== nothing && ignore(p)
@@ -210,6 +211,7 @@ function contains_comment(fst::FST)
     is_leaf(fst) && return false
     findfirst(is_comment, fst.nodes) !== nothing
 end
+contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
@@ -562,6 +564,13 @@ function is_assignment(x::Union{FST,CSTParser.EXPR})
 end
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
+
+function is_function_or_macro_def(cst::CSTParser.EXPR)
+    CSTParser.defines_function(cst) && return true
+    cst.typ === CSTParser.Macro && return true
+    cst.typ === CSTParser.WhereOpCall && return true
+    return false
+end
 
 function nest_block(cst::CSTParser.EXPR)
     cst.typ === CSTParser.If && return true
