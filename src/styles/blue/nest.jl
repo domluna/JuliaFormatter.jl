@@ -7,15 +7,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
     if lidx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
         fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         args_range = fidx+1:lidx-1
-        args_margin = 0
-
-        for n in fst[args_range]
-            if n.typ === TRAILINGCOMMA || n.typ === TRAILINGSEMICOLON
-                args_margin += 1
-            else
-                args_margin += length(n)
-            end
-        end
+        args_margin = sum(length.(fst[args_range]))
 
         nest_to_oneline =
             (fst.indent + s.opts.indent_size + args_margin <= s.opts.max_margin) &&
@@ -41,8 +33,10 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
             elseif n.typ === TRAILINGCOMMA
-                n.val = ","
-                n.len = 1
+                if !nest_to_oneline
+                    n.val = ","
+                    n.len = 1
+                end
                 nest!(bs, n, s)
             elseif n.typ === TRAILINGSEMICOLON
                 n.val = ";"
