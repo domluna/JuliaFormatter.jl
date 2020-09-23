@@ -22,8 +22,8 @@ function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     t = JuliaFormatter.pretty(style, x, s)
     t
 end
-run_pretty(text::String, max_margin::Int) =
-    run_pretty(text, opts = Options(max_margin = max_margin))
+run_pretty(text::String, margin::Int) =
+    run_pretty(text, opts = Options(margin = margin))
 
 function run_nest(text::String; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
@@ -33,8 +33,8 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
     JuliaFormatter.nest!(style, t, s)
     t, s
 end
-run_nest(text::String, max_margin::Int) =
-    run_nest(text, opts = Options(max_margin = max_margin))
+run_nest(text::String, margin::Int) =
+    run_nest(text, opts = Options(margin = margin))
 
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
 yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())

@@ -235,8 +235,8 @@ function short_to_long_function_def!(fst::FST, s::State)
 
         # body
         s.opts.always_use_return && prepend_return!(fst[end], s)
-        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent_size)
-        add_indent!(funcdef[end], s, s.opts.indent_size)
+        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
+        add_indent!(funcdef[end], s, s.opts.indent)
 
         # end
         kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
@@ -264,8 +264,8 @@ function short_to_long_function_def!(fst::FST, s::State)
 
         # body
         s.opts.always_use_return && prepend_return!(fst[end], s)
-        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent_size)
-        add_indent!(funcdef[end], s, s.opts.indent_size)
+        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
+        add_indent!(funcdef[end], s, s.opts.indent)
 
         # end
         kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")

@@ -49,10 +49,10 @@ function p_do(style::BlueStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     end
     if cst[4].typ === CSTParser.Block
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
-        add_node!(t, n, s, max_padding = s.opts.indent_size)
-        s.indent -= s.opts.indent_size
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
     end
     add_node!(t, pretty(style, cst.args[end], s), s)
     t
@@ -187,7 +187,7 @@ function p_binaryopcall(
     end
 
     if nest
-        # for indent, will be converted to `indent_size` if needed
+        # for indent, will be converted to `indent` if needed
         insert!(t.nodes, length(t.nodes), Placeholder(0))
     end
 

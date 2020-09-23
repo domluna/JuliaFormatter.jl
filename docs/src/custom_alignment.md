@@ -4,8 +4,8 @@
 
 Custom alignment is determined by a whitespace heuristic:
 
-A token (typically an operator, i.e. `=, ?, ::, etc`) is custom aligned if there are 
-`> 1` whitespaces from the previous expression since the formatter only outputs 
+A token (typically an operator, i.e. `=, ?, ::, etc`) is custom aligned if there are
+`> 1` whitespaces from the previous expression since the formatter only outputs
 0 or 1 whitespaces for separation. If custom alignment is determined then all
 expressions in the code block will be aligned to the furthest aligned token.
 
@@ -124,8 +124,8 @@ Align struct field definitions to `::` or `=` - whichever has higher precedence.
 
 ```julia
 Base.@kwdef struct Options
-    indent_size::Int                       = 4
-    max_margin::Int                        = 92
+    indent::Int                            = 4
+    margin::Int                            = 92
     always_for_in::Bool                    = false
     whitespace_typedefs::Bool              = false
     whitespace_ops_in_indices::Bool        = false
@@ -174,7 +174,7 @@ index = zeros(
 )
 
 # Note even if the maximum margin is set to 1, the alignment remains intact
-index = 
+index =
     zeros(
         n <= typemax(Int8)  ? Int8  :
         n <= typemax(Int16) ? Int16 :
@@ -202,4 +202,3 @@ pages = [
     "API Reference"       => "api.md",
 ]
 ```
-

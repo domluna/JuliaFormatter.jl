@@ -40,8 +40,8 @@ function format_md(
 )
     isempty(text) && return text
     opts = Options(
-        indent_size = indent,
-        max_margin = margin,
+        indent = indent,
+        margin = margin,
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,

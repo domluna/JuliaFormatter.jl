@@ -109,7 +109,7 @@
         using .B: B
         using ...C: C"""
         @test fmt(str_, import_to_using = true) == str
-        t = run_pretty(str_, opts = Options(max_margin = 80, import_to_using = true))
+        t = run_pretty(str_, opts = Options(margin = 80, import_to_using = true))
         @test t.len == 13
 
         # #232
@@ -385,7 +385,7 @@
 
         t = run_pretty(
             str_,
-            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+            opts = Options(margin = 80, annotate_untyped_fields_with_any = false),
         )
         @test length(t) == 11
 
@@ -414,7 +414,7 @@
 
         t = run_pretty(
             str_,
-            opts = Options(max_margin = 80, annotate_untyped_fields_with_any = false),
+            opts = Options(margin = 80, annotate_untyped_fields_with_any = false),
         )
         @test length(t) == 23
     end
@@ -747,7 +747,7 @@
         str_ = """
         Base.@kwdef struct Options
             indent_size::Int                       = 4
-            max_margin::Int                        = 92
+            margin::Int                            = 92
             always_for_in::Bool                 = false
             whitespace_typedefs::Bool          = false
             whitespace_ops_in_indices::Bool        = false
@@ -769,7 +769,7 @@
         str = """
         Base.@kwdef struct Options
             indent_size::Int                       = 4
-            max_margin::Int                        = 92
+            margin::Int                            = 92
             always_for_in::Bool                    = false
             whitespace_typedefs::Bool              = false
             whitespace_ops_in_indices::Bool        = false
@@ -793,7 +793,7 @@
         str_ = """
         Base.@kwdef struct Options
             indent_size::Int = 4
-            max_margin::Int = 92
+            margin::Int = 92
             always_for_in::Bool = false
             whitespace_typedefs::Bool = false
             whitespace_ops_in_indices::Bool = false
@@ -818,7 +818,7 @@
         str = """
         Base.@kwdef struct Options
             indent_size::Int                       = 4
-            max_margin::Int                        = 92
+            margin::Int                            = 92
             always_for_in::Bool                    = false
             whitespace_typedefs::Bool              = false
             whitespace_ops_in_indices::Bool        = false

@@ -25,7 +25,7 @@ function format_check(io::IOBuffer, fst::FST, s::State)
         deleteat!(s.doc.format_skips, 1)
         s.on = true
         # change the startline, otherwise lines
-        # prior to in the NOTCODE node prior to 
+        # prior to in the NOTCODE node prior to
         # "format: on" will be reprinted
         fst.startline = skip[2]
         print_notcode(io, fst, s, fmttag = true)
@@ -69,7 +69,7 @@ function print_tree(
             if notcode_indent > -1
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
-                n.indent += s.opts.indent_size
+                n.indent += s.opts.indent
             elseif i + 1 < length(nodes) && (
                 nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin
             )
