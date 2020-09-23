@@ -39,10 +39,12 @@ run_nest(text::String, margin::Int) =
 yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
 yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
 
-include("default_style.jl")
-include("yas_style.jl")
-include("blue_style.jl")
-include("issues.jl")
-include("options.jl")
-include("config.jl")
-include("document.jl")
+@testset "JuliaFormatter" begin
+    include("default_style.jl")
+    include("yas_style.jl")
+    include("blue_style.jl")
+    include("issues.jl")
+    include("options.jl")
+    include("config.jl")
+    include("document.jl")
+end
