@@ -1,8 +1,8 @@
 @testset "Blue Style" begin
     @testset "ops" begin
         # `//` and `^` are binary ops without whitespace around them
-        @test fmt("1 // 2 + 3 ^ 4", style=BlueStyle()) == "1//2 + 3^4"
-        @test fmt("a.//10", style=BlueStyle()) == "a .// 10"
+        @test fmt("1 // 2 + 3 ^ 4", style = BlueStyle()) == "1//2 + 3^4"
+        @test fmt("a.//10", style = BlueStyle()) == "a .// 10"
     end
 
     @testset "nest to one line" begin
