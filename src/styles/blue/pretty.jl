@@ -6,8 +6,7 @@
 Formatting style based on https://github.com/invenia/BlueStyle
 and https://github.com/domluna/JuliaFormatter.jl/issues/283
 
-Recommended options are:
-
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true
 - `short_to_long_function_def` = true
 - `whitespace_ops_in_indices` = true
@@ -20,6 +19,20 @@ Recommended options are:
 """
 struct BlueStyle <: AbstractStyle end
 @inline getstyle(s::BlueStyle) = s
+
+function options(style::BlueStyle)
+    return (;
+        always_use_return = true,
+        short_to_long_function_def = true,
+        whitespace_ops_in_indices = true,
+        remove_extra_newlines = true,
+        always_for_in = true,
+        import_to_using = true,
+        pipe_to_function_call = true,
+        whitespace_in_kwargs = false,
+        annotate_untyped_fields_with_any = false,
+    )
+end
 
 function nestable(::BlueStyle, cst::CSTParser.EXPR)
     is_assignment(cst) && is_iterable(cst[end]) && return false

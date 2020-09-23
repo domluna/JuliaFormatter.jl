@@ -33,6 +33,7 @@ end
 DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
+@inline options(s::DefaultStyle) = NamedTuple()
 
 include("document.jl")
 include("options.jl")
@@ -59,9 +60,9 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 """
     format_text(
         text::AbstractString;
+        style::AbstractStyle = DefaultStyle(),
         indent::Int = 4,
         margin::Int = 92,
-        style::AbstractStyle = DefaultStyle(),
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
@@ -242,47 +243,13 @@ Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/Com
 
 See `Custom Alignment` documentation.
 """
-function format_text(
-    text::AbstractString;
-    indent::Int = 4,
-    margin::Int = 92,
-    style::AbstractStyle = DefaultStyle(),
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    import_to_using::Bool = false,
-    pipe_to_function_call::Bool = false,
-    short_to_long_function_def::Bool = false,
-    always_use_return::Bool = false,
-    whitespace_in_kwargs::Bool = true,
-    annotate_untyped_fields_with_any::Bool = true,
-    format_docstrings::Bool = false,
-    align_struct_field::Bool = false,
-    align_conditional::Bool = false,
-    align_assignment::Bool = false,
-    align_pair_arrow::Bool = false,
-)
+function format_text(text::AbstractString; style::AbstractStyle=DefaultStyle(), kwargs...)
+    return format_text(text, style; kwargs...)
+end
+
+function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     isempty(text) && return text
-    opts = Options(
-        indent_size = indent,
-        max_margin = margin,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        import_to_using = import_to_using,
-        pipe_to_function_call = pipe_to_function_call,
-        short_to_long_function_def = short_to_long_function_def,
-        always_use_return = always_use_return,
-        whitespace_in_kwargs = whitespace_in_kwargs,
-        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
-        format_docstrings = format_docstrings,
-        align_struct_field = align_struct_field,
-        align_conditional = align_conditional,
-        align_assignment = align_assignment,
-        align_pair_arrow = align_pair_arrow,
-    )
+    opts = Options(; merge(options(style), kwargs)...)
     return format_text(text, style, opts)
 end
 
