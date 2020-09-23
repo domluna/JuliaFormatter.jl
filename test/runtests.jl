@@ -1,5 +1,5 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle, YASStyle, Options, CONFIG_FILE_NAME
+using JuliaFormatter: DefaultStyle, YASStyle, Options, options, CONFIG_FILE_NAME
 using CSTParser
 using Test
 
@@ -36,8 +36,11 @@ end
 run_nest(text::String, margin::Int) =
     run_nest(text, opts = Options(margin = margin))
 
-yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
-yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
+function yasfmt(s, i, m; kwargs...)
+    # use DefaultStyle options to make writing tests easier
+    kws = merge(options(DefaultStyle()), kwargs)
+    return fmt(s; kws..., i = i, m = m, style = YASStyle())
+end
 
 @testset "JuliaFormatter" begin
     include("default_style.jl")
