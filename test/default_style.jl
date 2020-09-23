@@ -377,8 +377,7 @@
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
 
-        # `//` and `^` are binary ops without whitespace around them
-        @test fmt("1 // 2 + 3 ^ 4") == "1//2 + 3^4"
+        @test fmt("1 // 2 + 3 ^ 4") == "1 // 2 + 3^4"
 
         # Function def
 
