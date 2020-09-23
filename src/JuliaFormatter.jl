@@ -265,7 +265,7 @@ Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/Com
 
 See `Custom Alignment` documentation.
 """
-function format_text(text::AbstractString; style::AbstractStyle=DefaultStyle(), kwargs...)
+function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
 end
 

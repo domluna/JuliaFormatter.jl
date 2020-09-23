@@ -394,8 +394,7 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
             fst[end].indent = fst.indent
         end
 
-        over =
-            (s.line_offset + Blen + fst.extra_margin > s.opts.margin) || must_nest(fst)
+        over = (s.line_offset + Blen + fst.extra_margin > s.opts.margin) || must_nest(fst)
         fst.indent += s.opts.indent
         for (i, n) in enumerate(fst[2:end])
             if n.typ === NEWLINE
