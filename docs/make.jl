@@ -13,6 +13,7 @@ makedocs(
         "Custom Alignment" => "custom_alignment.md",
         "Custom Styles" => "custom_styles.md",
         "YAS Style" => "yas_style.md",
+        "Blue Style" => "blue_style.md",
         "Configuration File" => "config.md",
         "API Reference" => "api.md",
     ],
