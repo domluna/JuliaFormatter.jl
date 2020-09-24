@@ -1,8 +1,8 @@
 @testset "Blue Style" begin
     @testset "ops" begin
         # `//` and `^` are binary ops without whitespace around them
-        @test fmt("1 // 2 + 3 ^ 4", style = BlueStyle()) == "1//2 + 3^4"
-        @test fmt("a.//10", style = BlueStyle()) == "a .// 10"
+        @test bluefmt("1 // 2 + 3 ^ 4") == "1//2 + 3^4"
+        @test bluefmt("a.//10") == "a .// 10"
     end
 
     @testset "nest to one line" begin
@@ -16,7 +16,7 @@
             arg2,
         ]
         """
-        @test fmt(str_, style = BlueStyle()) == str
+        @test bluefmt(str_) == str
 
         str_ = """
         var = (arg1,
@@ -25,7 +25,7 @@
         str = """
         var = (arg1, arg2)
         """
-        @test fmt(str_, 4, 18, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 18) == str
 
         str_ = """
         var = {arg1,
@@ -36,8 +36,8 @@
             arg1, arg2
         }
         """
-        @test fmt(str_, 4, 17, style = BlueStyle()) == str
-        @test fmt(str_, 4, 14, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 17) == str
+        @test bluefmt(str_, 4, 14) == str
 
         str_ = """
         var = call(arg1,
@@ -48,7 +48,7 @@
             arg1, arg2
         )
         """
-        @test fmt(str_, 4, 14, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 14) == str
 
         str = """
         var = call(
@@ -56,7 +56,7 @@
             arg2,
         )
         """
-        @test fmt(str_, 4, 13, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 13) == str
 
         str_ = """
         var = ref[arg1,
@@ -67,7 +67,7 @@
             arg1, arg2
         ]
         """
-        @test fmt(str_, 4, 14, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 14) == str
 
         str = """
         var = ref[
@@ -75,7 +75,7 @@
             arg2,
         ]
         """
-        @test fmt(str_, 4, 13, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 13) == str
 
         str_ = """
         var = ABC{arg1,
@@ -86,7 +86,7 @@
             arg1,arg2
         }
         """
-        @test fmt(str_, 4, 13, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 13) == str
 
         str = """
         var = ABC{
@@ -94,7 +94,7 @@
             arg2,
         }
         """
-        @test fmt(str_, 4, 12, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 12) == str
 
         str_ = """
         var = @call(arg1,
@@ -105,7 +105,7 @@
             arg1, arg2
         )
         """
-        @test fmt(str_, 4, 14, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 14) == str
 
         str = """
         var = @call(
@@ -113,7 +113,7 @@
             arg2
         )
         """
-        @test fmt(str_, 4, 13, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 13) == str
 
         str_ = """
         function long_name_of_function_because_i_am_writing_an_example(
@@ -122,7 +122,7 @@
             # code
         end
         """
-        @test fmt(str_, 4, 38, style = BlueStyle()) == str_
+        @test bluefmt(str_, 4, 38) == str_
 
         str = """
         function long_name_of_function_because_i_am_writing_an_example(
@@ -136,7 +136,7 @@
             # code
         end
         """
-        @test fmt(str_, 4, 37, style = BlueStyle()) == str
+        @test bluefmt(str_, 4, 37) == str
 
     end
 
@@ -146,23 +146,23 @@
             expr1
             expr2
         end"""
-        @test fmt(str, style = BlueStyle(), always_use_return = true) == str
+        @test bluefmt(str, always_use_return = true) == str
     end
 
     @testset "separate kw args with semicolon" begin
         str_ = "xy = f(x, y=3)"
         str = "xy = f(x; y = 3)"
-        @test fmt(str_, style = BlueStyle()) == str
+        @test bluefmt(str_) == str
 
         str_ = "xy = f(x=1, y=2)"
         str = "xy = f(; x = 1, y = 2)"
-        @test fmt1(str_, style = BlueStyle()) == str
-        @test fmt(str_, style = BlueStyle()) == str
-        @test fmt(str, style = BlueStyle()) == str
+        @test bluefmt1(str_) == str
+        @test bluefmt(str_) == str
+        @test bluefmt(str) == str
 
         str_ = "xy = f(x=1; y=2)"
-        @test fmt1(str_, style = BlueStyle()) == str
-        @test fmt(str_, style = BlueStyle()) == str
+        @test bluefmt1(str_) == str
+        @test bluefmt(str_) == str
 
         str = """
         function g(x, y = 1)
@@ -174,7 +174,7 @@
         shortdef1(MatrixT, VectorT = nothing) = nothing
         shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
         """
-        @test fmt1(str, style = BlueStyle()) == str
-        @test fmt(str, style = BlueStyle()) == str
+        @test bluefmt1(str) == str
+        @test bluefmt(str) == str
     end
 end

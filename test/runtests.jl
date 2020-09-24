@@ -34,11 +34,15 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
-function yasfmt(s, i, m; kwargs...)
+function fmt(str, i, m; kwargs...)
     # use DefaultStyle options to make writing tests easier
     kws = merge(options(DefaultStyle()), kwargs)
-    return fmt(s; kws..., i = i, m = m, style = YASStyle())
+    return fmt(str; kws..., i = i, m = m)
 end
+
+yasfmt(str, i, m; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
+bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
+bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
 
 @testset "JuliaFormatter" begin
     include("default_style.jl")
