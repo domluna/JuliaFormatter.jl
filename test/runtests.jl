@@ -52,4 +52,5 @@ bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
     include("options.jl")
     include("config.jl")
     include("document.jl")
+    include("interface.jl")
 end

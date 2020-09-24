@@ -22,11 +22,11 @@ remove_extra_newlines = false
 ## Direct Usage
 
 ```julia
-format("file.jl", style=BlueStyle())
+format("file.jl", BlueStyle())
 ```
 
 Or to use `BlueStyle` except change one of the settings:
 
 ```julia
-format("file.jl", style=BlueStyle(), remove_extra_newlines=false)
+format("file.jl", BlueStyle(), remove_extra_newlines=false)
 ```

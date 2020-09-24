@@ -22,13 +22,13 @@ remove_extra_newlines = false
 ## Direct Usage
 
 ```julia
-format("file.jl", style=YASStyle())
+format("file.jl", YASStyle())
 ```
 
 Or to use `YASStyle` except change one of the settings:
 
 ```julia
-format("file.jl", style=YASStyle(), remove_extra_newlines=false)
+format("file.jl", YASStyle(), remove_extra_newlines=false)
 ```
 
 ## Differences from `DefaultStyle`

@@ -392,6 +392,13 @@ function format_file(
     return formatted_str == str
 end
 
+"""
+    format_file(filename::AbstractString, style::AbstractStyle; kwargs...)::Bool
+"""
+function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
+    return format_file(filename; style=style, kwargs...)
+end
+
 if VERSION < v"1.1.0"
     # We define `splitpath` here, copying the definition from base/path.jl
     # because it was only added in Julia 1.1.
@@ -506,6 +513,11 @@ function format(paths; options...)::Bool
     return already_formatted
 end
 format(path::AbstractString; options...) = format((path,); options...)
+
+"""
+    format(path, style::AbstractStyle; options...)::Bool
+"""
+format(path, style::AbstractStyle; options...) = format(path; style=style, options...)
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)
