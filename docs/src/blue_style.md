@@ -15,7 +15,7 @@ style = "blue"
 Or to use `BlueStyle` except change one of the settings:
 
 ```toml
-style = "yas"
+style = "blue"
 remove_extra_newlines = false
 ```
 
