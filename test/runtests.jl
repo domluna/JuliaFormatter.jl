@@ -1,5 +1,5 @@
 using JuliaFormatter
-using JuliaFormatter: DefaultStyle, YASStyle, Options, CONFIG_FILE_NAME
+using JuliaFormatter: DefaultStyle, YASStyle, Options, options, CONFIG_FILE_NAME
 using CSTParser
 using Test
 
@@ -22,8 +22,7 @@ function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     t = JuliaFormatter.pretty(style, x, s)
     t
 end
-run_pretty(text::String, max_margin::Int) =
-    run_pretty(text, opts = Options(max_margin = max_margin))
+run_pretty(text::String, margin::Int) = run_pretty(text, opts = Options(margin = margin))
 
 function run_nest(text::String; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
@@ -33,16 +32,25 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
     JuliaFormatter.nest!(style, t, s)
     t, s
 end
-run_nest(text::String, max_margin::Int) =
-    run_nest(text, opts = Options(max_margin = max_margin))
+run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
-yasfmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m, style = YASStyle())
-yasfmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m, style = YASStyle())
+function fmt(str, i, m; kwargs...)
+    # use DefaultStyle options to make writing tests easier
+    kws = merge(options(DefaultStyle()), kwargs)
+    return fmt(str; kws..., i = i, m = m)
+end
 
-include("default_style.jl")
-include("yas_style.jl")
-include("blue_style.jl")
-include("issues.jl")
-include("options.jl")
-include("config.jl")
-include("document.jl")
+yasfmt(str, i, m; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
+bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
+bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
+
+@testset "JuliaFormatter" begin
+    include("default_style.jl")
+    include("yas_style.jl")
+    include("blue_style.jl")
+    include("issues.jl")
+    include("options.jl")
+    include("config.jl")
+    include("document.jl")
+    include("interface.jl")
+end

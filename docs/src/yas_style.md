@@ -1,18 +1,8 @@
 # YAS Style
 
-Formatting style based on [YASGuide](https://github.com/jrevels/YASGuide) and https://github.com/domluna/JuliaFormatter.jl/issues/198.
-
-Recommended options for confirming with the above guide are:
-
-  - `always_for_in` = true
-  - `whitespace_ops_in_indices` = true
-  - `whitespace_typedefs` = false
-  - `remove_extra_newlines` = true
-  - `import_to_using` = true
-  - `pipe_to_function_call` = true
-  - `short_to_long_function_def` = true
-  - `always_use_return` = true
-  - `whitespace_in_kwargs` = false
+```@docs
+YASStyle
+```
 
 ## Configuration File Example
 
@@ -20,20 +10,25 @@ The `.JuliaFormatter.toml` which represents these settings is
 
 ```toml
 style = "yas"
-always_for_in = true
-whitespace_ops_in_indices = true
-whitespace_typedefs = false
-remove_extra_newlines = true
-import_to_using = true
-pipe_to_function_call = true
-short_to_long_function_def = true
-always_use_return = true
+```
+
+Or to use `YASStyle` except change one of the settings:
+
+```toml
+style = "yas"
+remove_extra_newlines = false
 ```
 
 ## Direct Usage
 
 ```julia
-format("file.jl", style=YASStyle(), ...)
+format("file.jl", YASStyle())
+```
+
+Or to use `YASStyle` except change one of the settings:
+
+```julia
+format("file.jl", YASStyle(), remove_extra_newlines=false)
 ```
 
 ## Differences from `DefaultStyle`

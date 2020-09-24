@@ -21,11 +21,15 @@ export format, format_text, format_file, format_md, DefaultStyle, YASStyle, Blue
 
 abstract type AbstractStyle end
 
+@inline options(s::AbstractStyle) = NamedTuple()
+
 """
     DefaultStyle
 
-The default formatting style. See the style section of the documentation
+The default formatting style. See the [Style](@ref) section of the documentation
 for more details.
+
+See also: [`BlueStyle`](@ref), [`YASStyle`](@ref)
 """
 struct DefaultStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -33,6 +37,27 @@ end
 DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
+function options(s::DefaultStyle)
+    return (;
+        indent = 4,
+        margin = 92,
+        always_for_in = false,
+        whitespace_typedefs = false,
+        whitespace_ops_in_indices = false,
+        remove_extra_newlines = false,
+        import_to_using = false,
+        pipe_to_function_call = false,
+        short_to_long_function_def = false,
+        always_use_return = false,
+        whitespace_in_kwargs = true,
+        annotate_untyped_fields_with_any = true,
+        format_docstrings = false,
+        align_struct_field = false,
+        align_assignment = false,
+        align_conditional = false,
+        align_pair_arrow = false,
+    )
+end
 
 include("document.jl")
 include("options.jl")
@@ -59,9 +84,9 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
 """
     format_text(
         text::AbstractString;
+        style::AbstractStyle = DefaultStyle(),
         indent::Int = 4,
         margin::Int = 92,
-        style::AbstractStyle = DefaultStyle(),
         always_for_in::Bool = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
@@ -242,47 +267,13 @@ Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/Com
 
 See `Custom Alignment` documentation.
 """
-function format_text(
-    text::AbstractString;
-    indent::Int = 4,
-    margin::Int = 92,
-    style::AbstractStyle = DefaultStyle(),
-    always_for_in::Bool = false,
-    whitespace_typedefs::Bool = false,
-    whitespace_ops_in_indices::Bool = false,
-    remove_extra_newlines::Bool = false,
-    import_to_using::Bool = false,
-    pipe_to_function_call::Bool = false,
-    short_to_long_function_def::Bool = false,
-    always_use_return::Bool = false,
-    whitespace_in_kwargs::Bool = true,
-    annotate_untyped_fields_with_any::Bool = true,
-    format_docstrings::Bool = false,
-    align_struct_field::Bool = false,
-    align_conditional::Bool = false,
-    align_assignment::Bool = false,
-    align_pair_arrow::Bool = false,
-)
+function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
+    return format_text(text, style; kwargs...)
+end
+
+function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     isempty(text) && return text
-    opts = Options(
-        indent_size = indent,
-        max_margin = margin,
-        always_for_in = always_for_in,
-        whitespace_typedefs = whitespace_typedefs,
-        whitespace_ops_in_indices = whitespace_ops_in_indices,
-        remove_extra_newlines = remove_extra_newlines,
-        import_to_using = import_to_using,
-        pipe_to_function_call = pipe_to_function_call,
-        short_to_long_function_def = short_to_long_function_def,
-        always_use_return = always_use_return,
-        whitespace_in_kwargs = whitespace_in_kwargs,
-        annotate_untyped_fields_with_any = annotate_untyped_fields_with_any,
-        format_docstrings = format_docstrings,
-        align_struct_field = align_struct_field,
-        align_conditional = align_conditional,
-        align_assignment = align_assignment,
-        align_pair_arrow = align_pair_arrow,
-    )
+    opts = Options(; merge(options(style), kwargs)...)
     return format_text(text, style, opts)
 end
 
@@ -401,6 +392,13 @@ function format_file(
     return formatted_str == str
 end
 
+"""
+    format_file(filename::AbstractString, style::AbstractStyle; kwargs...)::Bool
+"""
+function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
+    return format_file(filename; style = style, kwargs...)
+end
+
 if VERSION < v"1.1.0"
     # We define `splitpath` here, copying the definition from base/path.jl
     # because it was only added in Julia 1.1.
@@ -457,7 +455,7 @@ See [`format_file`](@ref) and [`format_text`](@ref) for a description of the opt
 This function will look for `.JuliaFormatter.toml` in the location of the file being
 formatted, and searching *up* the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
-See ["Configuration File"](@id) for more details.
+See [Configuration File](@ref) for more details.
 
 ### Output
 
@@ -515,6 +513,11 @@ function format(paths; options...)::Bool
     return already_formatted
 end
 format(path::AbstractString; options...) = format((path,); options...)
+
+"""
+    format(path, style::AbstractStyle; options...)::Bool
+"""
+format(path, style::AbstractStyle; options...) = format(path; style = style, options...)
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)

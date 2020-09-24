@@ -40,8 +40,8 @@ function format_md(
 )
     isempty(text) && return text
     opts = Options(
-        indent_size = indent,
-        max_margin = margin,
+        indent = indent,
+        margin = margin,
         always_for_in = always_for_in,
         whitespace_typedefs = whitespace_typedefs,
         whitespace_ops_in_indices = whitespace_ops_in_indices,
@@ -67,4 +67,11 @@ function format_md(
         text,
     ))
     return formatted
+end
+
+"""
+    format_md(text::AbstractString, style::AbstractStyle; options...)::String
+"""
+function format_md(text::AbstractString, style::AbstractStyle; options...)
+    return format_md(text; style = style, options...)
 end

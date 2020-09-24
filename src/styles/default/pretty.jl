@@ -736,11 +736,11 @@ function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
         else
-            s.indent += s.opts.indent_size
+            s.indent += s.opts.indent
             n = pretty(style, cst[3], s, ignore_single_line = true)
             s.opts.always_use_return && prepend_return!(n, s)
-            add_node!(t, n, s, max_padding = s.opts.indent_size)
-            s.indent -= s.opts.indent_size
+            add_node!(t, n, s, max_padding = s.opts.indent)
+            s.indent -= s.opts.indent
             add_node!(t, pretty(style, cst[4], s), s)
         end
     else
@@ -769,13 +769,13 @@ function p_struct(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
     else
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[3], s, ignore_single_line = true)
         if s.opts.annotate_untyped_fields_with_any
             annotate_typefields_with_any!(n, s)
         end
-        add_node!(t, n, s, max_padding = s.opts.indent_size)
-        s.indent -= s.opts.indent_size
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst[4], s), s)
     end
     t
@@ -796,13 +796,13 @@ function p_mutable(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
     else
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
         if s.opts.annotate_untyped_fields_with_any
             annotate_typefields_with_any!(n, s)
         end
-        add_node!(t, n, s, max_padding = s.opts.indent_size)
-        s.indent -= s.opts.indent_size
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst[5], s), s)
     end
     t
@@ -875,7 +875,7 @@ function p_toplevel(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             s.offset += a.fullspan
             continue
         end
-        add_node!(t, pretty(style, a, s), s, max_padding = s.opts.indent_size)
+        add_node!(t, pretty(style, a, s), s, max_padding = s.opts.indent)
         add_node!(t, Semicolon(), s)
     end
     t
@@ -892,14 +892,14 @@ function p_begin(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     else
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         add_node!(
             t,
             pretty(style, cst[2], s, ignore_single_line = true),
             s,
-            max_padding = s.opts.indent_size,
+            max_padding = s.opts.indent,
         )
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst[3], s), s)
     end
     t
@@ -917,14 +917,14 @@ function p_quote(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
         else
-            s.indent += s.opts.indent_size
+            s.indent += s.opts.indent
             add_node!(
                 t,
                 pretty(style, cst[2], s, ignore_single_line = true),
                 s,
-                max_padding = s.opts.indent_size,
+                max_padding = s.opts.indent,
             )
-            s.indent -= s.opts.indent_size
+            s.indent -= s.opts.indent
             add_node!(t, pretty(style, cst[3], s), s)
         end
     else
@@ -954,23 +954,23 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     if length(cst.args) > 3
         add_node!(t, Whitespace(1), s)
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         if cst[2].typ === CSTParser.Block
             add_node!(t, pretty(style, cst[2], s, join_body = true), s, join_lines = true)
         else
             add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
         end
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
 
         idx = length(t.nodes)
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         add_node!(
             t,
             pretty(style, cst[3], s, ignore_single_line = true),
             s,
-            max_padding = s.opts.indent_size,
+            max_padding = s.opts.indent,
         )
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
         # Possible newline after args if nested to act as a separator
         # to the block body.
         if cst[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
@@ -978,9 +978,9 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
         add_node!(t, pretty(style, cst.args[end], s), s)
     else
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         add_node!(t, pretty(style, cst[2], s, ignore_single_line = true), s)
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst.args[end], s), s)
     end
     t
@@ -1064,9 +1064,9 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # end
 
     n = if cst[2].typ === CSTParser.Block
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[2], s, join_body = true)
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
         n
     else
         n = pretty(style, cst[2], s)
@@ -1076,14 +1076,14 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, n, s, join_lines = true)
 
     idx = length(t.nodes)
-    s.indent += s.opts.indent_size
+    s.indent += s.opts.indent
     add_node!(
         t,
         pretty(style, cst[3], s, ignore_single_line = true),
         s,
-        max_padding = s.opts.indent_size,
+        max_padding = s.opts.indent,
     )
-    s.indent -= s.opts.indent_size
+    s.indent -= s.opts.indent
 
     # Possible newline after args if nested to act as a separator
     # to the block body.
@@ -1112,11 +1112,11 @@ function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     end
     if cst[4].typ === CSTParser.Block
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
         s.opts.always_use_return && prepend_return!(n, s)
-        add_node!(t, n, s, max_padding = s.opts.indent_size)
-        s.indent -= s.opts.indent_size
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
     end
     add_node!(t, pretty(style, cst.args[end], s), s)
     t
@@ -1133,14 +1133,14 @@ function p_try(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif a.typ === CSTParser.KEYWORD
             add_node!(t, pretty(style, a, s), s, max_padding = 0)
         elseif a.typ === CSTParser.Block
-            s.indent += s.opts.indent_size
+            s.indent += s.opts.indent
             add_node!(
                 t,
                 pretty(style, a, s, ignore_single_line = true),
                 s,
-                max_padding = s.opts.indent_size,
+                max_padding = s.opts.indent,
             )
-            s.indent -= s.opts.indent_size
+            s.indent -= s.opts.indent
         else
             len = length(t)
             add_node!(t, Whitespace(1), s)
@@ -1163,14 +1163,14 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         add_node!(
             t,
             pretty(style, cst[3], s, ignore_single_line = true),
             s,
-            max_padding = s.opts.indent_size,
+            max_padding = s.opts.indent,
         )
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
 
         len = length(t)
         if length(cst.args) > 4
@@ -1183,14 +1183,14 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 t.len = max(len, length(n))
             else
                 # ELSE KEYWORD
-                s.indent += s.opts.indent_size
+                s.indent += s.opts.indent
                 add_node!(
                     t,
                     pretty(style, cst[5], s, ignore_single_line = true),
                     s,
-                    max_padding = s.opts.indent_size,
+                    max_padding = s.opts.indent,
                 )
-                s.indent -= s.opts.indent_size
+                s.indent -= s.opts.indent
             end
         end
         # END KEYWORD
@@ -1200,14 +1200,14 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         t.len += 7
         add_node!(t, pretty(style, cst[1], s), s)
 
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         add_node!(
             t,
             pretty(style, cst[2], s, ignore_single_line = true),
             s,
-            max_padding = s.opts.indent_size,
+            max_padding = s.opts.indent,
         )
-        s.indent -= s.opts.indent_size
+        s.indent -= s.opts.indent
 
         len = length(t)
         if length(cst.args) > 2
@@ -1221,14 +1221,14 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 # "elseif n"
                 t.len = max(len, length(n))
             else
-                s.indent += s.opts.indent_size
+                s.indent += s.opts.indent
                 add_node!(
                     t,
                     pretty(style, cst[4], s, ignore_single_line = true),
                     s,
-                    max_padding = s.opts.indent_size,
+                    max_padding = s.opts.indent,
                 )
-                s.indent -= s.opts.indent_size
+                s.indent -= s.opts.indent
             end
         end
     end
@@ -1449,7 +1449,7 @@ function p_binaryopcall(
     end
 
     if nest
-        # for indent, will be converted to `indent_size` if needed
+        # for indent, will be converted to `indent` if needed
         insert!(t.nodes, length(t.nodes), Placeholder(0))
     end
 
@@ -1491,12 +1491,12 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if is_opener(a) && nest
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
-            s.indent += s.opts.indent_size
+            s.indent += s.opts.indent
         elseif is_closer(a) && nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            s.indent -= s.opts.indent_size
+            s.indent -= s.opts.indent
         elseif CSTParser.is_comma(a) && !is_punc(cst[i+3])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(nws), s)

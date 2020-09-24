@@ -75,7 +75,7 @@ function dedent!(fst::FST, s::State)
     if is_leaf(fst)
         s.line_offset += length(fst)
         if is_closer(fst) || fst.typ === NOTCODE
-            fst.indent -= s.opts.indent_size
+            fst.indent -= s.opts.indent
         end
         return
     elseif fst.typ === CSTParser.StringH
@@ -83,7 +83,7 @@ function dedent!(fst::FST, s::State)
     end
 
     # dedent
-    fst.indent -= s.opts.indent_size
+    fst.indent -= s.opts.indent
 
     # only unnest if it's allowed
     can_nest(fst) || return
@@ -91,7 +91,7 @@ function dedent!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     length(nl_inds) > 0 || return
     margin = s.line_offset + fst.extra_margin + length(fst)
-    margin <= s.opts.max_margin || return
+    margin <= s.opts.margin || return
     unnest!(fst, nl_inds)
 end
 
@@ -125,7 +125,7 @@ function nest_if_over_margin!(
         margin += sum(length.(fst[idx:stop_idx-1]))
     end
 
-    if margin > s.opts.max_margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
+    if margin > s.opts.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
         fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent
     else

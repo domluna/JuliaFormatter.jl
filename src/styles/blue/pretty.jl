@@ -1,13 +1,14 @@
 """
     BlueStyle()
 
-> This style is a WIP/Experimental
+Formatting style based on [BlueStyle](https://github.com/invenia/BlueStyle)
+and [JuliaFormatter#283](https://github.com/domluna/JuliaFormatter.jl/issues/283).
 
-Formatting style based on https://github.com/invenia/BlueStyle
-and https://github.com/domluna/JuliaFormatter.jl/issues/283
+!!! note
+    This style is still work-in-progress, and does not yet implement all of the
+    BlueStyle guide.
 
-Recommended options are:
-
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true
 - `short_to_long_function_def` = true
 - `whitespace_ops_in_indices` = true
@@ -20,6 +21,20 @@ Recommended options are:
 """
 struct BlueStyle <: AbstractStyle end
 @inline getstyle(s::BlueStyle) = s
+
+function options(style::BlueStyle)
+    return (;
+        always_use_return = true,
+        short_to_long_function_def = true,
+        whitespace_ops_in_indices = true,
+        remove_extra_newlines = true,
+        always_for_in = true,
+        import_to_using = true,
+        pipe_to_function_call = true,
+        whitespace_in_kwargs = false,
+        annotate_untyped_fields_with_any = false,
+    )
+end
 
 function nestable(::BlueStyle, cst::CSTParser.EXPR)
     is_assignment(cst) && is_iterable(cst[end]) && return false
@@ -36,10 +51,10 @@ function p_do(style::BlueStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     end
     if cst[4].typ === CSTParser.Block
-        s.indent += s.opts.indent_size
+        s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
-        add_node!(t, n, s, max_padding = s.opts.indent_size)
-        s.indent -= s.opts.indent_size
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
     end
     add_node!(t, pretty(style, cst.args[end], s), s)
     t
@@ -174,7 +189,7 @@ function p_binaryopcall(
     end
 
     if nest
-        # for indent, will be converted to `indent_size` if needed
+        # for indent, will be converted to `indent` if needed
         insert!(t.nodes, length(t.nodes), Placeholder(0))
     end
 

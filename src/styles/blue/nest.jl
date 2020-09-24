@@ -4,23 +4,23 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = findfirst(is_opener, fst.nodes) !== nothing
 
-    if lidx !== nothing && (line_margin > s.opts.max_margin || must_nest(fst))
+    if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         args_range = fidx+1:lidx-1
         args_margin = sum(length.(fst[args_range]))
 
         nest_to_oneline =
-            (fst.indent + s.opts.indent_size + args_margin <= s.opts.max_margin) &&
+            (fst.indent + s.opts.indent + args_margin <= s.opts.margin) &&
             !contains_comment(fst.nodes[args_range])
 
-        # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent_size + args_margin args_margin
+        # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent + args_margin args_margin
 
         line_offset = s.line_offset
         if opener
             fst[end].indent = fst.indent
         end
         if fst.typ !== CSTParser.TupleH || opener
-            fst.indent += s.opts.indent_size
+            fst.indent += s.opts.indent
         end
 
         for (i, n) in enumerate(fst.nodes)
