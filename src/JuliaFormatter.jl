@@ -396,7 +396,7 @@ end
     format_file(filename::AbstractString, style::AbstractStyle; kwargs...)::Bool
 """
 function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
-    return format_file(filename; style=style, kwargs...)
+    return format_file(filename; style = style, kwargs...)
 end
 
 if VERSION < v"1.1.0"
@@ -517,7 +517,7 @@ format(path::AbstractString; options...) = format((path,); options...)
 """
     format(path, style::AbstractStyle; options...)::Bool
 """
-format(path, style::AbstractStyle; options...) = format(path; style=style, options...)
+format(path, style::AbstractStyle; options...) = format(path; style = style, options...)
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)

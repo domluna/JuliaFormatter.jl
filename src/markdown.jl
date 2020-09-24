@@ -73,5 +73,5 @@ end
     format_md(text::AbstractString, style::AbstractStyle; options...)::String
 """
 function format_md(text::AbstractString, style::AbstractStyle; options...)
-    return format_md(text; style=style, options...)
+    return format_md(text; style = style, options...)
 end
