@@ -961,6 +961,26 @@
         s, ms = divrem(ms, 1000)
         """
         @test fmt(str, 4, 100, align_assignment = true) == str
+
+
+        str = """
+        run = wandb.init(
+            name      = name,
+            project   = project,
+            config    = config,
+            notes     = notes,
+            tags      = tags,
+            dir       = dir,
+            job_type  = job_type,
+            entity    = entity,
+            group     = group,
+            id        = id,
+            reinit    = reinit,
+            resume    = resume,
+            anonymous = anonymous ? "allow" : "never",
+        )
+        """
+        @test fmt(str, 4, 100, align_assignment = true) == str
     end
 
     @testset "align conditionals" begin
