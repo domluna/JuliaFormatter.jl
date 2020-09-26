@@ -19,7 +19,7 @@ function align_fst!(fst::FST, opts::Options)
 
         # gather all assignments within the current code block
         # they will be aligned at the end
-        if is_assignment(n)
+        if is_assignment(n) || n.typ === CSTParser.Kw
             push!(assignment_idxs, i)
         end
 
@@ -162,7 +162,7 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             g = AlignGroup()
         end
 
-        binop = n.typ === CSTParser.BinaryOpCall ? n : n[3]
+        binop = n.typ === CSTParser.BinaryOpCall || n.typ === CSTParser.Kw ? n : n[3]
         nlen = length(binop[1])
 
         ws = binop[3].line_offset - (binop.line_offset + nlen)
@@ -179,7 +179,8 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
         for (i, idx) in enumerate(g.node_idxs)
             diff = align_len - g.lens[i] + 1
 
-            if fst[idx].typ === CSTParser.BinaryOpCall
+            typ = fst[idx].typ
+            if typ === CSTParser.BinaryOpCall || typ === CSTParser.Kw
                 align_binaryopcall!(fst[idx], diff)
             else
                 align_binaryopcall!(fst[idx][3], diff)
