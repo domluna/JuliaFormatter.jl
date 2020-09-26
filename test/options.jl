@@ -979,7 +979,7 @@
             anonymous = anonymous ? "allow" : "never",
         )
         """
-        @test fmt(str, 4, 100, align_assignment = true) == str
+        @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false) == str
     end
 
     @testset "align conditionals" begin
