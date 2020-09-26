@@ -962,7 +962,6 @@
         """
         @test fmt(str, 4, 100, align_assignment = true) == str
 
-
         str = """
         run = wandb.init(
             name      = name,
