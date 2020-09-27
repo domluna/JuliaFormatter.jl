@@ -3,15 +3,19 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
     lidx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = findfirst(is_opener, fst.nodes) !== nothing
+    multiline_arg = findfirst(is_block, fst.nodes) !== nothing
+    multiline_arg && (fst.nest_behavior = AlwaysNest)
 
     if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         args_range = fidx+1:lidx-1
         args_margin = sum(length.(fst[args_range]))
 
-        nest_to_oneline =
+        nest_to_oneline = if can_nest(fst)
             (fst.indent + s.opts.indent + args_margin <= s.opts.margin) &&
-            !contains_comment(fst.nodes[args_range])
+                !contains_comment(fst.nodes[args_range])
+        else
+            false
+        end
 
         # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent + args_margin args_margin
 
@@ -59,6 +63,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
         if opener
             s.line_offset = fst[end].indent + 1
         end
+
     else
         extra_margin = fst.extra_margin
         opener && (extra_margin += 1)
