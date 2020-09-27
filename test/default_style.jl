@@ -4239,6 +4239,12 @@ some_function(
         v = "test_basic_config"
         """
         @test fmt(str) == str
+
+        str = "const FOO = ['😢']"
+        @test fmt(str) == str
+
+        str = "const FOO = '😢'"
+        @test fmt(str) == str
     end
 
 end
