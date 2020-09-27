@@ -390,7 +390,7 @@ end
             end
         end
 
-        s.offset += cst.fullspan
+        s.offset += length(cst.val) + (cst.fullspan - cst.span)
         return FST(cst, loc[2], loc[1], loc[1], val)
     end
 
