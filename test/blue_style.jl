@@ -138,6 +138,33 @@
         """
         @test bluefmt(str_, 4, 37) == str
 
+        str = """
+        Dict(
+            "options" => join(
+                imap(Iterators.filter(keep_option, connection_options)) do (k, v)
+                    "-c k=(show_option(v))"
+                end,
+                " ",
+            ),
+        )
+        """
+        @test bluefmt(str, 4, 92) == str
+
+        str_ = """
+        var = foo(
+            map(arr) do x
+                x * 10
+            end, "")
+        """
+        str = """
+        var = foo(
+            map(arr) do x
+                x * 10
+            end,
+            "",
+        )
+        """
+        @test bluefmt(str_, 4, 92) == str
     end
 
     @testset "do not prepend return in `do` blocks" begin
