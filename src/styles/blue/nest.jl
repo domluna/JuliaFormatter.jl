@@ -12,7 +12,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
 
         nest_to_oneline = if can_nest(fst)
             (fst.indent + s.opts.indent + args_margin <= s.opts.margin) &&
-            !contains_comment(fst.nodes[args_range])
+                !contains_comment(fst.nodes[args_range])
         else
             false
         end
