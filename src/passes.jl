@@ -450,8 +450,12 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
 
     block1 = FST(CSTParser.Block, fst.indent + s.opts.indent)
     for n in fst.nodes[idx1+1:idx2-1]
-        n.typ === PLACEHOLDER && continue
-        n.typ === WHITESPACE && continue
+        if n.typ === PLACEHOLDER ||
+           n.typ === WHITESPACE ||
+           n.typ === NEWLINE ||
+           is_comment(n)
+            continue
+        end
         add_node!(block1, n, s)
     end
     add_node!(t, block1, s, max_padding = s.opts.indent)

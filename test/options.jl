@@ -1199,5 +1199,24 @@
         end
         """
         @test fmt(str_, 4, 25, conditional_to_if = true) == str
+
+        str_ = """
+        foobar = some_big_long_thing * 10_000 == 2 ?
+            #comment
+            bar :
+            #comment
+            another_big_long_thing * 10^300 / this_things_here
+        """
+
+        str = """
+        foobar = if some_big_long_thing * 10_000 == 2
+            #comment
+            bar
+        else
+            #comment
+            another_big_long_thing * 10^300 / this_things_here
+        end
+        """
+        @test fmt(str_, conditional_to_if = true) == str
     end
 end
