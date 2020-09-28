@@ -1145,8 +1145,10 @@
     end
 
     @testset "conditional to `if` block" begin
-        str_ = "E ? A : B"
-        @test fmt(str_, 2, length(str_), conditional_to_if = true) == str_
+        str_ = """
+        E ? A : B
+        """
+        @test fmt(str_, 2, 9, conditional_to_if = true) == str_
 
         str = """
         if E
@@ -1155,7 +1157,7 @@
           B
         end
         """
-        @test fmt(str_, 2, length(str_) - 1, conditional_to_if = true) == str
+        @test fmt(str_, 2, 8, conditional_to_if = true) == str
 
         str_ = """
         begin
