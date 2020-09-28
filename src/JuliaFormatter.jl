@@ -271,7 +271,16 @@ See `Custom Alignment` documentation.
 
 ### `conditional_to_if`
 
-Converts a conditional `E ? A : B` into the equivalent `if` block if the conditional exceeds the maximum margin.
+
+If the conditional `E ? A : B` exceeds the maximum margin converts it into the equivalent `if` block:
+
+```julia
+if E
+    A
+else
+    B
+end
+```
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
