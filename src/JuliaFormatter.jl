@@ -56,6 +56,7 @@ function options(s::DefaultStyle)
         align_assignment = false,
         align_conditional = false,
         align_pair_arrow = false,
+        conditional_to_if = false,
     )
 end
 
@@ -102,6 +103,7 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         align_conditional::Bool = false,
         align_assignment::Bool = false,
         align_pair_arrow::Bool = false,
+        conditional_to_if = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -266,6 +268,10 @@ Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/Com
 ### `align_*`
 
 See `Custom Alignment` documentation.
+
+### `conditional_to_if`
+
+Converts a conditional `E ? A : B` into the equivalent `if` block if the conditional exceeds the maximum margin.
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
