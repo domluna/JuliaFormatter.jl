@@ -438,13 +438,12 @@ end
 
 """
 """
-function conditional_to_if_block!(fst::FST, s::State; top=true)
+function conditional_to_if_block!(fst::FST, s::State; top = true)
     t = FST(CSTParser.If, fst.indent)
     kw = FST(CSTParser.KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
     add_node!(t, kw, s, max_padding = 0)
-    add_node!(t, Whitespace(1), s, join_lines=true)
-    add_node!(t, fst[1], s, join_lines=true)
-
+    add_node!(t, Whitespace(1), s, join_lines = true)
+    add_node!(t, fst[1], s, join_lines = true)
 
     idx1 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
     idx2 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == ":", fst.nodes)
@@ -452,7 +451,7 @@ function conditional_to_if_block!(fst::FST, s::State; top=true)
     block1 = FST(CSTParser.Block, fst.indent + s.opts.indent)
     for n in fst.nodes[idx1+1:idx2-1]
         n.typ === PLACEHOLDER && continue
-        n.typ ===  WHITESPACE && continue
+        n.typ === WHITESPACE && continue
         add_node!(block1, n, s)
     end
     add_node!(t, block1, s, max_padding = s.opts.indent)
@@ -460,7 +459,7 @@ function conditional_to_if_block!(fst::FST, s::State; top=true)
     block2 = FST(CSTParser.Block, fst.indent)
     padding = 0
     if fst[end].typ === CSTParser.ConditionalOpCall
-        conditional_to_if_block!(fst[end], s, top=false)
+        conditional_to_if_block!(fst[end], s, top = false)
     else
         block2.indent += s.opts.indent
         padding = s.opts.indent

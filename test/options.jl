@@ -1155,7 +1155,7 @@
           B
         end
         """
-        @test fmt(str_, 2, length(str_)-1, conditional_to_if = true) == str
+        @test fmt(str_, 2, length(str_) - 1, conditional_to_if = true) == str
 
         str_ = """
         begin
@@ -1199,4 +1199,3 @@
         @test fmt(str_, 4, 25, conditional_to_if = true) == str
     end
 end
-
