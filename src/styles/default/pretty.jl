@@ -1522,17 +1522,21 @@ p_whereopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
 function p_conditionalopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
+
     add_node!(t, pretty(style, cst[1], s), s)
+
     add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true) # '?'
     add_node!(t, Placeholder(1), s)
 
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+
     add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[4], s), s, join_lines = true) # ':'
     add_node!(t, Placeholder(1), s)
 
     add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
+
     t
 end
 p_conditionalopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

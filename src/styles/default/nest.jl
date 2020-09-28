@@ -65,7 +65,13 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === CSTParser.WhereOpCall
         n_whereopcall!(style, fst, s)
     elseif fst.typ === CSTParser.ConditionalOpCall
-        n_conditionalopcall!(style, fst, s)
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.conditional_to_if && line_margin > s.opts.margin
+            conditional_to_if_block!(fst, s)
+            nest!(style, fst, s)
+        else
+            n_conditionalopcall!(style, fst, s)
+        end
     elseif fst.typ === CSTParser.BinaryOpCall
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&

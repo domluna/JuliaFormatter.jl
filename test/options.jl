@@ -1143,4 +1143,61 @@
         """
         @test fmt(str_, 4, 1, align_pair_arrow = true) == str
     end
+
+    @testset "conditional to `if` block" begin
+        str_ = """
+        E ? A : B
+        """
+        @test fmt(str_, 2, 9, conditional_to_if = true) == str_
+
+        str = """
+        if E
+          A
+        else
+          B
+        end
+        """
+        @test fmt(str_, 2, 8, conditional_to_if = true) == str
+
+        str_ = """
+        begin
+            E1 ? A : E2 ? B : foo(E333, E444) ? D : E
+        end
+        """
+        @test fmt(str_, 4, 45, conditional_to_if = true) == str_
+
+        str = """
+        begin
+            if E1
+                A
+            elseif E2
+                B
+            elseif foo(E333, E444)
+                D
+            else
+                E
+            end
+        end
+        """
+        @test fmt(str_, 4, 44, conditional_to_if = true) == str
+        @test fmt(str_, 4, 26, conditional_to_if = true) == str
+
+        str = """
+        begin
+            if E1
+                A
+            elseif E2
+                B
+            elseif foo(
+                E333,
+                E444,
+            )
+                D
+            else
+                E
+            end
+        end
+        """
+        @test fmt(str_, 4, 25, conditional_to_if = true) == str
+    end
 end

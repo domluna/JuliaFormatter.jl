@@ -435,3 +435,50 @@ function move_at_sign_to_the_end(fst::FST, s::State)
 
     return macroname
 end
+
+"""
+"""
+function conditional_to_if_block!(fst::FST, s::State; top = true)
+    t = FST(CSTParser.If, fst.indent)
+    kw = FST(CSTParser.KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
+    add_node!(t, kw, s, max_padding = 0)
+    add_node!(t, Whitespace(1), s, join_lines = true)
+    add_node!(t, fst[1], s, join_lines = true)
+
+    idx1 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
+    idx2 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == ":", fst.nodes)
+
+    block1 = FST(CSTParser.Block, fst.indent + s.opts.indent)
+    for n in fst.nodes[idx1+1:idx2-1]
+        n.typ === PLACEHOLDER && continue
+        n.typ === WHITESPACE && continue
+        add_node!(block1, n, s)
+    end
+    add_node!(t, block1, s, max_padding = s.opts.indent)
+
+    block2 = FST(CSTParser.Block, fst.indent)
+    padding = 0
+    if fst[end].typ === CSTParser.ConditionalOpCall
+        conditional_to_if_block!(fst[end], s, top = false)
+    else
+        block2.indent += s.opts.indent
+        padding = s.opts.indent
+        kw = FST(CSTParser.KEYWORD, -1, -1, -1, "else")
+        add_node!(t, kw, s, max_padding = 0)
+    end
+    add_node!(block2, fst[end], s)
+    add_node!(t, block2, s, max_padding = 0)
+
+    if top
+        kw = FST(CSTParser.KEYWORD, -1, -1, -1, "end")
+        add_node!(t, kw, s, max_padding = 0)
+    end
+
+    fst.typ = t.typ
+    fst.nodes = t.nodes
+    fst.len = t.len
+
+    # @info "" fst[1] fst.len
+
+    return nothing
+end

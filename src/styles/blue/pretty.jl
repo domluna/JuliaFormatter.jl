@@ -33,6 +33,7 @@ function options(style::BlueStyle)
         pipe_to_function_call = true,
         whitespace_in_kwargs = false,
         annotate_untyped_fields_with_any = false,
+        conditional_to_if = true,
     )
 end
 
