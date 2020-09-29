@@ -225,4 +225,22 @@
         """
         @test bluefmt(str_) == str
     end
+
+    @testset "use `return nothing` instead of `return`" begin
+        str_ = """
+        function foo()
+            return
+        end
+        """
+        str = """
+        function foo()
+            return nothing
+        end
+        """
+        @test bluefmt(str_) == str
+
+        str_ = "a || return"
+        str = "a || return nothing"
+        @test bluefmt(str_) == str
+    end
 end

@@ -196,3 +196,19 @@ function p_binaryopcall(
 
     t
 end
+
+function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    t = FST(cst, nspaces(s))
+    add_node!(t, pretty(bs, cst[1], s), s)
+    if cst[2].fullspan != 0
+        for a in cst.args[2:end]
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(bs, a, s), s, join_lines = true)
+        end
+    elseif cst[2].kind === Tokens.NOTHING
+        add_node!(t, Whitespace(1), s)
+        no = FST(CSTParser.IDENTIFIER, -1, t.endline, t.endline, "nothing")
+        add_node!(t, no, s, join_lines = true)
+    end
+    t
+end
