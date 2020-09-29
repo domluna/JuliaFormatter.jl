@@ -204,4 +204,25 @@
         @test bluefmt1(str) == str
         @test bluefmt(str) == str
     end
+
+    @testset "no chained ternary allowed !!!" begin
+        str = """
+        E1 ? A : B
+        """
+        @test bluefmt(str) == str
+
+        str_ = """
+        E1 ? A : E2 ? B : C
+        """
+        str = """
+        if E1
+            A
+        elseif E2
+            B
+        else
+            C
+        end
+        """
+        @test bluefmt(str_) == str
+    end
 end

@@ -80,3 +80,13 @@ end
 @inline n_invisbrackets!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
 @inline n_bracescat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
 # @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
+
+function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
+    if fst[end].typ === CSTParser.ConditionalOpCall
+        conditional_to_if_block!(fst, s)
+        nest!(bs, fst, s)
+    else
+        n_conditionalopcall!(DefaultStyle(bs), fst, s)
+    end
+    return
+end
