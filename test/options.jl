@@ -34,7 +34,6 @@
         @test fmt(str_, remove_extra_newlines = true) == str
         @test fmt(str_, remove_extra_newlines = false) == str_
 
-
         str_ = """
         module M
 

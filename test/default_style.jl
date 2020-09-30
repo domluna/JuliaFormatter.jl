@@ -3794,7 +3794,6 @@ some_function(
         )"""
         @test fmt(str_, remove_extra_newlines = true) == str
 
-
         str_ = """
         var =
 
