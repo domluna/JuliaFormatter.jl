@@ -207,11 +207,11 @@ function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     valid(p)
 end
 
+contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
     is_leaf(fst) && return false
-    findfirst(is_comment, fst.nodes) !== nothing
+    contains_comment(fst.nodes)
 end
-contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
