@@ -3794,38 +3794,6 @@ some_function(
         )"""
         @test fmt(str_, remove_extra_newlines = true) == str
 
-        str_ = """
-        a = 10
-
-        # foo1
-        # ooo
-
-
-
-        # aooo
-
-
-        # aaaa
-        b = 20
-
-
-
-        # hello
-        """
-        str = """
-        a = 10
-
-        # foo1
-        # ooo
-
-        # aooo
-
-        # aaaa
-        b = 20
-
-        # hello
-        """
-        @test fmt(str, remove_extra_newlines = true) == str
 
         str_ = """
         var =
