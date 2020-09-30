@@ -143,20 +143,44 @@ Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 If true, superflous newlines will be removed. For example:
 
 ```julia
+Module M
+
+
+
 a = 1
 
+function foo()
+
+
+    return nothing
+
+end
 
 
 b = 2
+
+
+end
 ```
 
 is rewritten as
 
 ```julia
+Module M
+
 a = 1
 
+function foo()
+    return nothing
+end
+
 b = 2
+
+end
 ```
+
+Modules are the only type of code block allowed to keep a single newline
+prior to the intial or after the final piece of code.
 
 ### `import_to_using`
 
