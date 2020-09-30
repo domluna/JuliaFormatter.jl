@@ -164,7 +164,6 @@ function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                a.typ === CSTParser.InvisBrackets ||
                a.typ === CSTParser.ChainOpCall ||
                a.typ === CSTParser.Comparison
-
             n = pretty(ys, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else

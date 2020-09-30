@@ -78,7 +78,6 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
            line_margin > s.opts.margin &&
            fst.ref !== nothing &&
            CSTParser.defines_function(fst.ref[])
-
             short_to_long_function_def!(fst, s)
         end
         n_binaryopcall!(style, fst, s)

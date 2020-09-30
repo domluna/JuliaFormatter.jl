@@ -1092,7 +1092,6 @@
             cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
-
     end
 
     @testset "align pair arrow `=>`" begin

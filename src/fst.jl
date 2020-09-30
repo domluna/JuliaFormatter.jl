@@ -376,8 +376,11 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         if notcode_startline <= notcode_endline
             # If there are comments in between node elements
             # nesting is forced in an effort to preserve them.
-            
-            rm_block_nl = s.opts.remove_extra_newlines && t.typ !== CSTParser.ModuleH && (n.typ === CSTParser.Block || is_end(n))
+
+            rm_block_nl =
+                s.opts.remove_extra_newlines &&
+                t.typ !== CSTParser.ModuleH &&
+                (n.typ === CSTParser.Block || is_end(n))
 
             if remove_empty_notcode(t) || rm_block_nl
                 nest = false

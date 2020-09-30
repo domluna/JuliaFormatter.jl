@@ -957,7 +957,6 @@
             )
         end"""
         @test fmt(str, 4, 28) == str
-
     end
 
     @testset "quote" begin
@@ -1013,7 +1012,6 @@
             )
         end"""
         @test fmt(str, 4, 28) == str
-
     end
 
     @testset "do" begin
@@ -1081,7 +1079,6 @@
             body
         end"""
         @test fmt(str_) == str
-
     end
 
     @testset "for" begin
@@ -1132,7 +1129,6 @@
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 20
-
     end
 
     @testset "while" begin
@@ -1354,7 +1350,6 @@
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 11
-
     end
 
     @testset "if" begin
@@ -1391,7 +1386,6 @@
         end"""
         t = run_pretty(str, 80)
         @test length(t) == 14
-
     end
 
     @testset "strings" begin
@@ -2938,7 +2932,6 @@
         @test s.line_offset == 17
         _, s = run_nest(str, 16)
         @test s.line_offset == 7
-
     end
 
     @testset "additional length" begin
@@ -3519,7 +3512,6 @@
             c,
         )"""
         @test fmt("@func(a, b, c,)", 4, 1) == str
-
     end
 
     @testset "comphrehensions types" begin
@@ -4246,5 +4238,4 @@ some_function(
         str = "const FOO = '😢'"
         @test fmt(str) == str
     end
-
 end
