@@ -143,7 +143,7 @@ Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 If true, superflous newlines will be removed. For example:
 
 ```julia
-Module M
+module M
 
 
 
@@ -166,7 +166,7 @@ end
 is rewritten as
 
 ```julia
-Module M
+module M
 
 a = 1
 
