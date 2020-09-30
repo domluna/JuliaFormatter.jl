@@ -359,13 +359,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.len += length(n)
         t.line_offset = n.line_offset
         push!(t.nodes, n)
-        # @info "" t.typ n.typ t.line_offset n.line_offset n.val
         return
     end
-
-    # if t.line_offset <= 0
-    #     t.line_offset = n.line_offset
-    # end
 
     if !is_prev_newline(t.nodes[end])
         current_line = t.endline
@@ -527,7 +522,6 @@ function is_block(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.For && return true
     x.typ === CSTParser.While && return true
     x.typ === CSTParser.Let && return true
-    # (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
     (x.typ === CSTParser.Quote && x[1].val == "quote") && return true
     return false
 end
