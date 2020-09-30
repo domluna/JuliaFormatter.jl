@@ -1,4 +1,75 @@
 @testset "Formatting Options" begin
+    @testset "remove extra newlines" begin
+        str_ = """
+        a = 10
+
+        # foo1
+        # ooo
+
+
+
+        # aooo
+
+
+        # aaaa
+        b = 20
+
+
+
+        # hello
+        """
+        str = """
+        a = 10
+
+        # foo1
+        # ooo
+
+        # aooo
+
+        # aaaa
+        b = 20
+
+        # hello
+        """
+        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_, remove_extra_newlines = false) == str_
+
+        str_ = """
+        module M
+
+
+        function foo(bar::Int64, baz::Int64)
+
+
+            return bar + baz
+        end
+
+        function foo(bar::In64, baz::Int64)
+            return bar + baz
+
+
+        end
+
+
+        end
+        """
+        str = """
+        module M
+
+        function foo(bar::Int64, baz::Int64)
+            return bar + baz
+        end
+
+        function foo(bar::In64, baz::Int64)
+            return bar + baz
+        end
+
+        end
+        """
+        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_, remove_extra_newlines = false) == str_
+    end
+
     @testset "whitespace in typedefs" begin
         str_ = "Foo{A,B,C}"
         str = "Foo{A, B, C}"
@@ -668,6 +739,7 @@
         function fmt() end"""
         @test fmt(unformatted, format_docstrings = true) == formatted
     end
+
     @testset "format docstrings - Empty line in docstring" begin
         unformatted = """
         \"""
@@ -1092,7 +1164,6 @@
             cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
-
     end
 
     @testset "align pair arrow `=>`" begin

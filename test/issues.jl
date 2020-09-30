@@ -151,7 +151,6 @@
             (4, 5),
         )"""
         @test fmt(str_) == str
-
     end
 
     @testset "issue #150" begin
@@ -240,7 +239,6 @@
         @test fmt(str_) == str
         _, s = run_nest(str_, 100)
         @test s.line_offset == 1
-
     end
 
     @testset "issue #183" begin
@@ -292,7 +290,6 @@
             (b - y) * delta_hat[i] - delta[i] * delta_hat[i] for i = 1:8
         ]"""
         @test fmt(str_) == str
-
     end
 
     @testset "issue #193" begin
@@ -448,7 +445,6 @@
             y_past = get_y(m),
         ) where {C <: Union{T, TGP <: AbstractGP{T}; IsMultiOutput{TGP}}} end"""
         @test fmt(str_, m = 92, whitespace_typedefs = true) == str
-
     end
 
     @testset "issue #218" begin

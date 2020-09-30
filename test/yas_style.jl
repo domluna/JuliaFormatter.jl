@@ -265,7 +265,6 @@
                                                            :avr],
                                           file_extension = Symbol("lpcm.zst"))"""
         @test yasfmt(str_, 4, 1) == str
-
     end
 
     @testset "inline comments with arguments" begin
@@ -378,7 +377,6 @@
                                  body
                              end)"""
         @test yasfmt(str_, 4, 32) == str
-
     end
 
     @testset "inline comments with arguments" begin
@@ -424,7 +422,6 @@
               (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
               for i = 1:8]"""
         @test yasfmt(str_, 2, 60) == str
-
     end
 
     @testset "issue 237" begin
@@ -438,5 +435,4 @@
         end"""
         @test yasfmt(str_, 4, 92) == str
     end
-
 end

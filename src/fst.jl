@@ -207,11 +207,11 @@ function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     valid(p)
 end
 
+contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
     is_leaf(fst) && return false
-    findfirst(is_comment, fst.nodes) !== nothing
+    contains_comment(fst.nodes)
 end
-contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
@@ -359,13 +359,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.len += length(n)
         t.line_offset = n.line_offset
         push!(t.nodes, n)
-        # @info "" t.typ n.typ t.line_offset n.line_offset n.val
         return
     end
-
-    # if t.line_offset <= 0
-    #     t.line_offset = n.line_offset
-    # end
 
     if !is_prev_newline(t.nodes[end])
         current_line = t.endline
@@ -377,7 +372,12 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             # If there are comments in between node elements
             # nesting is forced in an effort to preserve them.
 
-            if remove_empty_notcode(t)
+            rm_block_nl =
+                s.opts.remove_extra_newlines &&
+                t.typ !== CSTParser.ModuleH &&
+                (n.typ === CSTParser.Block || is_end(n))
+
+            if remove_empty_notcode(t) || rm_block_nl
                 nest = false
                 for l = notcode_startline:notcode_endline
                     if hascomment(s.doc, l)
@@ -386,6 +386,9 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                     end
                 end
                 if !nest
+                    if rm_block_nl
+                        add_node!(t, Newline(), s)
+                    end
                     @goto add_node_end
                 end
             end
@@ -519,7 +522,6 @@ function is_block(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.For && return true
     x.typ === CSTParser.While && return true
     x.typ === CSTParser.Let && return true
-    # (cst.typ === CSTParser.Quote && cst[1].kind === Tokens.QUOTE) && return true
     (x.typ === CSTParser.Quote && x[1].val == "quote") && return true
     return false
 end

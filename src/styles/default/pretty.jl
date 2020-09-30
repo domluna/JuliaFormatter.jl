@@ -1388,7 +1388,6 @@ function p_binaryopcall(
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
-
         paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
