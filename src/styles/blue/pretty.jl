@@ -19,8 +19,12 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `whitespace_in_kwargs` = false
 - `annotate_untyped_fields_with_any` = false
 """
-struct BlueStyle <: AbstractStyle end
-@inline getstyle(s::BlueStyle) = s
+struct BlueStyle <: AbstractStyle
+    innerstyle::Union{Nothing,AbstractStyle}
+end
+BlueStyle() = BlueStyle(nothing)
+
+@inline getstyle(s::BlueStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 function options(style::BlueStyle)
     return (;
@@ -42,7 +46,8 @@ function nestable(::BlueStyle, cst::CSTParser.EXPR)
     return nestable(DefaultStyle(), cst)
 end
 
-function p_do(style::BlueStyle, cst::CSTParser.EXPR, s::State)
+function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(bs)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
@@ -87,7 +92,8 @@ function separate_kwargs_with_semicolon!(fst::FST)
 end
 
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
-    t = p_call(DefaultStyle(bs), cst, s)
+    style = getstyle(bs)
+    t = p_call(DefaultStyle(style), cst, s)
     if !parent_is(cst, is_function_or_macro_def)
         separate_kwargs_with_semicolon!(t)
     end
@@ -197,12 +203,13 @@ function p_binaryopcall(
 end
 
 function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(bs)
     t = FST(cst, nspaces(s))
-    add_node!(t, pretty(bs, cst[1], s), s)
+    add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
         for a in cst.args[2:end]
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(bs, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     elseif cst[2].kind === Tokens.NOTHING
         add_node!(t, Whitespace(1), s)

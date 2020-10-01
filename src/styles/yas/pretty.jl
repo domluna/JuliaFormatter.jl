@@ -14,8 +14,11 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true
 - `whitespace_in_kwargs` = false
 """
-struct YASStyle <: AbstractStyle end
-@inline getstyle(s::YASStyle) = s
+struct YASStyle <: AbstractStyle
+    innerstyle::Union{Nothing,AbstractStyle}
+end
+YASStyle() = YASStyle(nothing)
+@inline getstyle(s::YASStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 function options(style::YASStyle)
     return (;
@@ -37,19 +40,20 @@ function nestable(::YASStyle, cst::CSTParser.EXPR)
 end
 
 function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
-    add_node!(t, pretty(ys, cst[1], s), s)
+    add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
     for (i, a) in enumerate(cst.args[2:end])
         if CSTParser.is_comma(a)
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif CSTParser.is_colon(a)
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
     t
@@ -58,9 +62,10 @@ end
 @inline p_export(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_import(ys, cst, s)
 
 function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
-        n = pretty(ys, a, s)
+        n = pretty(style, a, s)
         if CSTParser.is_comma(a) && i == length(cst) - 1
             continue
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
@@ -75,10 +80,11 @@ end
 @inline p_braces(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_curly(ys, cst, s)
 
 function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
-            n = pretty(ys, a, s)
+            n = pretty(style, a, s)
             if n_args(cst) == 1
                 add_node!(t, n, s, join_lines = true)
             elseif !is_closer(cst[i+1])
@@ -86,21 +92,22 @@ function p_tupleh(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Placeholder(1), s)
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif a.typ === CSTParser.BinaryOpCall && a[2].kind === Tokens.EQ
-            add_node!(t, p_kw(ys, a, s), s, join_lines = true)
+            add_node!(t, p_kw(style, a, s), s, join_lines = true)
         else
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
     t
 end
 
 function p_tupleh(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
+    style = getstyle(ys)
     t = FST(CSTParser.TupleH, nspaces(s))
     for (i, a) in enumerate(nodes)
-        n = pretty(ys, a, s)
+        n = pretty(style, a, s)
         if CSTParser.is_comma(a) && i + 1 == length(nodes)
             if n_args(nodes) == 1
                 add_node!(t, n, s, join_lines = true)
@@ -126,7 +133,8 @@ function p_invisbrackets(
     nonest = false,
     nospace = false,
 )
-    t = p_invisbrackets(DefaultStyle(ys), cst, s, nonest = nonest, nospace = nospace)
+    style = getstyle(ys)
+    t = p_invisbrackets(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
     for (i, n) in enumerate(t.nodes)
         if n.typ === PLACEHOLDER
             t[i] = Whitespace(length(n))
@@ -136,9 +144,10 @@ function p_invisbrackets(
 end
 
 function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
     for (i, a) in enumerate(cst)
-        n = pretty(ys, a, s)
+        n = pretty(style, a, s)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
             continue
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
@@ -153,55 +162,59 @@ end
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 
 function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif a.typ === CSTParser.BinaryOpCall ||
                a.typ === CSTParser.InvisBrackets ||
                a.typ === CSTParser.ChainOpCall ||
                a.typ === CSTParser.Comparison
-            n = pretty(ys, a, s, nonest = true, nospace = nospace)
+            n = pretty(style, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else
-            add_node!(t, pretty(ys, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
     t
 end
 
 function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
         t.nest_behavior = AlwaysNest
     end
 
-    add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
-    add_node!(t, pretty(ys, cst[2], s), s, join_lines = true)
-    add_node!(t, pretty(ys, cst[3], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     t
 end
 
 function p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
 
     if is_block(cst[3]) || (cst[3].typ === CSTParser.Generator && is_block(cst[3][1]))
         t.nest_behavior = AlwaysNest
     end
 
-    add_node!(t, pretty(ys, cst[1], s), s, join_lines = true)
-    add_node!(t, pretty(ys, cst[2], s), s, join_lines = true)
-    add_node!(t, pretty(ys, cst[3], s), s, join_lines = true)
-    add_node!(t, pretty(ys, cst[4], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
     t
 end
 
 function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    fst = p_macrocall(DefaultStyle(ys), cst, s)
+    style = getstyle(ys)
+    fst = p_macrocall(DefaultStyle(style), cst, s)
     fst.typ == CSTParser.MacroCall || return fst
     is_closer(cst.args[end]) || return fst
 
@@ -216,9 +229,11 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 
 function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
+
     for (i, a) in enumerate(cst)
-        n = pretty(ys, a, s)
+        n = pretty(style, a, s)
         if i == length(cst) && CSTParser.is_comma(a)
             # do nothing
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
@@ -232,10 +247,12 @@ function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 
 function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
-    add_node!(t, pretty(ys, cst[1], s), s)
+
+    add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(ys, cst[2], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Whitespace(1), s)
 
     add_braces =
@@ -251,8 +268,8 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
     for (i, a) in enumerate(cst.args[3:end])
         n =
-            a.typ === CSTParser.BinaryOpCall ? pretty(ys, a, s, nospace = true) :
-            pretty(ys, a, s)
+            a.typ === CSTParser.BinaryOpCall ? pretty(style, a, s, nospace = true) :
+            pretty(style, a, s)
 
         if CSTParser.is_comma(a) && i + 2 == length(cst) - 1
             continue
@@ -272,10 +289,11 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 
 function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
     t = FST(cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
-        n = pretty(ys, a, s)
+        n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
             incomp = parent_is(
                 a,
@@ -300,7 +318,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             end
 
             if !is_gen(cst.args[i+1])
-                tup = p_tupleh(ys, cst.args[i+1:length(cst)], s)
+                tup = p_tupleh(style, cst.args[i+1:length(cst)], s)
                 add_node!(t, tup, s, join_lines = true)
                 return t
             end

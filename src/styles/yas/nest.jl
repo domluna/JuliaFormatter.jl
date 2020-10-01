@@ -1,4 +1,5 @@
 function n_call!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
     for (i, n) in enumerate(fst.nodes)
@@ -6,20 +7,20 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+            nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
-            nest!(ys, n, s)
+            nest!(style, n, s)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         else
             diff = fst.indent - fst[i].indent
             add_indent!(n, s, diff)
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         end
     end
 end
@@ -29,6 +30,7 @@ end
 @inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tupleh!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
     fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
@@ -37,20 +39,20 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+            nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
             n.len = 0
-            nest!(ys, n, s)
+            nest!(style, n, s)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         else
             diff = fst.indent - fst[i].indent
             add_indent!(n, s, diff)
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         end
     end
 end
@@ -61,6 +63,7 @@ end
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
     diff = s.line_offset - fst[1].indent
 
     # if the first argument is not a leaf
@@ -73,14 +76,14 @@ function n_generator!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+            nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         else
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         end
     end
 end
@@ -88,6 +91,7 @@ end
 @inline n_flatten!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
 
 function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
     fst.indent = s.line_offset
     # after "A where "
     Blen = sum(length.(fst[2:end]))
@@ -98,20 +102,21 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+            nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif is_opener(n) && n.val == "{"
             fst.indent = s.line_offset + 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         elseif i == 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         else
             n.extra_margin = 1
-            nest!(ys, n, s)
+            nest!(style, n, s)
         end
     end
 end
 
 function n_using!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
     idx = findfirst(n -> n.val == ":", fst.nodes)
     fst.indent = s.line_offset
     if idx === nothing
@@ -122,11 +127,11 @@ function n_using!(ys::YASStyle, fst::FST, s::State)
     for (i, n) in enumerate(fst.nodes)
         if n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-            nest_if_over_margin!(ys, fst, s, i; stop_idx = si)
+            nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         else
-            nest!(ys, n, s)
+            nest!(style, n, s)
         end
     end
 end
@@ -139,13 +144,13 @@ n_comparison!(ys::YASStyle, fst::FST, s::State) =
     n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
 
 function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
-    idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-
-    if idx !== nothing
-        n_binaryopcall!(DefaultStyle(ys), fst, s)
+    style = getstyle(ys)
+    if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
+        n_binaryopcall!(DefaultStyle(style), fst, s)
         return
     end
 
+    start_line_offset = s.line_offset
     walk(increment_line_offset!, fst.nodes[1:end-1], s, fst.indent)
-    nest!(ys, fst[end], s)
+    nest!(style, fst[end], s)
 end
