@@ -175,6 +175,41 @@
         ]
         """
         @test bluefmt(str_, 4, 92) == str
+
+        str_ = """
+        function f()
+            for i = 1:n
+         @inbounds mul!(
+             reshape(view(C, :, i), eye_n, k),
+             reshape(view(B, :, i), eye_n, l),
+             transpose(A),
+         )
+            end
+        end
+        """
+        str = """
+        function f()
+            for i = 1:n
+                @inbounds mul!(
+                    reshape(view(C, :, i), eye_n, k), reshape(view(B, :, i), eye_n, l), transpose(A)
+                )
+            end
+        end
+        """
+        @test bluefmt(str_, 4, 92) == str
+
+        str = """
+        function f()
+            for i = 1:n
+                @inbounds mul!(
+                    reshape(view(C, :, i), eye_n, k),
+                    reshape(view(B, :, i), eye_n, l),
+                    transpose(A),
+                )
+            end
+        end
+        """
+        @test bluefmt(str_, 4, 91) == str
     end
 
     @testset "do not prepend return in `do` blocks" begin

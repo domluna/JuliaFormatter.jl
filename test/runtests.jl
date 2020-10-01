@@ -10,8 +10,9 @@ fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 # Verifies formatting the formatted text
 # results in the same output
 function fmt(s; i = 4, m = 80, kwargs...)
-    s1 = fmt1(s; kwargs..., i = i, m = m)
-    return fmt1(s1; kwargs..., i = i, m = m)
+    kws = merge(options(DefaultStyle()), kwargs)
+    s1 = fmt1(s; kws..., i = i, m = m)
+    return fmt1(s1; kws..., i = i, m = m)
 end
 fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
@@ -35,9 +36,7 @@ end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
 function fmt(str, i, m; kwargs...)
-    # use DefaultStyle options to make writing tests easier
-    kws = merge(options(DefaultStyle()), kwargs)
-    return fmt(str; kws..., i = i, m = m)
+    return fmt(str; kwargs..., i = i, m = m)
 end
 
 yasfmt(str, i, m; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)

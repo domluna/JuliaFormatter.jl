@@ -18,8 +18,6 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
             false
         end
 
-        # @info "" nest_to_oneline fst.indent fst.indent + s.opts.indent + args_margin args_margin
-
         line_offset = s.line_offset
         if opener
             fst[end].indent = fst.indent
@@ -56,7 +54,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                n.extra_margin = 1
+                n.extra_margin = i < length(fst.nodes) ?  length(fst[i+1]) : 0
                 nest!(style, n, s)
             end
         end
