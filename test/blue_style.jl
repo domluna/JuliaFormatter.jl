@@ -165,6 +165,16 @@
         )
         """
         @test bluefmt(str_, 4, 92) == str
+
+        str_ = """
+        df[:, :some_column] = [some_big_function_name(blahhh) for (fooooo, blahhh) in my_long_list_of_vars]
+        """
+        str = """
+        df[:, :some_column] = [
+            some_big_function_name(blahhh) for (fooooo, blahhh) in my_long_list_of_vars
+        ]
+        """
+        @test bluefmt(str_, 4, 92) == str
     end
 
     @testset "do not prepend return in `do` blocks" begin
