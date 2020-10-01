@@ -14,7 +14,7 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true
 - `whitespace_in_kwargs` = false
 """
-struct YASStyle <: AbstractStyle 
+struct YASStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
 YASStyle() = YASStyle(nothing)
