@@ -1,4 +1,5 @@
 function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
+    style = getstyle(bs)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     lidx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -41,22 +42,22 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
                     n.val = ","
                     n.len = 1
                 end
-                nest!(bs, n, s)
+                nest!(style, n, s)
             elseif n.typ === TRAILINGSEMICOLON
                 n.val = ";"
                 n.len = 1
-                nest!(bs, n, s)
+                nest!(style, n, s)
             elseif n.typ === INVERSETRAILINGSEMICOLON
                 n.val = ""
                 n.len = 0
-                nest!(bs, n, s)
+                nest!(style, n, s)
             elseif opener && (i == 1 || i == length(fst.nodes))
-                nest!(bs, n, s)
+                nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
-                nest!(bs, n, s)
+                nest!(style, n, s)
             end
         end
 
@@ -67,7 +68,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
     else
         extra_margin = fst.extra_margin
         opener && (extra_margin += 1)
-        nest!(bs, fst.nodes, s, fst.indent, extra_margin = extra_margin)
+        nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
 @inline n_call!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
@@ -82,11 +83,16 @@ end
 # @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
 
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
+    style = getstyle(bs)
     if fst[end].typ === CSTParser.ConditionalOpCall
         conditional_to_if_block!(fst, s)
-        nest!(bs, fst, s)
+        nest!(style, fst, s)
     else
-        n_conditionalopcall!(DefaultStyle(bs), fst, s)
+        n_conditionalopcall!(DefaultStyle(style), fst, s)
     end
     return
+end
+
+function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State)
+    n_binaryopcall!(YASStyle(bs), fst, s)
 end
