@@ -54,7 +54,8 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                n.extra_margin = !nest_to_oneline ? 1 : i < length(fst.nodes) ? length(fst[i+1]) : 0
+                n.extra_margin =
+                    !nest_to_oneline ? 1 : i < length(fst.nodes) ? length(fst[i+1]) : 0
                 nest!(style, n, s)
             end
         end
