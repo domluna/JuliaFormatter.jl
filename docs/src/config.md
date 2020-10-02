@@ -13,7 +13,7 @@ and searching _up_ the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given options.
 
 !!! note
-    
+
     [Juno](https://junolab.org/), a Julia IDE that offers formatting feature using this package, also respects
     configuration file.
     When you use `Julia-Client: Format-Code` command, Juno will automatically search for a configuration file with the
@@ -33,18 +33,20 @@ margin = 100
 then files under `somedir` will be formatted with 2 spaces indentation and the maximum line length 100.
 
 !!! warning "Custom Style"
-    
-    Currently the configuration file doesn't support [Custom Styles](@ref).
-    For the time being, we only provide [YAS Style](@ref) spec in configuration file.
+
+    Currently the configuration file doesn't support user-defined [Custom Styles](@ref).
+    For the time being, we only provide specs for [YAS Style](@ref) and [Blue Style](@ref) in configuration file.
     In order to use YAS style instead of the default style, you can just specify:
-    
+
     > .JuliaFormatter.toml
-    
+
     ```toml
     ...
     style = "yas"
     ...
     ```
+
+    In the same way as above, you can specify `style = "blue"` to use Blue style.
 
 ## Search Rule
 
