@@ -215,7 +215,7 @@
         for i in 1:n
             println(i)
         end"""
-        @test fmt(str) == str
+        @test fmt(str_) == str
 
         str = """
         for i in itr
