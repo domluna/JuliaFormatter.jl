@@ -604,4 +604,12 @@
         """
         @test fmt(str_, 4, 1) == str
     end
+
+    @testset "issue 317 - infinite recursion" begin
+        str = raw"""
+        SUITE["manifolds"][name]["tv = 2 * tv1 + 3 * tv2"] = @benchmarkable $tv =
+            2 * $tv1 + 3 * $tv2
+        """
+        @test format_text(str, BlueStyle()) == str
+    end
 end
