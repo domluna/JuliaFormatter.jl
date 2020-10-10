@@ -79,9 +79,11 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
            fst.ref !== nothing &&
            CSTParser.defines_function(fst.ref[])
             short_to_long_function_def!(fst, s)
-            nest!(style, fst, s)
-        else
+        end
+        if fst.typ === CSTParser.BinaryOpCall
             n_binaryopcall!(style, fst, s)
+        else
+            nest!(style, fst, s)
         end
     elseif fst.typ === CSTParser.Curly
         n_curly!(style, fst, s)
