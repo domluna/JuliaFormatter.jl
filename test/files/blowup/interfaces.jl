@@ -152,7 +152,7 @@ $(ATTRIBUTES)
 
                       strokecolor=:black, strokewidth=1.0, glowcolor=RGBA(0, 0, 0, 0), glowwidth=0.0,
 
-                      rotations=Billboard(), marker_offset=automatic, transform_marker=false, # Applies the plots transformation to marker # Applies the plots transformation to marker
+                      rotations=Billboard(), marker_offset=automatic, transform_marker=false, # Applies the plots transformation to marker
                       uv_offset_width=Vec4f0(0), distancefield=nothing, markerspace=Pixel, fxaa=false)
 end
 
