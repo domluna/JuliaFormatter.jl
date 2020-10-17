@@ -1005,28 +1005,6 @@ p_let(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # for i = 1:10 body end
 #
 # https://github.com/domluna/JuliaFormatter.jl/issues/34
-function eq_to_in_normalization!(cst::CSTParser.EXPR, always_for_in::Bool)
-    if cst.typ === CSTParser.BinaryOpCall
-        op = cst[2]
-        rhs = cst[3]
-
-        if always_for_in
-            cst[2].kind = Tokens.IN
-            return
-        end
-
-        if op.kind === Tokens.EQ && !is_colon_op(rhs)
-            cst[2].kind = Tokens.IN
-        elseif op.kind === Tokens.IN && is_colon_op(rhs)
-            cst[2].kind = Tokens.EQ
-        end
-    elseif cst.typ === CSTParser.Block || cst.typ === CSTParser.InvisBrackets
-        for a in cst
-            eq_to_in_normalization!(a, always_for_in)
-        end
-    end
-end
-
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
     if fst.typ === CSTParser.BinaryOpCall
         idx = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
@@ -1059,9 +1037,6 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
-    # if cst[1].kind === Tokens.FOR
-    #     eq_to_in_normalization!(cst[2], s.opts.always_for_in)
-    # end
 
     n = if cst[2].typ === CSTParser.Block
         s.indent += s.opts.indent
@@ -2011,6 +1986,7 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, n, s, join_lines = true)
         end
+
         has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
     end
     t

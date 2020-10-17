@@ -291,10 +291,15 @@ end
 function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(cst, nspaces(s))
+    has_for_kw = false
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
+            if !has_for_kw && a.kind === Tokens.FOR
+                has_for_kw = true
+            end
+
             incomp = parent_is(
                 a,
                 is_iterable,
@@ -311,16 +316,15 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Whitespace(1), s)
 
-            if a.kind === Tokens.FOR
-                for j = i+1:length(cst)
-                    eq_to_in_normalization!(cst[j], s.opts.always_for_in)
-                end
-            end
-
             if !is_gen(cst.args[i+1])
                 tup = p_tupleh(style, cst.args[i+1:length(cst)], s)
                 add_node!(t, tup, s, join_lines = true)
-                return t
+                if has_for_kw 
+                    for nn in tup.nodes
+                        eq_to_in_normalization!(nn, s.opts.always_for_in)
+                    end
+                end
+                break
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -328,6 +332,8 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, n, s, join_lines = true)
         end
+
+        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
     end
 
     t
