@@ -612,5 +612,4 @@
         """
         @test format_text(str, BlueStyle()) == str
     end
-
 end
