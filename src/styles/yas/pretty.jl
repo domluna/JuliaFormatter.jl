@@ -228,24 +228,6 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     return fst
 end
 
-function p_parameters(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ys)
-    t = FST(cst, nspaces(s))
-
-    for (i, a) in enumerate(cst)
-        n = pretty(style, a, s)
-        if i == length(cst) && CSTParser.is_comma(a)
-            # do nothing
-        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
-        else
-            add_node!(t, n, s, join_lines = true)
-        end
-    end
-    t
-end
-
 function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(cst, nspaces(s))

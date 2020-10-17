@@ -1795,6 +1795,7 @@ p_typedcomprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:Abstract
 function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
+
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if i == length(cst) && CSTParser.is_comma(a)

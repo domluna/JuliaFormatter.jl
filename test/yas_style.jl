@@ -441,4 +441,11 @@
         str = "[x[i] for i in 1:length(x)]"
         @test yasfmt(str_, 4, 92, always_for_in = true) == str
     end
+
+    @testset "issue 321 - exponential inline comments !!!" begin
+        str = """
+        scaled_ticks, mini, maxi = optimize_ticks(scale_func(lmin), scale_func(lmax); k_min=4, # minimum number of ticks
+                                                  k_max=8)"""
+        @test yasfmt(str, 4, 92, whitespace_in_kwargs = false) == str
+    end
 end
