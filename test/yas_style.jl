@@ -439,6 +439,6 @@
     @testset "issue 320" begin
         str_ = "[x[i] for i = 1:length(x)]"
         str = "[x[i] for i in 1:length(x)]"
-        @test yasfmt(str_, 4, 92, always_for_in=true) == str
+        @test yasfmt(str_, 4, 92, always_for_in = true) == str
     end
 end
