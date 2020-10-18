@@ -160,7 +160,7 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             g = AlignGroup()
         end
 
-        binop, nlen, ws = if n.typ === CSTParser.BinaryOpCall || n.typ === CSTParser.Kw 
+        binop, nlen, ws = if n.typ === CSTParser.BinaryOpCall || n.typ === CSTParser.Kw
             nlen = length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
         else

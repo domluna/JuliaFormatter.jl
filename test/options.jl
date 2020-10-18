@@ -1081,7 +1081,6 @@
         """
         @test fmt(str_, 4, 100, align_assignment = true) == str
 
-
         str = """
         function stabilize(model)
             s            = model.sys
