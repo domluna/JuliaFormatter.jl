@@ -612,4 +612,13 @@
         """
         @test format_text(str, BlueStyle()) == str
     end
+
+    @testset "issue 324 - bounds error when aligning binary op calls" begin
+        # caused by the star operator
+        str = """
+        θ = eigvals(Matrix([0I(n^2) -I(n^2); P0 P1]), -Matrix([I(n^2) 0I(n^2); 0I(n^2) P2]))
+        c = maximum(abs.(θ[(imag.(θ).==0).*(real.(θ).>0)]))
+        """
+        @test format_text(str, align_assignment=true) == str
+    end
 end

@@ -17,13 +17,11 @@ function align_fst!(fst::FST, opts::Options)
             align_fst!(n, opts)
         end
 
-        # gather all assignments within the current code block
-        # they will be aligned at the end
         if is_assignment(n) || n.typ === CSTParser.Kw
+            # Gather all assignments within the current code block
+            # they will be aligned at the end
             push!(assignment_idxs, i)
-        end
-
-        if n.typ === CSTParser.BinaryOpCall && n[3].val == "=>"
+        elseif n.typ === CSTParser.BinaryOpCall && op_kind(n) === Tokens.PAIR_ARROW
             push!(pair_arrow_idxs, i)
         end
     end
