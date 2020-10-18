@@ -619,6 +619,6 @@
         θ = eigvals(Matrix([0I(n^2) -I(n^2); P0 P1]), -Matrix([I(n^2) 0I(n^2); 0I(n^2) P2]))
         c = maximum(abs.(θ[(imag.(θ).==0).*(real.(θ).>0)]))
         """
-        @test format_text(str, align_assignment=true) == str
+        @test format_text(str, align_assignment = true) == str
     end
 end
