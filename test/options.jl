@@ -1052,6 +1052,53 @@
         )
         """
         @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false) == str
+
+        str_ = """
+        s           = model.sys
+        @unpack A,K = s
+        C           = s.C
+        poles       = eigvals(A - K * C)
+        """
+        str = """
+        s            = model.sys
+        @unpack A, K = s
+        C            = s.C
+        poles        = eigvals(A - K * C)
+        """
+        @test fmt(str_, 4, 100, align_assignment = true) == str
+
+        str_ = """
+        s             = model.sys
+        @unpack A,K   = s
+        C             = s.C
+        const polesss = eigvals(A - K * C)
+        """
+        str = """
+        s             = model.sys
+        @unpack A, K  = s
+        C             = s.C
+        const polesss = eigvals(A - K * C)
+        """
+        @test fmt(str_, 4, 100, align_assignment = true) == str
+
+        str = """
+        function stabilize(model)
+            s            = model.sys
+            @unpack A, K = s
+            C            = s.C
+            poles        = eigvals(A - K * C)
+            newpoles     = map(poles) do p
+                ap = abs(p)
+                ap <= 1 && (return p)
+                p / (ap + sqrt(eps()))
+            end
+            K2           = ControlSystems.acker(A', C', newpoles)' .|> real
+            all(abs(p) <= 1 for p in eigvals(A - K * C)) || @warn("Failed to stabilize predictor")
+            s.K .= K2
+            model
+        end
+        """
+        @test fmt(str, 4, 100, align_assignment = true) == str
     end
 
     @testset "align conditionals" begin
