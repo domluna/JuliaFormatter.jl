@@ -557,7 +557,8 @@ function is_assignment(x::Union{FST,CSTParser.EXPR})
         x.typ === CSTParser.Const ||
         x.typ === CSTParser.Local ||
         x.typ === CSTParser.Global ||
-        x.typ === CSTParser.Outer
+        x.typ === CSTParser.Outer ||
+        x.typ === MacroBlock
     ) && is_assignment(x[end])
         return true
     end
