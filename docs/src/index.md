@@ -37,7 +37,7 @@ julia> format_text(str)
 
 ## Usage
 
-`JuliaFormatter` exports [`format_text`](@ref), [`format_file`](@ref), [`format_text`](@ref), and [`format_md`](@ref):
+`JuliaFormatter` exports [`format`](@ref), [`format_file`](@ref), [`format_text`](@ref), and [`format_md`](@ref):
 
 `JuliaFormatter` should work on any valid Julia and Markdown files.
 If `JuliaFormatter` cannot parse the code for any reason, it will throw an error pointing to the line that could not be parsed.
