@@ -389,7 +389,7 @@ be written to `foo_fmt.jl` instead.
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
 
-If `format_markdown` is `.md` files are formatted.
+If `format_markdown` is true, `.md` files are formatted.
 
 ### Formatting Options
 
