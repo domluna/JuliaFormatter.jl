@@ -38,5 +38,6 @@ Check out the docs for further description of the formatter and its options.
 For integration with other editors:
 
   - [Atom](https://github.com/JunoLab/Atom.jl)
+  - [Emacs](https://codeberg.org/FelipeLema/julia-formatter.el)
   - [VSCode](https://github.com/singularitti/vscode-julia-formatter/)
   - [Vim](https://github.com/kdheepak/JuliaFormatter.vim)
