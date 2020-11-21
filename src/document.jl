@@ -72,7 +72,7 @@ function Document(text::AbstractString)
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
-                bidx = 1
+                bidx = 2
                 cidx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
@@ -148,6 +148,8 @@ function Document(text::AbstractString)
         prev_tok = t
 
         if t.kind === Tokens.COMMENT
+            goffset += (t.endbyte - t.startbyte + 1)
+        elseif t.kind === Tokens.WHITESPACE
             goffset += (t.endbyte - t.startbyte + 1)
         else
             goffset += length(Tokenize.untokenize(t))

@@ -621,4 +621,15 @@
         """
         @test format_text(str, align_assignment = true) == str
     end
+
+    @testset "issue 332" begin
+        # this string has a nbsp after 'c'
+        # so it should have an additional byte because
+        # it's unicode
+        str_ = """a = b || c ;
+               f("A")"""
+        str = """a = b || c;
+               f("A")"""
+        @test format_text(str_) == str
+    end
 end
