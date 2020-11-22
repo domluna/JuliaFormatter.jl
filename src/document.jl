@@ -72,7 +72,7 @@ function Document(text::AbstractString)
             lit_strings[offset] = (t.startpos[1], t.endpos[1], t.val)
             if t.startpos[1] != t.endpos[1]
                 nls = findall(x -> x == '\n', t.val)
-                bidx = 2
+                bidx = 1
                 cidx = 1
                 for nl in nls
                     s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
