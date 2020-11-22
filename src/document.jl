@@ -149,6 +149,8 @@ function Document(text::AbstractString)
 
         if t.kind === Tokens.COMMENT
             goffset += (t.endbyte - t.startbyte + 1)
+        elseif t.kind === Tokens.WHITESPACE
+            goffset += (t.endbyte - t.startbyte + 1)
         else
             goffset += length(Tokenize.untokenize(t))
         end
