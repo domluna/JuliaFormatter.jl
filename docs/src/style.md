@@ -15,7 +15,7 @@ Functions, macros, structs with no arguments are placed on a single line:
 
 ```julia
 function  foo
- end
+end
 
 ->
 
