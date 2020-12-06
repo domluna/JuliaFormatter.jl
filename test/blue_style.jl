@@ -288,6 +288,17 @@
         @test bluefmt1(str_) == str
         @test bluefmt(str_) == str
 
+        str_ = """
+        x = foo(var = "some really really really really really really really really really really long string")
+        """
+        str = """
+        x = foo(;
+            var = "some really really really really really really really really really really long string",
+        )
+        """
+        @test bluefmt1(str_) == str
+        @test bluefmt(str_) == str
+
         str = """
         function g(x, y = 1)
             return x + y
