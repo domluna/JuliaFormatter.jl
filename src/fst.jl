@@ -696,7 +696,6 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
     return parent_is(cst, valid, ignore = ignore)
 end
 
-
 """
     separate_kwargs_with_semicolon!(fst::FST)
 

@@ -66,7 +66,6 @@ function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
     t = p_call(DefaultStyle(style), cst, s)

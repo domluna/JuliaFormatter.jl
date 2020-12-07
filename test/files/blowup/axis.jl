@@ -29,22 +29,22 @@ Plots a 2-dimensional axis.
 $(ATTRIBUTES)
 """
 @recipe(Axis2D) do scene
-    return Attributes(visible=true, showgrid=true, showticks=true, showtickmarks=true, padding=0.0,
-                      ticks=Attributes(ranges_labels=(automatic, automatic), formatter=Formatters.plain,
+    return Attributes(; visible=true, showgrid=true, showticks=true, showtickmarks=true, padding=0.0,
+                      ticks=Attributes(; ranges_labels=(automatic, automatic), formatter=Formatters.plain,
                                        gap=1, title_gap=3, linewidth=(1, 1),
                                        linecolor=((:black, 0.4), (:black, 0.4)), linestyle=(nothing, nothing),
                                        textcolor=(:black, :black), textsize=(5, 5), rotation=(0.0, 0.0),
                                        align=((:center, :top), (:right, :center)),
                                        font=lift(dim2, theme(scene, :font))),
-                      tickmarks=Attributes(length=(1.0, 1.0), linewidth=(1, 1),
+                      tickmarks=Attributes(; length=(1.0, 1.0), linewidth=(1, 1),
                                            linecolor=((:black, 0.4), (:black, 0.2)),
                                            linestyle=(nothing, nothing)),
-                      grid=Attributes(linewidth=(0.5, 0.5), linecolor=((:black, 0.3), (:black, 0.3)),
+                      grid=Attributes(; linewidth=(0.5, 0.5), linecolor=((:black, 0.3), (:black, 0.3)),
                                       linestyle=(nothing, nothing)),
-                      frame=Attributes(linewidth=1.0, linecolor=:black, linestyle=nothing,
+                      frame=Attributes(; linewidth=1.0, linecolor=:black, linestyle=nothing,
                                        axis_position=nothing, axis_arrow=false, arrow_size=2.5,
                                        frames=((false, false), (false, false))),
-                      names=Attributes(axisnames=("x", "y"), title=nothing, textcolor=(:black, :black),
+                      names=Attributes(; axisnames=("x", "y"), title=nothing, textcolor=(:black, :black),
                                        textsize=(6, 6), rotation=(0.0, -1.5pi),
                                        align=((:center, :top), (:center, :bottom)),
                                        font=lift(dim2, theme(scene, :font))))
@@ -72,16 +72,16 @@ $(ATTRIBUTES)
     grid_thickness = 1
     gridthickness = ntuple(x -> 1.0f0, Val(3))
     tsize = 5 # in percent
-    return Attributes(visible=true, showticks=(true, true, true), showaxis=(true, true, true),
+    return Attributes(; visible=true, showticks=(true, true, true), showaxis=(true, true, true),
                       showgrid=(true, true, true), scale=Vec3f0(1), padding=0.1,
-                      names=Attributes(axisnames=("x", "y", "z"), textcolor=(:black, :black, :black),
+                      names=Attributes(; axisnames=("x", "y", "z"), textcolor=(:black, :black, :black),
                                        rotation=axisnames_rotation3d, textsize=(6.0, 6.0, 6.0),
                                        align=axisnames_align3d, font=lift(dim3, theme(scene, :font)), gap=3),
-                      ticks=Attributes(ranges_labels=(automatic, automatic), formatter=Formatters.plain,
+                      ticks=Attributes(; ranges_labels=(automatic, automatic), formatter=Formatters.plain,
                                        textcolor=(tick_color, tick_color, tick_color),
                                        rotation=tickrotations3d, textsize=(tsize, tsize, tsize),
                                        align=tickalign3d, gap=3, font=lift(dim3, theme(scene, :font))),
-                      frame=Attributes(linecolor=(grid_color, grid_color, grid_color),
+                      frame=Attributes(; linecolor=(grid_color, grid_color, grid_color),
                                        linewidth=(grid_thickness, grid_thickness, grid_thickness),
                                        axiscolor=(:black, :black, :black)))
 end
@@ -194,7 +194,7 @@ function draw_ticks(textbuffer, dim, origin, ticks, linewidth, linecolor, linest
                     rotation, align, font)
     for (tick, str) in ticks
         pos = ntuple(i -> i != dim ? origin[i] : tick, Val(2))
-        push!(textbuffer, str, Point(pos), rotation=rotation[dim], textsize=textsize[dim], align=align[dim],
+        push!(textbuffer, str, Point(pos); rotation=rotation[dim], textsize=textsize[dim], align=align[dim],
               color=textcolor[dim], font=font[dim])
     end
 end
@@ -205,7 +205,7 @@ function draw_tickmarks(linebuffer, dim, origin, ticks, dir::NTuple{N}, linewidt
         pos = ntuple(i -> i != dim ? origin[i] : tick, Val(2))
         posf0 = Point2f0(pos)
         dirf0 = Pointf0{N}(dir)
-        append!(linebuffer, [posf0, posf0 .+ dirf0], color=linecolor[dim], linewidth=linewidth[dim])
+        append!(linebuffer, [posf0, posf0 .+ dirf0]; color=linecolor[dim], linewidth=linewidth[dim])
     end
 end
 
@@ -214,7 +214,7 @@ function draw_grid(linebuffer, dim, origin, ticks, dir::NTuple{N}, linewidth, li
     for (tick, str) in ticks
         tup = ntuple(i -> i != dim ? origin[i] : tick, Val(N))
         posf0 = Pointf0{N}(tup)
-        append!(linebuffer, [posf0, posf0 .+ dirf0], color=linecolor[dim], linewidth=linewidth[dim])
+        append!(linebuffer, [posf0, posf0 .+ dirf0]; color=linecolor[dim], linewidth=linewidth[dim])
     end
 end
 
@@ -229,10 +229,10 @@ function draw_frame(linebuffer, limits::NTuple{N,Any}, linewidth, linecolor, lin
             start = unit(Point{N,Float32}, i) * Float32(mini[i])
             to = unit(Point{N,Float32}, i) * Float32(maxi[i])
             if false #axis_arrow
-                arrows(scene, [start, to], linewidth=linewidth, linecolor=linecolor, linestyle=linestyle,
+                arrows(scene, [start, to]; linewidth=linewidth, linecolor=linecolor, linestyle=linestyle,
                        arrowsize=arrow_size)
             else
-                append!(linebuffer, [start, to], linewidth=linewidth, color=linecolor)
+                append!(linebuffer, [start, to]; linewidth=linewidth, color=linecolor)
             end
         end
     end
@@ -248,7 +248,7 @@ function draw_frame(linebuffer, limits::NTuple{N,Any}, linewidth, linecolor, lin
                     if frames[N - dim + 1][3 - otherside]
                         p = ntuple(i -> i == dim ? limits[i][otherside] : limits[i][side], Val(N))
                         to = Point{N,Float32}(p)
-                        append!(linebuffer, [from, to], linewidth=linewidth, color=linecolor)
+                        append!(linebuffer, [from, to]; linewidth=linewidth, color=linecolor)
                     end
                 end
             end
@@ -277,13 +277,13 @@ function draw_titles(textbuffer, xticks, yticks, origin, limit_widths, tickfont,
     positions = (posx, posy)
     for i in 1:2
         if !isempty(axis_labels[i])
-            push!(textbuffer, axis_labels[i], positions[i], textsize=textsize[i], align=align[i],
+            push!(textbuffer, axis_labels[i], positions[i]; textsize=textsize[i], align=align[i],
                   rotation=rotation[i], color=textcolor[i], font=font[i])
         end
     end
     if title !== nothing
         # TODO give title own text attributes
-        push!(textbuffer, title, (half_width[1], (origin .+ (limit_widths))[2]), textsize=textsize[1],
+        push!(textbuffer, title, (half_width[1], (origin .+ (limit_widths))[2]); textsize=textsize[1],
               align=(:center, :top), rotation=rotation[1], color=textcolor[1], font=font[1])
     end
 end
@@ -401,7 +401,7 @@ function plot!(scene::SceneLike, ::Type{<:Axis2D}, attributes::Attributes, args.
 
     textbuffer = TextBuffer(cplot, Point{2})
 
-    grid_linebuffer = Node((LinesegmentBuffer(cplot, Point{2}, transparency=true,
+    grid_linebuffer = Node((LinesegmentBuffer(cplot, Point{2}; transparency=true,
                                               linestyle=lift(first, cplot[:grid, :linestyle])),
                             LinesegmentBuffer(cplot, Point{2}; transparency=true,
                                               linestyle=lift(last, cplot[:grid, :linestyle]))))
@@ -460,7 +460,7 @@ function draw_axis3d(textbuffer, linebuffer, limits, ranges_labels, args...)
         width = Float32(limit_widths[i])
         stop = origin .+ (width .* axis_vec)
         if showaxis[i]
-            append!(linebuffer, [origin, stop], color=axiscolors[i], linewidth=1.5f0)
+            append!(linebuffer, [origin, stop]; color=axiscolors[i], linewidth=1.5f0)
         end
         if showticks[i]
             range = ranges[i]
@@ -479,7 +479,7 @@ function draw_axis3d(textbuffer, linebuffer, limits, ranges_labels, args...)
                     str = labels[j]
                     if !isempty(str)
                         startpos = (origin .+ ((Float32(tick - origin[i]) * axis_vec)) .+ offset2)
-                        push!(textbuffer, str, startpos, color=ttextcolor[i], rotation=trotation[i],
+                        push!(textbuffer, str, startpos; color=ttextcolor[i], rotation=trotation[i],
                               textsize=ttextsize[i], align=talign[i], font=tfont[i])
                     end
                 end
@@ -491,7 +491,7 @@ function draw_axis3d(textbuffer, linebuffer, limits, ranges_labels, args...)
                     0.0f0
                 end
                 pos = (labelposition(ranges, i, tickdir, titlegap[i] + tick_widths, origin) .+ offset2)
-                push!(textbuffer, to_latex(axisnames[i]), pos, textsize=axisnames_size[i],
+                push!(textbuffer, to_latex(axisnames[i]), pos; textsize=axisnames_size[i],
                       color=axisnames_color[i], rotation=axisrotation[i], align=axisalign[i],
                       font=axisnames_font[i])
             end
@@ -505,7 +505,7 @@ function draw_axis3d(textbuffer, linebuffer, limits, ranges_labels, args...)
                 range = ranges[j]
                 for tick in range
                     offset = Float32(tick - origin[j]) * dir
-                    append!(linebuffer, [origin .+ offset, stop .+ offset], color=c, linewidth=thickness)
+                    append!(linebuffer, [origin .+ offset, stop .+ offset]; color=c, linewidth=thickness)
                 end
             end
         end
@@ -519,8 +519,8 @@ function plot!(scene::SceneLike, ::Type{<:Axis3D}, attributes::Attributes, args.
     axis = Axis3D(scene, attributes, args)
     # Disable any non linear transform for the axis plot!
     axis.transformation.transform_func[] = identity
-    textbuffer = TextBuffer(axis, Point{3}, transparency=true)
-    linebuffer = LinesegmentBuffer(axis, Point{3}, transparency=true)
+    textbuffer = TextBuffer(axis, Point{3}; transparency=true)
+    linebuffer = LinesegmentBuffer(axis, Point{3}; transparency=true)
 
     tstyle, ticks, frame = to_value.(getindex.(axis, (:names, :ticks, :frame)))
     titlevals = getindex.(tstyle, (:axisnames, :textcolor, :textsize, :rotation, :align, :font, :gap))

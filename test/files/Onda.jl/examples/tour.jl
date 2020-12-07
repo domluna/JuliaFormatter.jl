@@ -17,7 +17,8 @@ using Onda, Dates, Test
 # specification; this type corresponds directly to the signal object defined
 # by the specification.
 
-eeg_signal = Signal(channel_names=[:fp1, :f3, :c3, :p3, :f7, :t3, :t5, :o1, :fz, :cz, :pz,
+eeg_signal = Signal(;
+                    channel_names=[:fp1, :f3, :c3, :p3, :f7, :t3, :t5, :o1, :fz, :cz, :pz,
                                    :fp2, :f4, :c4, :p4, :f8, :t4, :t6, :o2],
                     start_nanosecond=Nanosecond(0), stop_nanosecond=Nanosecond(Second(20)),
                     sample_unit=:microvolts, sample_resolution_in_unit=0.25,
@@ -27,7 +28,7 @@ eeg_signal = Signal(channel_names=[:fp1, :f3, :c3, :p3, :f7, :t3, :t5, :o1, :fz,
 ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr],
                                   file_extension=Symbol("lpcm.zst"))
 
-spo2_signal = Signal(channel_names=[:spo2], start_nanosecond=Nanosecond(Second(3)),
+spo2_signal = Signal(; channel_names=[:spo2], start_nanosecond=Nanosecond(Second(3)),
                      stop_nanosecond=Nanosecond(Second(17)), sample_unit=:percentage,
                      sample_resolution_in_unit=(100 / typemax(UInt8)),
                      sample_offset_in_unit=0.0, sample_type=UInt8, sample_rate=20.5, # Hz
