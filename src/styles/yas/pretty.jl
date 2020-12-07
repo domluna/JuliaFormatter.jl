@@ -157,6 +157,9 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         end
     end
+    if !parent_is(cst, is_function_or_macro_def)
+        separate_kwargs_with_semicolon!(t)
+    end
     t
 end
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)

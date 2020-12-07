@@ -730,26 +730,30 @@ function separate_kwargs_with_semicolon!(fst::FST)
     sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
+    # @info "" kw_idx sc_idx comma_idx ph_idx
 
     if sc_idx !== nothing && sc_idx > kw_idx
         # move ; prior to first kwarg
         fst[sc_idx].val = ","
         fst[sc_idx].typ = CSTParser.PUNCTUATION
         if comma_idx === nothing
-            if fst[kw_idx-1].typ === PLACEHOLDER
-                fst[kw_idx-1] = Placeholder(1)
+            if ph_idx !== nothing
+                fst[ph_idx] = Placeholder(1)
+                insert!(fst, ph_idx, Semicolon())
             else
-                insert!(fst, kw_idx - 1, Placeholder(1))
+                insert!(fst, kw_idx, Placeholder(1))
+                insert!(fst, kw_idx, Semicolon())
             end
         end
-        insert!(fst, kw_idx - 1, Semicolon())
     elseif sc_idx === nothing && comma_idx === nothing
-        if fst[kw_idx-1].typ === PLACEHOLDER
-            fst[kw_idx-1] = Placeholder(1)
+        if ph_idx !== nothing
+            fst[ph_idx] = Placeholder(1)
+            insert!(fst, ph_idx, Semicolon())
         else
-            insert!(fst, kw_idx - 1, Placeholder(1))
+            insert!(fst, kw_idx, Placeholder(1))
+            insert!(fst, kw_idx, Semicolon())
         end
-        insert!(fst, kw_idx - 1, Semicolon())
     elseif sc_idx === nothing
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
