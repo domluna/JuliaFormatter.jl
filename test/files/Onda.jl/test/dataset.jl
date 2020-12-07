@@ -44,20 +44,20 @@ using Test, Onda, Dates, MsgPack
             if sizeof(s.signal.sample_type) >= 8
                 # decoding from 64-bit to floating point is fairly lossy
                 tmp = similar(s.data)
-                @test isapprox(encode(d, nothing).data, s.data, rtol=10)
+                @test isapprox(encode(d, nothing).data, s.data; rtol=10)
                 encode!(tmp, d, nothing)
-                @test isapprox(tmp, s.data, rtol=10)
-                @test isapprox(encode(d, missing).data, s.data, rtol=10)
+                @test isapprox(tmp, s.data; rtol=10)
+                @test isapprox(encode(d, missing).data, s.data; rtol=10)
                 encode!(tmp, d, missing)
-                @test isapprox(tmp, s.data, rtol=10)
+                @test isapprox(tmp, s.data; rtol=10)
             else
                 tmp = similar(s.data)
                 encode!(tmp, d, nothing)
                 @test tmp == s.data
                 @test encode(d, nothing).data == s.data
                 encode!(tmp, d, missing)
-                @test isapprox(tmp, s.data, rtol=1)
-                @test isapprox(encode(d, missing).data, s.data, rtol=1)
+                @test isapprox(tmp, s.data; rtol=1)
+                @test isapprox(encode(d, missing).data, s.data; rtol=1)
             end
             chs = s.signal.channel_names
             i = 93
@@ -125,7 +125,7 @@ using Test, Onda, Dates, MsgPack
         foreach(x -> annotate!(recording, x), old_recording.annotations)
         foreach(x -> store!(dataset, uuid, x, load(old_dataset, old_uuid, x)),
                 keys(old_recording.signals))
-        merge!(dataset, old_dataset, only_recordings=true)
+        merge!(dataset, old_dataset; only_recordings=true)
         @test length(dataset.recordings) == 2
         r1 = dataset.recordings[old_uuid]
         @test r1 == old_recording

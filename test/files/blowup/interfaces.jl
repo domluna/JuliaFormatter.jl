@@ -7,7 +7,7 @@ Attributes(x::AbstractPlot) = x.attributes
 default_theme(scene, T) = Attributes()
 
 function default_theme(scene)
-    return Attributes(color=theme(scene, :color), linewidth=1, transformation=automatic, model=automatic,
+    return Attributes(; color=theme(scene, :color), linewidth=1, transformation=automatic, model=automatic,
                       visible=true, transparency=false, overdraw=false, ambient=Vec3f0(0.55),
                       diffuse=Vec3f0(0.4), specular=Vec3f0(0.2), shininess=32.0f0, lightposition=:eyeposition,
                       nan_color=RGBAf0(0, 0, 0, 0), ssao=false)
@@ -693,7 +693,7 @@ function add_axis!(scene::Scene, attributes=Attributes())
             sl === automatic && return dl
             return sl
         end
-        axistype(scene, axis_attributes, lims, ticks=(ranges=ranges, labels=labels))
+        axistype(scene, axis_attributes, lims; ticks=(ranges=ranges, labels=labels))
     end
     return scene
 end

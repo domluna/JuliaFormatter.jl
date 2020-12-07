@@ -214,7 +214,7 @@ but write encoded values to `result_storage` rather than allocating new storage.
 function encode!(result_storage, sample_resolution_in_unit, sample_offset_in_unit, samples,
                  dither_storage=nothing)
     return encode!(result_storage, eltype(result_storage), sample_resolution_in_unit,
-                   sample_offset_in_unit, samples, dither_storage=nothing)
+                   sample_offset_in_unit, samples; dither_storage=nothing)
 end
 
 function encode!(result_storage, ::Type{S}, sample_resolution_in_unit,

@@ -66,39 +66,6 @@ function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function separate_kwargs_with_semicolon!(fst::FST)
-    kw_idx = findfirst(n -> n.typ === CSTParser.Kw, fst.nodes)
-    kw_idx === nothing && return
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
-    # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
-
-    if sc_idx !== nothing && sc_idx > kw_idx
-        # move ; prior to first kwarg
-        fst[sc_idx].val = ","
-        fst[sc_idx].typ = CSTParser.PUNCTUATION
-        if comma_idx === nothing
-            if fst[kw_idx-1].typ === PLACEHOLDER
-                fst[kw_idx-1] = Placeholder(1)
-            else
-                insert!(fst, kw_idx - 1, Placeholder(1))
-            end
-        end
-        insert!(fst, kw_idx - 1, Semicolon())
-    elseif sc_idx === nothing && comma_idx === nothing
-        if fst[kw_idx-1].typ === PLACEHOLDER
-            fst[kw_idx-1] = Placeholder(1)
-        else
-            insert!(fst, kw_idx - 1, Placeholder(1))
-        end
-        insert!(fst, kw_idx - 1, Semicolon())
-    elseif sc_idx === nothing
-        fst[comma_idx].val = ";"
-        fst[comma_idx].typ = SEMICOLON
-    end
-    return
-end
-
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
     t = p_call(DefaultStyle(style), cst, s)

@@ -6,7 +6,7 @@ using Test, Onda, Dates, Random, UUIDs
 
     signal = Signal([:a, :b, Symbol("c-d")], Nanosecond(3), Nanosecond(Second(12345)),
                     :unit, 0.25, -0.5, Int16, 50.2, Symbol("lpcm.zst"), nothing)
-    @test sprint(show, signal, context=(:compact => true)) ==
+    @test sprint(show, signal; context=(:compact => true)) ==
           "Signal([:a, :b, Symbol(\"c-d\")])"
     @test sprint(show, signal) == """
                                   Signal:
@@ -23,7 +23,7 @@ using Test, Onda, Dates, Random, UUIDs
 
     samples = Samples(signal, true,
                       rand(Random.MersenneTwister(0), signal.sample_type, 3, 5))
-    @test sprint(show, samples, context=(:compact => true)) == "Samples(3×5 Array{Int16,2})"
+    @test sprint(show, samples; context=(:compact => true)) == "Samples(3×5 Array{Int16,2})"
     @test sprint(show, samples) == """
                                    Samples (00:00:00.099601594):
                                      signal.channel_names: [:a, :b, Symbol(\"c-d\")]

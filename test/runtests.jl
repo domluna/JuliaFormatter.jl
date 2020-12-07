@@ -39,9 +39,11 @@ function fmt(str, i, m; kwargs...)
     return fmt(str; kwargs..., i = i, m = m)
 end
 
-yasfmt(str, i, m; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
-bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
+yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
+yasfmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
+
 bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
+bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
 
 @testset "JuliaFormatter" begin
     include("default_style.jl")
