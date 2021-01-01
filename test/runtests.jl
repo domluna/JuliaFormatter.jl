@@ -35,10 +35,6 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
-function fmt(str, i, m; kwargs...)
-    return fmt(str; kwargs..., i = i, m = m)
-end
-
 yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
 yasfmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
 

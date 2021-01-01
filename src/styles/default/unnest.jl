@@ -7,8 +7,6 @@ function unnest!(
     ds::DefaultStyle,
     nodes::Vector{FST},
     s::State,
-    indent::Int;
-    extra_margin = 0,
 )
     style = getstyle(ds)
     for (i, n) in enumerate(nodes)
@@ -19,7 +17,6 @@ function unnest!(
         elseif n.typ === NEWLINE
             s.line_offset = indent
         else
-            n.extra_margin = extra_margin
             unnest!(style, n, s)
         end
     end
@@ -28,24 +25,18 @@ unnest!(
     style::S,
     nodes::Vector{FST},
     s::State,
-    indent::Int;
-    extra_margin = 0,
 ) where {S<:AbstractStyle} =
-    unnest!(DefaultStyle(style), nodes, s, indent, extra_margin = extra_margin)
+    unnest!(DefaultStyle(style), nodes, s)
 
 function unnest!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
 
     if is_leaf(fst)
         s.line_offset += length(fst)
-        if is_closer(fst) || fst.typ === NOTCODE
-            fst.indent -= s.opts.indent
-        end
         return
     end
 
     # only unnest if it's allowed
-    # can_nest(fst) || return
     if !can_nest(fst)
         walk(increment_line_offset!, fst, s)
         return
@@ -60,26 +51,9 @@ function unnest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === CSTParser.WhereOpCall
         un_whereopcall!(style, fst, s)
     elseif fst.typ === CSTParser.ConditionalOpCall
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.conditional_to_if && line_margin > s.opts.margin
-            conditional_to_if_block!(fst, s)
-            unnest!(style, fst, s)
-        else
-            un_conditionalopcall!(style, fst, s)
-        end
+        un_conditionalopcall!(style, fst, s)
     elseif fst.typ === CSTParser.BinaryOpCall
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.short_to_long_function_def &&
-           line_margin > s.opts.margin &&
-           fst.ref !== nothing &&
-           CSTParser.defines_function(fst.ref[])
-            short_to_long_function_def!(fst, s)
-        end
-        if fst.typ === CSTParser.BinaryOpCall
-            un_binaryopcall!(style, fst, s)
-        else
-            unnest!(style, fst, s)
-        end
+        un_binaryopcall!(style, fst, s)
     elseif fst.typ === CSTParser.Curly
         un_curly!(style, fst, s)
     elseif fst.typ === CSTParser.Call
@@ -127,10 +101,8 @@ function unnest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === CSTParser.UnaryOpCall && fst[2].typ === CSTParser.OPERATOR
         un_unaryopcall!(style, fst, s)
     else
-        unnest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        unnest!(style, fst.nodes, s)
     end
-
-    dedent!(style, fst, s)
 end
 
 unnest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =

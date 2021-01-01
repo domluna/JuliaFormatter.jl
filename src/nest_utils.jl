@@ -53,7 +53,7 @@ function add_indent!(fst::FST, s::State, indent)
 end
 
 # unnest, converts newlines to whitespace
-function unnest!(fst::FST, nl_inds::Vector{Int})
+function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
     for (i, ind) in enumerate(nl_inds)
         fst[ind] = Whitespace(fst[ind].len)
         i == length(nl_inds) || continue
@@ -71,28 +71,57 @@ function unnest!(fst::FST, nl_inds::Vector{Int})
     end
 end
 
-function dedent!(fst::FST, s::State)
-    if is_leaf(fst)
-        s.line_offset += length(fst)
-        if is_closer(fst) || fst.typ === NOTCODE
-            fst.indent -= s.opts.indent
-        end
-        return
-    elseif fst.typ === CSTParser.StringH
-        return
-    end
-
-    # dedent
-    fst.indent -= s.opts.indent
-
-    # only unnest if it's allowed
-    can_nest(fst) || return
-
+function nl_to_ws!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     length(nl_inds) > 0 || return
     margin = s.line_offset + fst.extra_margin + length(fst)
-    margin <= s.opts.margin || return
-    unnest!(fst, nl_inds)
+    if margin <= s.opts.margin
+        nl_to_ws!(fst, nl_inds)
+        return
+    end
+
+    if is_iterable(fst) && !is_comprehension(fst)
+        args = get_args(fst.ref[])
+        idx = nl_inds[1]
+        # @info "" fst[1].val fst.indent fst[idx+1].typ s.line_offset
+
+        if length(args) == 1 && !(is_gen(args[1]))
+            margin = s.line_offset + sum(length.(fst[1:idx-1]))
+            if margin <= s.opts.margin
+                nl_to_ws!(fst, [nl_inds[1], nl_inds[end]])
+                add_indent!(fst, s, -s.opts.indent)
+                return
+            end
+        end
+    end
+
+    return
+end
+
+function dedent!(fst::FST, s::State)
+    if is_closer(fst) || fst.typ === NOTCODE
+        fst.indent -= s.opts.indent
+    elseif is_leaf(fst) || fst.typ === CSTParser.StringH 
+        return
+    else
+        fst.indent -= s.opts.indent
+    end
+end
+
+function unnest!(fst::FST, s::State)
+    if is_leaf(fst)
+        s.line_offset += length(fst)
+    end
+
+    dedent!(fst, s)
+
+    if is_leaf(fst) || fst.typ === CSTParser.StringH || !can_nest(fst)
+        return
+    end
+
+    nl_to_ws!(fst, s)
+
+    return
 end
 
 """

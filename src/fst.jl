@@ -220,7 +220,8 @@ function get_args(cst::CSTParser.EXPR)
        cst.typ === CSTParser.TypedVcat ||
        cst.typ === CSTParser.Ref ||
        cst.typ === CSTParser.Curly ||
-       cst.typ === CSTParser.Call
+       cst.typ === CSTParser.Call ||
+       cst.typ === CSTParser.TypedComprehension
         return get_args(cst.args[2:end])
     elseif cst.typ === CSTParser.WhereOpCall
         # get the arguments in B of `A where B`
@@ -231,7 +232,8 @@ function get_args(cst::CSTParser.EXPR)
            cst.typ === CSTParser.TupleH ||
            cst.typ === CSTParser.Vect ||
            cst.typ === CSTParser.InvisBrackets ||
-           cst.typ === CSTParser.Parameters
+           cst.typ === CSTParser.Parameters ||
+           cst.typ === CSTParser.Comprehension
         return get_args(cst.args)
     end
     CSTParser.get_args(cst)
@@ -514,6 +516,12 @@ function is_iterable(x::Union{CSTParser.EXPR,FST})
     return false
 end
 
+function is_comprehension(x::Union{CSTParser.EXPR,FST})
+    x.typ === CSTParser.Comprehension && return true
+    x.typ === CSTParser.TypedComprehension && return true
+    return false
+end
+
 function is_block(x::Union{CSTParser.EXPR,FST})
     x.typ === CSTParser.If && return true
     x.typ === CSTParser.Do && return true
@@ -597,11 +605,13 @@ end
 nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
 
 function unnestable_arg(cst::CSTParser.EXPR)
-    is_iterable(cst) && return true
-    is_str(cst) && return true
-    cst.typ === CSTParser.LITERAL && return true
-    cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
-    cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
+    # is_iterable(cst) && return true
+    # is_str(cst) && return true
+    # cst.typ === CSTParser.LITERAL && return true
+    # is_gen(cst) && return true
+    # is_comprehension(cst) && return true
+    # cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
+    # cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
     return false
 end
 
