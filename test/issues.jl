@@ -253,24 +253,13 @@
         str = """
         function f(args...)
 
-            next!(s.progress;
-            # comment
-        )
-            nothing
-        end"""
-        @test fmt(str_) == str
-
-        # NOTE: when this passes delete the above test
-        str = """
-        function f(args...)
-
             next!(
-                s.progress;
+                s.progress,
                 # comment
             )
             nothing
         end"""
-        @test_broken fmt(str_) == str
+        @test fmt(str_) == str
     end
 
     @testset "issue #189" begin

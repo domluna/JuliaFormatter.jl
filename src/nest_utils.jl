@@ -80,12 +80,13 @@ function nl_to_ws!(fst::FST, s::State)
         return
     end
 
-    if is_iterable(fst) && !is_comprehension(fst)
+    if is_iterable(fst)
         args = get_args(fst.ref[])
         idx = nl_inds[1]
+
         # @info "" fst[1].val fst.indent fst[idx+1].typ s.line_offset
 
-        if length(args) == 1 && !(is_gen(args[1]))
+        if length(args) == 1 && unnestable(args[1])
             margin = s.line_offset + sum(length.(fst[1:idx-1]))
             if margin <= s.opts.margin
                 nl_to_ws!(fst, [nl_inds[1], nl_inds[end]])

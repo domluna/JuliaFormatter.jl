@@ -604,14 +604,14 @@ end
 
 nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
 
-function unnestable_arg(cst::CSTParser.EXPR)
-    # is_iterable(cst) && return true
+function unnestable(cst::CSTParser.EXPR)
+    is_iterable(cst) && return true
+    cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
+    cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
     # is_str(cst) && return true
     # cst.typ === CSTParser.LITERAL && return true
     # is_gen(cst) && return true
     # is_comprehension(cst) && return true
-    # cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
-    # cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
     return false
 end
 

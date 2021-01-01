@@ -3222,14 +3222,23 @@
         # issue 56
         str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
         str = """
-        a_long_function_name(Array{Float64,2}[
-            [1.0],
-            [0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-        ])"""
+        a_long_function_name(
+            Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]],
+        )"""
         @test fmt(str, 4, length(str)) == str_
         @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 79) == str
+
+        str = """
+        a_long_function_name(
+            Array{Float64,2}[
+                [1.0],
+                [0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+            ],
+        )"""
+        @test fmt(str_, 4, 78) == str
 
         # unary op
         str_ = "[1, 1]'"

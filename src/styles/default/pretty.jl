@@ -566,7 +566,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
+    nest = length(args) > 0
     has_closer = is_closer(cst.args[end])
 
     # !has_closer && length(t.nodes) > 1 && (t.typ = MacroBlock)
@@ -1450,7 +1450,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, Whitespace(1), s)
 
     args = get_args(cst.args[3:end])
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
+    nest = length(args) > 0
     add_braces =
         !CSTParser.is_lbrace(cst[3]) &&
         cst.parent.typ !== CSTParser.Curly &&
@@ -1539,7 +1539,7 @@ function p_curly(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(cst[1]))
+    nest = length(args) > 0
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
     if nest
@@ -1570,7 +1570,7 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
+    nest = length(args) > 0
 
     if nest
         add_node!(t, Placeholder(0), s)
@@ -1642,7 +1642,7 @@ function p_tupleh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
+    nest = length(args) > 0
 
     for (i, a) in enumerate(cst)
         n = if a.typ === CSTParser.BinaryOpCall && a[2].kind === Tokens.EQ
@@ -1674,7 +1674,7 @@ p_tupleh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_braces(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_arg(cst[2]))
+    nest = length(cst) > 2
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1701,7 +1701,7 @@ p_braces(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_arg(cst[2]))
+    nest = length(cst) > 2
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1729,7 +1729,7 @@ p_bracescat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_vect(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_arg(cst[2]))
+    nest = length(cst) > 2
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1844,7 +1844,7 @@ p_using(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    nest = length(cst) > 5 && !(length(cst) == 5 && unnestable_arg(cst[3]))
+    nest = length(cst) > 5 
     nospace = !s.opts.whitespace_ops_in_indices
     for (i, a) in enumerate(cst)
         if is_closer(a) && nest
@@ -1875,7 +1875,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     st = cst.typ === CSTParser.Vcat ? 1 : 2
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_arg(args[1]))
+    nest = length(args) > 0 
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
