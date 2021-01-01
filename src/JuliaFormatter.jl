@@ -362,8 +362,9 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
-    ps.errored &&
-        error("Parsing error for formatted text:\n\n$text\n\n Error occured on line $line, offset $offset.")
+    ps.errored && error(
+        "Parsing error for formatted text:\n\n$text\n\n Error occured on line $line, offset $offset.",
+    )
     return text
 end
 

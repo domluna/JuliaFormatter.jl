@@ -1844,7 +1844,7 @@ p_using(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
-    nest = length(cst) > 5 
+    nest = length(cst) > 5
     nospace = !s.opts.whitespace_ops_in_indices
     for (i, a) in enumerate(cst)
         if is_closer(a) && nest
@@ -1875,7 +1875,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
     st = cst.typ === CSTParser.Vcat ? 1 : 2
     args = get_args(cst)
-    nest = length(args) > 0 
+    nest = length(args) > 0
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)

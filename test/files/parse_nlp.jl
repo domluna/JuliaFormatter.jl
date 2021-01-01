@@ -12,7 +12,9 @@ function _let_code_block(ex::Expr)
 end
 
 function _error_curly(x)
-    Base.error("The curly syntax (sum{},prod{},norm2{}) is no longer supported. Expression: $x.")
+    Base.error(
+        "The curly syntax (sum{},prod{},norm2{}) is no longer supported. Expression: $x.",
+    )
 end
 
 # generates code which converts an expression into a NodeData array (tape)
@@ -266,7 +268,9 @@ function _parse_NL_expr_runtime(m::Model, x::NonlinearParameter, tape, parent, v
 end
 
 function _parse_NL_expr_runtime(m::Model, x::AbstractArray, tape, parent, values)
-    error("Unexpected array $x in nonlinear expression. Nonlinear expressions may contain only scalar expressions.")
+    error(
+        "Unexpected array $x in nonlinear expression. Nonlinear expressions may contain only scalar expressions.",
+    )
 end
 
 function _parse_NL_expr_runtime(m::Model, x::GenericQuadExpr, tape, parent, values)
@@ -367,7 +371,9 @@ _NonlinearExprData(m::Model, ex) = _NonlinearExprData(m, :($ex + 0))
 # 2) VariableRef doesn't match the model
 function _check_expr(m::Model, ex::Expr)
     if ex.head == :ref # if we have x[1] already in there, something is wrong
-        error("Unrecognized expression $ex. JuMP variable objects and input coefficients should be spliced directly into expressions.")
+        error(
+            "Unrecognized expression $ex. JuMP variable objects and input coefficients should be spliced directly into expressions.",
+        )
     end
     for e in ex.args
         _check_expr(m, e)

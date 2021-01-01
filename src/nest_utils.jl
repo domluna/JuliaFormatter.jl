@@ -105,7 +105,7 @@ end
 function dedent!(fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
-    elseif is_leaf(fst) || fst.typ === CSTParser.StringH 
+    elseif is_leaf(fst) || fst.typ === CSTParser.StringH
         return
     else
         fst.indent -= s.opts.indent
