@@ -332,18 +332,20 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
             String(take!(deindented))
         end
     # then, we format
-    formatted = markdown(enable!(
-        Parser(),
-        [
-            AdmonitionRule(),
-            FootnoteRule(),
-            MathRule(),
-            TableRule(),
-            FormatRule(style, state.opts),
-        ],
-    )(
-        deindented_string,
-    ))
+    formatted = markdown(
+        enable!(
+            Parser(),
+            [
+                AdmonitionRule(),
+                FootnoteRule(),
+                MathRule(),
+                TableRule(),
+                FormatRule(style, state.opts),
+            ],
+        )(
+            deindented_string,
+        ),
+    )
     # Indent all non-first lines to match the current parser indent
     buf = IOBuffer()
     indent = " "^state_indent

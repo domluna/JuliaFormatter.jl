@@ -360,24 +360,28 @@ end
 
 function keyworddoc(__source__, __module__, str, def::Base.BaseDocs.Keyword)
     @nospecialize str
-    docstr = esc(docexpr(
-        __source__,
-        __module__,
-        lazy_iterpolate(str),
-        metadata(__source__, __module__, def, false),
-    ))
+    docstr = esc(
+        docexpr(
+            __source__,
+            __module__,
+            lazy_iterpolate(str),
+            metadata(__source__, __module__, def, false),
+        ),
+    )
     return :($setindex!($(keywords), $docstr, $(esc(quot(def.name)))); nothing)
 end
 
 function objectdoc(__source__, __module__, str, def, expr, sig = :(Union{}))
     @nospecialize str def expr sig
     binding = esc(bindingexpr(namify(expr)))
-    docstr = esc(docexpr(
-        __source__,
-        __module__,
-        lazy_iterpolate(str),
-        metadata(__source__, __module__, expr, false),
-    ))
+    docstr = esc(
+        docexpr(
+            __source__,
+            __module__,
+            lazy_iterpolate(str),
+            metadata(__source__, __module__, expr, false),
+        ),
+    )
     # Note: we want to avoid introducing line number nodes here (issue #24468)
     return Expr(:block, esc(def), :($(doc!)($__module__, $binding, $docstr, $(esc(sig)))))
 end
