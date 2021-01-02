@@ -761,7 +761,7 @@
         @test fmt(str) == str
 
         str = """
-        ignored_f(f) = f in (foo(@foo(foo(
+        ignored_f(f) = f in foo([{
             GlobalRef(Base, :not_int),
             GlobalRef(Core.Intrinsics, :not_int),
             GlobalRef(Core, :(===)),
@@ -771,7 +771,21 @@
             GlobalRef(Base, :kwerr),
             GlobalRef(Core, :kwfunc),
             GlobalRef(Core, :isdefined),
-        ))))"""
+        }])"""
+        @test fmt(str) == str
+
+        str = """
+        ignored_f(f) = f in foo(((
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )))"""
         @test fmt(str) == str
 
         str = "var = \"a_long_function_stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\""
@@ -3665,9 +3679,9 @@
                 (file, i) => w
                 for (file, subject) in subjects
                 for
-                (i, w) in enumerate(weightfn.(
-                    eachrow(subject.events),
-                ))
+                (i, w) in enumerate(
+                    weightfn.(eachrow(subject.events)),
+                )
             )
         end"""
         @test fmt(str_, 4, 50) == str

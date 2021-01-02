@@ -75,30 +75,7 @@ function nl_to_ws!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     length(nl_inds) > 0 || return
     margin = s.line_offset + fst.extra_margin + length(fst)
-    if margin <= s.opts.margin
-        nl_to_ws!(fst, nl_inds)
-        return
-    end
-
-    if is_iterable(fst)
-        args = get_args(fst.ref[])
-        idx = nl_inds[1]
-
-        # @info "" fst[1].val fst.indent fst[idx+1].typ s.line_offset
-
-        if length(args) == 1 && unnestable(args[1])
-            margin = s.line_offset + sum(length.(fst[1:idx-1]))
-            len, _ = length_to(fst[idx+1], (NEWLINE,), start = 1)
-            margin += len
-            # @info "" s.line_offset margin fst[1].val
-            if margin <= s.opts.margin
-                nl_to_ws!(fst, [nl_inds[1], nl_inds[end]])
-                add_indent!(fst, s, -s.opts.indent)
-                return
-            end
-        end
-    end
-
+    margin <= s.opts.margin && nl_to_ws!(fst, nl_inds)
     return
 end
 

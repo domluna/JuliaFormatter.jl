@@ -604,10 +604,16 @@ end
 
 nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
 
-function unnestable(cst::CSTParser.EXPR)
-    is_iterable(cst) && return true
-    cst.typ === CSTParser.UnaryOpCall && cst[2].kind === Tokens.DDDOT && return true
-    cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.DOT && return true
+"""
+`cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
+"""
+function unnestable_node(cst::CSTParser.EXPR)
+    cst.typ === CSTParser.TupleH && return true
+    cst.typ === CSTParser.Vect && return true
+    cst.typ === CSTParser.Braces && return true
+    cst.typ === CSTParser.BracesCat && return true
+    cst.typ === CSTParser.Comprehension && return true
+    cst.typ === CSTParser.InvisBrackets && return true
     return false
 end
 
