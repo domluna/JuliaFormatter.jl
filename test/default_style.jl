@@ -335,7 +335,11 @@
         end"""
         @test fmt(str) == str
 
-        str = "foo(args...)"
+        str_ = "foo(args...)"
+        str = """
+        foo(
+            args...,
+        )"""
         @test fmt(str, m = 1) == str
     end
 
@@ -757,7 +761,7 @@
         @test fmt(str) == str
 
         str = """
-        ignored_f(f) = f in (foo(@foo(foo(
+        ignored_f(f) = f in foo([{
             GlobalRef(Base, :not_int),
             GlobalRef(Core.Intrinsics, :not_int),
             GlobalRef(Core, :(===)),
@@ -767,7 +771,21 @@
             GlobalRef(Base, :kwerr),
             GlobalRef(Core, :kwfunc),
             GlobalRef(Core, :isdefined),
-        ))))"""
+        }])"""
+        @test fmt(str) == str
+
+        str = """
+        ignored_f(f) = f in foo(((
+            GlobalRef(Base, :not_int),
+            GlobalRef(Core.Intrinsics, :not_int),
+            GlobalRef(Core, :(===)),
+            GlobalRef(Core, :apply_type),
+            GlobalRef(Core, :typeof),
+            GlobalRef(Core, :throw),
+            GlobalRef(Base, :kwerr),
+            GlobalRef(Core, :kwfunc),
+            GlobalRef(Core, :isdefined),
+        )))"""
         @test fmt(str) == str
 
         str = "var = \"a_long_function_stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\""
@@ -1424,16 +1442,6 @@
         end"""
         @test fmt(str_) == str
 
-        str = """
-        begin
-            begin
-                throw(ErrorException(\"""An error occured formatting \$filename. :-(
-
-                                     Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
-                                     with a link to a gist containing the contents of the file. A gist
-                                     can be created at https://gist.github.com/.\"""))
-            end
-        end"""
         str_ = """
         begin
         begin
@@ -1444,7 +1452,32 @@
                                 can be created at https://gist.github.com/.\"""))
            end
         end"""
-        @test fmt(str_, 4, 200) == str
+        str = """
+        begin
+            begin
+                throw(ErrorException(\"""An error occured formatting \$filename. :-(
+
+                                     Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
+                                     with a link to a gist containing the contents of the file. A gist
+                                     can be created at https://gist.github.com/.\"""))
+            end
+        end"""
+        @test fmt(str_, 4, 120) == str
+
+        str = raw"""
+        begin
+            begin
+                throw(
+                    ErrorException(
+                        \"""An error occured formatting $filename. :-(
+
+                        Please file an issue at https://github.com/domluna/JuliaFormatter.jl/issues
+                        with a link to a gist containing the contents of the file. A gist
+                        can be created at https://gist.github.com/.\""",
+                    ),
+                )
+            end
+        end"""
         @test fmt(str_, 4, 1) == str
 
         str = """
@@ -1473,14 +1506,24 @@
                      llvm2
                      \""")"""
         @test fmt(str, 4, 19) == str_
+
+        str_ = """
+        foo() = llvmcall(
+            \"""
+            llvm1
+            llvm2
+            \""",
+        )"""
         @test fmt(str, 4, 18) == str_
 
         str_ = """
         foo() =
-          llvmcall(\"""
-                   llvm1
-                   llvm2
-                   \""")"""
+          llvmcall(
+            \"""
+            llvm1
+            llvm2
+            \""",
+          )"""
         @test fmt(str, 2, 10) == str_
 
         str = """
@@ -1513,32 +1556,57 @@
         str_ = raw"""
         if free <
            min_space
-            throw(ErrorException(\"""
-            Free space: \$free Gb
-            Please make sure to have at least \$min_space Gb of free disk space
-            before downloading the $database_name database.
-            \"""))
+            throw(
+                ErrorException(
+                    \"""
+        Free space: \$free Gb
+        Please make sure to have at least \$min_space Gb of free disk space
+        before downloading the $database_name database.
+        \""",
+                ),
+            )
         end"""
         @test fmt(str) == str
         @test fmt(str, 4, 1) == str_
 
-        str = """foo(r"hello"x)"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(r"hello"x)"""
+        str = """
+        foo(
+            r"hello"x,
+        )"""
+        @test fmt(str_, 4, 1) == str
 
-        str = """foo(r`hello`x)"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(r`hello`x)"""
+        str = """
+        foo(
+            r`hello`x,
+        )"""
+        @test fmt(str_, 4, 1) == str
 
-        str = """foo(r\"""hello\"""x)"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(r\"""hello\"""x)"""
+        str = """
+        foo(
+            r\"""hello\"""x,
+        )"""
+        @test fmt(str_, 4, 1) == str
 
-        str = """foo(r```hello```x)"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(r```hello```x)"""
+        str = """foo(
+            r```hello```x,
+        )"""
+        @test fmt(str_, 4, 1) == str
 
-        str = """foo(\"""hello\""")"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(\"""hello\""")"""
+        str = """foo(
+            \"""hello\""",
+        )"""
+        @test fmt(str_, 4, 1) == str
 
-        str = """foo(```hello```)"""
-        @test fmt(str, 4, 1) == str
+        str_ = """foo(```hello```)"""
+        str = """foo(
+            ```hello```,
+        )"""
+        @test fmt(str_, 4, 1) == str
     end
 
     @testset "comments" begin
@@ -2137,8 +2205,9 @@
                          e8
                      end
                  end"""
-        @test fmt("begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",) ==
-              str
+        @test fmt(
+            "begin if cond1 e1; e2 elseif cond2 e3; e4 elseif cond3 e5;e6 else e7;e8  end end",
+        ) == str
 
         str = """if cond1
                      e1
@@ -2582,6 +2651,42 @@
 
         str = """
         this_is_a_long_variable_name =
+             Dict{Symbol,Any}(
+                  :numberofpointattributes =>
+                       NAttributes,
+                  :numberofpointmtrs =>
+                       NMTr,
+                  :numberofcorners =>
+                       NSimplex,
+                  :firstnumber =>
+                       Cint(1),
+                  :mesh_dim =>
+                       Cint(3),
+             )"""
+        @test fmt(str_, 5, 23) == str
+
+        str = """
+        this_is_a_long_variable_name =
+             Dict{Symbol,Any}(
+                  :numberofpointattributes =>
+                       NAttributes,
+                  :numberofpointmtrs =>
+                       NMTr,
+                  :numberofcorners =>
+                       NSimplex,
+                  :firstnumber =>
+                       Cint(
+                            1,
+                       ),
+                  :mesh_dim =>
+                       Cint(
+                            3,
+                       ),
+             )"""
+        @test fmt(str_, 5, 22) == str
+
+        str = """
+        this_is_a_long_variable_name =
              Dict{
                   Symbol,
                   Any,
@@ -2593,9 +2698,13 @@
                   :numberofcorners =>
                        NSimplex,
                   :firstnumber =>
-                       Cint(1),
+                       Cint(
+                            1,
+                       ),
                   :mesh_dim =>
-                       Cint(3),
+                       Cint(
+                            3,
+                       ),
              )"""
         @test fmt(str_, 5, 1) == str
 
@@ -3222,14 +3331,23 @@
         # issue 56
         str_ = "a_long_function_name(Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]])"
         str = """
-        a_long_function_name(Array{Float64,2}[
-            [1.0],
-            [0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-            [0.5 0.5; 0.5 0.5],
-        ])"""
+        a_long_function_name(
+            Array{Float64,2}[[1.0], [0.5 0.5], [0.5 0.5; 0.5 0.5], [0.5 0.5; 0.5 0.5]],
+        )"""
         @test fmt(str, 4, length(str)) == str_
         @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 79) == str
+
+        str = """
+        a_long_function_name(
+            Array{Float64,2}[
+                [1.0],
+                [0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+                [0.5 0.5; 0.5 0.5],
+            ],
+        )"""
+        @test fmt(str_, 4, 78) == str
 
         # unary op
         str_ = "[1, 1]'"
@@ -3561,8 +3679,9 @@
                 (file, i) => w
                 for (file, subject) in subjects
                 for
-                (i, w) in
-                enumerate(weightfn.(eachrow(subject.events)))
+                (i, w) in enumerate(
+                    weightfn.(eachrow(subject.events)),
+                )
             )
         end"""
         @test fmt(str_, 4, 50) == str

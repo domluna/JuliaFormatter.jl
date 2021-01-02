@@ -16,16 +16,18 @@ function format_md(text::AbstractString, style::AbstractStyle; kwargs...)
 end
 
 function format_md(text::AbstractString, style::AbstractStyle, opts::Options)
-    markdown(enable!(
-        Parser(),
-        [
-            AdmonitionRule(),
-            FootnoteRule(),
-            MathRule(),
-            TableRule(),
-            FormatRule(style, opts),
-        ],
-    )(
-        text,
-    ))
+    markdown(
+        enable!(
+            Parser(),
+            [
+                AdmonitionRule(),
+                FootnoteRule(),
+                MathRule(),
+                TableRule(),
+                FormatRule(style, opts),
+            ],
+        )(
+            text,
+        ),
+    )
 end

@@ -148,12 +148,20 @@ function get_basis(M::ValidationManifold, p, B::AbstractBasis; kwargs...)
     bvectors = get_vectors(M, p, Ξ)
     N = length(bvectors)
     if N != manifold_dimension(M.manifold)
-        throw(ErrorException("For a basis of the tangent space at $(p) of $(M.manifold), $(manifold_dimension(M)) vectors are required, but get_basis $(B) computed $(N)"))
+        throw(
+            ErrorException(
+                "For a basis of the tangent space at $(p) of $(M.manifold), $(manifold_dimension(M)) vectors are required, but get_basis $(B) computed $(N)",
+            ),
+        )
     end
     # check that the vectors are linearly independent\
     bv_rank = rank(reduce(hcat, bvectors))
     if N != bv_rank
-        throw(ErrorException("For a basis of the tangent space at $(p) of $(M.manifold), $(manifold_dimension(M)) linearly independent vectors are required, but get_basis $(B) computed $(bv_rank)"))
+        throw(
+            ErrorException(
+                "For a basis of the tangent space at $(p) of $(M.manifold), $(manifold_dimension(M)) linearly independent vectors are required, but get_basis $(B) computed $(bv_rank)",
+            ),
+        )
     end
     map(X -> is_tangent_vector(M, p, X, true; kwargs...), bvectors)
     return Ξ
@@ -172,7 +180,11 @@ function get_basis(
         for j = (i+1):N
             dot_val = real(inner(M, p, bvectors[i], bvectors[j]))
             if !isapprox(dot_val, 0; atol = eps(eltype(p)))
-                throw(ArgumentError("vectors number $i and $j are not orthonormal (inner product = $dot_val)"))
+                throw(
+                    ArgumentError(
+                        "vectors number $i and $j are not orthonormal (inner product = $dot_val)",
+                    ),
+                )
             end
         end
     end
