@@ -621,4 +621,23 @@
                f("A")"""
         @test format_text(str_) == str
     end
+
+    @testset "issue 336" begin
+        str_ = """
+        nzthis = _hessian_slice(d, ex, x, H, obj_factor, nzcount, recovery_tmp_storage, Val{1})::Int
+        """
+        str = """
+        nzthis = _hessian_slice(
+            d,
+            ex,
+            x,
+            H,
+            obj_factor,
+            nzcount,
+            recovery_tmp_storage,
+            Val{1},
+        )::Int
+        """
+        @test fmt(str_, 4, 80) == str
+    end
 end
