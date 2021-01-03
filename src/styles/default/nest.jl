@@ -325,7 +325,9 @@ n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
+    line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+
     closer = is_closer(fst[end])
     if closer && (line_margin > s.opts.margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -359,6 +361,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         end
     end
 
+
     if closer
         s.line_offset = fst[end].indent + 1
     end
@@ -372,18 +375,93 @@ n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractSt
 n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
 
-@inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
-    n_comprehension!(ds, fst, s, indent = fst.indent)
+
+function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+    style = getstyle(ds)
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+
+    if line_margin > s.opts.margin || must_nest(fst)
+        line_offset = s.line_offset
+        fst.indent = s.line_offset
+        phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
+        for (i, idx) in enumerate(phs)
+            if i == 1
+                fst[idx] = Newline(length = fst[idx].len)
+            else
+                nidx = phs[i-1]
+                l1 = sum(length.(fst[1:idx-1]))
+                l2 = sum(length.(fst[idx:nidx-1]))
+                width = line_offset + l1 + l2
+                if must_nest(fst) || width > s.opts.margin
+                    fst[idx] = Newline(length = fst[idx].len)
+                end
+            end
+        end
+
+        # for (i, n) in enumerate(fst.nodes)
+        #     if i == length(fst.nodes)
+        #         n.extra_margin = fst.extra_margin
+        #         nest!(style, n, s)
+        #     elseif fst[i+1].typ === WHITESPACE
+        #         n.extra_margin = length(fst[i+1]) + length(fst[i+2])
+        #         nest!(style, n, s)
+        #     elseif n.typ === NEWLINE
+        #         s.line_offset = fst.indent
+        #     else
+        #         nest!(style, n, s)
+        #     end
+        # end
+
+        for (i, n) in enumerate(fst.nodes)
+            if n.typ === NEWLINE
+                s.line_offset = fst.indent
+            elseif i == length(fst.nodes)
+                nest!(style, n, s)
+            else
+                n.extra_margin = 1
+                nest!(style, n, s)
+            end
+        end
+
+        s.line_offset = line_offset
+        for (i, n) in enumerate(fst.nodes)
+            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1])
+                # +1 for newline to whitespace conversion
+                width = s.line_offset + 1
+                w, _ = length_to(fst, (NEWLINE,), start = i + 1)
+                width += w
+                # @info "" s.line_offset w width fst[i-1].typ fst[i-1].val width <= s.opts.margin
+                if width <= s.opts.margin
+                    fst[i] = Whitespace(1)
+                    s.line_offset += length(fst[i])
+                else
+                    s.line_offset = fst.indent
+                end
+            else
+                # s.line_offset += length(fst[i])
+                walk(increment_line_offset!, fst[i], s)
+            end
+        end
+
+        s.line_offset = line_offset
+        walk(increment_line_offset!, fst, s)
+    else
+        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    end
+end
+
+# @inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
+#     n_comprehension!(ds, fst, s, indent = fst.indent)
 n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_generator!(DefaultStyle(style), fst, s)
 
 @inline n_filter!(ds::DefaultStyle, fst::FST, s::State) =
-    n_comprehension!(ds, fst, s, indent = fst.indent)
+    n_generator!(ds, fst, s, indent = fst.indent)
 n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_filter!(DefaultStyle(style), fst, s)
 
 @inline n_flatten!(ds::DefaultStyle, fst::FST, s::State) =
-    n_comprehension!(ds, fst, s, indent = fst.indent)
+    n_generator!(ds, fst, s, indent = fst.indent)
 n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_flatten!(DefaultStyle(style), fst, s)
 
