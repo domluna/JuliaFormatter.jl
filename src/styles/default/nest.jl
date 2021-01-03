@@ -551,7 +551,7 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                     s.line_offset = fst.indent
                 end
             else
-                s.line_offset += length(fst[i])
+                walk(increment_line_offset!, fst[i], s)
             end
         end
 

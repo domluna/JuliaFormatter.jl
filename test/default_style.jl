@@ -3187,9 +3187,21 @@
         (
             var3,
             var4,
+        ) : var5"""
+        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 8) == str
+
+        str = """
+        (
+            var1,
+            var2,
+        ) ?
+        (
+            var3,
+            var4,
         ) :
         var5"""
-        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 7) == str
 
         str = """
         (var1, var2) ? (var3, var4) :
