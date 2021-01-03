@@ -1968,7 +1968,6 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
-            # @info "" a.kind
             if a.kind === Tokens.FOR
                 has_for_kw = true
             end

@@ -375,7 +375,6 @@ n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractSt
 n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
 
-
 function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -397,20 +396,6 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 end
             end
         end
-
-        # for (i, n) in enumerate(fst.nodes)
-        #     if i == length(fst.nodes)
-        #         n.extra_margin = fst.extra_margin
-        #         nest!(style, n, s)
-        #     elseif fst[i+1].typ === WHITESPACE
-        #         n.extra_margin = length(fst[i+1]) + length(fst[i+2])
-        #         nest!(style, n, s)
-        #     elseif n.typ === NEWLINE
-        #         s.line_offset = fst.indent
-        #     else
-        #         nest!(style, n, s)
-        #     end
-        # end
 
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
@@ -438,7 +423,6 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                     s.line_offset = fst.indent
                 end
             else
-                # s.line_offset += length(fst[i])
                 walk(increment_line_offset!, fst[i], s)
             end
         end
@@ -450,8 +434,6 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     end
 end
 
-# @inline n_generator!(ds::DefaultStyle, fst::FST, s::State) =
-#     n_comprehension!(ds, fst, s, indent = fst.indent)
 n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_generator!(DefaultStyle(style), fst, s)
 

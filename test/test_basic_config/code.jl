@@ -1,1 +1,0 @@
-begin rand() end
