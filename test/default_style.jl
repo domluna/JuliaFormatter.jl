@@ -3187,9 +3187,21 @@
         (
             var3,
             var4,
+        ) : var5"""
+        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 8) == str
+
+        str = """
+        (
+            var1,
+            var2,
+        ) ?
+        (
+            var3,
+            var4,
         ) :
         var5"""
-        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 7) == str
 
         str = """
         (var1, var2) ? (var3, var4) :
@@ -3635,9 +3647,15 @@
     @testset "comphrehensions types" begin
         str_ = "var = (x, y) for x = 1:10, y = 1:10"
         str = """
+        var = (x, y) for x = 1:10,
+        y = 1:10"""
+        @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 26) == str
+
+        str = """
         var = (x, y) for
         x = 1:10, y = 1:10"""
-        @test fmt(str_, 4, length(str_) - 1) == str
+        @test fmt(str_, 4, 25) == str
         @test fmt(str_, 4, 18) == str
 
         str = """
@@ -3656,8 +3674,8 @@
         str = """
         begin
             weights = Dict(
-                (file, i) => w for (file, subject) in subjects
-                for (i, w) in enumerate(weightfn.(eachrow(subject.events)))
+                (file, i) => w for (file, subject) in subjects for
+                (i, w) in enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
         @test fmt(str_, 4, 90) == str
@@ -3666,8 +3684,7 @@
         begin
             weights = Dict(
                 (file, i) => w for (file, subject) in subjects
-                for
-                (i, w) in
+                for (i, w) in
                 enumerate(weightfn.(eachrow(subject.events)))
             )
         end"""
@@ -3676,9 +3693,8 @@
         str = """
         begin
             weights = Dict(
-                (file, i) => w
-                for (file, subject) in subjects
-                for
+                (file, i) => w for
+                (file, subject) in subjects for
                 (i, w) in enumerate(
                     weightfn.(eachrow(subject.events)),
                 )

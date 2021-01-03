@@ -1960,7 +1960,7 @@ end
 p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_row(DefaultStyle(style), cst, s)
 
-# Generator/Filter
+# Generator/Filter/Flatten
 function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(cst, nspaces(s))
@@ -1968,10 +1968,12 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if a.typ === CSTParser.KEYWORD
-            if !has_for_kw && a.kind === Tokens.FOR
+            if a.kind === Tokens.FOR
                 has_for_kw = true
             end
 
+            # for keyword can only be on the following line
+            # if this expression is within an iterable expression
             if a.kind === Tokens.FOR && parent_is(
                 a,
                 is_iterable,
