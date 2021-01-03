@@ -569,7 +569,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             cst = rhs.ref[]
             line_margin = s.line_offset
 
-            if (rhs.typ === CSTParser.BinaryOpCall && !(op_kind(cst) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)) ||
+            if (
+                   rhs.typ === CSTParser.BinaryOpCall &&
+                   !(op_kind(cst) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
+               ) ||
                rhs.typ === CSTParser.UnaryOpCall ||
                rhs.typ === CSTParser.ChainOpCall ||
                rhs.typ === CSTParser.Comparison ||
