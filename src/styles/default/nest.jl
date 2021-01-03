@@ -361,7 +361,6 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         end
     end
 
-
     if closer
         s.line_offset = fst[end].indent + 1
     end

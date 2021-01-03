@@ -60,8 +60,7 @@ function instrument_getproperty!(ir, v, ex)
     (
         ir[v] =
             xcall(Zygote, :literal_getproperty, ex.args[2], Val(unwrapquote(ex.args[3])))
-    ) :
-    ex
+    ) : ex
 end
 
 is_literal_getindex(ex) =
@@ -90,8 +89,7 @@ function instrument_iterate!(ir, v, ex)
             Val(unwrapquote(ex.args[3])),
             ex.args[4:end]...,
         )
-    ) :
-    ex
+    ) : ex
 end
 
 function instrument_literals!(ir, v, ex)
