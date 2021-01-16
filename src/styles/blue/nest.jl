@@ -1,4 +1,4 @@
-function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
+function n_tuple!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     lidx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -22,7 +22,7 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
         if opener
             fst[end].indent = fst.indent
         end
-        if fst.typ !== CSTParser.TupleH || opener
+        if fst.typ !== TupleN || opener
             fst.indent += s.opts.indent
         end
 
@@ -70,16 +70,16 @@ function n_tupleh!(bs::BlueStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
-@inline n_call!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_curly!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_macrocall!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_ref!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_braces!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_vect!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_parameters!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_invisbrackets!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-@inline n_bracescat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
-# @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tupleh!(bs, fst, s)
+@inline n_call!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_curly!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_macrocall!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_ref!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_braces!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_vect!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_parameters!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_invisbrackets!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+@inline n_bracescat!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
+# @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
 
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)

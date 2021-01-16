@@ -12,11 +12,11 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
-CSTParser = "^2.2"
+CSTParser = "^3.1"
 CommonMark = "0.5, 0.6, 0.7, 0.8"
 DataStructures = "0.17, 0.18"
 Documenter = "0.24, 0.25, 0.26"
-Tokenize = "= 0.5.13"
+Tokenize = "^0.5.16"
 julia = "^1.3"
 
 [extras]

@@ -1,5 +1,5 @@
 function skip_indent(fst::FST)
-    if fst.typ === CSTParser.LITERAL && fst.val == ""
+    if fst.typ == LITERAL && fst.val == ""
         return true
     elseif fst.typ === NEWLINE || fst.typ === NOTCODE
         return true
@@ -64,7 +64,7 @@ function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
         elseif pn.typ === INVERSETRAILINGSEMICOLON
             pn.val = ";"
             pn.len = 1
-        elseif fst.typ === CSTParser.BinaryOpCall && fst[ind+1].typ === WHITESPACE
+        elseif fst.typ === CSTParser.Binary && fst[ind+1].typ === WHITESPACE
             # remove additional indent
             fst[ind+1] = Whitespace(0)
         end
@@ -82,7 +82,7 @@ end
 function dedent!(fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
-    elseif is_leaf(fst) || fst.typ === CSTParser.StringH
+    elseif is_leaf(fst) || fst.typ === StringN
         return
     else
         fst.indent -= s.opts.indent
@@ -96,7 +96,7 @@ function unnest!(fst::FST, s::State)
 
     dedent!(fst, s)
 
-    if is_leaf(fst) || fst.typ === CSTParser.StringH || !can_nest(fst)
+    if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
     end
 

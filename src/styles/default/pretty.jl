@@ -1,139 +1,141 @@
 # Creates a _prettified_ version of a CST.
 function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     style = getstyle(ds)
-    if cst.typ === CSTParser.IDENTIFIER
+    if CSTParser.isidentifier(cst)
         return p_identifier(style, cst, s)
-    elseif cst.typ === CSTParser.OPERATOR
+    elseif CSTParser.isoperator(cst)
         return p_operator(style, cst, s)
-    elseif cst.typ === CSTParser.PUNCTUATION
+    elseif CSTParser.ispunctuation(cst)
         return p_punctuation(style, cst, s)
-    elseif cst.typ === CSTParser.KEYWORD
+    elseif CSTParser.iskeyword(cst)
         return p_keyword(style, cst, s)
-    elseif cst.typ === CSTParser.LITERAL
-        return p_literal(style, cst, s)
-    elseif cst.typ === CSTParser.StringH
+    elseif cst.head === :STRING
         return p_stringh(style, cst, s)
-    elseif cst.typ === CSTParser.Block
+    elseif CSTParser.isliteral(cst)
+        return p_literal(style, cst, s)
+    elseif cst.head === :block
         return p_block(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.ModuleH
+    elseif cst.head === :module
         return p_module(style, cst, s)
-    elseif cst.typ === CSTParser.BareModule
+    elseif cst.head === :baremodule
         return p_baremodule(style, cst, s)
-    elseif cst.typ === CSTParser.FunctionDef
+    elseif cst.head === :function
         return p_functiondef(style, cst, s)
-    elseif cst.typ === CSTParser.Macro
+    elseif cst.head === :macro
         return p_macro(style, cst, s)
-    elseif cst.typ === CSTParser.Primitive
-        return p_primitive(style, cst, s)
-    elseif cst.typ === CSTParser.Struct
+    elseif cst.head === :struct
         return p_struct(style, cst, s)
-    elseif cst.typ === CSTParser.Mutable
+    elseif cst.head === :mutable
         return p_mutable(style, cst, s)
-    elseif cst.typ === CSTParser.Abstract
+    elseif cst.head === :abstract
         return p_abstract(style, cst, s)
-    elseif cst.typ === CSTParser.Primitive
+    elseif cst.head === :primitive
         return p_primitive(style, cst, s)
-    elseif cst.typ === CSTParser.For
+    elseif cst.head === :for
         return p_for(style, cst, s)
-    elseif cst.typ === CSTParser.While
+    elseif cst.head === :while
         return p_while(style, cst, s)
-    elseif cst.typ === CSTParser.Do
+    elseif cst.head === :do
         return p_do(style, cst, s)
-    elseif cst.typ === CSTParser.If
+    elseif is_if(cst)
         return p_if(style, cst, s)
-    elseif cst.typ === CSTParser.Try
+    elseif cst.head === :try
         return p_try(style, cst, s)
-    elseif cst.typ === CSTParser.TopLevel
+    elseif cst.head === :toplevel
         return p_toplevel(style, cst, s)
-    elseif cst.typ === CSTParser.Begin
+    elseif cst.head === :begin
         return p_begin(style, cst, s)
-    elseif cst.typ === CSTParser.Quote
+    elseif cst.head === :quote
         return p_quote(style, cst, s)
-    elseif cst.typ === CSTParser.Let
+    elseif cst.head === :let
         return p_let(style, cst, s)
-    elseif cst.typ === CSTParser.Vect
+    elseif cst.head === :vect
         return p_vect(style, cst, s)
-    elseif cst.typ === CSTParser.Comprehension
+    elseif cst.head === :comprehension
         return p_comprehension(style, cst, s)
-    elseif cst.typ === CSTParser.TypedComprehension
+    elseif cst.head === :typed_comprehension
         return p_typedcomprehension(style, cst, s)
-    elseif cst.typ === CSTParser.Braces
+    elseif cst.head === :braces
         return p_braces(style, cst, s)
-    elseif cst.typ === CSTParser.BracesCat
+    elseif cst.head === :bracescat
         return p_bracescat(style, cst, s)
-    elseif cst.typ === CSTParser.TupleH
-        return p_tupleh(style, cst, s)
-    elseif cst.typ === CSTParser.InvisBrackets
+    elseif cst.head === :tuple
+        return p_tuple(style, cst, s)
+    elseif cst.head === :brackets
         return p_invisbrackets(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.Curly
+    elseif cst.head === :curly
         return p_curly(style, cst, s)
-    elseif cst.typ === CSTParser.Call
+    elseif is_call(cst)
         return p_call(style, cst, s)
-    elseif cst.typ === CSTParser.MacroCall && cst[1].typ === CSTParser.GlobalRefDoc
+    elseif cst.head === :macrocall && cst[1].head == :globalrefdoc
         return p_globalrefdoc(style, cst, s)
-    elseif cst.typ === CSTParser.MacroCall && is_macrodoc(cst)
+    elseif cst.head === :macrocall && is_macrodoc(cst)
         return p_macrodoc(style, cst, s)
-    elseif cst.typ === CSTParser.MacroCall
+    elseif cst.head === :macrocall
         return p_macrocall(style, cst, s)
-    elseif cst.typ === CSTParser.WhereOpCall
+    elseif is_macroname(cst)
+        return p_macroname(style, cst, s)
+    elseif cst.head === :where
         return p_whereopcall(style, cst, s)
-    elseif cst.typ === CSTParser.ConditionalOpCall
+    elseif is_conditional(cst)
         return p_conditionalopcall(style, cst, s)
-    elseif cst.typ === CSTParser.BinaryOpCall
+    elseif is_binary(cst)
         return p_binaryopcall(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.UnaryOpCall
+    elseif is_unary(cst)
         return p_unaryopcall(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.ChainOpCall
+    elseif is_chain(fst)
         return p_chainopcall(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.Comparison
-        return p_comparison(style, cst, s; kwargs...)
-    elseif cst.typ === CSTParser.ColonOpCall
+    elseif CSTParser.is_colon(cst)
         return p_colonopcall(style, cst, s)
-    elseif cst.typ === CSTParser.Kw
+    elseif cst.head === :comparison
+        return p_comparison(style, cst, s; kwargs...)
+    elseif cst.head === :kw
         return p_kw(style, cst, s)
-    elseif cst.typ === CSTParser.Parameters
+    elseif cst.head === :parameters
         return p_parameters(style, cst, s)
-    elseif cst.typ === CSTParser.Local
+    elseif cst.head === :local
         return p_local(style, cst, s)
-    elseif cst.typ === CSTParser.Global
+    elseif cst.head === :global
         return p_global(style, cst, s)
-    elseif cst.typ === CSTParser.Const
+    elseif cst.head === :const
         return p_const(style, cst, s)
-    elseif cst.typ === CSTParser.Return
+    elseif cst.head === :return
         return p_return(style, cst, s)
-    elseif cst.typ === CSTParser.Outer
+    elseif cst.head === :outer
         return p_outer(style, cst, s)
-    elseif cst.typ === CSTParser.Import
+    elseif cst.head === :import
         return p_import(style, cst, s)
-    elseif cst.typ === CSTParser.Export
+    elseif cst.head === :export
         return p_export(style, cst, s)
-    elseif cst.typ === CSTParser.Using
+    elseif cst.head === :using
         return p_using(style, cst, s)
-    elseif cst.typ === CSTParser.Row
+    elseif cst.head === :row
         return p_row(style, cst, s)
-    elseif cst.typ === CSTParser.Vcat
+    elseif cst.head === :vcat
         return p_vcat(style, cst, s)
-    elseif cst.typ === CSTParser.TypedVcat
+    elseif cst.head === :typed_vcat
         return p_typedvcat(style, cst, s)
-    elseif cst.typ === CSTParser.Hcat
+    elseif cst.head === :hcat
         return p_hcat(style, cst, s)
-    elseif cst.typ === CSTParser.TypedHcat
+    elseif cst.head === :typed_hcat
         return p_typedhcat(style, cst, s)
-    elseif cst.typ === CSTParser.Ref
+    elseif cst.head === :ref
         return p_ref(style, cst, s)
-    elseif cst.typ === CSTParser.Generator
+    elseif cst.head === :generator
         return p_generator(style, cst, s)
-    elseif cst.typ === CSTParser.Filter
+    elseif cst.head === :fitler
         return p_filter(style, cst, s)
-    elseif cst.typ === CSTParser.Flatten
+    elseif cst.head === :flatten
         return p_flatten(style, cst, s)
-    elseif cst.typ === CSTParser.FileH
+    elseif cst.head === :file
         return p_fileh(style, cst, s)
+    elseif cst.head === :quotenode
+        return p_quotenode(style, cst, s)
     end
 
-    t = FST(cst, nspaces(s))
+    t = FST(Unknown, cst, nspaces(s))
     for a in cst
-        if a.kind === Tokens.NOTHING
+        if CSTParser.is_nothing(a)
             s.offset += a.fullspan
             continue
         end
@@ -146,9 +148,9 @@ pretty(style::S, cst::CSTParser.EXPR, s::State; kwargs...) where {S<:AbstractSty
 
 function p_fileh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(File, cst, nspaces(s))
     for a in cst
-        if a.kind === Tokens.NOTHING
+        if CSTParser.is_nothing(a)
             s.offset += a.fullspan
             continue
         end
@@ -162,7 +164,7 @@ p_fileh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += length(cst.val) + (cst.fullspan - cst.span)
-    FST(cst, loc[2], loc[1], loc[1], cst.val)
+    FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val)
 end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
@@ -171,66 +173,23 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     loc = cursor_loc(s)
     val = string(CSTParser.Expr(cst))
     s.offset += length(val) + (cst.fullspan - cst.span)
-    FST(cst, loc[2], loc[1], loc[1], val)
+    FST(OPERATOR, loc[2], loc[1], loc[1], val)
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
 @inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val =
-        cst.kind === Tokens.ABSTRACT ? "abstract" :
-        cst.kind === Tokens.BAREMODULE ? "baremodule" :
-        cst.kind === Tokens.BEGIN ? "begin" :
-        cst.kind === Tokens.BREAK ? "break" :
-        cst.kind === Tokens.CATCH ? "catch" :
-        cst.kind === Tokens.CONST ? "const" :
-        cst.kind === Tokens.CONTINUE ? "continue" :
-        cst.kind === Tokens.NEW ? "new" :
-        cst.kind === Tokens.DO ? "do" :
-        cst.kind === Tokens.IF ? "if" :
-        cst.kind === Tokens.ELSEIF ? "elseif" :
-        cst.kind === Tokens.ELSE ? "else" :
-        cst.kind === Tokens.END ? "end" :
-        cst.kind === Tokens.EXPORT ? "export" :
-        cst.kind === Tokens.FINALLY ? "finally" :
-        cst.kind === Tokens.FOR ? "for" :
-        cst.kind === Tokens.FUNCTION ? "function" :
-        cst.kind === Tokens.GLOBAL ? "global" :
-        cst.kind === Tokens.IMPORT ? "import" :
-        cst.kind === Tokens.LET ? "let" :
-        cst.kind === Tokens.LOCAL ? "local" :
-        cst.kind === Tokens.MACRO ? "macro" :
-        cst.kind === Tokens.MODULE ? "module" :
-        cst.kind === Tokens.MUTABLE ? "mutable" :
-        cst.kind === Tokens.OUTER ? "outer" :
-        cst.kind === Tokens.PRIMITIVE ? "primitive" :
-        cst.kind === Tokens.QUOTE ? "quote" :
-        cst.kind === Tokens.RETURN ? "return" :
-        cst.kind === Tokens.STRUCT ? "struct" :
-        cst.kind === Tokens.TYPE ? "type" :
-        cst.kind === Tokens.TRY ? "try" :
-        cst.kind === Tokens.USING ? "using" : cst.kind === Tokens.WHILE ? "while" : ""
     s.offset += cst.fullspan
-    FST(cst, loc[2], loc[1], loc[1], val)
+    FST(KEYWORD, loc[2], loc[1], loc[1], cst.val)
 end
 p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
 @inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    val =
-        cst.kind === Tokens.LPAREN ? "(" :
-        cst.kind === Tokens.LBRACE ? "{" :
-        cst.kind === Tokens.LSQUARE ? "[" :
-        cst.kind === Tokens.RPAREN ? ")" :
-        cst.kind === Tokens.RBRACE ? "}" :
-        cst.kind === Tokens.RSQUARE ? "]" :
-        cst.kind === Tokens.COMMA ? "," :
-        cst.kind === Tokens.SEMICOLON ? ";" :
-        cst.kind === Tokens.AT_SIGN ? "@" : cst.kind === Tokens.DOT ? "." : ""
     s.offset += cst.fullspan
-    FST(cst, loc[2], loc[1], loc[1], val)
+    FST(PUNCTUATION, loc[2], loc[1], loc[1], cst.val)
 end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
@@ -368,10 +327,10 @@ end
     from_docstring = false,
 )
     loc = cursor_loc(s)
-    if !is_str_or_cmd(cst.kind)
+    if !is_str_or_cmd(cst)
         val = cst.val
 
-        if cst.kind === Tokens.FLOAT && endswith(cst.val, "f0")
+        if cst.head === :FLOAT && endswith(cst.val, "f0")
             # Float32
             val = val[1:end-2]
             dotidx = findlast(c -> c == '.', val)
@@ -383,7 +342,7 @@ end
                 val = '0' * val
             end
             val *= "f0"
-        elseif cst.kind === Tokens.FLOAT
+        elseif cst.head === :FLOAT
             if endswith(cst.val, ".")
                 # If a floating point ends in `.`, add trailing zero.
                 val *= '0'
@@ -393,7 +352,7 @@ end
         end
 
         s.offset += length(cst.val) + (cst.fullspan - cst.span)
-        return FST(cst, loc[2], loc[1], loc[1], val)
+        return FST(LITERAL, loc[2], loc[1], loc[1], val)
     end
 
     # Strings are unescaped by CSTParser
@@ -407,10 +366,12 @@ end
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
+    #
+    # TODO : might not need this since it's parsed as a macro?
     if str_info === nothing &&
-       (cst.parent.typ === CSTParser.x_Str || cst.parent.typ === CSTParser.x_Cmd)
+       (cst.parent.head === CSTParser.x_Str || cst.parent.head === CSTParser.x_Cmd)
         s.offset += length(cst.val) + (cst.fullspan - cst.span)
-        return FST(cst, loc[2], loc[1], loc[1], cst.val)
+        return FST(LITERAL, loc[2], loc[1], loc[1], cst.val)
     end
 
     startline, endline, str = str_info
@@ -423,7 +384,7 @@ end
     lines = split(str, "\n")
 
     if length(lines) == 1
-        return FST(cst, loc[2], loc[1], loc[1], lines[1])
+        return FST(LITERAL, loc[2], loc[1], loc[1], lines[1])
     end
 
     sidx = loc[2]
@@ -435,7 +396,7 @@ end
     end
 
     t = FST(
-        CSTParser.StringH,
+        StringN,
         -1,
         -1,
         loc[2] - 1,
@@ -451,7 +412,7 @@ end
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
         tt = FST(
-            CSTParser.LITERAL,
+            LITERAL,
             ln,
             ln,
             sidx - 1,
@@ -487,8 +448,7 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     lines = split(str, "\n")
 
     if length(lines) == 1
-        t = FST(cst, loc[2], startline, startline, lines[1])
-        t.typ = CSTParser.LITERAL
+        t = FST(LITERAL, loc[2], startline, startline, lines[1])
         return t
     end
 
@@ -500,13 +460,13 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
     end
 
-    t = FST(cst, loc[2] - 1)
+    t = FST(StringN, cst, loc[2] - 1)
     t.line_offset = loc[2]
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
         tt = FST(
-            CSTParser.LITERAL,
+            LITERAL,
             ln,
             ln,
             sidx - 1,
@@ -528,16 +488,16 @@ p_stringh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # GlobalRefDoc (docstring)
 function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    t.typ = CSTParser.GlobalRefDoc
+    t = FST(GlobalRefDoc, cst, nspaces(s))
 
-    # cst[1] is empty and fullspan is 0 so we can skip it
-    if cst[2].typ === CSTParser.LITERAL
+    # cst[1] is :globalrefdoc
+    # cst[2] is empty and fullspan is 0 so we can skip it
+    if CSTParser.isliteral(cst[3])
         add_node!(t, p_literal(style, cst[2], s, from_docstring = true), s, max_padding = 0)
-    elseif cst[2].typ == CSTParser.StringH
-        add_node!(t, p_stringh(style, cst[2], s), s)
+    elseif cst[3].head == CSTParser.StringH
+        add_node!(t, p_stringh(style, cst[3], s), s)
     end
-    add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
+    add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
     return t
 end
 p_globalrefdoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -545,10 +505,8 @@ p_globalrefdoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle}
 
 # @doc "example"
 function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    t = FST(cst, nspaces(s))
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    t.typ = CSTParser.GlobalRefDoc
+    t = FST(GlobalRefDoc, cst, nspaces(s))
 
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
@@ -565,25 +523,23 @@ p_macrodoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(MacroCall, cst, nspaces(s))
 
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
-    has_closer = is_closer(cst.args[end])
+    has_closer = is_closer(cst[end])
 
-    # !has_closer && length(t.nodes) > 1 && (t.typ = MacroBlock)
     !has_closer && (t.typ = MacroBlock)
 
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        if a.typ === CSTParser.MacroName
-            if a.fullspan - a.span > 0 && length(cst) > 1
+        if CSTParser.ismacroname(a)
+            if has_closer
+                add_node!(t, n, s, join_lines = true)
+            else
                 add_node!(t, n, s, join_lines = true)
                 add_node!(t, Whitespace(1), s)
-            else
-                # assumes the next argument is a brace of some sort
-                add_node!(t, n, s, join_lines = true)
             end
         elseif is_opener(n) && nest
             add_node!(t, n, s, join_lines = true)
@@ -597,7 +553,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif a.fullspan - a.span > 0
             if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if i < length(cst) - 1 && cst[i+1].typ !== CSTParser.Parameters
+                if i < length(cst) - 1 && cst[i+1].head != :paramters
                     add_node!(t, Whitespace(1), s)
                 end
             else
@@ -623,6 +579,22 @@ end
 p_macrocall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_macrocall(DefaultStyle(style), cst, s)
 
+
+function p_macroname(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(Macroname, cst, nspaces(s))
+    for a in cst
+        if CSTParser.is_nothing(a)
+            s.offset += a.fullspan
+            continue
+        end
+        add_node!(t, pretty(style, a, s), s, join_lines = true)
+    end
+    t
+end
+p_macroname(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_macroname(DefaultStyle(style), cst, s)
+
 # Block
 # length Block is the length of the longest expr
 function p_block(
@@ -634,7 +606,7 @@ function p_block(
     join_body = false,
 )
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Block, cst, nspaces(s))
     single_line =
         ignore_single_line ? false : on_same_line(s, s.offset, s.offset + cst.span - 1)
 
@@ -695,7 +667,7 @@ p_block(
 # Abstract
 function p_abstract(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Abstract, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -711,7 +683,7 @@ p_abstract(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Primitive
 function p_primitive(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Primitive, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -729,7 +701,7 @@ p_primitive(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # FunctionDef/Macro
 function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(FunctionN, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -756,14 +728,18 @@ end
 p_functiondef(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_functiondef(DefaultStyle(style), cst, s)
 
-@inline p_macro(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_functiondef(ds, cst, s)
+function p_macro(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = 
+    t = p_functiondef(ds, cst, s)
+    t.typ = Macro
+    t
+end
 p_macro(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_macro(DefaultStyle(style), cst, s)
 
 # Struct
 function p_struct(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Struct, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -788,7 +764,7 @@ p_struct(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Mutable
 function p_mutable(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Mutable, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -812,10 +788,10 @@ end
 p_mutable(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_mutable(DefaultStyle(style), cst, s)
 
-# ModuleH/BareModule
+# ModuleN/BareModule
 function p_module(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(ModuleN, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -831,18 +807,21 @@ end
 p_module(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_module(DefaultStyle(style), cst, s)
 
-@inline p_baremodule(style::DefaultStyle, cst::CSTParser.EXPR, s::State) =
-    p_module(style, cst, s)
+function p_baremodule(style::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    t = p_module(style, cst, s)
+    t.typ = BareModule
+    t
+end
 p_baremodule(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_baremodule(DefaultStyle(style), cst, s)
 
 # Const/Local/Global/Return/Outer
 function p_const(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Const, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
-        for a in cst.args[2:end]
+        for a in cst[2:end]
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
@@ -852,28 +831,44 @@ end
 p_const(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_const(DefaultStyle(style), cst, s)
 
-@inline p_local(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
+function p_local(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_const(ds, cst, s)
+    t.typ = Local
+    t
+end
 p_local(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_local(DefaultStyle(style), cst, s)
 
-@inline p_global(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
+function p_global(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_const(ds, cst, s)
+    t.typ = Global
+    t
+end
 p_global(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_global(DefaultStyle(style), cst, s)
 
-@inline p_return(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
+function p_return(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_const(ds, cst, s)
+    t.typ = Return
+    t
+end
 p_return(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_return(DefaultStyle(style), cst, s)
 
-@inline p_outer(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_const(ds, cst, s)
+function p_outer(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_const(ds, cst, s)
+    t.typ = Outer
+    t
+end
 p_outer(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_outer(DefaultStyle(style), cst, s)
 
 # TopLevel
 function p_toplevel(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    for a in cst.args
-        if a.kind === Tokens.NOTHING
+    t = FST(TopLevel, cst, nspaces(s))
+    for a in cst
+        if CSTParser.is_nothing(a)
             s.offset += a.fullspan
             continue
         end
@@ -888,7 +883,7 @@ p_toplevel(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Begin
 function p_begin(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Begin, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan == 0
         add_node!(t, Whitespace(1), s)
@@ -912,9 +907,9 @@ p_begin(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Quote
 function p_quote(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    if cst[1].kind === Tokens.QUOTE
-        add_node!(t, pretty(style, cst[1], s), s)
+    t = FST(Quote, cst, nspaces(s))
+    add_node!(t, pretty(style, cst[1], s), s)
+    if cst[1].head === :QUOTE
         if cst[2].fullspan == 0
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
@@ -929,8 +924,8 @@ function p_quote(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             s.indent -= s.opts.indent
             add_node!(t, pretty(style, cst[3], s), s)
         end
-    else
-        for a in cst.args
+
+        for a in cst
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
@@ -938,6 +933,21 @@ function p_quote(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_quote(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_quote(DefaultStyle(style), cst, s)
+
+function p_quotenode(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(Quotenode, cst, nspaces(s))
+    for a in cst
+        if CSTParser.is_nothing(a)
+            s.offset += a.fullspan
+            continue
+        end
+        add_node!(t, pretty(style, a, s), s, join_lines = true)
+    end
+    t
+end
+p_quotenode(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_quotenode(DefaultStyle(style), cst, s)
 
 # Let
 #
@@ -952,12 +962,12 @@ p_quote(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # end
 function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Let, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
-    if length(cst.args) > 3
+    if length(cst) > 3
         add_node!(t, Whitespace(1), s)
         s.indent += s.opts.indent
-        if cst[2].typ === CSTParser.Block
+        if cst[2].head === CSTParser.Block
             add_node!(t, pretty(style, cst[2], s, join_body = true), s, join_lines = true)
         else
             add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -975,15 +985,15 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.opts.indent
         # Possible newline after args if nested to act as a separator
         # to the block body.
-        if cst[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+        if cst[2].head === CSTParser.Block && t.nodes[end-2].head !== NOTCODE
             add_node!(t.nodes[idx], Placeholder(0), s)
         end
-        add_node!(t, pretty(style, cst.args[end], s), s)
+        add_node!(t, pretty(style, cst[end], s), s)
     else
         s.indent += s.opts.indent
         add_node!(t, pretty(style, cst[2], s, ignore_single_line = true), s)
         s.indent -= s.opts.indent
-        add_node!(t, pretty(style, cst.args[end], s), s)
+        add_node!(t, pretty(style, cst[end], s), s)
     end
     t
 end
@@ -1008,8 +1018,8 @@ p_let(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 #
 # https://github.com/domluna/JuliaFormatter.jl/issues/34
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
-    if fst.typ === CSTParser.BinaryOpCall
-        idx = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
+    if fst.typ === Binary
+        idx = findfirst(n -> n.head === :OPERATOR, fst.nodes)
         idx === nothing && return
         op = fst[idx]
 
@@ -1026,7 +1036,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             op.val = "="
             op.len = length(op.val)
         end
-    elseif fst.typ === CSTParser.Block || fst.typ === CSTParser.InvisBrackets
+    elseif fst.head === :block || fst.head === :brackets
         for n in fst.nodes
             eq_to_in_normalization!(n, always_for_in)
         end
@@ -1036,11 +1046,11 @@ end
 # For/While
 function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(For, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-    n = if cst[2].typ === CSTParser.Block
+    n = if cst[2].head === :block
         s.indent += s.opts.indent
         n = pretty(style, cst[2], s, join_body = true)
         s.indent -= s.opts.indent
@@ -1049,7 +1059,7 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         pretty(style, cst[2], s)
     end
 
-    cst[1].kind === Tokens.FOR && eq_to_in_normalization!(n, s.opts.always_for_in)
+    cst[1].head === :FOR && eq_to_in_normalization!(n, s.opts.always_for_in)
     add_node!(t, n, s, join_lines = true)
 
     idx = length(t.nodes)
@@ -1064,7 +1074,7 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     # Possible newline after args if nested to act as a separator
     # to the block body.
-    if cst[2].typ === CSTParser.Block && t.nodes[end-2].typ !== NOTCODE
+    if cst[2].head === :block && t.nodes[end-2].head !== NOTCODE
         add_node!(t.nodes[idx], Placeholder(0), s)
     end
     add_node!(t, pretty(style, cst[4], s), s)
@@ -1073,14 +1083,18 @@ end
 p_for(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_for(DefaultStyle(style), cst, s)
 
-@inline p_while(style::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_for(style, cst, s)
+function p_while(style::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_for(style, cst, s)
+    t.typ = While
+    t
+end
 p_while(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_while(DefaultStyle(style), cst, s)
 
 # Do
 function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Do, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -1088,14 +1102,14 @@ function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     end
-    if cst[4].typ === CSTParser.Block
+    if cst[4].head === CSTParser.Block
         s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
         s.opts.always_use_return && prepend_return!(n, s)
         add_node!(t, n, s, max_padding = s.opts.indent)
         s.indent -= s.opts.indent
     end
-    add_node!(t, pretty(style, cst.args[end], s), s)
+    add_node!(t, pretty(style, cst[end], s), s)
     t
 end
 p_do(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -1104,12 +1118,12 @@ p_do(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Try
 function p_try(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    for a in cst.args
-        if a.fullspan == 0 && a.typ !== CSTParser.Block
-        elseif a.typ === CSTParser.KEYWORD
+    t = FST(Try, cst, nspaces(s))
+    for a in cst
+        if a.fullspan == 0 && a.head !== CSTParser.Block
+        elseif a.head === CSTParser.KEYWORD
             add_node!(t, pretty(style, a, s), s, max_padding = 0)
-        elseif a.typ === CSTParser.Block
+        elseif a.head === CSTParser.Block
             s.indent += s.opts.indent
             add_node!(
                 t,
@@ -1135,8 +1149,8 @@ p_try(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # If
 function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    if cst[1].typ === CSTParser.KEYWORD && cst[1].kind === Tokens.IF
+    t = FST(If, cst, nspaces(s))
+    if cst[1].head == :IF
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -1150,9 +1164,9 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.opts.indent
 
         len = length(t)
-        if length(cst.args) > 4
+        if length(cst) > 4
             add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
-            if cst[4].kind === Tokens.ELSEIF
+            if cst[4].head === :ELSEIF
                 add_node!(t, Whitespace(1), s)
                 n = pretty(style, cst[5], s)
                 add_node!(t, n, s, join_lines = true)
@@ -1171,7 +1185,7 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             end
         end
         # END KEYWORD
-        add_node!(t, pretty(style, cst.args[end], s), s)
+        add_node!(t, pretty(style, cst[end], s), s)
     else
         # "cond" part of "elseif cond"
         t.len += 7
@@ -1187,11 +1201,11 @@ function p_if(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.opts.indent
 
         len = length(t)
-        if length(cst.args) > 2
+        if length(cst) > 2
             # this either else or elseif keyword
             add_node!(t, pretty(style, cst[3], s), s, max_padding = 0)
 
-            if cst[3].kind === Tokens.ELSEIF
+            if cst[3].head === :ELSEIF
                 add_node!(t, Whitespace(1), s)
                 n = pretty(style, cst[4], s)
                 add_node!(t, n, s, join_lines = true)
@@ -1214,7 +1228,7 @@ end
 p_if(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_if(DefaultStyle(style), cst, s)
 
-# ChainOpCall/Comparison
+# Chain/Comparison
 function p_chainopcall(
     ds::DefaultStyle,
     cst::CSTParser.EXPR,
@@ -1223,13 +1237,13 @@ function p_chainopcall(
     nospace = false,
 )
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Chain, cst, nspaces(s))
 
     # Check if there's a number literal on the LHS of a dot operator.
     # In this case we need to surround the dot operator with whitespace
     # in order to avoid ambiguity.
     for (i, a) in enumerate(cst)
-        if a.typ === CSTParser.OPERATOR && a.dot && is_number(cst[i-1])
+        if a.head === :OPERATOR && CSTParser.isdotted(a) && CSTParser.isnumber(cst[i-1])
             nospace = false
             break
         end
@@ -1237,7 +1251,7 @@ function p_chainopcall(
 
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
-        if a.typ === CSTParser.OPERATOR
+        if a.head === :OPERATOR
             add_node!(t, Whitespace(nws), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             if nonest
@@ -1269,13 +1283,17 @@ p_chainopcall(
 ) where {S<:AbstractStyle} =
     p_chainopcall(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
 
-@inline p_comparison(
+function p_comparison(
     ds::DefaultStyle,
     cst::CSTParser.EXPR,
     s::State;
     nonest = false,
     nospace = false,
-) = p_chainopcall(ds, cst, s, nonest = nonest, nospace = nospace)
+) 
+t = p_chainopcall(ds, cst, s, nonest = nonest, nospace = nospace)
+t.typ = Comparison
+t
+end
 p_comparison(
     style::S,
     cst::CSTParser.EXPR,
@@ -1285,10 +1303,10 @@ p_comparison(
 ) where {S<:AbstractStyle} =
     p_comparison(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
 
-# ColonOpCall
+# Colon
 function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Chain, cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
     for a in cst
         if is_opcall(a)
@@ -1298,10 +1316,10 @@ function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
 
         if s.opts.whitespace_ops_in_indices && !is_leaf(n) && !is_iterable(n)
-            paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
+            paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
             add_node!(t, paren, s, join_lines = true)
             add_node!(t, n, s, join_lines = true)
-            paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
+            paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
             add_node!(t, paren, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
@@ -1315,7 +1333,7 @@ p_colonopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
 # Kw
 function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Kw, cst, nspaces(s))
 
     exclamation = cst[1].typ === CSTParser.IDENTIFIER && endswith(cst[1].val, "!")
     opcall = (cst[3].typ === CSTParser.Call && cst[3][1].typ === CSTParser.OPERATOR)
@@ -1371,7 +1389,7 @@ end
 p_kw(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_kw(DefaultStyle(style), cst, s)
 
-# BinaryOpCall
+# Binary
 function p_binaryopcall(
     ds::DefaultStyle,
     cst::CSTParser.EXPR,
@@ -1380,14 +1398,16 @@ function p_binaryopcall(
     nospace = false,
 )
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Binary, cst, nspaces(s))
     op = cst[2]
-    nonest = nonest || op.kind === Tokens.COLON
-    if cst.parent.typ === CSTParser.Curly &&
-       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE) &&
+
+    nonest = nonest || CSTParser.is_colon(op)
+
+    if CSTParser.iscurly(cst.parent) &&
+        (CSTParser.issubt(op) || CSTParser.issupt(op)) &&
        !s.opts.whitespace_typedefs
         nospace = true
-    elseif op.kind === Tokens.COLON
+    elseif CSTParser.is_colon(op)
         nospace = true
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
@@ -1398,14 +1418,14 @@ function p_binaryopcall(
         n = pretty(style, cst[1], s)
     end
 
-    if op.kind === Tokens.COLON &&
+    if CSTParser.is_colon(op) &&
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s)
@@ -1418,15 +1438,15 @@ function p_binaryopcall(
     if op.fullspan == 0
         # Do nothing - represents a binary op with no textual representation.
         # For example: `2a`, which is equivalent to `2 * a`.
-    elseif op.kind === Tokens.EX_OR
+    elseif CSTParser.is_exor(op)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
-    elseif (is_number(cst[1]) || op.kind === Tokens.CIRCUMFLEX_ACCENT) && op.dot
+    elseif (CSTParser.isnumber(cst[1]) || is_circumflex_accent(op)) && CSTParser.isdotted(op)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif op.kind !== Tokens.IN && (
+    elseif !(CSTParser.is_in(op) && CSTParser.is_elof(op)) && (
         nospace || (
-            op.kind !== Tokens.ANON_FUNC && CSTParser.precedence(op) in (
+            CSTParser.is_anon_func(op) && CSTParser.precedence(op) in (
                 CSTParser.ColonOp,
                 CSTParser.PowerOp,
                 CSTParser.DeclarationOp,
@@ -1447,14 +1467,14 @@ function p_binaryopcall(
         n = pretty(style, cst[3], s)
     end
 
-    if op.kind === Tokens.COLON &&
+    if CSTParser.is_colon(op) &&
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[3]) &&
        !is_iterable(cst[3])
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s, join_lines = true)
@@ -1476,30 +1496,30 @@ p_binaryopcall(
 ) where {S<:AbstractStyle} =
     p_binaryopcall(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
 
-# WhereOpCall
+# Where
 # A where B
 function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Where, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
 
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Whitespace(1), s)
 
-    args = get_args(cst.args[3:end])
+    args = get_args(cst[3:end])
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
     add_braces =
         !CSTParser.is_lbrace(cst[3]) &&
-        cst.parent.typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.BracesCat
+        cst.parent.head !== CSTParser.Curly &&
+        cst[3].head !== CSTParser.Curly &&
+        cst[3].head !== CSTParser.BracesCat
 
-    brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "{")
+    brace = FST(PUNCTUATION, -1, t.endline, t.endline, "{")
     add_braces && add_node!(t, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
-    for (i, a) in enumerate(cst.args[3:end])
+    for (i, a) in enumerate(cst[3:end])
         if is_opener(a) && nest
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(0), s)
@@ -1512,7 +1532,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && !is_punc(cst[i+3])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(nws), s)
-        elseif a.typ === CSTParser.BinaryOpCall
+        elseif is_binary(a)
             add_node!(
                 t,
                 pretty(style, a, s, nospace = !s.opts.whitespace_typedefs),
@@ -1523,7 +1543,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
-    brace = FST(CSTParser.PUNCTUATION, -1, t.endline, t.endline, "}")
+    brace = FST(PUNCTUATION, -1, t.endline, t.endline, "}")
     add_braces && add_node!(t, brace, s, join_lines = true)
     t
 end
@@ -1533,7 +1553,7 @@ p_whereopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} 
 # Conditional
 function p_conditionalopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Conditional, cst, nspaces(s))
 
     add_node!(t, pretty(style, cst[1], s), s)
 
@@ -1554,10 +1574,10 @@ end
 p_conditionalopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_conditionalopcall(DefaultStyle(style), cst, s)
 
-# UnaryOpCall
+# Unary
 function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace = true)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Unary, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     !nospace && add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
@@ -1572,7 +1592,7 @@ p_unaryopcall(
 
 function p_curly(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Curly, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
@@ -1584,7 +1604,7 @@ function p_curly(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Placeholder(0), s)
     end
 
-    for (i, a) in enumerate(cst.args[3:end])
+    for (i, a) in enumerate(cst[3:end])
         if i + 2 == length(cst) && nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
@@ -1603,7 +1623,7 @@ p_curly(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Call, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
@@ -1614,7 +1634,7 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Placeholder(0), s)
     end
 
-    for (i, a) in enumerate(cst.args[3:end])
+    for (i, a) in enumerate(cst[3:end])
         if i + 2 == length(cst) && nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
@@ -1631,7 +1651,7 @@ end
 p_call(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_call(DefaultStyle(style), cst, s)
 
-# InvisBrackets
+# Brackets
 function p_invisbrackets(
     ds::DefaultStyle,
     cst::CSTParser.EXPR,
@@ -1640,29 +1660,28 @@ function p_invisbrackets(
     nospace = false,
 )
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Brackets, cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest
 
-    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+    if is_block(cst[2]) || (cst[2].head === :generator && is_block(cst[2][1]))
         t.nest_behavior = AlwaysNest
     end
 
-    for (i, a) in enumerate(cst)
-        if a.typ === CSTParser.Block
-            add_node!(t, pretty(style, a, s, from_quote = true), s, join_lines = true)
-        elseif is_opcall(a)
-            n = pretty(style, a, s, nonest = nonest, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
-        elseif is_opener(a) && nest
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif is_closer(a) && nest
-            add_node!(t, Placeholder(0), s)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        end
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    nest && add_node!(t, Placeholder(0), s)
+
+    if cst[2].head === :block
+        add_node!(t, pretty(style, cst[2], s, from_quote = true), s, join_lines = true)
+    elseif is_opcall(a)
+        n = pretty(style, cst[2], s, nonest = nonest, nospace = nospace)
+        add_node!(t, n, s, join_lines = true)
+    else
+        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
+
+    nest && add_node!(t, Placeholder(0), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+
     t
 end
 p_invisbrackets(
@@ -1674,21 +1693,16 @@ p_invisbrackets(
 ) where {S<:AbstractStyle} =
     p_invisbrackets(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
 
-# TupleH
-function p_tupleh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+# TupleN
+function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(TupleN, cst, nspaces(s))
 
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
     for (i, a) in enumerate(cst)
-        n = if a.typ === CSTParser.BinaryOpCall && a[2].kind === Tokens.EQ
-            p_kw(style, a, s)
-        else
-            pretty(style, a, s)
-        end
-
+        n =  pretty(style, a, s)
         if is_opener(n) && nest
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
@@ -1705,13 +1719,13 @@ function p_tupleh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
-p_tupleh(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_tupleh(DefaultStyle(style), cst, s)
+p_tuple(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_tuple(DefaultStyle(style), cst, s)
 
 # Braces
 function p_braces(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Braces, cst, nspaces(s))
     nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
 
     for (i, a) in enumerate(cst)
@@ -1738,7 +1752,7 @@ p_braces(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # BracesCat
 function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(BracesCat, cst, nspaces(s))
     nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
 
     for (i, a) in enumerate(cst)
@@ -1766,7 +1780,7 @@ p_bracescat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Vect
 function p_vect(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Vect, cst, nspaces(s))
     nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
 
     for (i, a) in enumerate(cst)
@@ -1793,9 +1807,9 @@ p_vect(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Comprehension
 function p_comprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Comprehension, cst, nspaces(s))
 
-    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+    if is_block(cst[2]) || (cst[2].head === :generator && is_block(cst[2][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -1812,9 +1826,9 @@ p_comprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle
 # TypedComprehension
 function p_typedcomprehension(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(TypedComprehension, cst, nspaces(s))
 
-    if is_block(cst[3]) || (cst[3].typ === CSTParser.Generator && is_block(cst[3][1]))
+    if is_block(cst[3]) || (cst[3].head === :generator && is_block(cst[3][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -1832,7 +1846,7 @@ p_typedcomprehension(style::S, cst::CSTParser.EXPR, s::State) where {S<:Abstract
 # Parameters
 function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Parameters, cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1853,11 +1867,11 @@ p_parameters(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Import, Export, Using
 function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Import, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-    for (i, a) in enumerate(cst.args[2:end])
+    for (i, a) in enumerate(cst[2:end])
         if CSTParser.is_comma(a) || CSTParser.is_colon(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
@@ -1870,18 +1884,26 @@ end
 p_import(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_import(DefaultStyle(style), cst, s)
 
-@inline p_export(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_import(ds, cst, s)
+function p_export(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_import(ds, cst, s)
+    t.typ = Export
+    t
+end
 p_export(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_export(DefaultStyle(style), cst, s)
 
-@inline p_using(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_import(ds, cst, s)
+function p_using(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_import(ds, cst, s)
+    t.typ = Using
+    t
+end
 p_using(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_using(DefaultStyle(style), cst, s)
 
 # Ref
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(RefN, cst, nspaces(s))
     nest = length(cst) > 5 && !(length(cst) == 5 && unnestable_node(cst[3]))
     nospace = !s.opts.whitespace_ops_in_indices
 
@@ -1911,8 +1933,8 @@ p_ref(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Vcat/TypedVcat
 function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    st = cst.typ === CSTParser.Vcat ? 1 : 2
+    t = FST(Vcat, cst, nspaces(s))
+    st = cst.head === :vcat ? 1 : 2
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
@@ -1946,15 +1968,19 @@ end
 p_vcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_vcat(DefaultStyle(style), cst, s)
 
-@inline p_typedvcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_vcat(ds, cst, s)
+function p_typedvcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_vcat(ds, cst, s)
+    t.typ = TypedVcat
+    t
+end
 p_typedvcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_typedvcat(DefaultStyle(style), cst, s)
 
 # Hcat/TypedHcat
 function p_hcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
-    st = cst.typ === CSTParser.Hcat ? 1 : 2
+    t = FST(Hcat, cst, nspaces(s))
+    st = cst.head === :hcat ? 1 : 2
     for (i, a) in enumerate(cst)
         if i > st && i < length(cst) - 1
             add_node!(t, pretty(style, a, s), s, join_lines = true)
@@ -1968,14 +1994,18 @@ end
 p_hcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_hcat(DefaultStyle(style), cst, s)
 
-@inline p_typedhcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_hcat(ds, cst, s)
+function p_typedhcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_hcat(ds, cst, s)
+    t.typ = TypedHcat
+    t
+end
 p_typedhcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_typedhcat(DefaultStyle(style), cst, s)
 
 # Row
 function p_row(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Row, cst, nspaces(s))
 
     for (i, a) in enumerate(cst)
         if is_opcall(a)
@@ -1999,21 +2029,21 @@ p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 # Generator/Filter/Flatten
 function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
-    t = FST(cst, nspaces(s))
+    t = FST(Generator, cst, nspaces(s))
     has_for_kw = false
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        if a.typ === CSTParser.KEYWORD
-            if a.kind === Tokens.FOR
+        if is_keyword(a)
+            if a.head === :FOR
                 has_for_kw = true
             end
 
             # for keyword can only be on the following line
             # if this expression is within an iterable expression
-            if a.kind === Tokens.FOR && parent_is(
+            if a.head === :FOR && parent_is(
                 a,
                 is_iterable,
-                ignore = n -> is_gen(n) || n.typ === CSTParser.InvisBrackets,
+                ignore = n -> is_gen(n) || n.head === :brackets
             )
                 add_node!(t, Placeholder(1), s)
             else
@@ -2036,10 +2066,18 @@ end
 p_generator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_generator(DefaultStyle(style), cst, s)
 
-@inline p_filter(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
+function p_filter(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_generator(ds, cst, s)
+    t.typ = Filter
+    t
+end
 p_filter(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_filter(DefaultStyle(style), cst, s)
 
-@inline p_flatten(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) = p_generator(ds, cst, s)
+function p_flatten(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_generator(ds, cst, s)
+    t.typ = Flatten
+    t
+end
 p_flatten(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_flatten(DefaultStyle(style), cst, s)

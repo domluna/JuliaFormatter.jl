@@ -2579,7 +2579,7 @@
         )"""
         @test fmt("(x   for x  in  1 : 10)", 2, 1) == str
 
-        # indent for TupleH with no parens
+        # indent for TupleN with no parens
         str = """
         function foo()
             arg1,

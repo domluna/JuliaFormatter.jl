@@ -9,19 +9,19 @@ function align_fst!(fst::FST, opts::Options)
         if is_leaf(n)
             continue
         elseif opts.align_struct_field &&
-               (n.typ === CSTParser.Struct || n.typ === CSTParser.Mutable)
+               (n.typ === Struct || n.typ === Mutable)
             align_struct!(n)
-        elseif opts.align_conditional && n.typ === CSTParser.ConditionalOpCall
+        elseif opts.align_conditional && n.typ === Conditional
             align_conditional!(n)
         else
             align_fst!(n, opts)
         end
 
-        if is_assignment(n) || n.typ === CSTParser.Kw
+        if is_assignment(n) || n.typ === Kw
             # Gather all assignments within the current code block
             # they will be aligned at the end
             push!(assignment_idxs, i)
-        elseif n.typ === CSTParser.BinaryOpCall && op_kind(n) === Tokens.PAIR_ARROW
+        elseif n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
             push!(pair_arrow_idxs, i)
         end
     end
@@ -102,7 +102,7 @@ end
 Aligns struct fields.
 """
 function align_struct!(fst::FST)
-    idx = findfirst(n -> n.typ === CSTParser.Block, fst.nodes)
+    idx = findfirst(n -> n.typ === Block, fst.nodes)
     idx === nothing && return
     length(fst[idx]) == 0 && return
 
@@ -112,14 +112,14 @@ function align_struct!(fst::FST)
     g = AlignGroup()
 
     for (i, n) in enumerate(block_fst.nodes)
-        if n.typ === CSTParser.BinaryOpCall
+        if n.typ === Binary
             if n.startline - prev_endline > 1
                 push!(groups, g)
                 g = AlignGroup()
             end
 
             nlen = length(n[1])
-            idx = findfirst(x -> x.typ === CSTParser.OPERATOR, n.nodes)
+            idx = findfirst(x -> x.typ === OPERATOR, n.nodes)
             ws = n[idx].line_offset - (n.line_offset + nlen)
 
             push!(g, i, n[idx].line_offset, nlen, ws)
@@ -160,7 +160,7 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             g = AlignGroup()
         end
 
-        binop, nlen, ws = if n.typ === CSTParser.BinaryOpCall || n.typ === CSTParser.Kw
+        binop, nlen, ws = if n.typ === Binary || n.typ === Kw
             nlen = length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
         else
@@ -184,7 +184,7 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             diff = align_len - g.lens[i] + 1
 
             typ = fst[idx].typ
-            if typ === CSTParser.BinaryOpCall || typ === CSTParser.Kw
+            if typ === Binary || typ === Kw
                 align_binaryopcall!(fst[idx], diff)
             else
                 align_binaryopcall!(fst[idx][3], diff)
@@ -211,14 +211,14 @@ function align_conditional!(fst::FST)
     colon_prev_endline = 0
 
     for (i, n) in enumerate(nodes)
-        if n.typ === CSTParser.OPERATOR && n.val == "?"
+        if n.typ === OPERATOR && n.val == "?"
             if cond_prev_endline != n.endline
                 nlen = length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
                 push!(cond_group, i, n.line_offset, nlen, ws)
             end
             cond_prev_endline = n.endline
-        elseif n.typ === CSTParser.OPERATOR && n.val == ":"
+        elseif n.typ === OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
                 nlen = length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)

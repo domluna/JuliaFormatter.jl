@@ -48,9 +48,9 @@ end
 
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
-    if fst.typ === CSTParser.BinaryOpCall ||
-       fst.typ === CSTParser.ConditionalOpCall ||
-       fst.typ === CSTParser.ModuleH
+    if fst.typ === Binary ||
+    is_conditional(fst) ||
+       fst.typ === ModuleN
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)
@@ -71,11 +71,11 @@ function print_tree(
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
                 n.indent += s.opts.indent
             elseif i + 1 < length(nodes) && (
-                nodes[i+2].typ === CSTParser.Block || nodes[i+2].typ === CSTParser.Begin
+                nodes[i+2].typ === Block || nodes[i+2].typ === Begin
             )
                 n.indent = nodes[i+2].indent
             elseif i > 2 && (
-                nodes[i-2].typ === CSTParser.Block || nodes[i-2].typ === CSTParser.Begin
+                nodes[i-2].typ === Block || nodes[i-2].typ === Begin
             )
                 n.indent = nodes[i-2].indent
             end
@@ -83,7 +83,7 @@ function print_tree(
 
         if is_leaf(n)
             print_leaf(io, n, s)
-        elseif n.typ === CSTParser.StringH
+        elseif n.typ === StringN
             print_stringh(io, n, s)
         else
             print_tree(io, n, s)
@@ -91,8 +91,8 @@ function print_tree(
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) ||
-               nodes[i+1].typ === CSTParser.Block ||
-               nodes[i+1].typ === CSTParser.Begin
+               nodes[i+1].typ === Block ||
+               nodes[i+1].typ === Begin
                 write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
