@@ -290,6 +290,12 @@ function is_conditional(cst::CSTParser.EXPR)
     CSTParser.isconditional(x)
 end
 
+function is_colon_call(cst::CSTParser.EXPR)
+    CSTParser.isoperator(cst) && cst.val == ":" && return true
+    cst.head == :call && is_colon_call(cst.args[1]) && return true
+    return false
+end
+
 function is_custom_leaf(fst::FST)
     fst.typ === NEWLINE ||
     fst.typ === SEMICOLON ||
@@ -707,7 +713,7 @@ function is_assignment(x::FST)
 end
 
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
-is_assignment(cst::CSTParser.EXPR) = CSTParser.isoperator(op) && CSTParser.get_prec(op.val) == CSTParser.AssignmentOp
+is_assignment(cst::CSTParser.EXPR) = CSTParser.isoperator(cst) && CSTParser.get_prec(cst.val) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
 
 function is_function_or_macro_def(cst::CSTParser.EXPR)
@@ -736,7 +742,14 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-nest_assignment(cst::CSTParser.EXPR) = is_assignment(tokenize(cst[2].val))
+function nest_assignment(cst::CSTParser.EXPR)
+    op = if cst.head == :call
+        cst.args[1]
+    elseif CSTParser.isoperator(cst.head)
+        cst.head
+    end
+    is_assignment(op)
+end
 
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
@@ -779,12 +792,12 @@ function op_kind(cst::CSTParser.EXPR)
 end
 
 function op_kind(fst::FST)
-    fst.opmeta === nothing && return nothing
     if fst.typ === OPERATOR
         return fst.opmeta.kind
     elseif is_opcall(fst)
-        op = findfirst(n -> n.typ === OPERATOR, fst.nodes)
-        return op.opmeta.kind
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx === nothing && return nothing
+        return fst[idx].opmeta.kind
     end
     return nothing
 end
@@ -885,7 +898,8 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             return
         end
 
-        if op.val == "=" && op_kind(fst[end]) === Tokens.COLON
+        @info "" op.val fst[end].typ op_kind(fst[end])
+        if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)
         elseif op.val == "in" && op_kind(fst[end]) === Tokens.COLON
