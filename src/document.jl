@@ -17,6 +17,11 @@ function is_str_or_cmd(cst::CSTParser.EXPR)
     CSTParser.isstring(cst) || CSTParser.iscmd(cst)
 end
 
+function tokenize(val::AbstractString)::Tokens.Kind
+    toks = collect(CSTParser.Tokenize.tokenize(val))
+    toks[1].kind
+end
+
 struct Document
     text::AbstractString
 

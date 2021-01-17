@@ -45,7 +45,9 @@ function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-    for (i, a) in enumerate(cst.args[2:end])
+
+    for i in 2:length(cst)
+        a = cst[i]
         if CSTParser.is_comma(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
@@ -264,7 +266,7 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     fst = p_macrocall(DefaultStyle(style), cst, s)
     fst.typ == CSTParser.MacroCall || return fst
-    is_closer(cst.args[end]) || return fst
+    is_closer(cst[end]) || return fst
 
     # remove initial and last placeholders
     # @call(PLACEHOLDER, args..., PLACEHOLDER) -> @call(args...)
@@ -296,14 +298,15 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, brace, s, join_lines = true)
     end
 
-    for (i, a) in enumerate(cst.args[3:end])
+    for i = 3:length(cst)
+        a = cst[i]
         n =
             a.typ === CSTParser.Binary ? pretty(style, a, s, nospace = true) :
             pretty(style, a, s)
 
-        if CSTParser.is_comma(a) && i + 2 == length(cst) - 1
+        if CSTParser.is_comma(a) && i == length(cst) - 1
             continue
-        elseif CSTParser.is_comma(a) && i + 2 < length(cst) && !is_punc(cst[i+3])
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         else
@@ -346,8 +349,13 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Whitespace(1), s)
 
-            if !is_gen(cst.args[i+1])
-                tup = p_tuple(style, cst.args[i+1:length(cst)], s)
+            if !is_gen(cst[i+1])
+                tupargs = CSTParser.EXPR[]
+                for j in i+1:length(cst)
+                    push!(tupargs, cst[j])
+                end
+                # tup = p_tuple(style, cst[i+1:length(cst)], s)
+                tup = p_tuple(style, tupargs, s)
                 add_node!(t, tup, s, join_lines = true)
                 if has_for_kw
                     for nn in tup.nodes

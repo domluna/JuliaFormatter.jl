@@ -62,7 +62,6 @@
     If,
     Begin,
     Try,
-    Block,
     Quote,
     Do,
     Let,
@@ -96,6 +95,14 @@
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
 
+struct OpMeta
+    kind::Tokens.Kind
+    dotted::Bool
+end
+
+# struct OpCallMeta
+#     lazy_circuit
+# end
 
 """
 Formatted Syntax Tree
@@ -122,16 +129,18 @@ mutable struct FST
     # due to `)` after `f(arg)`.
     extra_margin::Int
     line_offset::Int
+
+    opmeta::Union{Nothing,OpMeta}
 end
 
 FST(typ::FNode, cst::CSTParser.EXPR, indent::Int) =
-    FST(cst.head, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1)
+    FST(typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1, nothing)
 
 FST(typ::FNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1)
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1, nothing)
 
 function FST(
-        typ::FNode,
+    typ::FNode,
     cst::CSTParser.EXPR,
     line_offset::Int,
     startline::Int,
@@ -150,6 +159,7 @@ function FST(
         AllowNest,
         0,
         line_offset,
+        nothing
     )
 end
 
@@ -161,7 +171,7 @@ function FST(
     val::AbstractString,
 )
     FST(
-        head,
+        typ,
         startline,
         endline,
         0,
@@ -172,6 +182,7 @@ function FST(
         AllowNest,
         0,
         line_offset,
+        nothing
     )
 end
 
@@ -198,22 +209,22 @@ end
 end
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)
+@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingComma() =
-    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Whitespace(n) =
-    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Placeholder(n) =
-    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 
 @inline must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
 @inline cant_nest(fst::FST) = fst.nest_behavior === NeverNest
@@ -230,7 +241,7 @@ end
 
 @inline is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 
-@inline is_comma(fst::FST) = fst.typ === COMMA || fst.typ === TRAILINGCOMMA
+@inline is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == "," )
 @inline is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
 @inline is_circumflex_accent(x::CSTParser.EXPR) = CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "^")
@@ -239,14 +250,14 @@ end
 # TODO: fix this
 function is_multiline(fst::FST)
     fst.typ === StringN && return true
-    if fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringN
-        return true
-    elseif fst.typ === CSTParser.x_Cmd && fst[2].typ === CSTParser.StringN
-        return true
-    elseif fst.typ === Vcat && fst.endline > fst.startline
+    if fst.typ === Vcat && fst.endline > fst.startline
         return true
     elseif fst.typ === TypedVcat && fst.endline > fst.startline
         return true
+    # elseif fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringN
+    #     return true
+    # elseif fst.typ === CSTParser.x_Cmd && fst[2].typ === CSTParser.StringN
+    #     return true
     end
     false
 end
@@ -276,7 +287,19 @@ function is_if(cst::CSTParser.EXPR)
 end
 
 function is_conditional(cst::CSTParser.EXPR)
-    CSTParser.is_conditional(x)
+    CSTParser.isconditional(x)
+end
+
+function is_custom_leaf(fst::FST)
+    fst.typ === NEWLINE ||
+    fst.typ === SEMICOLON ||
+    fst.typ === WHITESPACE ||
+    fst.typ === PLACEHOLDER ||
+    fst.typ === NOTCODE ||
+    fst.typ === INLINECOMMENT ||
+    fst.typ === TRAILINGCOMMA ||
+    fst.typ === TRAILINGSEMICOLON ||
+    fst.typ === INVERSETRAILINGSEMICOLON
 end
 
 # f a function which returns a bool
@@ -315,7 +338,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
 
         # If there's no semicolon, treat it
-        # as a FNode
+        # as formatter node
         if n.startline == -1
             t.len += length(n)
             n.startline = t.endline
@@ -349,7 +372,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif n.typ isa FNode && is_leaf(n)
+    elseif is_custom_leaf(n)
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline
@@ -614,6 +637,7 @@ function is_opcall(x::CSTParser.EXPR)
     is_binary(x) && return true
     x.head === :comparison && return true
     is_chain(x) && return true
+    # is_unary(x) && return true
     # Brackets are often mixed with operators
     # so kwargs are propagated through its related
     # functions
@@ -625,6 +649,7 @@ function is_opcall(x::FST)
     x.typ === Binary && return true
     x.typ === Comparison && return true
     x.typ === Chain && return true
+    # x.typ === Unary && return true
     # Brackets are often mixed with operators
     # so kwargs are propagated through its related
     # functions
@@ -680,7 +705,9 @@ function is_assignment(x::FST)
 
     return false
 end
+
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
+is_assignment(cst::CSTParser.EXPR) = CSTParser.isoperator(op) && CSTParser.get_prec(op.val) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
 
 function is_function_or_macro_def(cst::CSTParser.EXPR)
@@ -709,7 +736,7 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
+nest_assignment(cst::CSTParser.EXPR) = is_assignment(tokenize(cst[2].val))
 
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
@@ -743,21 +770,25 @@ function op_kind(cst::CSTParser.EXPR)
     if is_binary(cst) ||
        cst.head === :comparison ||
        is_chain(cst)
-        return cst[2].kind
+       return tokenize(cst[2].val)
     elseif is_unary(cst)
-        return cst[1].head === :OPERATOR ? cst[1].head : cst[2].head
+        op = CSTParser.isoperator(cst[1]) ? cst[1] : cst[2]
+        return tokenize(op.val)
     end
     return nothing
 end
+
 function op_kind(fst::FST)
-    fst.ref === nothing ? nothing : op_kind(fst.ref[])
+    fst.opmeta === nothing && return nothing
+    if fst.typ === OPERATOR
+        return fst.opmeta.kind
+    elseif is_opcall(fst)
+        op = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        return op.opmeta.kind
+    end
+    return nothing
 end
-op_kind(::Nothing) = nothing
 
-get_op(fst::FST) = findfirst(n -> n.head === :OPERATOR, fst.nodes)
-get_op(cst::CSTParser.EXPR) = cst[2]
-
-is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
 
 """
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
@@ -788,8 +819,8 @@ var = a && b
 ```
 """
 function is_standalone_shortcircuit(cst::CSTParser.EXPR)
-    kind = op_kind(cst)
-    is_lazy_op(kind) || return false
+    val = cst[2].val
+    (val == "&&" || val == "||") || return false
 
     function valid(n)
         n === nothing && return true
@@ -815,66 +846,55 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
     return parent_is(cst, valid, ignore = ignore)
 end
 
+
+
 """
-    separate_kwargs_with_semicolon!(fst::FST)
+    eq_to_in_normalization!(fst::FST, always_for_in::Bool)
 
-Ensures keyword arguments are separated with a ";".
-
-### Examples
-
-Replace "," with ";".
+Transforms
 
 ```julia
-a = f(x, y = 3)
+for i = iter body end
 
-->
+=>
 
-a = f(x; y = 3)
+for i in iter body end
 ```
 
-Move ";" to the prior to the first positional argument.
+AND
 
 ```julia
-a = f(x = 1; y = 2)
+for i in 1:10 body end
 
-->
+=>
 
-a = f(; x = 1, y = 2)
+for i = 1:10 body end
 ```
-"""
-function separate_kwargs_with_semicolon!(fst::FST)
-    kw_idx = findfirst(n -> n.typ === Kw, fst.nodes)
-    kw_idx === nothing && return
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
-    # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
-    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
-    # @info "" kw_idx sc_idx comma_idx ph_idx
 
-    if sc_idx !== nothing && sc_idx > kw_idx
-        # move ; prior to first kwarg
-        fst[sc_idx].val = ","
-        fst[sc_idx].typ = PUNCTUATION
-        if comma_idx === nothing
-            if ph_idx !== nothing
-                fst[ph_idx] = Placeholder(1)
-                insert!(fst, ph_idx, Semicolon())
-            else
-                insert!(fst, kw_idx, Placeholder(1))
-                insert!(fst, kw_idx, Semicolon())
-            end
+- https://github.com/domluna/JuliaFormatter.jl/issues/34
+"""
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+    if fst.typ === Binary
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx === nothing && return
+        op = fst[idx]
+
+        if always_for_in
+            op.val = "in"
+            op.len = length(op.val)
+            return
         end
-    elseif sc_idx === nothing && comma_idx === nothing
-        if ph_idx !== nothing
-            fst[ph_idx] = Placeholder(1)
-            insert!(fst, ph_idx, Semicolon())
-        else
-            insert!(fst, kw_idx, Placeholder(1))
-            insert!(fst, kw_idx, Semicolon())
+
+        if op.val == "=" && op_kind(fst[end]) === Tokens.COLON
+            op.val = "in"
+            op.len = length(op.val)
+        elseif op.val == "in" && op_kind(fst[end]) === Tokens.COLON
+            op.val = "="
+            op.len = length(op.val)
         end
-    elseif sc_idx === nothing
-        fst[comma_idx].val = ";"
-        fst[comma_idx].typ = SEMICOLON
+    elseif fst.typ === Block || fst.typ === Brackets
+        for n in fst.nodes
+            eq_to_in_normalization!(n, always_for_in)
+        end
     end
-    return
 end

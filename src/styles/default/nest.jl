@@ -131,7 +131,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_let!(style, fst, s)
     elseif fst.typ === Unary && fst[2].typ === OPERATOR
         n_unaryopcall!(style, fst, s)
-    elseif fst.typ === StringH
+    elseif fst.typ === StringN
         n_stringh!(style, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
@@ -592,8 +592,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         indent_nest =
             CSTParser.defines_function(cst) ||
             nest_assignment(cst) ||
-            cst[2].kind === Tokens.PAIR_ARROW ||
-            cst[2].kind === Tokens.ANON_FUNC ||
+            op_kind(fst) === Tokens.PAIR_ARROW ||
+            op_kind(fst) === Tokens.ANON_FUNC ||
             is_standalone_shortcircuit(cst)
 
         if indent_nest
@@ -625,12 +625,12 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         # Undo nest if possible
         if can_nest(fst) && !no_unnest(rhs)
-            cst = rhs.ref[]
             line_margin = s.line_offset
 
+            # replace IN with all of precedence level 6
             if (
                    rhs.typ === Binary &&
-                   !(op_kind(cst) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
+                   !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
                ) ||
                rhs.typ === Unary ||
                rhs.typ === Chain ||
@@ -640,7 +640,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             elseif rhs.typ === Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
-            elseif is_block(cst)
+            elseif is_block(rhs)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
                 if idx === nothing
                     line_margin += length(fst[end])

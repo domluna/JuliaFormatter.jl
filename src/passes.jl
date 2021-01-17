@@ -481,3 +481,68 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
 
     return nothing
 end
+
+
+"""
+    separate_kwargs_with_semicolon!(fst::FST)
+
+Ensures keyword arguments are separated with a ";".
+
+### Examples
+
+Replace "," with ";".
+
+```julia
+a = f(x, y = 3)
+
+->
+
+a = f(x; y = 3)
+```
+
+Move ";" to the prior to the first positional argument.
+
+```julia
+a = f(x = 1; y = 2)
+
+->
+
+a = f(; x = 1, y = 2)
+```
+"""
+function separate_kwargs_with_semicolon!(fst::FST)
+    kw_idx = findfirst(n -> n.typ === Kw, fst.nodes)
+    kw_idx === nothing && return
+    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
+    # first "," prior to a kwarg
+    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
+    # @info "" kw_idx sc_idx comma_idx ph_idx
+
+    if sc_idx !== nothing && sc_idx > kw_idx
+        # move ; prior to first kwarg
+        fst[sc_idx].val = ","
+        fst[sc_idx].typ = PUNCTUATION
+        if comma_idx === nothing
+            if ph_idx !== nothing
+                fst[ph_idx] = Placeholder(1)
+                insert!(fst, ph_idx, Semicolon())
+            else
+                insert!(fst, kw_idx, Placeholder(1))
+                insert!(fst, kw_idx, Semicolon())
+            end
+        end
+    elseif sc_idx === nothing && comma_idx === nothing
+        if ph_idx !== nothing
+            fst[ph_idx] = Placeholder(1)
+            insert!(fst, ph_idx, Semicolon())
+        else
+            insert!(fst, kw_idx, Placeholder(1))
+            insert!(fst, kw_idx, Semicolon())
+        end
+    elseif sc_idx === nothing
+        fst[comma_idx].val = ";"
+        fst[comma_idx].typ = SEMICOLON
+    end
+    return
+end
