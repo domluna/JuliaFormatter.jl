@@ -87,7 +87,7 @@ function p_binaryopcall(
     op = cst[2]
     nonest = nonest || CSTParser.is_colon(op)
     if CSTParser.iscurly(cst.parent) &&
-        (CSTParser.issubt(op) || CSTParser.issupt(op)) &&
+        (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
         nospace = true
     elseif CSTParser.is_colon(op)

@@ -129,7 +129,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_for!(style, fst, s)
     elseif fst.typ === Let
         n_let!(style, fst, s)
-    elseif fst.typ === Unary && fst[2].typ === OPERATOR
+    elseif fst.typ === Unary && length(fst.nodes) > 1 && fst[2].typ === OPERATOR
         n_unaryopcall!(style, fst, s)
     elseif fst.typ === StringN
         n_stringh!(style, fst, s)
@@ -565,7 +565,7 @@ n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 function no_unnest(fst::FST)
     if fst.typ === Binary ||
-       fst.typ === Conditiona ||
+       fst.typ === Conditional ||
        fst.typ === Chain ||
        fst.typ === Comparison
         return contains_comment(fst)

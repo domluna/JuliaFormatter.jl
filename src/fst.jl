@@ -308,6 +308,12 @@ function is_custom_leaf(fst::FST)
     fst.typ === INVERSETRAILINGSEMICOLON
 end
 
+function is_nothing(cst::CSTParser.EXPR)
+    CSTParser.is_nothing(cst)  && return true
+    cst.val === nothing && cst.args === nothing && return true
+    return false
+end
+
 # f a function which returns a bool
 function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     p = cst.parent
@@ -713,8 +719,14 @@ function is_assignment(x::FST)
 end
 
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
-is_assignment(cst::CSTParser.EXPR) = CSTParser.isoperator(cst) && CSTParser.get_prec(cst.val) == CSTParser.AssignmentOp
+is_assignment(cst::CSTParser.EXPR) = precedence(cst) == CSTParser.AssignmentOp
 is_assignment(::Nothing) = false
+
+function precedence(cst::CSTParser.EXPR)
+    CSTParser.isoperator(cst) || return 0
+    val = CSTParser.isdotted(cst) ? cst.val[2:end] : cst.val
+    CSTParser.get_prec(val)
+end
 
 function is_function_or_macro_def(cst::CSTParser.EXPR)
     CSTParser.defines_function(cst) && return true
@@ -898,7 +910,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             return
         end
 
-        @info "" op.val fst[end].typ op_kind(fst[end])
+        # @info "" op.val fst[end].typ op_kind(fst[end])
         if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)

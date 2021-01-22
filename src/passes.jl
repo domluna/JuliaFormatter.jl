@@ -148,7 +148,9 @@ function import_to_usings(fst::FST, s::State)
         end
 
         add_node!(use, FST(IDENTIFIER, -1, sl, el, name), s, join_lines = true)
-        add_node!(use, FST(OPERATOR, -1, sl, el, ":"), s, join_lines = true)
+        colon = FST(OPERATOR, -1, sl, el, ":")
+        colon.opmeta = OpMeta(Tokens.COLON, false)
+        add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
         add_node!(use, FST(IDENTIFIER, -1, sl, el, name), s, join_lines = true)
 
@@ -172,9 +174,11 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             nn.endline = n.endline
             add_node!(nn, n, s)
             line_offset = n.line_offset + length(n)
+            op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
+            op.opmeta = OpMeta(Tokens.DECLARATION, false)
             add_node!(
                 nn,
-                FST(OPERATOR, line_offset, n.startline, n.endline, "::"),
+                op,
                 s,
                 join_lines = true,
             )
@@ -257,6 +261,7 @@ function short_to_long_function_def!(fst::FST, s::State)
 
         whereop = fst[1][end]
         decl = FST(OPERATOR, -1, fst[1].startline, fst[1].endline, "::")
+        delc.opmeta = OpMeta(Tokens.DECLARATION, false)
 
         # ::R where T
         add_node!(funcdef, decl, s, join_lines = true)
