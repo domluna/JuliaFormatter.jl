@@ -283,7 +283,9 @@ function is_call(cst::CSTParser.EXPR)
 end
 
 function is_if(cst::CSTParser.EXPR)
-    cst.head == :if && (cst[1].head == :IF || cst[1].head == :ELSEIF)
+    cst.head === :if && cst[1].head === :IF && return true
+    cst.head === :elseif && cst[1].head === :ELSEIF && return true
+    return false
 end
 
 function is_conditional(cst::CSTParser.EXPR)
@@ -330,9 +332,51 @@ function contains_comment(fst::FST)
     contains_comment(fst.nodes)
 end
 
+# TODO: Remove once this is fixed in CSTParser.
+# https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
-    cst.args
+    if cst.head === :macrocall ||
+       cst.head === :typed_vcat ||
+       cst.head === :ref ||
+       cst.head === :curly ||
+       is_call(cst) ||
+       cst.head === :typed_comprehension
+        return get_args(cst.args[2:end])
+    elseif cst.head === :where
+        # get the arguments in B of `A where B`
+        return get_args(cst.args[3:end])
+    elseif cst.head === :braces ||
+           cst.head === :vcat ||
+           cst.head === :bracescat ||
+           cst.head === :tuple ||
+           cst.head === :vect ||
+           cst.head === :brackets ||
+           cst.head === :parameters ||
+           cst.head === :comprehension
+        return get_args(cst.args)
+    end
+    return get_args(cst.args)
 end
+
+function get_args(args::Vector{CSTParser.EXPR})
+    args0 = CSTParser.EXPR[]
+    for a in args
+        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a)
+            continue
+        end
+        if a.head === :parameters
+            push!(args0, get_args(a)...)
+        else
+            push!(args0, a)
+        end
+    end
+    args0
+end
+
+function get_args(args::Nothing)
+    return CSTParser.EXPR[]
+end
+
 @inline n_args(x) = length(get_args(x))
 
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)

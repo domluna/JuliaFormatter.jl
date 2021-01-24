@@ -102,7 +102,7 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         if CSTParser.is_comma(a) && i + 1 == length(cst)
             n = pretty(style, a, s)
-            if n_args(cst) == 1
+            if length(cst.args) == 1
                 add_node!(t, n, s, join_lines = true)
             elseif !is_closer(cst[i+1])
                 add_node!(t, n, s, join_lines = true)
@@ -126,7 +126,7 @@ function p_tuple(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
     for (i, a) in enumerate(nodes)
         n = pretty(style, a, s)
         if CSTParser.is_comma(a) && i + 1 == length(nodes)
-            if n_args(nodes) == 1
+            if length(nodes) == 1
                 add_node!(t, n, s, join_lines = true)
             elseif !is_closer(nodes[i+1])
                 add_node!(t, n, s, join_lines = true)

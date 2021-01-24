@@ -427,11 +427,20 @@ function move_at_sign_to_the_end(fst::FST, s::State)
     for (i, n) in enumerate(t)
         if n.val == "@"
             continue
+        elseif n.typ === IDENTIFIER && i < length(t) && n.val[1] == '@'
+            n.val = n.val[2:end]
+            n.len -= 1
+            add_node!(macroname, n, s, join_lines = true)
         elseif i < length(t) || n.typ == Quotenode
             add_node!(macroname, n, s, join_lines = true)
         else
-            add_node!(macroname, FST(PUNCTUATION, -1, n.startline, n.endline, "@"), s, join_lines = true)
-            add_node!(macroname, n, s, join_lines = true)
+            if n.typ === IDENTIFIER && n.val[1] != '@'
+                n.val = "@" * n.val
+                n.len += 1
+                add_node!(macroname, n, s, join_lines = true)
+            else
+                add_node!(macroname, n, s, join_lines = true)
+            end
         end
     end
 
