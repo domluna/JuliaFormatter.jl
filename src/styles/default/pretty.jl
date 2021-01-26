@@ -9,7 +9,7 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_punctuation(style, cst, s)
     elseif CSTParser.iskeyword(cst)
         return p_keyword(style, cst, s)
-    elseif cst.head === :STRING
+    elseif cst.head === :string
         return p_stringh(style, cst, s)
     elseif CSTParser.isliteral(cst)
         return p_literal(style, cst, s)
@@ -134,6 +134,7 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     end
 
     t = FST(Unknown, cst, nspaces(s))
+    @info "" cst.head
     for a in cst
         if CSTParser.is_nothing(a)
             s.offset += a.fullspan
@@ -567,7 +568,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif a.fullspan - a.span > 0
             if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if i < length(cst) - 1 && cst[i+1].head != :paramters
+                if i < length(cst) - 1 && cst[i+1].head != :parameters
                     add_node!(t, Whitespace(1), s)
                 end
             else
@@ -1110,23 +1111,21 @@ function p_do(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    if cst[3].fullspan == 0
-        @info "bar"
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    else
-        @info "foo" cst[3]
-        n = pretty(style, cst[3], s)
-        # n = pretty(style, cst[3], s, ignore_single_line = true)
-        add_node!(t, n, s, max_padding = s.opts.indent)
+
+    nodes = map(cst[3]) do n
+        n
     end
-    # if cst[4].head === :block
-    #     s.indent += s.opts.indent
-    #     n = pretty(style, cst[4], s, ignore_single_line = true)
-    #     s.opts.always_use_return && prepend_return!(n, s)
-    #     add_node!(t, n, s, max_padding = s.opts.indent)
-    #     s.indent -= s.opts.indent
-    # end
+    if nodes[1].fullspan != 0
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(style, nodes[1], s), s, join_lines = true)
+    end
+    if nodes[2].head === :block
+        s.indent += s.opts.indent
+        n = pretty(style, nodes[2], s, ignore_single_line = true)
+        s.opts.always_use_return && prepend_return!(n, s)
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
+    end
     add_node!(t, pretty(style, cst[end], s), s)
     t
 end
