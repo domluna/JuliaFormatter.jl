@@ -65,6 +65,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_invisbrackets(style, cst, s; kwargs...)
     elseif cst.head === :curly
         return p_curly(style, cst, s)
+    elseif is_macrostr(cst)
+        return p_macrostr(style, cst, s)
     elseif cst.head === :macrocall && cst[1].head == :globalrefdoc
         return p_globalrefdoc(style, cst, s)
     elseif cst.head === :macrocall && is_macrodoc(cst)
@@ -134,7 +136,6 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     end
 
     t = FST(Unknown, cst, nspaces(s))
-    @info "" cst.head
     for a in cst
         if CSTParser.is_nothing(a)
             s.offset += a.fullspan
@@ -368,15 +369,12 @@ end
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
-    # @info "" str_info loc s.offset
-
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    #
-    # TODO : might not need this since it's parsed as a macro?
-    if str_info === nothing &&
-       (cst.parent.head === CSTParser.x_Str || cst.parent.head === CSTParser.x_Cmd)
+    if str_info === nothing #&&
+       # cst.parent.head === :macrocall #&&
+       # (cst.parent[1] == "@r_cmd" ||  cst.parent[1] == "@r_str")
         s.offset += length(cst.val) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], cst.val)
     end
@@ -530,6 +528,33 @@ end
 p_macrodoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_macrodoc(DefaultStyle(style), cst, s)
 
+function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(MacroStr, cst, nspaces(s))
+
+    loc = cursor_loc(s)
+    val = cst[1].val
+
+    idx = findfirst(==('_'), val)
+    val = val[2:idx-1]
+
+    s.offset += length(val) + (cst.fullspan - cst.span)
+    n = FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
+    add_node!(t, n, s, join_lines = true)
+
+    for i in 3:length(cst)
+        a = cst[i]
+        add_node!(t, pretty(style, cst[i], s), s, join_lines = true)
+        if i < length(cst) && a.fullspan > a.span
+    add_node!(t, Whitespace(1), s)
+        end
+    end
+    
+    return t
+end
+p_macrostrorcmd(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_macrostrorcmd(DefaultStyle(style), cst, s)
+
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
@@ -565,7 +590,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.fullspan - a.span > 0
+        elseif t.typ === MacroBlock
             if has_closer
                 add_node!(t, n, s, join_lines = true)
                 if i < length(cst) - 1 && cst[i+1].head != :parameters
@@ -1456,7 +1481,7 @@ function p_binaryopcall(
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(CSTParser.is_in(op) && CSTParser.is_elof(op)) && (
+    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op)) && (
         nospace || (
             !CSTParser.is_anon_func(op) && precedence(op) in (
                 CSTParser.ColonOp,
@@ -1591,7 +1616,9 @@ function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace 
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
     if length(cst) == 1
-        add_node!(t, pretty(style, cst.head, s), s, join_lines = true)
+        if cst.head.fullspan != 0
+            add_node!(t, pretty(style, cst.head, s), s, join_lines = true)
+            end
         add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     else
         add_node!(t, pretty(style, cst[1], s), s)
@@ -1887,7 +1914,7 @@ function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if CSTParser.is_comma(a) || CSTParser.is_colon(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif CSTParser.is_colon(a.head) # a: b, c, d
+        elseif CSTParser.is_colon(a.head) || is_binary(a) # a: b, c, d
             nodes = collect(a)
             for n in nodes
                 if CSTParser.is_comma(n) || CSTParser.is_colon(n)

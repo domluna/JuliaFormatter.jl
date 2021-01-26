@@ -20,6 +20,7 @@
 
     MacroBlock,
     MacroCall,
+    MacroStr,
     Macroname,
     GlobalRefDoc,
 
@@ -71,6 +72,7 @@
 
     StringN,
 
+    Macro,
     FunctionN,
     Struct,
     Mutable,
@@ -254,19 +256,10 @@ function is_multiline(fst::FST)
         return true
     elseif fst.typ === TypedVcat && fst.endline > fst.startline
         return true
-    # elseif fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringN
-    #     return true
-    # elseif fst.typ === CSTParser.x_Cmd && fst[2].typ === CSTParser.StringN
-    #     return true
+    elseif fst.typ === MacroStr
+        return true
     end
     false
-end
-
-function is_importer_exporter(fst::FST)
-    fst.typ === Import && return true
-    fst.typ === Export && return true
-    fst.typ === Using && return true
-    return false
 end
 
 @inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
@@ -278,8 +271,31 @@ function is_macrodoc(cst::CSTParser.EXPR)
            is_str_or_cmd(cst[2])
 end
 
+function is_macrostr(cst::CSTParser.EXPR)
+    cst.head === :macrocall || return false
+    length(cst) > 2 || return false
+    CSTParser.isidentifier(cst[1]) || return false
+
+    m = match(r"@(.*)_(str|cmd)", cst[1].val)
+    m !== nothing || return false
+
+    val = m.captures[1]
+   
+    # r"hello" is parsed as @r_str"hello"
+    # if it was originally r"hello" then
+    # the length of the matched string (between @ and _)
+    # will be == the span of the node.
+    #
+    # In this example the span == 1.
+    length(val) == cst[1].span || return false
+
+    return is_str_or_cmd(cst[3])
+end
+
 function is_call(cst::CSTParser.EXPR)
-    CSTParser.is_func_call(cst)
+    t = CSTParser.is_func_call(cst)
+    t !== nothing && t && return is_opener(cst[2]) 
+    return false
 end
 
 function is_if(cst::CSTParser.EXPR)
@@ -341,10 +357,10 @@ function get_args(cst::CSTParser.EXPR)
        cst.head === :curly ||
        is_call(cst) ||
        cst.head === :typed_comprehension
-        return get_args(cst.args[2:end])
+       return get_args(collect(cst)[2:end])
     elseif cst.head === :where
         # get the arguments in B of `A where B`
-        return get_args(cst.args[3:end])
+        return get_args(collect(cst)[3:end])
     elseif cst.head === :braces ||
            cst.head === :vcat ||
            cst.head === :bracescat ||
@@ -358,7 +374,7 @@ function get_args(cst::CSTParser.EXPR)
     return get_args(cst.args)
 end
 
-function get_args(args::Vector{CSTParser.EXPR})
+function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
     args0 = CSTParser.EXPR[]
     for a in args
         if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a)
@@ -620,7 +636,7 @@ function is_iterable(x::CSTParser.EXPR)
     x.head === :vect && return true
     x.head === :vcat && return true
     x.head === :braces && return true
-    x.head === :call && return true
+    is_call(x) && return true
     x.head === :curly && return true
     x.head === :comprehension && return true
     x.head === :typed_comprehension && return true

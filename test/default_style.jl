@@ -3648,7 +3648,7 @@
         @test fmt("@func(a, b, c,)", 4, 1) == str
     end
 
-    @testset "comphrehensions types" begin
+    @testset "comprehension types" begin
         str_ = "var = (x, y) for x = 1:10, y = 1:10"
         str = """
         var = (x, y) for x = 1:10,

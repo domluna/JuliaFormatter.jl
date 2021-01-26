@@ -48,9 +48,9 @@ end
 
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
-    if fst.typ === Binary ||
-    fst.typ === Conditional ||
-       fst.typ === ModuleN
+    if (fst.typ === Binary ||
+        fst.typ === Conditional ||
+        fst.typ === ModuleN)
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)
@@ -84,7 +84,7 @@ function print_tree(
         if is_leaf(n)
             print_leaf(io, n, s)
         elseif n.typ === StringN
-            print_stringh(io, n, s)
+            print_string(io, n, s)
         else
             print_tree(io, n, s)
         end
@@ -103,7 +103,7 @@ function print_tree(
     end
 end
 
-function print_stringh(io::IOBuffer, fst::FST, s::State)
+function print_string(io::IOBuffer, fst::FST, s::State)
     # The indent of StringH is set to the the offset
     # of when the quote is first encountered in the source file.
 
