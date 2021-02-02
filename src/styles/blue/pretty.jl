@@ -46,26 +46,6 @@ function nestable(::BlueStyle, cst::CSTParser.EXPR)
     return nestable(DefaultStyle(), cst)
 end
 
-function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(bs)
-    t = FST(Do, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    if cst[3].fullspan != 0
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    end
-    if cst[4].typ === CSTParser.Block
-        s.indent += s.opts.indent
-        n = pretty(style, cst[4], s, ignore_single_line = true)
-        add_node!(t, n, s, max_padding = s.opts.indent)
-        s.indent -= s.opts.indent
-    end
-    add_node!(t, pretty(style, cst[end], s), s)
-    t
-end
-
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
     t = p_call(DefaultStyle(style), cst, s)
@@ -85,7 +65,9 @@ function p_binaryopcall(
     style = getstyle(bs)
     t = FST(Binary, cst, nspaces(s))
     op = cst[2]
+
     nonest = nonest || CSTParser.is_colon(op)
+
     if CSTParser.iscurly(cst.parent) &&
         (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
@@ -131,7 +113,7 @@ function p_binaryopcall(
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(CSTParser.is_in(op) && CSTParser.is_elof(op)) && (
+    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op)) && (
         nospace || (
             CSTParser.is_anon_func(op) && CSTParser.precedence(op) in (
                 CSTParser.ColonOp,

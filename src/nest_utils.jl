@@ -64,7 +64,7 @@ function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
         elseif pn.typ === INVERSETRAILINGSEMICOLON
             pn.val = ";"
             pn.len = 1
-        elseif fst.typ === CSTParser.Binary && fst[ind+1].typ === WHITESPACE
+        elseif fst.typ === Binary && fst[ind+1].typ === WHITESPACE
             # remove additional indent
             fst[ind+1] = Whitespace(0)
         end

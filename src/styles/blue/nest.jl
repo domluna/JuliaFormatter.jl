@@ -83,7 +83,7 @@ end
 
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)
-    if fst[end].typ === CSTParser.ConditionalOpCall
+    if fst[end].typ === Conditional
         conditional_to_if_block!(fst, s)
         nest!(style, fst, s)
     else

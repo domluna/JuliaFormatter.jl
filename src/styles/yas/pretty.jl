@@ -35,7 +35,7 @@ end
 
 function nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || nest_assignment(cst)) && return false
-    (cst[2].kind === Tokens.PAIR_ARROW || cst[2].kind === Tokens.ANON_FUNC) && return false
+    (cst[2].val === "=>" || cst[2].val === "->") && return false
     return true
 end
 
@@ -111,7 +111,7 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.typ === CSTParser.Binary && a[2].kind === Tokens.EQ
+        elseif is_binary(a) && a[2].val === "="
             add_node!(t, p_kw(style, a, s), s, join_lines = true)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
@@ -220,10 +220,10 @@ function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif a.typ === CSTParser.Binary ||
-               a.typ === CSTParser.Brackets ||
-               a.typ === CSTParser.Chain ||
-               a.typ === CSTParser.Comparison
+        elseif is_binary(a) ||
+                is_chain(a) ||
+               a.head === :brackets ||
+               a.head === :comparison
             n = pretty(style, a, s, nonest = true, nospace = nospace)
             add_node!(t, n, s, join_lines = true)
         else
@@ -237,7 +237,7 @@ function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(Comprehension, cst, nspaces(s))
 
-    if is_block(cst[2]) || (cst[2].typ === CSTParser.Generator && is_block(cst[2][1]))
+    if is_block(cst[2]) || (cst[2].head === :Generator && is_block(cst[2][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -251,7 +251,7 @@ function p_typedcomprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(TypedComprehension, cst, nspaces(s))
 
-    if is_block(cst[3]) || (cst[3].typ === CSTParser.Generator && is_block(cst[3][1]))
+    if is_block(cst[3]) || (cst[3].head === :generator && is_block(cst[3][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -265,7 +265,7 @@ end
 function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     fst = p_macrocall(DefaultStyle(style), cst, s)
-    fst.typ == CSTParser.MacroCall || return fst
+    fst.typ == MacroCall || return fst
     is_closer(cst[end]) || return fst
 
     # remove initial and last placeholders
@@ -289,9 +289,9 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
     add_braces =
         !CSTParser.is_lbrace(cst[3]) &&
-        cst.parent.typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.Curly &&
-        cst[3].typ !== CSTParser.BracesCat
+        cst.parent.head !== :curly &&
+        cst[3].head !== :curly &&
+        cst[3].head !== :bracescat
 
     if add_braces
         brace = FST(PUNCTUATION, -1, t.endline, t.endline, "{")
@@ -301,7 +301,7 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     for i = 3:length(cst)
         a = cst[i]
         n =
-            a.typ === CSTParser.Binary ? pretty(style, a, s, nospace = true) :
+            is_binary(a) ? pretty(style, a, s, nospace = true) :
             pretty(style, a, s)
 
         if CSTParser.is_comma(a) && i == length(cst) - 1
@@ -328,15 +328,15 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        if a.typ === CSTParser.KEYWORD
-            if !has_for_kw && a.kind === Tokens.FOR
+        if CSTParser.iskeyword(a)
+            if !has_for_kw && a.head === :FOR
                 has_for_kw = true
             end
 
             incomp = parent_is(
                 a,
                 is_iterable,
-                ignore = n -> is_gen(n) || n.typ === CSTParser.Brackets,
+                ignore = n -> is_gen(n) || n.head === :brackets,
             )
 
             if is_block(cst[i-1])
