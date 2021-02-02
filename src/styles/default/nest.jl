@@ -230,6 +230,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = findfirst(is_opener, fst.nodes) !== nothing
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         line_offset = s.line_offset
         if opener

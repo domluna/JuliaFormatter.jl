@@ -69,6 +69,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_macrostr(style, cst, s)
     elseif cst.head === :macrocall && cst[1].head == :globalrefdoc
         return p_globalrefdoc(style, cst, s)
+    elseif cst.head === :macrocall && cst[1].head == :globalrefcmd
+        return p_globalrefcmd(style, cst, s)
     elseif cst.head === :macrocall && is_macrodoc(cst)
         return p_macrodoc(style, cst, s)
     elseif cst.head === :macrocall
@@ -135,6 +137,7 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_quotenode(style, cst, s)
     end
 
+    # @warn "unknown type" cst
     t = FST(Unknown, cst, nspaces(s))
     for a in cst
         if CSTParser.is_nothing(a)
@@ -501,7 +504,7 @@ function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # cst[1] is :globalrefdoc
     # cst[2] is empty and fullspan is 0 so we can skip it
     if CSTParser.isliteral(cst[3])
-        add_node!(t, p_literal(style, cst[2], s, from_docstring = true), s, max_padding = 0)
+        add_node!(t, p_literal(style, cst[3], s, from_docstring = true), s, max_padding = 0)
     elseif cst[3].head == CSTParser.StringH
         add_node!(t, p_stringh(style, cst[3], s), s)
     end
@@ -510,6 +513,15 @@ function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_globalrefdoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_globalrefdoc(DefaultStyle(style), cst, s)
+
+function p_globalrefcmd(ds::DefaultStyle, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle}
+    style = getstyle(ds)
+    # cst[1] is :globalrefcmd
+    # cst[2] is empty and fullspan is 0 so we can skip it
+    return pretty(style, cst[3], s)
+end
+p_globalrefcmd(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_globalrefcmd(DefaultStyle(style), cst, s)
 
 # @doc "example"
 function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -2093,6 +2105,7 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             else
                 add_node!(t, Whitespace(1), s)
             end
+                # add_node!(t, Whitespace(1), s)
 
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)

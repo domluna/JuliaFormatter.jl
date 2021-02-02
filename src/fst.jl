@@ -682,7 +682,7 @@ function is_comprehension(x::FST)
 end
 
 function is_block(x::CSTParser.EXPR)
-    x.head === :if && return true
+    is_if(x) && return true
     x.head === :do && return true
     x.head === :try && return true
     x.head === :begin && return true
@@ -796,7 +796,7 @@ function is_function_or_macro_def(cst::CSTParser.EXPR)
 end
 
 function nest_block(cst::CSTParser.EXPR)
-    cst.head === :if && return true
+    is_if(cst) && return true
     cst.head === :do && return true
     cst.head === :try && return true
     cst.head === :for && return true
@@ -817,6 +817,8 @@ end
 function nest_assignment(cst::CSTParser.EXPR)
     op = if cst.head == :call
         cst.args[1]
+    elseif length(cst) == 3 && CSTParser.isoperator(cst[2])
+        cst[2]
     elseif CSTParser.isoperator(cst.head)
         cst.head
     end
@@ -912,7 +914,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         n.head === :brackets && return false
         n.head === :macrocall && return false
         n.head === :return && return false
-        n.head === :if && return false
+        is_if(n) && return false
         n.head === :block && nest_assignment(n.parent) && return false
         is_binary(n) && nest_assignment(n) && return false
         return true
@@ -920,7 +922,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
 
     function ignore(n::CSTParser.EXPR)
         n.head === :brackets && return false
-        n.head === :if && return false
+        is_if(n) && return false
         n.head === :block && return false
         n.head === :macrocall && return false
         n.head === :return && return false
