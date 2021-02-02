@@ -55,6 +55,30 @@ function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
+function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(bs)
+    t = FST(Do, cst, nspaces(s))
+    add_node!(t, pretty(style, cst[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+
+    nodes = map(cst[3]) do n
+        n
+    end
+    if nodes[1].fullspan != 0
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(style, nodes[1], s), s, join_lines = true)
+    end
+    if nodes[2].head === :block
+        s.indent += s.opts.indent
+        n = pretty(style, nodes[2], s, ignore_single_line = true)
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
+    end
+    add_node!(t, pretty(style, cst[end], s), s)
+    t
+end
+
 function p_binaryopcall(
     bs::BlueStyle,
     cst::CSTParser.EXPR,

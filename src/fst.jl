@@ -779,7 +779,11 @@ function is_assignment(x::FST)
 end
 
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
-is_assignment(cst::CSTParser.EXPR) = precedence(cst) == CSTParser.AssignmentOp
+function is_assignment(cst::CSTParser.EXPR) 
+    op = get_binary_op(cst)
+    op === nothing && return false
+    precedence(op) == CSTParser.AssignmentOp
+end
 is_assignment(::Nothing) = false
 
 function precedence(cst::CSTParser.EXPR)
@@ -814,14 +818,18 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-function nest_assignment(cst::CSTParser.EXPR)
-    op = if cst.head == :call
-        cst.args[1]
+function get_binary_op(cst::CSTParser.EXPR)
+    if cst.head == :call
+        return cst.args[1]
     elseif length(cst) == 3 && CSTParser.isoperator(cst[2])
-        cst[2]
+        return cst[2]
     elseif CSTParser.isoperator(cst.head)
-        cst.head
+        return cst.head
     end
+end
+
+function nest_assignment(cst::CSTParser.EXPR)
+    op = get_binary_op(cst)
     is_assignment(op)
 end
 
