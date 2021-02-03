@@ -487,4 +487,50 @@
         @test yasfmt1(str) == str
         @test yasfmt(str) == str
     end
+
+    @testset "issue 355 - vcat/typedvcat" begin
+        str = """
+        mpoly_rules = T[@rule(~x::ismpoly - ~y::ismpoly => ~x + -1 * (~y))
+                        @rule(-(~x) => -1 * ~x)
+                        @acrule(~x::ismpoly + ~y::ismpoly => ~x + ~y)
+                        @rule(+(~x) => ~x)
+                        @acrule(~x::ismpoly * ~y::ismpoly => ~x * ~y)
+                        @rule(*(~x) => ~x)
+                        @rule((~x::ismpoly)^(~a::isnonnegint) => (~x)^(~a))]"""
+        @test yasfmt(str) == str
+
+        str = """
+        mpoly_rules = [@rule(~x::ismpoly - ~y::ismpoly => ~x + -1 * (~y))
+                       @rule(-(~x) => -1 * ~x)
+                       @acrule(~x::ismpoly + ~y::ismpoly => ~x + ~y)
+                       @rule(+(~x) => ~x)
+                       @acrule(~x::ismpoly * ~y::ismpoly => ~x * ~y)
+                       @rule(*(~x) => ~x)
+                       @rule((~x::ismpoly)^(~a::isnonnegint) => (~x)^(~a))]"""
+        @test yasfmt(str) == str
+
+        str_ = """
+        Foooooooooooo[10 20; 30 40;
+                      10
+                      10]"""
+        @test yasfmt(str_) == str_
+        str = """
+        Foooooooooooo[10 20;
+                      30 40;
+                      10
+                      10]"""
+        @test yasfmt(str_, 4, 1) == str
+
+        str_ = """
+        [10 20; 30 40;
+         10
+         10]"""
+        @test yasfmt(str_) == str_
+        str = """
+        [10 20;
+         30 40;
+         10
+         10]"""
+        @test yasfmt(str_, 4, 1) == str
+    end
 end

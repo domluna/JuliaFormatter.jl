@@ -28,6 +28,7 @@ end
 @inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_macrocall!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 @inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+@inline n_typedvcat!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tupleh!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
@@ -61,6 +62,7 @@ end
 @inline n_parameters!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
+@inline n_vcat!(ys::YASStyle, fst::FST, s::State) = n_tupleh!(ys, fst, s)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)

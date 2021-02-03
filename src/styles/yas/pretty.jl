@@ -164,6 +164,32 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 @inline p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_call(ys, cst, s)
 
+function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
+    t = FST(cst, nspaces(s))
+    st = cst.typ === CSTParser.Vcat ? 1 : 2
+
+    for (i, a) in enumerate(cst)
+        n = pretty(style, a, s)
+        if !is_closer(a) && i > st
+            join_lines = i == st + 1 ? true : t.endline == n.startline
+                if join_lines && i != st + 1
+                    add_node!(t, Placeholder(1), s)
+                end
+
+            add_node!(t, n, s; join_lines)
+            if i != length(cst) - 1
+                has_semicolon(s.doc, n.startline) &&
+                    add_node!(t, InverseTrailingSemicolon(), s)
+            end
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
+@inline p_typedvcat(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_vcat(ys, cst, s)
+
 function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(cst, nspaces(s))
