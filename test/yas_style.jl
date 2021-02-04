@@ -552,5 +552,15 @@
           10
           10]"""
         @test yasfmt(str_, 4, 14) == str
+
+        # trailing ; is removed
+        str_ = "(T[10 20; 30 40; 50 60;])"
+        str = "(T[10 20; 30 40; 50 60])"
+        @test yasfmt(str_, 4, 24) == str
+
+        str = """
+        (T[10 20; 30 40;
+           50 60])"""
+        @test yasfmt(str_, 4, 23) == str
     end
 end
