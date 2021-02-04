@@ -372,12 +372,12 @@ end
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
+    @info "" s.doc.lit_strings cst.val str_info s.offset
+
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
-    if str_info === nothing #&&
-       # cst.parent.head === :macrocall #&&
-       # (cst.parent[1] == "@r_cmd" ||  cst.parent[1] == "@r_str")
+    if str_info === nothing
         s.offset += length(cst.val) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], cst.val)
     end
