@@ -188,7 +188,7 @@ end
 function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(cst, nspaces(s))
-    st = cst.typ === :vcat ? 1 : 2
+    st = cst.head === :vcat ? 1 : 2
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
