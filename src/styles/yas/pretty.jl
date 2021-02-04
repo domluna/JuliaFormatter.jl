@@ -173,9 +173,9 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         n = pretty(style, a, s)
         if !is_closer(a) && i > st
             join_lines = i == st + 1 ? true : t.endline == n.startline
-                if join_lines && i != st + 1
-                    add_node!(t, Placeholder(1), s)
-                end
+            if join_lines && i != st + 1
+                add_node!(t, Placeholder(1), s)
+            end
 
             add_node!(t, n, s; join_lines)
             if i != length(cst) - 1
