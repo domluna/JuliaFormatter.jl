@@ -177,7 +177,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Placeholder(1), s)
             end
 
-            add_node!(t, n, s; join_lines)
+            add_node!(t, n, s; join_lines = join_lines)
             if i != length(cst) - 1
                 has_semicolon(s.doc, n.startline) &&
                     add_node!(t, InverseTrailingSemicolon(), s)
