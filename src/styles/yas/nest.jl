@@ -3,11 +3,6 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
-    # f = if fst.typ === CSTParser.TypedVcat
-    #     n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
-    # else
-    #     n -> n.typ === PLACEHOLDER
-    # end
 
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
@@ -43,11 +38,6 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
-    # f = if fst.typ === CSTParser.Vcat
-    #     n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
-    # else
-    #     n -> n.typ === PLACEHOLDER
-    # end
 
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
