@@ -487,4 +487,80 @@
         @test yasfmt1(str) == str
         @test yasfmt(str) == str
     end
+
+    @testset "issue 355 - vcat/typedvcat" begin
+        str = """
+        mpoly_rules = T[@rule(~x::ismpoly - ~y::ismpoly => ~x + -1 * (~y))
+                        @rule(-(~x) => -1 * ~x)
+                        @acrule(~x::ismpoly + ~y::ismpoly => ~x + ~y)
+                        @rule(+(~x) => ~x)
+                        @acrule(~x::ismpoly * ~y::ismpoly => ~x * ~y)
+                        @rule(*(~x) => ~x)
+                        @rule((~x::ismpoly)^(~a::isnonnegint) => (~x)^(~a))]"""
+        @test yasfmt(str) == str
+
+        str = """
+        mpoly_rules = [@rule(~x::ismpoly - ~y::ismpoly => ~x + -1 * (~y))
+                       @rule(-(~x) => -1 * ~x)
+                       @acrule(~x::ismpoly + ~y::ismpoly => ~x + ~y)
+                       @rule(+(~x) => ~x)
+                       @acrule(~x::ismpoly * ~y::ismpoly => ~x * ~y)
+                       @rule(*(~x) => ~x)
+                       @rule((~x::ismpoly)^(~a::isnonnegint) => (~x)^(~a))]"""
+        @test yasfmt(str) == str
+
+        str_ = """
+        [10 20; 30 40; 50 60;
+         10
+         10]"""
+        @test yasfmt(str_, 4, 21) == str_
+
+        str = """
+        [10 20; 30 40;
+         50 60;
+         10
+         10]"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 14) == str
+
+        str = """
+        [10 20;
+         30 40;
+         50 60;
+         10
+         10]"""
+        @test yasfmt(str_, 4, 13) == str
+
+        str_ = """
+        T[10 20; 30 40; 50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 22) == str_
+
+        str = """
+        T[10 20; 30 40;
+          50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 21) == str
+        @test yasfmt(str_, 4, 15) == str
+
+        str = """
+        T[10 20;
+          30 40;
+          50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 14) == str
+
+        # trailing ; is removed
+        str_ = "(T[10 20; 30 40; 50 60;])"
+        str = "(T[10 20; 30 40; 50 60])"
+        @test yasfmt(str_, 4, 24) == str
+
+        str = """
+        (T[10 20; 30 40;
+           50 60])"""
+        @test yasfmt(str_, 4, 23) == str
+    end
 end
