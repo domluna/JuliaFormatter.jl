@@ -828,11 +828,6 @@ function get_binary_op(cst::CSTParser.EXPR)
     end
 end
 
-function nest_assignment(cst::CSTParser.EXPR)
-    op = get_binary_op(cst)
-    is_assignment(op)
-end
-
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
@@ -848,7 +843,7 @@ end
 
 function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
     CSTParser.defines_function(cst) && is_unary(cst[1]) && return true
-    nest_assignment(cst) && return !is_str_or_cmd(cst[3])
+    is_assignment(cst) && return !is_str_or_cmd(cst[3])
     true
 end
 
@@ -923,8 +918,8 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         n.head === :macrocall && return false
         n.head === :return && return false
         is_if(n) && return false
-        n.head === :block && nest_assignment(n.parent) && return false
-        is_binary(n) && nest_assignment(n) && return false
+        n.head === :block && is_assignment(n.parent) && return false
+        is_binary(n) && is_assignment(n) && return false
         return true
     end
 
@@ -934,7 +929,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         n.head === :block && return false
         n.head === :macrocall && return false
         n.head === :return && return false
-        is_binary(n) && nest_assignment(n) && return false
+        is_binary(n) && is_assignment(n) && return false
         return true
     end
 

@@ -592,7 +592,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         indent_nest =
             CSTParser.defines_function(cst) ||
-            nest_assignment(cst) ||
+            is_assignment(cst) ||
             op_kind(fst) === Tokens.PAIR_ARROW ||
             op_kind(fst) === Tokens.ANON_FUNC ||
             is_standalone_shortcircuit(cst)
