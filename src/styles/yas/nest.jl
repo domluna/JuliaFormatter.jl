@@ -2,11 +2,17 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
     fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
+    f = if fst.typ === CSTParser.TypedVcat
+        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
+    else
+        n -> n.typ === PLACEHOLDER
+    end
+
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            si = findnext(f, fst.nodes, i + 1)
             nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""
@@ -35,11 +41,17 @@ function n_tupleh!(ys::YASStyle, fst::FST, s::State)
     fst.indent = s.line_offset
     length(fst.nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
+    f = if fst.typ === CSTParser.Vcat
+        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
+    else
+        n -> n.typ === PLACEHOLDER
+    end
+
     for (i, n) in enumerate(fst.nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+            si = findnext(f, fst.nodes, i + 1)
             nest_if_over_margin!(style, fst, s, i; stop_idx = si)
         elseif n.typ === TRAILINGSEMICOLON
             n.val = ""

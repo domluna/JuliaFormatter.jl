@@ -510,27 +510,47 @@
         @test yasfmt(str) == str
 
         str_ = """
-        Foooooooooooo[10 20; 30 40;
-                      10
-                      10]"""
-        @test yasfmt(str_) == str_
-        str = """
-        Foooooooooooo[10 20;
-                      30 40;
-                      10
-                      10]"""
-        @test yasfmt(str_, 4, 1) == str
-
-        str_ = """
-        [10 20; 30 40;
+        [10 20; 30 40; 50 60;
          10
          10]"""
-        @test yasfmt(str_) == str_
+        @test yasfmt(str_, 4, 21) == str_
+
+        str = """
+        [10 20; 30 40;
+         50 60;
+         10
+         10]"""
+        @test yasfmt(str_, 4, 20) == str
+        @test yasfmt(str_, 4, 14) == str
+
         str = """
         [10 20;
          30 40;
+         50 60;
          10
          10]"""
-        @test yasfmt(str_, 4, 1) == str
+        @test yasfmt(str_, 4, 13) == str
+
+        str_ = """
+        T[10 20; 30 40; 50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 22) == str_
+
+        str = """
+        T[10 20; 30 40;
+          50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 21) == str
+        @test yasfmt(str_, 4, 15) == str
+
+        str = """
+        T[10 20;
+          30 40;
+          50 60;
+          10
+          10]"""
+        @test yasfmt(str_, 4, 14) == str
     end
 end
