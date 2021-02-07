@@ -372,8 +372,6 @@ end
     # So we'll just look at the source directly!
     str_info = get(s.doc.lit_strings, s.offset - 1, nothing)
 
-    @info "" s.doc.lit_strings cst.val str_info s.offset
-
     # Tokenize treats the `ix` part of r"^(=?[^=]+)=(.*)$"ix as an
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
