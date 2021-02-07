@@ -377,10 +377,6 @@
         @test fmt(str_, 4, 80, style = YASStyle(), whitespace_in_kwargs = true) == str
         @test fmt(str_, 4, 80, style = DefaultStyle(), whitespace_in_kwargs = true) == str
 
-        str_ = "f(; a = b)"
-        str = "f(; a=b)"
-        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
-
         str_ = "(; g = >=(1))"
         str = "(; g=(>=(1)))"
         @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
