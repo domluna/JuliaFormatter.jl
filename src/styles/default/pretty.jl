@@ -1318,16 +1318,53 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(cst, nspaces(s))
 
     exclamation = cst[1].typ === CSTParser.IDENTIFIER && endswith(cst[1].val, "!")
+    opcall = (cst[3].typ === CSTParser.Call && cst[3][1].typ === CSTParser.OPERATOR)
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    if s.opts.whitespace_in_kwargs || exclamation
+    if !s.opts.whitespace_in_kwargs && exclamation
+        n = pretty(style, cst[1], s)
+        add_node!(
+            t,
+            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "("),
+            s,
+            join_lines = true,
+        )
+        add_node!(t, n, s, join_lines = true)
+        add_node!(
+            t,
+            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")"),
+            s,
+            join_lines = true,
+        )
+    else
+        add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    end
+
+    if s.opts.whitespace_in_kwargs
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
         add_node!(t, Whitespace(1), s)
     else
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+
+    if !s.opts.whitespace_in_kwargs && opcall
+        n = pretty(style, cst[3], s)
+        add_node!(
+            t,
+            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "("),
+            s,
+            join_lines = true,
+        )
+        add_node!(t, n, s, join_lines = true)
+        add_node!(
+            t,
+            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")"),
+            s,
+            join_lines = true,
+        )
+    else
+        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    end
 
     t
 end
