@@ -385,7 +385,7 @@ normalized.
 
 If `overwrite` is `true` the file will be reformatted in place, overwriting
 the existing file; if it is `false`, the formatted version of `foo.jl` will
-be written to `foo_fmt.jl` instead.
+not be written anywhere.
 
 If `verbose` is `true` details related to formatting the file will be printed
 to `stdout`.
@@ -426,8 +426,6 @@ function format_file(
 
     if overwrite
         write(filename, formatted_str)
-    else
-        write(path * "_fmt" * ext, formatted_str)
     end
     return formatted_str == str
 end
