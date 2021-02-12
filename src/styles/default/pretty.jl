@@ -127,7 +127,7 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_ref(style, cst, s)
     elseif cst.head === :generator
         return p_generator(style, cst, s)
-    elseif cst.head === :fitler
+    elseif cst.head === :filter
         return p_filter(style, cst, s)
     elseif cst.head === :flatten
         return p_flatten(style, cst, s)
@@ -2104,7 +2104,6 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             else
                 add_node!(t, Whitespace(1), s)
             end
-                # add_node!(t, Whitespace(1), s)
 
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
