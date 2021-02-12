@@ -607,7 +607,7 @@
         @test fmt(str, format_docstrings = true) == str
 
         str = raw"""
-        @doc doc\"""
+        @doc docϵ\"""
            foo()
         \"""
         foo() = bar()"""
