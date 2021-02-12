@@ -1384,7 +1384,6 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Kw, cst, nspaces(s))
 
     exclamation = CSTParser.isidentifier(cst[1]) && endswith(cst[1].val, "!")
-    opcall = (cst[3].typ === CSTParser.Call && CSTParser.isoperator(cst[3][1]))
 
     if !s.opts.whitespace_in_kwargs && exclamation
         n = pretty(style, cst[1], s)
@@ -1413,8 +1412,10 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
 
+    n = pretty(style, cst[3], s)
+    opcall = n.typ === Call && n[1].typ === OPERATOR
+
     if !s.opts.whitespace_in_kwargs && opcall
-        n = pretty(style, cst[3], s)
         add_node!(
             t,
             FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "("),
@@ -1429,7 +1430,7 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             join_lines = true,
         )
     else
-        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+        add_node!(t, n, s, join_lines = true)
     end
 
     t
