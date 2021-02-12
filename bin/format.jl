@@ -29,9 +29,9 @@ Flags:
     -h, --help
         Print this message.
 
-    -o, --overwrite
-        Writes the formatted source to a new file where the original
-        filename is suffixed with _fmt, i.e. `filename_fmt.jl`.
+    -c, --check
+        Check if the files are correctly formatted.  Return code 0 means nothing
+        would change.  Return code 1 means some files would be reformatted.
 
     --always_for_in
         Always replaces `=` with `in` for `for` loops.
@@ -65,7 +65,7 @@ function parse_opts!(args::Vector{String})
             opt = :verbose
         elseif arg == "-h" || arg == "--help"
             opt = :help
-        elseif arg == "-o" || arg == "--overwrite"
+        elseif arg == "-c" || arg == "--check"
             opt = :overwrite
         elseif arg == "--always_for_in"
             opt = :always_for_in
@@ -104,4 +104,4 @@ if isempty(ARGS) || haskey(opts, :help)
     write(stdout, help)
     exit(0)
 end
-format(ARGS; opts...)
+exit(format(ARGS; opts...) ? 0 : 1)
