@@ -50,9 +50,16 @@ function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         if CSTParser.is_comma(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif CSTParser.is_colon(a)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
+        elseif CSTParser.is_colon(a.head) || is_binary(a) # a: b, c, d
+            nodes = collect(a)
+            for n in nodes
+                add_node!(t, pretty(style, n, s), s, join_lines = true)
+                if CSTParser.is_comma(n)
+                    add_node!(t, Placeholder(1), s)
+                elseif CSTParser.is_colon(n)
+                    add_node!(t, Whitespace(1), s)
+                end
+            end
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end

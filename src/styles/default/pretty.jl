@@ -526,10 +526,11 @@ function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(GlobalRefDoc, cst, nspaces(s))
 
+    # cst[2] is empty and fullspan is 0 so we can skip it
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    n = pretty(style, cst[3], s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    n = pretty(style, cst[4], s)
     join_lines = t.endline == n.startline
     join_lines && add_node!(t, Whitespace(1), s)
     add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
@@ -547,16 +548,16 @@ function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     idx = findfirst(==('_'), val)
     val = val[2:idx-1]
-
-    s.offset += length(val) + (cst.fullspan - cst.span)
+    s.offset += length(val) #+ (cst.fullspan - cst.span)
     n = FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
     add_node!(t, n, s, join_lines = true)
 
     for i in 3:length(cst)
         a = cst[i]
-        add_node!(t, pretty(style, cst[i], s), s, join_lines = true)
+        n = pretty(style, cst[i], s)
+        add_node!(t, n, s, join_lines = true)
         if i < length(cst) && a.fullspan > a.span
-    add_node!(t, Whitespace(1), s)
+            add_node!(t, Whitespace(1), s)
         end
     end
     
@@ -1291,7 +1292,7 @@ function p_chainopcall(
     # In this case we need to surround the dot operator with whitespace
     # in order to avoid ambiguity.
     for (i, a) in enumerate(cst)
-        if a.head === :OPERATOR && CSTParser.isdotted(a) && CSTParser.isnumber(cst[i-1])
+        if CSTParser.isoperator(a) && CSTParser.isdotted(a) && CSTParser.isnumber(cst[i-1])
             nospace = false
             break
         end
@@ -1299,7 +1300,7 @@ function p_chainopcall(
 
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
-        if a.head === :OPERATOR
+        if CSTParser.isoperator(a)
             add_node!(t, Whitespace(nws), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             if nonest
@@ -1389,14 +1390,14 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         n = pretty(style, cst[1], s)
         add_node!(
             t,
-            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "("),
+            FST(PUNCTUATION, -1, n.startline, n.startline, "("),
             s,
             join_lines = true,
         )
         add_node!(t, n, s, join_lines = true)
         add_node!(
             t,
-            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")"),
+            FST(PUNCTUATION, -1, n.startline, n.startline, ")"),
             s,
             join_lines = true,
         )
@@ -1415,17 +1416,18 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     n = pretty(style, cst[3], s)
     opcall = n.typ === Call && n[1].typ === OPERATOR
 
+
     if !s.opts.whitespace_in_kwargs && opcall
         add_node!(
             t,
-            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "("),
+            FST(PUNCTUATION, -1, n.startline, n.startline, "("),
             s,
             join_lines = true,
         )
         add_node!(t, n, s, join_lines = true)
         add_node!(
             t,
-            FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")"),
+            FST(PUNCTUATION, -1, n.startline, n.startline, ")"),
             s,
             join_lines = true,
         )
@@ -1758,7 +1760,12 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
     for (i, a) in enumerate(cst)
-        n =  pretty(style, a, s)
+        n = if is_binary(a) && a[2].val === "="
+         p_kw(style, a, s)
+        else
+         pretty(style, a, s)
+        end
+
         if is_opener(n) && nest
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
@@ -1928,11 +1935,9 @@ function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_colon(a.head) || is_binary(a) # a: b, c, d
             nodes = collect(a)
             for n in nodes
+                add_node!(t, pretty(style, n, s), s, join_lines = true)
                 if CSTParser.is_comma(n) || CSTParser.is_colon(n)
-                    add_node!(t, pretty(style, n, s), s, join_lines = true)
                     add_node!(t, Placeholder(1), s)
-                else
-                    add_node!(t, pretty(style, n, s), s, join_lines = true)
                 end
             end
         else

@@ -251,8 +251,9 @@ end
 
 # TODO: fix this
 function is_multiline(fst::FST)
-    fst.typ === StringN && return true
-    if fst.typ === Vcat && fst.endline > fst.startline
+    if fst.typ === StringN
+        return true
+    elseif fst.typ === Vcat && fst.endline > fst.startline
         return true
     elseif fst.typ === TypedVcat && fst.endline > fst.startline
         return true
@@ -265,10 +266,11 @@ end
 @inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
 function is_macrodoc(cst::CSTParser.EXPR)
-    return cst.head === :macrocall &&
-           length(cst) == 3 &&
-           cst[1].head === :IDENTIFER && cst[1].val == "@doc" &&
-           is_str_or_cmd(cst[2])
+    cst.head === :macrocall &&
+           length(cst) > 2 &&
+           CSTParser.isidentifier(cst[1]) &&
+           cst[1].val == "@doc" #&&
+           # (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
 end
 
 function is_macrostr(cst::CSTParser.EXPR)
@@ -622,12 +624,12 @@ Returns the length to any node type in `ntyps` based off the `start` index.
 end
 
 @inline is_closer(fst::FST) =
-    fst.val == "}" || fst.val == ")" || fst.val == "]"
+    fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
 @inline is_closer(cst::CSTParser.EXPR) =
     cst.head === :RBRACE || cst.head === :RPAREN || cst.head === :RSQUARE
 
 @inline is_opener(fst::FST) =
-    fst.val == "{" || fst.val == "(" || fst.val == "["
+    fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
 @inline is_opener(cst::CSTParser.EXPR) =
     cst.head === :LBRACE || cst.head === :LPAREN || cst.head === :LSQUARE
 

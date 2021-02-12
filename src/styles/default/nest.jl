@@ -132,7 +132,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === Unary && length(fst.nodes) > 1 && fst[2].typ === OPERATOR
         n_unaryopcall!(style, fst, s)
     elseif fst.typ === StringN
-        n_stringh!(style, fst, s)
+        n_string!(style, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
@@ -140,7 +140,7 @@ end
 nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     nest!(DefaultStyle(style), fst, s)
 
-function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
+function n_string!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     # difference in positioning of the string
     # from the source document to the formatted document
@@ -154,8 +154,8 @@ function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
         end
     end
 end
-n_stringh!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_stringh!(DefaultStyle(style), fst, s)
+n_string!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_string!(DefaultStyle(style), fst, s)
 
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
