@@ -154,6 +154,9 @@ function Document(text::AbstractString)
         elseif t.kind === Tokens.WHITESPACE
             goffset += (t.endbyte - t.startbyte + 1)
         else
+            # TODO: try using ncodeunits here and then maybe we can
+            # remove + (cst.fullspan - cst.span) when incrementing the
+            # offset
             goffset += length(Tokenize.untokenize(t))
         end
 

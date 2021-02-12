@@ -123,36 +123,28 @@ end
 
 function import_to_usings(fst::FST, s::State)
     findfirst(is_colon, fst.nodes) === nothing || return FST[]
-    findfirst(n -> is_punc(n) && n.val == ".", fst.nodes) === nothing || return FST[]
+    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst.nodes) === nothing || return FST[]
 
     usings = FST[]
-    idxs = findall(n -> n.typ === IDENTIFIER, fst.nodes)
+    idxs = findall(n -> !is_leaf(n), fst.nodes)
 
     for i in idxs
-        name = fst[i].val
-        sl = fst[i].startline
-        el = fst[i].endline
+        n = fst[i]
+        sl = n.startline
+        el = n.endline
         use = FST(Using, fst.indent)
-        use.startline = sl
-        use.endline = el
+        use.startline = n.startline
+        use.endline = n.endline
 
         add_node!(use, FST(KEYWORD, -1, sl, el, "using"), s)
         add_node!(use, Whitespace(1), s)
 
-        # collect the dots prior to a identifier
-        # import ..A
-        j = i - 1
-        while fst[j].typ === OPERATOR
-            add_node!(use, fst[j], s, join_lines = true)
-            j -= 1
-        end
-
-        add_node!(use, FST(IDENTIFIER, -1, sl, el, name), s, join_lines = true)
+        add_node!(use, n, s, join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
         colon.opmeta = OpMeta(Tokens.COLON, false)
         add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, FST(IDENTIFIER, -1, sl, el, name), s, join_lines = true)
+        add_node!(use, FST(IDENTIFIER, -1, sl, el, n[end].val), s, join_lines = true)
 
         push!(usings, use)
     end

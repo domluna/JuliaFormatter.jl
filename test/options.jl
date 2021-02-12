@@ -183,7 +183,7 @@
         t = run_pretty(str_, opts = Options(margin = 80, import_to_using = true))
         @test t.len == 13
 
-        # #232
+        # issue 232
         str = """import A.b"""
         @test fmt(str, import_to_using = true) == str
     end
