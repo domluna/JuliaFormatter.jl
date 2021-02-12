@@ -44,10 +44,10 @@ bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwa
 @testset "JuliaFormatter" begin
     include("default_style.jl")
     include("yas_style.jl")
-    # include("blue_style.jl")
+    include("blue_style.jl")
     # include("issues.jl")
     # include("options.jl")
-    # include("config.jl")
-    # include("document.jl")
+    include("config.jl")
+    include("document.jl")
     # include("interface.jl")
 end

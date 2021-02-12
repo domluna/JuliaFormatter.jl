@@ -357,7 +357,6 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 for j in i+1:length(cst)
                     push!(tupargs, cst[j])
                 end
-                # tup = p_tuple(style, cst[i+1:length(cst)], s)
                 tup = p_tuple(style, tupargs, s)
                 add_node!(t, tup, s, join_lines = true)
                 if has_for_kw

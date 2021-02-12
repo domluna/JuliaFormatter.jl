@@ -682,15 +682,14 @@ function is_comprehension(x::FST)
 end
 
 function is_block(x::CSTParser.EXPR)
-    is_if(x) && return true
-    x.head === :do && return true
-    x.head === :try && return true
-    x.head === :begin && return true
-    x.head === :for && return true
-    x.head === :while && return true
-    x.head === :let && return true
-    x.head === :quote && x[1].head == :QUOTE && return true
-    return false
+    is_if(x) ||
+    x.head === :do ||
+    x.head === :try ||
+    (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) ||
+    x.head === :for ||
+    x.head === :while ||
+    x.head === :let ||
+    x.head === :quote && x[1].head == :QUOTE
 end
 
 function is_block(x::FST)
