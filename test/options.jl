@@ -631,7 +631,7 @@
         @test fmt(str, format_docstrings = true) == str
 
         # issue 160
-        str = """
+        str = raw"""
         module MyModule
 
         import Markdown: @doc_str

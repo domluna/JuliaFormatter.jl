@@ -269,8 +269,7 @@ function is_macrodoc(cst::CSTParser.EXPR)
     cst.head === :macrocall &&
            length(cst) > 2 &&
            CSTParser.isidentifier(cst[1]) &&
-           cst[1].val == "@doc" #&&
-           # (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
+           cst[1].val == "@doc"
 end
 
 function is_macrostr(cst::CSTParser.EXPR)
@@ -282,14 +281,14 @@ function is_macrostr(cst::CSTParser.EXPR)
     m !== nothing || return false
 
     val = m.captures[1]
-   
+
     # r"hello" is parsed as @r_str"hello"
     # if it was originally r"hello" then
     # the length of the matched string (between @ and _)
-    # will be == the span of the node.
+    # will be <= the span of the node.
     #
     # In this example the span == 1.
-    length(val) == cst[1].span || return false
+    ncodeunits(val) == cst[1].span || return false
 
     return is_str_or_cmd(cst[3])
 end

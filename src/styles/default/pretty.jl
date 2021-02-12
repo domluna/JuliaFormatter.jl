@@ -530,10 +530,14 @@ function p_macrodoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    n = pretty(style, cst[4], s)
-    join_lines = t.endline == n.startline
-    join_lines && add_node!(t, Whitespace(1), s)
-    add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
+
+    if length(cst) > 3
+        n = pretty(style, cst[4], s)
+        join_lines = t.endline == n.startline
+        join_lines && add_node!(t, Whitespace(1), s)
+        add_node!(t, n, s, join_lines = join_lines, max_padding = 0)
+    end
+
     return t
 end
 p_macrodoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -547,8 +551,8 @@ function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     val = cst[1].val
 
     idx = findfirst(==('_'), val)
-    val = val[2:idx-1]
-    s.offset += length(val) #+ (cst.fullspan - cst.span)
+    val = val[2:prevind(val,idx)]
+    s.offset += length(val)
     n = FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
     add_node!(t, n, s, join_lines = true)
 
@@ -563,8 +567,8 @@ function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     
     return t
 end
-p_macrostrorcmd(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_macrostrorcmd(DefaultStyle(style), cst, s)
+p_macrostr(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_macrostr(DefaultStyle(style), cst, s)
 
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
