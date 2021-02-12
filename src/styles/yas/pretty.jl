@@ -45,7 +45,6 @@ function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-
     for i in 2:length(cst)
         a = cst[i]
         if CSTParser.is_comma(a)
@@ -91,9 +90,9 @@ function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 
 function p_braces(ys::YASStyle, cst::CSTParser.EXPR, s::State) 
-t = p_curly(ys, cst, s)
-t.typ = Braces
-t
+    t = p_curly(ys, cst, s)
+    t.typ = Braces
+    t
 end
 
 function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
@@ -187,7 +186,7 @@ end
 
 function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
-    t = FST(cst, nspaces(s))
+    t = FST(Vcat, nspaces(s))
     st = cst.head === :vcat ? 1 : 2
 
     for (i, a) in enumerate(cst)
@@ -209,7 +208,11 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
     t
 end
-@inline p_typedvcat(ys::YASStyle, cst::CSTParser.EXPR, s::State) = p_vcat(ys, cst, s)
+function p_typedvcat(ys::YASStyle, cst::CSTParser.EXPR, s::State) 
+    t = p_vcat(ys, cst, s)
+    t.typ = TypedVcat
+    t
+end
 
 function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
