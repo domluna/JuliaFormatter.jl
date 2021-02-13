@@ -284,8 +284,8 @@ function is_macrostr(cst::CSTParser.EXPR)
 
     # r"hello" is parsed as @r_str"hello"
     # if it was originally r"hello" then
-    # the length of the matched string (between @ and _)
-    # will be <= the span of the node.
+    # the number of bytes in the matched string (between @ and _)
+    # will be == the span of the node.
     #
     # In this example the span == 1.
     ncodeunits(val) == cst[1].span || return false
