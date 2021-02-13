@@ -503,7 +503,7 @@ function p_globalrefdoc(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     # cst[2] is empty and fullspan is 0 so we can skip it
     if CSTParser.isliteral(cst[3])
         add_node!(t, p_literal(style, cst[3], s, from_docstring = true), s, max_padding = 0)
-    elseif cst[3].head == CSTParser.StringH
+    elseif cst[3].head === :string
         add_node!(t, p_stringh(style, cst[3], s), s)
     end
     add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
