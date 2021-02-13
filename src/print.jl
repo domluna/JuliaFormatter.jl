@@ -48,9 +48,7 @@ end
 
 function print_tree(io::IOBuffer, fst::FST, s::State)
     notcode_indent = -1
-    if (fst.typ === Binary ||
-        fst.typ === Conditional ||
-        fst.typ === ModuleN)
+    if (fst.typ === Binary || fst.typ === Conditional || fst.typ === ModuleN)
         notcode_indent = fst.indent
     end
     print_tree(io, fst.nodes, s, fst.indent, notcode_indent = notcode_indent)
@@ -70,13 +68,10 @@ function print_tree(
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
                 n.indent += s.opts.indent
-            elseif i + 1 < length(nodes) && (
-                nodes[i+2].typ === Block || nodes[i+2].typ === Begin
-            )
+            elseif i + 1 < length(nodes) &&
+                   (nodes[i+2].typ === Block || nodes[i+2].typ === Begin)
                 n.indent = nodes[i+2].indent
-            elseif i > 2 && (
-                nodes[i-2].typ === Block || nodes[i-2].typ === Begin
-            )
+            elseif i > 2 && (nodes[i-2].typ === Block || nodes[i-2].typ === Begin)
                 n.indent = nodes[i-2].indent
             end
         end
@@ -90,9 +85,7 @@ function print_tree(
         end
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
-            if is_closer(nodes[i+1]) ||
-               nodes[i+1].typ === Block ||
-               nodes[i+1].typ === Begin
+            if is_closer(nodes[i+1]) || nodes[i+1].typ === Block || nodes[i+1].typ === Begin
                 write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])

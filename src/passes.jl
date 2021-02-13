@@ -123,7 +123,8 @@ end
 
 function import_to_usings(fst::FST, s::State)
     findfirst(is_colon, fst.nodes) === nothing || return FST[]
-    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing || return FST[]
+    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
+        return FST[]
 
     usings = FST[]
     idxs = findall(n -> !is_leaf(n), fst.nodes)
@@ -168,12 +169,7 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             line_offset = n.line_offset + length(n)
             op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
             op.opmeta = OpMeta(Tokens.DECLARATION, false)
-            add_node!(
-                nn,
-                op,
-                s,
-                join_lines = true,
-            )
+            add_node!(nn, op, s, join_lines = true)
             line_offset += 2
             add_node!(
                 nn,
@@ -241,8 +237,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         fst.typ = funcdef.typ
         fst.nodes = funcdef.nodes
         fst.len = funcdef.len
-    elseif fst[1].typ === Binary &&
-           fst[1][end].typ === Where
+    elseif fst[1].typ === Binary && fst[1][end].typ === Where
         # function
         kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
@@ -400,19 +395,17 @@ Module.@macro
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
     t = FST[]
-    f =
-        (t) ->
-            (n, s) -> begin
-                if is_macrocall(n) || (n.typ === Quotenode && !is_leaf(n[1]))
-                    # 1. Do not move "@" in nested macro calls
-                    # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
-                    # since it's semantically different to "@a.b.c" and "a.b.@c"
-                    push!(t, n)
-                    return false
-                elseif is_leaf(n)
-                    push!(t, n)
-                end
-            end
+    f = (t) -> (n, s) -> begin
+        if is_macrocall(n) || (n.typ === Quotenode && !is_leaf(n[1]))
+            # 1. Do not move "@" in nested macro calls
+            # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
+            # since it's semantically different to "@a.b.c" and "a.b.@c"
+            push!(t, n)
+            return false
+        elseif is_leaf(n)
+            push!(t, n)
+        end
+    end
     walk(f(t), fst, s)
 
     macroname = FST(Macroname, fst.indent)
@@ -485,7 +478,6 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
 
     return nothing
 end
-
 
 """
     separate_kwargs_with_semicolon!(fst::FST)

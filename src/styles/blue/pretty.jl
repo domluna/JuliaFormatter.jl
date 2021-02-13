@@ -93,7 +93,7 @@ function p_binaryopcall(
     nonest = nonest || CSTParser.is_colon(op)
 
     if CSTParser.iscurly(cst.parent) &&
-        (op.val == "<:" || op.val == ">:") &&
+       (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
         nospace = true
     elseif CSTParser.is_colon(op)
@@ -130,10 +130,8 @@ function p_binaryopcall(
     elseif CSTParser.is_exor(op)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     elseif (
-        CSTParser.isnumber(cst[1]) ||
-        is_fwdfwd_slash(op) ||
-        is_circumflex_accent(op)
-       ) && CSTParser.isdotted(op)
+        CSTParser.isnumber(cst[1]) || is_fwdfwd_slash(op) || is_circumflex_accent(op)
+    ) && CSTParser.isdotted(op)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
@@ -187,7 +185,7 @@ function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Return, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
-        for i in 2:length(cst)
+        for i = 2:length(cst)
             a = cst[i]
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)

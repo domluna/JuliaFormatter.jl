@@ -8,8 +8,7 @@ function align_fst!(fst::FST, opts::Options)
     for (i, n) in enumerate(fst.nodes)
         if is_leaf(n)
             continue
-        elseif opts.align_struct_field &&
-               (n.typ === Struct || n.typ === Mutable)
+        elseif opts.align_struct_field && (n.typ === Struct || n.typ === Mutable)
             align_struct!(n)
         elseif opts.align_conditional && n.typ === Conditional
             align_conditional!(n)

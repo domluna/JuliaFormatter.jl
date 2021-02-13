@@ -11,30 +11,25 @@
     TRAILINGCOMMA,
     TRAILINGSEMICOLON,
     INVERSETRAILINGSEMICOLON,
-
     KEYWORD,
     LITERAL,
     OPERATOR,
     PUNCTUATION,
     IDENTIFIER,
-
     MacroBlock,
     MacroCall,
     MacroStr,
     Macroname,
     GlobalRefDoc,
-
     TupleN,
     RefN,
     ModuleN,
-
     Unary,
     Binary,
     Chain,
     Comparison,
     Conditional,
     Where,
-
     Vect,
     Braces,
     Brackets,
@@ -42,22 +37,17 @@
     Call,
     Parameters,
     Kw,
-
     Vcat,
     Hcat,
     TypedVcat,
     TypedHcat,
     Row,
-
     BracesCat,
-
     TypedComprehension,
     Comprehension,
-
     Generator,
     Filter,
     Flatten,
-
     For,
     While,
     If,
@@ -69,28 +59,22 @@
     Block,
     BareModule,
     TopLevel,
-
     StringN,
-
     Macro,
     FunctionN,
     Struct,
     Mutable,
     Primitive,
     Abstract,
-
     Return,
     Local,
     Outer,
     Global,
     Const,
-
     Import,
     Export,
     Using,
-
     File,
-
     Quotenode,
     Unknown,
 )
@@ -161,7 +145,7 @@ function FST(
         AllowNest,
         0,
         line_offset,
-        nothing
+        nothing,
     )
 end
 
@@ -184,7 +168,7 @@ function FST(
         AllowNest,
         0,
         line_offset,
-        nothing
+        nothing,
     )
 end
 
@@ -212,13 +196,26 @@ end
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
+@inline Semicolon() =
+    FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingComma() =
     FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingSemicolon() =
     FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-@inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
+@inline InverseTrailingSemicolon() = FST(
+    INVERSETRAILINGSEMICOLON,
+    -1,
+    -1,
+    0,
+    1,
+    ";",
+    nothing,
+    nothing,
+    AllowNest,
+    0,
+    -1,
+    nothing,
+)
 @inline Whitespace(n) =
     FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Placeholder(n) =
@@ -243,11 +240,13 @@ end
 
 @inline is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 
-@inline is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == "," )
+@inline is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
 @inline is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
-@inline is_circumflex_accent(x::CSTParser.EXPR) = CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "^")
-@inline is_fwdfwd_slash(x::CSTParser.EXPR) = CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "//")
+@inline is_circumflex_accent(x::CSTParser.EXPR) =
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "^")
+@inline is_fwdfwd_slash(x::CSTParser.EXPR) =
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "//")
 
 # TODO: fix this
 function is_multiline(fst::FST)
@@ -267,9 +266,9 @@ end
 
 function is_macrodoc(cst::CSTParser.EXPR)
     cst.head === :macrocall &&
-           length(cst) > 2 &&
-           CSTParser.isidentifier(cst[1]) &&
-           cst[1].val == "@doc"
+        length(cst) > 2 &&
+        CSTParser.isidentifier(cst[1]) &&
+        cst[1].val == "@doc"
 end
 
 function is_macrostr(cst::CSTParser.EXPR)
@@ -295,7 +294,7 @@ end
 
 function is_call(cst::CSTParser.EXPR)
     t = CSTParser.is_func_call(cst)
-    t !== nothing && t && return is_opener(cst[2]) 
+    t !== nothing && t && return is_opener(cst[2])
     return false
 end
 
@@ -317,18 +316,18 @@ end
 
 function is_custom_leaf(fst::FST)
     fst.typ === NEWLINE ||
-    fst.typ === SEMICOLON ||
-    fst.typ === WHITESPACE ||
-    fst.typ === PLACEHOLDER ||
-    fst.typ === NOTCODE ||
-    fst.typ === INLINECOMMENT ||
-    fst.typ === TRAILINGCOMMA ||
-    fst.typ === TRAILINGSEMICOLON ||
-    fst.typ === INVERSETRAILINGSEMICOLON
+        fst.typ === SEMICOLON ||
+        fst.typ === WHITESPACE ||
+        fst.typ === PLACEHOLDER ||
+        fst.typ === NOTCODE ||
+        fst.typ === INLINECOMMENT ||
+        fst.typ === TRAILINGCOMMA ||
+        fst.typ === TRAILINGSEMICOLON ||
+        fst.typ === INVERSETRAILINGSEMICOLON
 end
 
 function is_nothing(cst::CSTParser.EXPR)
-    CSTParser.is_nothing(cst)  && return true
+    CSTParser.is_nothing(cst) && return true
     cst.val === nothing && cst.args === nothing && return true
     return false
 end
@@ -358,7 +357,7 @@ function get_args(cst::CSTParser.EXPR)
        cst.head === :curly ||
        is_call(cst) ||
        cst.head === :typed_comprehension
-       return get_args(collect(cst)[2:end])
+        return get_args(collect(cst)[2:end])
     elseif cst.head === :where
         # get the arguments in B of `A where B`
         return get_args(collect(cst)[3:end])
@@ -468,8 +467,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
         if length(n.nodes) > 0
             nws = 1
-            if (t.typ === Curly || t.typ === Where) &&
-               !s.opts.whitespace_typedefs
+            if (t.typ === Curly || t.typ === Where) && !s.opts.whitespace_typedefs
                 nws = 0
             end
             multi_arg = n_args(t.ref[]) > 0
@@ -487,9 +485,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             end
             return
         end
-    elseif n.typ === Binary &&
-           n[1].typ === Binary &&
-           n[1][end].typ === Where
+    elseif n.typ === Binary && n[1].typ === Binary && n[1][end].typ === Where
         # normalize FST representation for Where
         binaryop_to_whereop!(n, s)
     end
@@ -684,13 +680,13 @@ end
 
 function is_block(x::CSTParser.EXPR)
     is_if(x) ||
-    x.head === :do ||
-    x.head === :try ||
-    (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) ||
-    x.head === :for ||
-    x.head === :while ||
-    x.head === :let ||
-    x.head === :quote && x[1].head == :QUOTE
+        x.head === :do ||
+        x.head === :try ||
+        (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) ||
+        x.head === :for ||
+        x.head === :while ||
+        x.head === :let ||
+        x.head === :quote && x[1].head == :QUOTE
 end
 
 function is_block(x::FST)
@@ -749,7 +745,9 @@ function is_gen(x::FST)
 end
 
 function is_binary(x::CSTParser.EXPR)
-    (CSTParser.isbinarycall(x) || CSTParser.isbinarysyntax(x)) && length(x) == 3 && CSTParser.isoperator(x[2])
+    (CSTParser.isbinarycall(x) || CSTParser.isbinarysyntax(x)) &&
+        length(x) == 3 &&
+        CSTParser.isoperator(x[2])
 end
 
 function is_unary(x::CSTParser.EXPR)
@@ -779,7 +777,7 @@ function is_assignment(x::FST)
 end
 
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
-function is_assignment(cst::CSTParser.EXPR) 
+function is_assignment(cst::CSTParser.EXPR)
     op = get_binary_op(cst)
     op === nothing && return false
     precedence(op) == CSTParser.AssignmentOp
@@ -857,10 +855,8 @@ function nest_rhs(cst::CSTParser.EXPR)::Bool
 end
 
 function op_kind(cst::CSTParser.EXPR)
-    if is_binary(cst) ||
-       cst.head === :comparison ||
-       is_chain(cst)
-       return tokenize(cst[2].val)
+    if is_binary(cst) || cst.head === :comparison || is_chain(cst)
+        return tokenize(cst[2].val)
     elseif is_unary(cst)
         op = CSTParser.isoperator(cst[1]) ? cst[1] : cst[2]
         return tokenize(op.val)
@@ -878,7 +874,6 @@ function op_kind(fst::FST)
     end
     return nothing
 end
-
 
 """
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
@@ -935,8 +930,6 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
 
     return parent_is(cst, valid, ignore = ignore)
 end
-
-
 
 """
     eq_to_in_normalization!(fst::FST, always_for_in::Bool)
