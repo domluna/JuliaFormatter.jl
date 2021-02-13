@@ -565,7 +565,6 @@
         @test yasfmt(str_, 4, 23) == str
     end
 
-
     @testset "imports no placeholder, no error" begin
         str = "import A"
         @test yasfmt(str) == str
