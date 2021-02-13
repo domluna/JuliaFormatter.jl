@@ -3723,7 +3723,6 @@
         end"""
         @test fmt(str_, 4, 50) == str
 
-
         str_ = "(b for b in bar if b == 0 for bar in foo)"
         @test format_text(str_) == str_
         @test fmt(str_) == str_

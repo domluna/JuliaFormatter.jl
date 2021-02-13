@@ -247,7 +247,8 @@
                        last(spike_annotation))"""
         @test yasfmt(str_, 4, 62) == str
 
-        str_ = raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
+        str_ =
+            raw"""ecg_signal = signal_from_template(eeg_signal; channel_names=[:avl, :avr], file_extension=Symbol("lpcm.zst"))"""
         str = raw"""
         ecg_signal = signal_from_template(eeg_signal; channel_names = [:avl, :avr],
                                           file_extension = Symbol("lpcm.zst"))"""
@@ -562,5 +563,17 @@
         (T[10 20; 30 40;
            50 60])"""
         @test yasfmt(str_, 4, 23) == str
+    end
+
+
+    @testset "imports no placeholder, no error" begin
+        str = "import A"
+        @test yasfmt(str) == str
+
+        str = "export A"
+        @test yasfmt(str) == str
+
+        str = "using A"
+        @test yasfmt(str) == str
     end
 end
