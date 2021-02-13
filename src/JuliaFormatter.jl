@@ -337,7 +337,13 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
 end
 
 function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
-    fst = pretty(style, cst, s)
+    fst = try
+        pretty(style, cst, s)
+    catch e
+        loc = cursor_loc(s, s.offset-1)
+        @warn "Error occured during prettification" line = loc[1] offset = loc[2]
+        rethrow()
+    end
     hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))
 
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(fst)
