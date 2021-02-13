@@ -266,9 +266,10 @@ end
 
 function is_macrodoc(cst::CSTParser.EXPR)
     cst.head === :macrocall &&
-        length(cst) > 2 &&
+        length(cst) == 4 &&
         CSTParser.isidentifier(cst[1]) &&
-        cst[1].val == "@doc"
+        cst[1].val == "@doc" &&
+        (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
 end
 
 function is_macrostr(cst::CSTParser.EXPR)
