@@ -749,7 +749,7 @@ function is_gen(x::FST)
 end
 
 function is_binary(x::CSTParser.EXPR)
-    (CSTParser.isbinarycall(x) || CSTParser.isbinarysyntax(x)) && length(x) == 3
+    (CSTParser.isbinarycall(x) || CSTParser.isbinarysyntax(x)) && length(x) == 3 && CSTParser.isoperator(x[2])
 end
 
 function is_unary(x::CSTParser.EXPR)

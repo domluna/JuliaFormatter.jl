@@ -186,6 +186,15 @@
         # issue 232
         str = """import A.b"""
         @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b: c"""
+        @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b.c"""
+        @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b.c: d"""
+        @test fmt(str, import_to_using = true) == str
     end
 
     @testset "always convert `=` to `in` (for loops)" begin

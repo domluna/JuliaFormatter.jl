@@ -1933,17 +1933,17 @@ function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     for i in 2:length(cst)
         a = cst[i]
-        if CSTParser.is_comma(a) || CSTParser.is_colon(a)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
-        elseif CSTParser.is_colon(a.head) || is_binary(a) # a: b, c, d / a.b
+        if CSTParser.is_colon(a.head) || is_binary(a)
             nodes = collect(a)
             for n in nodes
-                add_node!(t, pretty(style, n, s), s, join_lines = true)
+                    add_node!(t, pretty(style, n, s), s, join_lines = true)
                 if CSTParser.is_comma(n) || CSTParser.is_colon(n)
                     add_node!(t, Placeholder(1), s)
                 end
             end
+        elseif CSTParser.is_comma(a) || CSTParser.is_colon(a)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end

@@ -123,7 +123,7 @@ end
 
 function import_to_usings(fst::FST, s::State)
     findfirst(is_colon, fst.nodes) === nothing || return FST[]
-    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst.nodes) === nothing || return FST[]
+    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing || return FST[]
 
     usings = FST[]
     idxs = findall(n -> !is_leaf(n), fst.nodes)
@@ -482,8 +482,6 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     fst.typ = t.typ
     fst.nodes = t.nodes
     fst.len = t.len
-
-    # @info "" fst[1] fst.len
 
     return nothing
 end
