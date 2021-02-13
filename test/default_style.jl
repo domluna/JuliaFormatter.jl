@@ -1607,6 +1607,19 @@
             ```hello```,
         )"""
         @test fmt(str_, 4, 1) == str
+
+        str_ = raw"""
+        occursin(r"^#!\s*format\s*:\s*off\s*$", t.val)
+        """
+        @test fmt(str_) == str_
+
+        str = raw"""
+        occursin(
+            r"^#!\s*format\s*:\s*off\s*$",
+            t.val,
+        )
+        """
+        @test fmt(str_, 4, 1) == str
     end
 
     @testset "comments" begin

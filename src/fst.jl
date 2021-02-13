@@ -251,13 +251,13 @@ end
 
 # TODO: fix this
 function is_multiline(fst::FST)
-    if fst.typ === StringN
+    if fst.typ === StringN && fst.endline > fst.startline
         return true
     elseif fst.typ === Vcat && fst.endline > fst.startline
         return true
     elseif fst.typ === TypedVcat && fst.endline > fst.startline
         return true
-    elseif fst.typ === MacroStr
+    elseif fst.typ === MacroStr && fst.endline > fst.startline
         return true
     end
     false
