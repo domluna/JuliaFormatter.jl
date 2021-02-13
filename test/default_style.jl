@@ -896,6 +896,10 @@
         str = "\$Module.@macro"
         @test fmt(str_) == str
         @test fmt(str) == str
+
+        # @doc here should not be parsed as a macro string
+        str = raw"push!(docs, :(@doc($meta, $(each.args[end]), $define)))"
+        @test fmt(str) == str
     end
 
     @testset "macro block" begin
