@@ -4,7 +4,6 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
-using Documenter.DocTests: repl_splitter
 import CommonMark: block_modifier
 using CommonMark:
     AdmonitionRule,
@@ -78,6 +77,8 @@ include("styles/blue/nest.jl")
 include("print.jl")
 
 include("markdown.jl")
+
+include("copied_from_documenter.jl")
 
 const UNIX_TO_WINDOWS = r"\r?\n" => "\r\n"
 const WINDOWS_TO_UNIX = "\r\n" => "\n"
