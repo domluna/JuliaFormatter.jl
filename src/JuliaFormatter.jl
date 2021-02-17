@@ -79,8 +79,14 @@ include("print.jl")
 
 include("markdown.jl")
 
-# on Windows lines can end in "\r\n"
-normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
+const UNIX_TO_WINDOWS = r"\r?\n" => "\r\n"
+const WINDOWS_TO_UNIX = "\r\n" => "\n"
+function choose_line_ending_replacer(text)
+    rn = count("\r\n", text)
+    n = count(r"(?<!\r)\n", text)
+    n >= rn ? WINDOWS_TO_UNIX : UNIX_TO_WINDOWS
+end
+normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s, replacer)
 
 """
     format_text(
@@ -104,6 +110,7 @@ normalize_line_ending(s::AbstractString) = replace(s, "\r\n" => "\n")
         align_assignment::Bool = false,
         align_pair_arrow::Bool = false,
         conditional_to_if = false,
+        normalize_line_endings = "auto",
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -305,6 +312,11 @@ else
     B
 end
 ```
+
+### `normalize_line_endings`
+
+One of `"unix"` (normalize all `\r\n` to `\n`), `"windows"` (normalize all `\n` to `\r\n`), `"auto"` (automatically
+choose based on which line ending is more common in the file).
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
@@ -358,7 +370,15 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     end
 
     text = String(take!(io))
-    text = normalize_line_ending(text)
+
+    replacer = if s.opts.normalize_line_endings === "unix"
+        WINDOWS_TO_UNIX
+    elseif s.opts.normalize_line_endings === "windows"
+        UNIX_TO_WINDOWS
+    else
+        choose_line_ending_replacer(s.doc.text)
+    end
+    text = normalize_line_ending(text, replacer)
 
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
