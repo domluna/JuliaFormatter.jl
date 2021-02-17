@@ -110,7 +110,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         align_assignment::Bool = false,
         align_pair_arrow::Bool = false,
         conditional_to_if = false,
-        normalize_line_endings = :auto,
+        normalize_line_endings = "auto",
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
