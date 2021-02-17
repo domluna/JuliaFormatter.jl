@@ -1348,19 +1348,19 @@
         mixed_windows_str = "a\r\nb\r\nc\nd"
         mixed_unix_str = "a\r\nb\nc\nd"
 
-        @test fmt(windows_str, normalize_line_endings = :auto) == windows_str
-        @test fmt(unix_str, normalize_line_endings = :auto) == unix_str
-        @test fmt(mixed_windows_str, normalize_line_endings = :auto) == windows_str
-        @test fmt(mixed_unix_str, normalize_line_endings = :auto) == unix_str
+        @test fmt(windows_str, normalize_line_endings = "auto") == windows_str
+        @test fmt(unix_str, normalize_line_endings = "auto") == unix_str
+        @test fmt(mixed_windows_str, normalize_line_endings = "auto") == windows_str
+        @test fmt(mixed_unix_str, normalize_line_endings = "auto") == unix_str
 
-        @test fmt(windows_str, normalize_line_endings = :unix) == unix_str
-        @test fmt(unix_str, normalize_line_endings = :unix) == unix_str
-        @test fmt(mixed_windows_str, normalize_line_endings = :unix) == unix_str
-        @test fmt(mixed_unix_str, normalize_line_endings = :unix) == unix_str
+        @test fmt(windows_str, normalize_line_endings = "unix") == unix_str
+        @test fmt(unix_str, normalize_line_endings = "unix") == unix_str
+        @test fmt(mixed_windows_str, normalize_line_endings = "unix") == unix_str
+        @test fmt(mixed_unix_str, normalize_line_endings = "unix") == unix_str
 
-        @test fmt(windows_str, normalize_line_endings = :windows) == windows_str
-        @test fmt(unix_str, normalize_line_endings = :windows) == windows_str
-        @test fmt(mixed_windows_str, normalize_line_endings = :windows) == windows_str
-        @test fmt(mixed_unix_str, normalize_line_endings = :windows) == windows_str
+        @test fmt(windows_str, normalize_line_endings = "windows") == windows_str
+        @test fmt(unix_str, normalize_line_endings = "windows") == windows_str
+        @test fmt(mixed_windows_str, normalize_line_endings = "windows") == windows_str
+        @test fmt(mixed_unix_str, normalize_line_endings = "windows") == windows_str
     end
 end

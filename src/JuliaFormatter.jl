@@ -81,7 +81,7 @@ include("markdown.jl")
 
 const UNIX_TO_WINDOWS = r"\r?\n" => "\r\n"
 const WINDOWS_TO_UNIX = "\r\n" => "\n"
-function line_ending_replacer(text)
+function choose_line_ending_replacer(text)
     rn = count("\r\n", text)
     n = count(r"(?<!\r)\n", text)
     n >= rn ? WINDOWS_TO_UNIX : UNIX_TO_WINDOWS
@@ -315,7 +315,7 @@ end
 
 ### `normalize_line_endings`
 
-One of `:unix` (normalize all `\r\n` to `\n`), `:windows` (normalize all `\n` to `\r\n`), `:auto` (automatically
+One of `"unix"` (normalize all `\r\n` to `\n`), `"windows"` (normalize all `\n` to `\r\n`), `"auto"` (automatically
 choose based on which line ending is more common in the file).
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
@@ -371,12 +371,12 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     text = String(take!(io))
 
-    replacer = if s.opts.normalize_line_endings === :unix
+    replacer = if s.opts.normalize_line_endings === "unix"
         WINDOWS_TO_UNIX
-    elseif s.opts.normalize_line_endings === :windows
+    elseif s.opts.normalize_line_endings === "windows"
         UNIX_TO_WINDOWS
     else
-        line_ending_replacer(s.doc.text)
+        choose_line_ending_replacer(s.doc.text)
     end
     text = normalize_line_ending(text, replacer)
 
