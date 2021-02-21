@@ -457,46 +457,6 @@ function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
     return format_file(filename; style = style, kwargs...)
 end
 
-if VERSION < v"1.1.0"
-    # We define `splitpath` here, copying the definition from base/path.jl
-    # because it was only added in Julia 1.1.
-
-    # TODO(odow): remove this definition of splitpath once JuliaFormatter no
-    # longer supports Julia 1.0.
-    _splitdir_nodrive(path::String) = _splitdir_nodrive("", path)
-    function _splitdir_nodrive(a::String, b::String)
-        path_dir_splitter = if Sys.isunix()
-            r"^(.*?)(/+)([^/]*)$"
-        elseif Sys.iswindows()
-            r"^(.*?)([/\\]+)([^/\\]*)$"
-        else
-            error("JuliaFormatter.jl does not work on this OS.")
-        end
-        m = match(path_dir_splitter, b)
-        m === nothing && return (a, b)
-        a = string(a, isempty(m.captures[1]) ? m.captures[2][1] : m.captures[1])
-        a, String(m.captures[3])
-    end
-    splitpath(p::AbstractString) = splitpath(String(p))
-    function splitpath(p::String)
-        drive, p = splitdrive(p)
-        out = String[]
-        isempty(p) && (pushfirst!(out, p))  # "" means the current directory.
-        while !isempty(p)
-            dir, base = _splitdir_nodrive(p)
-            dir == p && (pushfirst!(out, dir); break)  # Reached root node.
-            if !isempty(base)  # Skip trailing '/' in basename
-                pushfirst!(out, base)
-            end
-            p = dir
-        end
-        if !isempty(drive)  # Tack the drive back on to the first element.
-            out[1] = drive * out[1]  # Note that length(out) is always >= 1.
-        end
-        return out
-    end
-end
-
 const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
 
 """
