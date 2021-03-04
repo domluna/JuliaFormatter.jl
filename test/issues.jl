@@ -640,4 +640,12 @@
         """
         @test fmt(str_, 4, 80) == str
     end
+
+    @testset "issue 375" begin
+        s = raw"conflictstatus = @jimport ilog.cp.IloCP$ConflictStatus"
+        @test fmt(s) == s
+
+        s = raw"conflictstatus = @jimport ilog.cp.IloCP$ConflictStatus"
+        @test bluefmt(s) == s
+    end
 end

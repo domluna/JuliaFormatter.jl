@@ -1419,7 +1419,6 @@ function p_binaryopcall(
         # Do nothing - represents a binary op with no textual representation.
         # For example: `2a`, which is equivalent to `2 * a`.
     elseif op.kind === Tokens.EX_OR
-        add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     elseif (is_number(cst[1]) || op.kind === Tokens.CIRCUMFLEX_ACCENT) && op.dot
         add_node!(t, Whitespace(1), s)
