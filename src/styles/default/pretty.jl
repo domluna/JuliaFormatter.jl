@@ -1046,7 +1046,7 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.opts.indent
         n
     else
-        n = pretty(style, cst[2], s)
+        pretty(style, cst[2], s)
     end
 
     cst[1].kind === Tokens.FOR && eq_to_in_normalization!(n, s.opts.always_for_in)

@@ -648,4 +648,38 @@
         s = raw"conflictstatus = @jimport ilog.cp.IloCP$ConflictStatus"
         @test bluefmt(s) == s
     end
+
+    @testset "issue 352" begin
+        str_ = """
+                      @inbounds for f in 1:n_freqs, m in 1:n_channels, l in 1:n_channels, k in 1:length(weighted_evals)
+                         a = f + m + l + k
+                      end"""
+        str = """
+        @inbounds for f in 1:n_freqs,
+                      m in 1:n_channels,
+                      l in 1:n_channels,
+                      k in 1:length(weighted_evals)
+
+            a = f + m + l + k
+        end"""
+        @test yasfmt(str_, always_for_in = true) == str
+
+        str_ = """
+        using Test
+
+        @testset "A long testset name that is rather long" for variable in 100:200, other_var in 1:100
+            @test true
+        end
+        """
+        str = """
+        using Test
+
+        @testset "A long testset name that is rather long" for variable in 100:200,
+            other_var in 1:100
+
+            @test true
+        end
+        """
+        @test bluefmt(str_, always_for_in = true) == str
+    end
 end
