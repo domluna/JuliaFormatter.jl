@@ -16,6 +16,12 @@ function fmt(s; i = 4, m = 80, kwargs...)
 end
 fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
+yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
+yasfmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
+
+bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
+bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
+
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
@@ -35,11 +41,6 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
-yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
-yasfmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
-
-bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
-bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
 
 @testset "JuliaFormatter" begin
     include("default_style.jl")
