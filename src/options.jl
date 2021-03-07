@@ -20,3 +20,10 @@ Base.@kwdef struct Options
     normalize_line_endings::String = "auto"
     in_replacement::String = "in"
 end
+
+function valid_in_op(s::String)
+    s == "in" && return true
+    s == "=" && return true
+    s == "∈" && return true
+    return false
+end

@@ -236,6 +236,21 @@
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
         @test fmt(str_, always_for_in = true) == str
         @test fmt(str, always_for_in = true) == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i in 1:10 if i == 2]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
+        @test yasfmt(str_, always_for_in = true) == str
+        @test yasfmt(str, always_for_in = true) == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i in 1:10 if i == 2]"
+        @test yasfmt(str_, always_for_in = true) == str
+        @test yasfmt(str, always_for_in = true) == str
     end
 
     @testset "rewrite x |> f to f(x)" begin

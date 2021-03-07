@@ -329,12 +329,8 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
             if !is_gen(cst.args[i+1])
                 tup = p_tupleh(style, cst.args[i+1:length(cst)], s)
+                has_for_kw && eq_to_in_normalization!(tup, s.opts.always_for_in, s.opts.in_replacement)
                 add_node!(t, tup, s, join_lines = true)
-                if has_for_kw
-                    for nn in tup.nodes
-                        eq_to_in_normalization!(nn, s.opts.always_for_in, s.opts.in_replacement)
-                    end
-                end
                 break
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
