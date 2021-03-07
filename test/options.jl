@@ -2284,7 +2284,7 @@
         @test fmt(s, surround_whereop_typeparameters = false) == s
     end
 
-    @testset "always_for_∈" begin
+    @testset "for_in_replacement" begin
         str_ = """
         for a = b
         end
