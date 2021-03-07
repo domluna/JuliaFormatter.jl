@@ -18,4 +18,5 @@ Base.@kwdef struct Options
     align_pair_arrow::Bool = false
     conditional_to_if::Bool = false
     normalize_line_endings::String = "auto"
+    in_replacement::String = "in"
 end
