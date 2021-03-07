@@ -1379,7 +1379,7 @@
         @test fmt(mixed_unix_str, normalize_line_endings = "windows") == windows_str
     end
 
-    @testset "always_for_∈" begin
+    @testset "for_in_replacement" begin
         str_ = """
         for a = b
         end
