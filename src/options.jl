@@ -37,3 +37,10 @@ function needs_alignment(opts::Options)
         opts.align_pair_arrow ||
         opts.align_matrix
 end
+
+function valid_in_op(s::String)
+    s == "in" && return true
+    s == "=" && return true
+    s == "∈" && return true
+    return false
+end

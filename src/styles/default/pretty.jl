@@ -1200,7 +1200,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, in_replacement::
         idx === nothing && return
         op = fst[idx]
 
-        if always_for_in
+        if always_for_in && valid_in_op(op.val)
             op.val = in_replacement
             op.len = length(op.val)
             return
@@ -1213,7 +1213,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, in_replacement::
             op.val = "="
             op.len = length(op.val)
         end
-    elseif fst.typ === CSTParser.Block || fst.typ === CSTParser.InvisBrackets
+    elseif !is_leaf(fst)
         for n in fst.nodes
             eq_to_in_normalization!(n, always_for_in, in_replacement)
         end
