@@ -27,6 +27,7 @@ Base.@kwdef struct Options
     surround_whereop_typeparameters::Bool = true
     config_applied::Bool = false
     ignore::Vector{String} = String[]
+    in_replacement::String = "in"
 end
 
 function needs_alignment(opts::Options)

@@ -673,7 +673,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
                 if has_for_kw
                     for nn in tup.nodes
-                        eq_to_in_normalization!(nn, s.opts.always_for_in)
+                        eq_to_in_normalization!(nn, s.opts.always_for_in, s.opts.in_replacement)
                     end
                 end
                 break
@@ -685,7 +685,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         end
 
-        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
+        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.in_replacement)
     end
 
     t
