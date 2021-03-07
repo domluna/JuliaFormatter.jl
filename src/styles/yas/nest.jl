@@ -160,3 +160,41 @@ function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
     walk(increment_line_offset!, fst.nodes[1:end-1], s, fst.indent)
     nest!(style, fst[end], s)
 end
+
+function n_for!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
+    block_idx = findfirst(n -> !is_leaf(n), fst.nodes)
+    if block_idx === nothing || length(fst[block_idx]) == 0
+        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        return
+    end
+
+    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst[block_idx].nodes)
+    # nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE && fst.nodes[i+1].typ === CSTParser.Block
+            s.line_offset = fst.nodes[i+1].indent
+        elseif n.typ === NOTCODE && fst.nodes[i+1].typ === CSTParser.Block
+            s.line_offset = fst.nodes[i+1].indent
+        elseif n.typ === NEWLINE
+            s.line_offset = fst.indent
+        else
+            n.extra_margin = fst.extra_margin
+            if i == 3 && n.typ === CSTParser.Block
+                n_block!(style, n, s, indent=s.line_offset)
+            else
+                nest!(style, n, s)
+            end
+        end
+    end
+
+    # return if the argument block was nested
+    ph_idx !== nothing && fst[3][ph_idx].typ === NEWLINE && return
+
+    idx = 5
+    n = fst[idx]
+    if n.typ === NOTCODE && n.startline == n.endline
+        res = get(s.doc.comments, n.startline, (0, ""))
+        res == (0, "") && (fst[idx-1] = Whitespace(0))
+    end
+end

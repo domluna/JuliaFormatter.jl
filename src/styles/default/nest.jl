@@ -751,7 +751,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
-n_block!(style::S, fst::FST, s::State; indent = 0) where {S<:AbstractStyle} =
+n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)
 
 @inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) =
