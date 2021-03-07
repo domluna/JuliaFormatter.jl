@@ -317,6 +317,20 @@ end
 
 One of `"unix"` (normalize all `\r\n` to `\n`), `"windows"` (normalize all `\n` to `\r\n`), `"auto"` (automatically
 choose based on which line ending is more common in the file).
+
+### `for_in_replacement`
+
+Can be used when `always_for_in` is `true` to replace `in` with ∈ (\\in), or `=` instead:
+
+```julia
+for a = 1:10
+end
+
+# formatted with always_for_in = true, for_in_replacement = "∈"
+for a ∈ 1:10
+end
+```
+
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)

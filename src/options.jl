@@ -18,10 +18,10 @@ Base.@kwdef struct Options
     align_pair_arrow::Bool = false
     conditional_to_if::Bool = false
     normalize_line_endings::String = "auto"
-    in_replacement::String = "in"
+    for_in_replacement::String = "in"
 end
 
-function valid_in_op(s::String)
+function valid_for_in_op(s::String)
     s == "in" && return true
     s == "=" && return true
     s == "∈" && return true
