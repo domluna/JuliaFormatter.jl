@@ -41,7 +41,6 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
-
 @testset "JuliaFormatter" begin
     include("default_style.jl")
     include("yas_style.jl")
