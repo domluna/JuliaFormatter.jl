@@ -181,7 +181,7 @@ function n_for!(ys::YASStyle, fst::FST, s::State)
         else
             n.extra_margin = fst.extra_margin
             if i == 3 && n.typ === CSTParser.Block
-                n_block!(style, n, s, indent=s.line_offset)
+                n_block!(style, n, s, indent = s.line_offset)
             else
                 nest!(style, n, s)
             end
