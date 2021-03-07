@@ -607,6 +607,17 @@ end
 ->
 
 function func(...) where {TPARAM}
+
+### `for_in_replacement`
+
+Can be used when `always_for_in` is `true` to replace `in` with ∈ (\\in), or `=` instead:
+
+```julia
+for a = 1:10
+end
+
+# formatted with always_for_in = true, for_in_replacement = "∈"
+for a ∈ 1:10
 end
 ```
 

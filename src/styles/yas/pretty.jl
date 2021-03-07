@@ -669,7 +669,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 any(b -> b.head === :FOR, tupargs) && continue
 
                 tup = p_tuple(style, tupargs, s)
-                has_for_kw && eq_to_in_normalization!(tup, s.opts.always_for_in, s.opts.in_replacement)
+                has_for_kw && eq_to_in_normalization!(tup, s.opts.always_for_in, s.opts.for_in_replacement)
                 add_node!(t, tup, s, join_lines = true)
                 break
             end
@@ -680,7 +680,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         end
 
-        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.in_replacement)
+        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     end
 
     t

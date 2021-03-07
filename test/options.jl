@@ -2283,4 +2283,33 @@
         """
         @test fmt(s, surround_whereop_typeparameters = false) == s
     end
+
+    @testset "always_for_∈" begin
+        str_ = """
+        for a = b
+        end
+        """
+        str = """
+        for a ∈ b
+        end
+        """
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        # generator
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i ∈ 1:10 if i == 2]"
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
+        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i ∈ 1:10 if i == 2]"
+        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+    end
 end

@@ -27,7 +27,7 @@ Base.@kwdef struct Options
     surround_whereop_typeparameters::Bool = true
     config_applied::Bool = false
     ignore::Vector{String} = String[]
-    in_replacement::String = "in"
+    for_in_replacement::String = "in"
 end
 
 function needs_alignment(opts::Options)
@@ -38,7 +38,7 @@ function needs_alignment(opts::Options)
         opts.align_matrix
 end
 
-function valid_in_op(s::String)
+function valid_for_in_op(s::String)
     s == "in" && return true
     s == "=" && return true
     s == "∈" && return true
