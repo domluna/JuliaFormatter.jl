@@ -537,6 +537,11 @@ format(path::AbstractString; options...) = format((path,); options...)
 """
 format(path, style::AbstractStyle; options...) = format(path; style = style, options...)
 
+"""
+    format(mod::Module, args...; options...)
+"""
+format(mod::Module, args...; options...) = format(pkgdir(mod), args...; options...)
+
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)
     vs = (collect(values(dict))...,)
