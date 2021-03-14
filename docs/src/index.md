@@ -33,6 +33,9 @@ julia> format_file("foo.jl")
 
 # Formats a string (contents of a Julia file)
 julia> format_text(str)
+
+# Formats all files in the package directory of a `Module`
+julia> format(FooPackage)
 ```
 
 ## Usage
