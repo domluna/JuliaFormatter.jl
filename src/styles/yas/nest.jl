@@ -1,10 +1,17 @@
 function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
-    fst.indent = s.line_offset + sum(length.(fst[1:2]))
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 
     for (i, n) in enumerate(fst.nodes)
+        if i == 3
+            # The indent is set here to handle the edge
+            # case where the first argument of Call is
+            # nestable.
+            # ref https://github.com/domluna/JuliaFormatter.jl/issues/387
+            fst.indent = s.line_offset
+        end
+
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
