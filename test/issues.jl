@@ -682,4 +682,13 @@
         """
         @test bluefmt(str_, always_for_in = true) == str
     end
+
+    @testset "issue 387" begin
+        str_ = """new{T1,T2}(arg1,arg2)"""
+        str = """
+        new{T1,
+            T2}(arg1,
+                arg2)"""
+        @test yasfmt(str_, 4, 1) == str
+    end
 end
