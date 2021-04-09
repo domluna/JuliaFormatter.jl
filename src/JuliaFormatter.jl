@@ -340,7 +340,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     fst = try
         pretty(style, cst, s)
     catch e
-        loc = cursor_loc(s, s.offset-1)
+        loc = cursor_loc(s, s.offset - 1)
         @warn "Error occured during prettification" line = loc[1] offset = loc[2]
         rethrow()
     end
