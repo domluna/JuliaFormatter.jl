@@ -177,17 +177,16 @@ function n_for!(ys::YASStyle, fst::FST, s::State)
     end
 
     ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst[block_idx].nodes)
-    # nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     for (i, n) in enumerate(fst.nodes)
-        if n.typ === NEWLINE && fst.nodes[i+1].typ === CSTParser.Block
+        if n.typ === NEWLINE && fst.nodes[i+1].typ === Block
             s.line_offset = fst.nodes[i+1].indent
-        elseif n.typ === NOTCODE && fst.nodes[i+1].typ === CSTParser.Block
+        elseif n.typ === NOTCODE && fst.nodes[i+1].typ === Block
             s.line_offset = fst.nodes[i+1].indent
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         else
             n.extra_margin = fst.extra_margin
-            if i == 3 && n.typ === CSTParser.Block
+            if i == 3 && n.typ === Block
                 n_block!(style, n, s, indent = s.line_offset)
             else
                 nest!(style, n, s)
