@@ -694,16 +694,7 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State)
     end
     ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst[block_idx].nodes)
     nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
-
-    # return if the argument block was nested
-    ph_idx !== nothing && fst[3][ph_idx].typ === NEWLINE && return
-
-    idx = 5
-    n = fst[idx]
-    if n.typ === NOTCODE && n.startline == n.endline
-        res = get(s.doc.comments, n.startline, (0, ""))
-        res == (0, "") && (fst[idx-1] = Whitespace(0))
-    end
+    return
 end
 n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s)
