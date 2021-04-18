@@ -692,9 +692,7 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
         return
     end
-    ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst[block_idx].nodes)
     nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
-    return
 end
 n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s)
