@@ -3480,12 +3480,14 @@
     @testset "multi-variable `for` and `let`" begin
         str = """
         for a in x, b in y, c in z
+
             body
         end"""
         str_ = """
         for a in x,
             b in y,
             c in z
+
             body
         end"""
         @test fmt(str_) == str
@@ -3505,12 +3507,14 @@
 
         str = """
         let a = x, b = y, c = z
+
             body
         end"""
         str_ = """
         let a = x,
             b = y,
             c = z
+
             body
         end"""
         @test fmt(str_) == str
