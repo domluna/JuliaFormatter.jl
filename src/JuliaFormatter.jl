@@ -210,6 +210,15 @@ using B: B
 using C: C
 ```
 
+Exceptions:
+
+1. If `as` is found in the import expression. `using` CANNOT be used in this context. The following example will not be rewritten.
+
+```
+import Base.Threads as th
+```
+
+
 ### `pipe_to_function_call`
 
 If true, `x |> f` is rewritten to `f(x)`.
@@ -332,41 +341,47 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
     ps.errored && error("Parsing error for input occurred on line $line, offset: $offset")
-    cst.args[1].kind === Tokens.NOTHING && length(cst) == 1 && return text
+    CSTParser.is_nothing(cst[1]) && length(cst) == 1 && return text
     return format_text(cst, style, State(Document(text), opts))
 end
 
 function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
-    t = pretty(style, cst, s)
-    hascomment(s.doc, t.endline) && (add_node!(t, InlineComment(t.endline), s))
+    fst = try
+        pretty(style, cst, s)
+    catch e
+        loc = cursor_loc(s, s.offset - 1)
+        @warn "Error occured during prettification" line = loc[1] offset = loc[2]
+        rethrow()
+    end
+    hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))
 
-    s.opts.pipe_to_function_call && pipe_to_function_call_pass!(t)
+    s.opts.pipe_to_function_call && pipe_to_function_call_pass!(fst)
 
-    flatten_fst!(t)
+    flatten_fst!(fst)
 
     if s.opts.align_struct_field ||
        s.opts.align_conditional ||
        s.opts.align_assignment ||
        s.opts.align_pair_arrow
-        align_fst!(t, s.opts)
+        align_fst!(fst, s.opts)
     end
 
-    nest!(style, t, s)
+    nest!(style, fst, s)
 
     s.line_offset = 0
     io = IOBuffer()
 
     # Print comments and whitespace before code.
-    if t.startline > 1
-        format_check(io, Notcode(1, t.startline - 1), s)
+    if fst.startline > 1
+        format_check(io, Notcode(1, fst.startline - 1), s)
         print_leaf(io, Newline(), s)
     end
 
-    print_tree(io, t, s)
+    print_tree(io, fst, s)
 
-    if t.endline < length(s.doc.range_to_line)
+    if fst.endline < length(s.doc.range_to_line)
         print_leaf(io, Newline(), s)
-        format_check(io, Notcode(t.endline + 1, length(s.doc.range_to_line)), s)
+        format_check(io, Notcode(fst.endline + 1, length(s.doc.range_to_line)), s)
     end
 
     text = String(take!(io))

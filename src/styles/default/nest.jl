@@ -23,9 +23,9 @@ function nest!(
 )
     style = getstyle(ds)
     for (i, n) in enumerate(nodes)
-        if n.typ === NEWLINE && nodes[i+1].typ === CSTParser.Block
+        if n.typ === NEWLINE && nodes[i+1].typ === Block
             s.line_offset = nodes[i+1].indent
-        elseif n.typ === NOTCODE && nodes[i+1].typ === CSTParser.Block
+        elseif n.typ === NOTCODE && nodes[i+1].typ === Block
             s.line_offset = nodes[i+1].indent
         elseif n.typ === NEWLINE
             s.line_offset = indent
@@ -56,15 +56,15 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         return
     end
 
-    if fst.typ === CSTParser.Import
+    if fst.typ === Import
         n_import!(style, fst, s)
-    elseif fst.typ === CSTParser.Export
+    elseif fst.typ === Export
         n_export!(style, fst, s)
-    elseif fst.typ === CSTParser.Using
+    elseif fst.typ === Using
         n_using!(style, fst, s)
-    elseif fst.typ === CSTParser.WhereOpCall
+    elseif fst.typ === Where
         n_whereopcall!(style, fst, s)
-    elseif fst.typ === CSTParser.ConditionalOpCall
+    elseif fst.typ === Conditional
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.conditional_to_if && line_margin > s.opts.margin
             conditional_to_if_block!(fst, s)
@@ -72,7 +72,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         else
             n_conditionalopcall!(style, fst, s)
         end
-    elseif fst.typ === CSTParser.BinaryOpCall
+    elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
            line_margin > s.opts.margin &&
@@ -80,59 +80,59 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
            CSTParser.defines_function(fst.ref[])
             short_to_long_function_def!(fst, s)
         end
-        if fst.typ === CSTParser.BinaryOpCall
+        if fst.typ === Binary
             n_binaryopcall!(style, fst, s)
         else
             nest!(style, fst, s)
         end
-    elseif fst.typ === CSTParser.Curly
+    elseif fst.typ === Curly
         n_curly!(style, fst, s)
-    elseif fst.typ === CSTParser.Call
+    elseif fst.typ === Call
         n_call!(style, fst, s)
-    elseif fst.typ === CSTParser.MacroCall
+    elseif fst.typ === MacroCall
         n_macrocall!(style, fst, s)
-    elseif fst.typ === CSTParser.Ref
+    elseif fst.typ === RefN
         n_ref!(style, fst, s)
-    elseif fst.typ === CSTParser.TypedVcat
+    elseif fst.typ === TypedVcat
         n_typedvcat!(style, fst, s)
-    elseif fst.typ === CSTParser.TupleH
-        n_tupleh!(style, fst, s)
-    elseif fst.typ === CSTParser.Vect
+    elseif fst.typ === TupleN
+        n_tuple!(style, fst, s)
+    elseif fst.typ === Vect
         n_vect!(style, fst, s)
-    elseif fst.typ === CSTParser.Vcat
+    elseif fst.typ === Vcat
         n_vcat!(style, fst, s)
-    elseif fst.typ === CSTParser.Braces
+    elseif fst.typ === Braces
         n_braces!(style, fst, s)
-    elseif fst.typ === CSTParser.BracesCat
+    elseif fst.typ === BracesCat
         n_bracescat!(style, fst, s)
-    elseif fst.typ === CSTParser.InvisBrackets
+    elseif fst.typ === Brackets
         n_invisbrackets!(style, fst, s)
-    elseif fst.typ === CSTParser.Comprehension
+    elseif fst.typ === Comprehension
         n_comprehension!(style, fst, s)
-    elseif fst.typ === CSTParser.TypedComprehension
+    elseif fst.typ === TypedComprehension
         n_typedcomprehension!(style, fst, s)
-    elseif fst.typ === CSTParser.Do
+    elseif fst.typ === Do
         n_do!(style, fst, s)
-    elseif fst.typ === CSTParser.Generator
+    elseif fst.typ === Generator
         n_generator!(style, fst, s)
-    elseif fst.typ === CSTParser.Filter
+    elseif fst.typ === Filter
         n_filter!(style, fst, s)
-    elseif fst.typ === CSTParser.Flatten
+    elseif fst.typ === Flatten
         n_flatten!(style, fst, s)
-    elseif fst.typ === CSTParser.Block
+    elseif fst.typ === Block
         n_block!(style, fst, s)
-    elseif fst.typ === CSTParser.ChainOpCall
+    elseif fst.typ === Chain
         n_chainopcall!(style, fst, s)
-    elseif fst.typ === CSTParser.Comparison
+    elseif fst.typ === Comparison
         n_comparison!(style, fst, s)
-    elseif fst.typ === CSTParser.For
+    elseif fst.typ === For
         n_for!(style, fst, s)
-    elseif fst.typ === CSTParser.Let
+    elseif fst.typ === Let
         n_let!(style, fst, s)
-    elseif fst.typ === CSTParser.UnaryOpCall && fst[2].typ === CSTParser.OPERATOR
+    elseif fst.typ === Unary && length(fst.nodes) > 1 && fst[2].typ === OPERATOR
         n_unaryopcall!(style, fst, s)
-    elseif fst.typ === CSTParser.StringH
-        n_stringh!(style, fst, s)
+    elseif fst.typ === StringN
+        n_string!(style, fst, s)
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
@@ -140,7 +140,7 @@ end
 nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     nest!(DefaultStyle(style), fst, s)
 
-function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
+function n_string!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     # difference in positioning of the string
     # from the source document to the formatted document
@@ -154,8 +154,8 @@ function n_stringh!(ds::DefaultStyle, fst::FST, s::State)
         end
     end
 end
-n_stringh!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_stringh!(DefaultStyle(style), fst, s)
+n_string!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_string!(DefaultStyle(style), fst, s)
 
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
@@ -225,17 +225,18 @@ n_export!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_import!(DefaultStyle(style), fst, s)
 
-function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
+function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = findfirst(is_opener, fst.nodes) !== nothing
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         line_offset = s.line_offset
         if opener
             fst[end].indent = fst.indent
         end
-        if fst.typ !== CSTParser.TupleH || opener
+        if fst.typ !== TupleN || opener
             fst.indent += s.opts.indent
         end
 
@@ -276,50 +277,50 @@ function n_tupleh!(ds::DefaultStyle, fst::FST, s::State)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
-n_tupleh!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_tupleh!(DefaultStyle(style), fst, s)
+n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_tuple!(DefaultStyle(style), fst, s)
 
-@inline n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_vect!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_vect!(DefaultStyle(style), fst, s)
 
-@inline n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_vcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_vcat!(DefaultStyle(style), fst, s)
 
-@inline n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_braces!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_braces!(DefaultStyle(style), fst, s)
 
-@inline n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_bracescat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_bracescat!(DefaultStyle(style), fst, s)
 
-@inline n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_parameters!(DefaultStyle(style), fst, s)
 
-@inline n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
 
-@inline n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_call!(DefaultStyle(style), fst, s)
 
-@inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_curly!(DefaultStyle(style), fst, s)
 
-@inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_macrocall!(DefaultStyle(style), fst, s)
 
-@inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_ref!(DefaultStyle(style), fst, s)
 
-@inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tupleh!(ds, fst, s)
+@inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
@@ -564,10 +565,10 @@ n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_conditionalopcall!(DefaultStyle(style), fst, s)
 
 function no_unnest(fst::FST)
-    if fst.typ === CSTParser.BinaryOpCall ||
-       fst.typ === CSTParser.ConditionalOpCall ||
-       fst.typ === CSTParser.ChainOpCall ||
-       fst.typ === CSTParser.Comparison
+    if fst.typ === Binary ||
+       fst.typ === Conditional ||
+       fst.typ === Chain ||
+       fst.typ === Comparison
         return contains_comment(fst)
     end
     return false
@@ -579,7 +580,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     rhs = fst[end]
-    rhs.typ === CSTParser.Block && (rhs = rhs[1])
+    rhs.typ === Block && (rhs = rhs[1])
 
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs))
@@ -591,9 +592,9 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         indent_nest =
             CSTParser.defines_function(cst) ||
-            nest_assignment(cst) ||
-            cst[2].kind === Tokens.PAIR_ARROW ||
-            cst[2].kind === Tokens.ANON_FUNC ||
+            is_assignment(cst) ||
+            op_kind(fst) === Tokens.PAIR_ARROW ||
+            op_kind(fst) === Tokens.ANON_FUNC ||
             is_standalone_shortcircuit(cst)
 
         if indent_nest
@@ -625,22 +626,22 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         # Undo nest if possible
         if can_nest(fst) && !no_unnest(rhs)
-            cst = rhs.ref[]
             line_margin = s.line_offset
 
+            # replace IN with all of precedence level 6
             if (
-                   rhs.typ === CSTParser.BinaryOpCall &&
-                   !(op_kind(cst) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
+                   rhs.typ === Binary &&
+                   !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
                ) ||
-               rhs.typ === CSTParser.UnaryOpCall ||
-               rhs.typ === CSTParser.ChainOpCall ||
-               rhs.typ === CSTParser.Comparison ||
-               rhs.typ === CSTParser.ConditionalOpCall
+               rhs.typ === Unary ||
+               rhs.typ === Chain ||
+               rhs.typ === Comparison ||
+               rhs.typ === Conditional
                 line_margin += length(fst[end])
-            elseif rhs.typ === CSTParser.Do && is_iterable(rhs[1])
+            elseif rhs.typ === Do && is_iterable(rhs[1])
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
                 line_margin += rw
-            elseif is_block(cst)
+            elseif is_block(rhs)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
                 if idx === nothing
                     line_margin += length(fst[end])
@@ -709,7 +710,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         line_offset = s.line_offset
         indent >= 0 && (fst.indent = indent)
 
-        if fst.typ === CSTParser.ChainOpCall && is_standalone_shortcircuit(fst.ref[])
+        if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
             fst.indent += s.opts.indent
         end
 
@@ -723,7 +724,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 n.val = ","
                 n.len = 1
                 nest!(style, n, s)
-            elseif i < length(fst.nodes) - 1 && fst[i+2].typ === CSTParser.OPERATOR
+            elseif i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR
                 # chainopcall / comparison
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)

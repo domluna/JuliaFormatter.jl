@@ -52,7 +52,7 @@ end
 function flatten_conditionalopcall(fst::FST)
     nodes = FST[]
     for n in fst.nodes
-        if n.typ === CSTParser.ConditionalOpCall
+        if n.typ === Conditional
             push!(nodes, flatten_conditionalopcall(n)...)
         else
             push!(nodes, n)
@@ -66,11 +66,11 @@ function flatten_fst!(fst::FST)
     for n in fst.nodes
         if is_leaf(n)
             continue
-        elseif n.typ === CSTParser.BinaryOpCall && flattenable(op_kind(n))
-            # possibly convert BinaryOpCall to ChainOpCall
+        elseif n.typ === Binary && flattenable(op_kind(n))
+            # possibly convert Binary to Chain
             nnodes = flatten_binaryopcall(n)
             if length(nnodes) > 0
-                n.typ = CSTParser.ChainOpCall
+                n.typ = Chain
                 n.nodes = nnodes
             else
                 flatten_fst!(n)
@@ -91,7 +91,7 @@ function pipe_to_function_call_pass!(fst::FST)
 
     if op_kind(fst) === Tokens.RPIPE
         fst.nodes = pipe_to_function_call(fst)
-        fst.typ = CSTParser.Call
+        fst.typ = Call
         return
     end
 
@@ -100,7 +100,7 @@ function pipe_to_function_call_pass!(fst::FST)
             continue
         elseif op_kind(n) === Tokens.RPIPE
             n.nodes = pipe_to_function_call(n)
-            n.typ = CSTParser.Call
+            n.typ = Call
         else
             pipe_to_function_call_pass!(n)
         end
@@ -111,46 +111,41 @@ function pipe_to_function_call(fst::FST)
     nodes = FST[]
     arg2 = fst[end]
     push!(nodes, arg2)
-    paren = FST(CSTParser.PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
+    paren = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
     push!(nodes, paren)
     pipe_to_function_call_pass!(fst[1])
     arg1 = fst[1]
     push!(nodes, arg1)
-    paren = FST(CSTParser.PUNCTUATION, -1, arg1.endline, arg1.endline, ")")
+    paren = FST(PUNCTUATION, -1, arg1.endline, arg1.endline, ")")
     push!(nodes, paren)
     return nodes
 end
 
 function import_to_usings(fst::FST, s::State)
-    findfirst(is_colon, fst.nodes) === nothing || return FST[]
-    findfirst(n -> is_punc(n) && n.val == ".", fst.nodes) === nothing || return FST[]
+    findfirst(n -> is_colon(n) || n.typ === As, fst.nodes) === nothing || return FST[]
+    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
+        return FST[]
 
     usings = FST[]
-    idxs = findall(n -> n.typ === CSTParser.IDENTIFIER, fst.nodes)
+    idxs = findall(n -> !is_leaf(n), fst.nodes)
 
     for i in idxs
-        name = fst[i].val
-        sl = fst[i].startline
-        el = fst[i].endline
-        use = FST(CSTParser.Using, fst.indent)
-        use.startline = sl
-        use.endline = el
+        n = fst[i]
+        sl = n.startline
+        el = n.endline
+        use = FST(Using, fst.indent)
+        use.startline = n.startline
+        use.endline = n.endline
 
-        add_node!(use, FST(CSTParser.KEYWORD, -1, sl, el, "using"), s)
+        add_node!(use, FST(KEYWORD, -1, sl, el, "using"), s)
         add_node!(use, Whitespace(1), s)
 
-        # collect the dots prior to a identifier
-        # import ..A
-        j = i - 1
-        while fst[j].typ === CSTParser.OPERATOR
-            add_node!(use, fst[j], s, join_lines = true)
-            j -= 1
-        end
-
-        add_node!(use, FST(CSTParser.IDENTIFIER, -1, sl, el, name), s, join_lines = true)
-        add_node!(use, FST(CSTParser.OPERATOR, -1, sl, el, ":"), s, join_lines = true)
+        add_node!(use, n, s, join_lines = true)
+        colon = FST(OPERATOR, -1, sl, el, ":")
+        colon.opmeta = OpMeta(Tokens.COLON, false)
+        add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, FST(CSTParser.IDENTIFIER, -1, sl, el, name), s, join_lines = true)
+        add_node!(use, FST(IDENTIFIER, -1, sl, el, n[end].val), s, join_lines = true)
 
         push!(usings, use)
     end
@@ -166,22 +161,19 @@ no type annotation is provided.
 function annotate_typefields_with_any!(fst::FST, s::State)
     is_leaf(fst) && return
     for (i, n) in enumerate(fst.nodes)
-        if n.typ === CSTParser.IDENTIFIER
-            nn = FST(CSTParser.BinaryOpCall, n.indent)
+        if n.typ === IDENTIFIER
+            nn = FST(Binary, n.indent)
             nn.startline = n.startline
             nn.endline = n.endline
             add_node!(nn, n, s)
             line_offset = n.line_offset + length(n)
-            add_node!(
-                nn,
-                FST(CSTParser.OPERATOR, line_offset, n.startline, n.endline, "::"),
-                s,
-                join_lines = true,
-            )
+            op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
+            op.opmeta = OpMeta(Tokens.DECLARATION, false)
+            add_node!(nn, op, s, join_lines = true)
             line_offset += 2
             add_node!(
                 nn,
-                FST(CSTParser.IDENTIFIER, line_offset, n.startline, n.endline, "Any"),
+                FST(IDENTIFIER, line_offset, n.startline, n.endline, "Any"),
                 s,
                 join_lines = true,
             )
@@ -221,10 +213,10 @@ function short_to_long_function_def!(fst::FST, s::State)
     # case 3
     #   func(a::T)::R where T = body
 
-    funcdef = FST(CSTParser.FunctionDef, fst.indent)
-    if fst[1].typ === CSTParser.Call || fst[1].typ === CSTParser.WhereOpCall
+    funcdef = FST(FunctionN, fst.indent)
+    if fst[1].typ === Call || fst[1].typ === Where
         # function
-        kw = FST(CSTParser.KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
+        kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
         add_node!(funcdef, Whitespace(1), s)
 
@@ -239,16 +231,15 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_indent!(funcdef[end], s, s.opts.indent)
 
         # end
-        kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
+        kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
         add_node!(funcdef, kw, s)
 
         fst.typ = funcdef.typ
         fst.nodes = funcdef.nodes
         fst.len = funcdef.len
-    elseif fst[1].typ === CSTParser.BinaryOpCall &&
-           fst[1][end].typ === CSTParser.WhereOpCall
+    elseif fst[1].typ === Binary && fst[1][end].typ === Where
         # function
-        kw = FST(CSTParser.KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
+        kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
         add_node!(funcdef, kw, s)
         add_node!(funcdef, Whitespace(1), s)
 
@@ -256,7 +247,8 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_node!(funcdef, fst[1][1], s, join_lines = true)
 
         whereop = fst[1][end]
-        decl = FST(CSTParser.OPERATOR, -1, fst[1].startline, fst[1].endline, "::")
+        decl = FST(OPERATOR, -1, fst[1].startline, fst[1].endline, "::")
+        delc.opmeta = OpMeta(Tokens.DECLARATION, false)
 
         # ::R where T
         add_node!(funcdef, decl, s, join_lines = true)
@@ -268,7 +260,7 @@ function short_to_long_function_def!(fst::FST, s::State)
         add_indent!(funcdef[end], s, s.opts.indent)
 
         # end
-        kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
+        kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
         add_node!(funcdef, kw, s)
 
         fst.typ = funcdef.typ
@@ -290,8 +282,8 @@ foo(a::A)::R where A = body
 In this case instead of it being parsed as (1):
 
 ```
-CSTParser.BinaryOpCall
- - CSTParser.WhereOpCall
+Binary
+ - Where
  - OP
  - RHS
 ```
@@ -299,11 +291,11 @@ CSTParser.BinaryOpCall
 It's parsed as (2):
 
 ```
-CSTParser.BinaryOpCall
- - CSTParser.BinaryOpCall
+Binary
+ - Binary
   - LHS
   - OP
-  - CSTParser.WhereOpCall
+  - Where
    - R
    - ...
  - OP
@@ -321,10 +313,10 @@ This transformation converts (2) to (1).
 ref https://github.com/julia-vscode/CSTParser.jl/issues/93
 """
 function binaryop_to_whereop!(fst::FST, s::State)
-    # transform fst[1] to a WhereOpCall
+    # transform fst[1] to a Where
     oldbinop = fst[1]
     oldwhereop = fst[1][end]
-    binop = FST(CSTParser.BinaryOpCall, fst[1].indent)
+    binop = FST(Binary, fst[1].indent)
 
     # foo(a::A)
     add_node!(binop, oldbinop[1], s)
@@ -333,7 +325,7 @@ function binaryop_to_whereop!(fst::FST, s::State)
     # foo(a::A)::R
     add_node!(binop, oldwhereop[1], s, join_lines = true)
 
-    whereop = FST(CSTParser.WhereOpCall, fst[1].indent)
+    whereop = FST(Where, fst[1].indent)
     add_node!(whereop, binop, s)
 
     # "foo(a::A)::R where A"
@@ -366,15 +358,15 @@ end
 ```
 """
 function prepend_return!(fst::FST, s::State)
-    fst.typ === CSTParser.Block || return
+    fst.typ === Block || return
     ln = fst[end]
     is_block(ln) && return
-    ln.typ === CSTParser.Return && return
-    ln.typ === CSTParser.MacroCall && return
+    ln.typ === Return && return
+    ln.typ === MacroCall && return
     ln.typ === MacroBlock && return
 
-    ret = FST(CSTParser.Return, fst.indent)
-    kw = FST(CSTParser.KEYWORD, -1, fst[end].startline, fst[end].endline, "return")
+    ret = FST(Return, fst.indent)
+    kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "return")
     add_node!(ret, kw, s)
     add_node!(ret, Whitespace(1), s)
     add_node!(ret, ln, s, join_lines = true)
@@ -403,52 +395,54 @@ Module.@macro
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
     t = FST[]
-    f =
-        (t) ->
-            (n, s) -> begin
-                if is_macrocall(n) || (n.typ === CSTParser.Quotenode && !is_leaf(n[1]))
-                    # 1. Do not move "@" in nested macro calls
-                    # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
-                    # since it's semantically different to "@a.b.c" and "a.b.@c"
-                    push!(t, n)
-                    return false
-                elseif is_leaf(n)
-                    push!(t, n)
-                end
-            end
+    f = (t) -> (n, s) -> begin
+        if is_macrocall(n) || (n.typ === Quotenode && !is_leaf(n[1]))
+            # 1. Do not move "@" in nested macro calls
+            # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
+            # since it's semantically different to "@a.b.c" and "a.b.@c"
+            push!(t, n)
+            return false
+        elseif is_leaf(n)
+            push!(t, n)
+        end
+    end
     walk(f(t), fst, s)
 
-    macroname = FST(CSTParser.MacroName, fst.indent)
+    macroname = FST(Macroname, fst.indent)
     for (i, n) in enumerate(t)
         if n.val == "@"
             continue
-        elseif i < length(t)
+        elseif n.typ === IDENTIFIER && i < length(t) && n.val[1] == '@'
+            n.val = n.val[2:end]
+            n.len -= 1
             add_node!(macroname, n, s, join_lines = true)
-        elseif n.typ === CSTParser.Quotenode
+        elseif i < length(t) || n.typ == Quotenode
             add_node!(macroname, n, s, join_lines = true)
         else
-            at = FST(CSTParser.PUNCTUATION, -1, n.startline, n.endline, "@")
-            add_node!(macroname, at, s, join_lines = true)
-            add_node!(macroname, n, s, join_lines = true)
+            if n.typ === IDENTIFIER && n.val[1] != '@'
+                n.val = "@" * n.val
+                n.len += 1
+                add_node!(macroname, n, s, join_lines = true)
+            else
+                add_node!(macroname, n, s, join_lines = true)
+            end
         end
     end
 
     return macroname
 end
 
-"""
-"""
 function conditional_to_if_block!(fst::FST, s::State; top = true)
-    t = FST(CSTParser.If, fst.indent)
-    kw = FST(CSTParser.KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
+    t = FST(If, fst.indent)
+    kw = FST(KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
     add_node!(t, kw, s, max_padding = 0)
     add_node!(t, Whitespace(1), s, join_lines = true)
     add_node!(t, fst[1], s, join_lines = true)
 
-    idx1 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == "?", fst.nodes)
-    idx2 = findfirst(n -> n.typ === CSTParser.OPERATOR && n.val == ":", fst.nodes)
+    idx1 = findfirst(n -> n.typ === OPERATOR && n.val == "?", fst.nodes)
+    idx2 = findfirst(n -> n.typ === OPERATOR && n.val == ":", fst.nodes)
 
-    block1 = FST(CSTParser.Block, fst.indent + s.opts.indent)
+    block1 = FST(Block, fst.indent + s.opts.indent)
     for n in fst.nodes[idx1+1:idx2-1]
         if n.typ === PLACEHOLDER ||
            n.typ === WHITESPACE ||
@@ -460,21 +454,21 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     end
     add_node!(t, block1, s, max_padding = s.opts.indent)
 
-    block2 = FST(CSTParser.Block, fst.indent)
+    block2 = FST(Block, fst.indent)
     padding = 0
-    if fst[end].typ === CSTParser.ConditionalOpCall
+    if fst[end].typ === Conditional
         conditional_to_if_block!(fst[end], s, top = false)
     else
         block2.indent += s.opts.indent
         padding = s.opts.indent
-        kw = FST(CSTParser.KEYWORD, -1, -1, -1, "else")
+        kw = FST(KEYWORD, -1, -1, -1, "else")
         add_node!(t, kw, s, max_padding = 0)
     end
     add_node!(block2, fst[end], s)
     add_node!(t, block2, s, max_padding = 0)
 
     if top
-        kw = FST(CSTParser.KEYWORD, -1, -1, -1, "end")
+        kw = FST(KEYWORD, -1, -1, -1, "end")
         add_node!(t, kw, s, max_padding = 0)
     end
 
@@ -482,7 +476,69 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     fst.nodes = t.nodes
     fst.len = t.len
 
-    # @info "" fst[1] fst.len
-
     return nothing
+end
+
+"""
+    separate_kwargs_with_semicolon!(fst::FST)
+
+Ensures keyword arguments are separated with a ";".
+
+### Examples
+
+Replace "," with ";".
+
+```julia
+a = f(x, y = 3)
+
+->
+
+a = f(x; y = 3)
+```
+
+Move ";" to the prior to the first positional argument.
+
+```julia
+a = f(x = 1; y = 2)
+
+->
+
+a = f(; x = 1, y = 2)
+```
+"""
+function separate_kwargs_with_semicolon!(fst::FST)
+    kw_idx = findfirst(n -> n.typ === Kw, fst.nodes)
+    kw_idx === nothing && return
+    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
+    # first "," prior to a kwarg
+    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
+    # @info "" kw_idx sc_idx comma_idx ph_idx
+
+    if sc_idx !== nothing && sc_idx > kw_idx
+        # move ; prior to first kwarg
+        fst[sc_idx].val = ","
+        fst[sc_idx].typ = PUNCTUATION
+        if comma_idx === nothing
+            if ph_idx !== nothing
+                fst[ph_idx] = Placeholder(1)
+                insert!(fst, ph_idx, Semicolon())
+            else
+                insert!(fst, kw_idx, Placeholder(1))
+                insert!(fst, kw_idx, Semicolon())
+            end
+        end
+    elseif sc_idx === nothing && comma_idx === nothing
+        if ph_idx !== nothing
+            fst[ph_idx] = Placeholder(1)
+            insert!(fst, ph_idx, Semicolon())
+        else
+            insert!(fst, kw_idx, Placeholder(1))
+            insert!(fst, kw_idx, Semicolon())
+        end
+    elseif sc_idx === nothing
+        fst[comma_idx].val = ";"
+        fst[comma_idx].typ = SEMICOLON
+    end
+    return
 end

@@ -46,32 +46,36 @@ function nestable(::BlueStyle, cst::CSTParser.EXPR)
     return nestable(DefaultStyle(), cst)
 end
 
-function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(bs)
-    t = FST(cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    if cst[3].fullspan != 0
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    end
-    if cst[4].typ === CSTParser.Block
-        s.indent += s.opts.indent
-        n = pretty(style, cst[4], s, ignore_single_line = true)
-        add_node!(t, n, s, max_padding = s.opts.indent)
-        s.indent -= s.opts.indent
-    end
-    add_node!(t, pretty(style, cst.args[end], s), s)
-    t
-end
-
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
     t = p_call(DefaultStyle(style), cst, s)
     if !parent_is(cst, is_function_or_macro_def)
         separate_kwargs_with_semicolon!(t)
     end
+    t
+end
+
+function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(bs)
+    t = FST(Do, cst, nspaces(s))
+    add_node!(t, pretty(style, cst[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+
+    nodes = map(cst[3]) do n
+        n
+    end
+    if nodes[1].fullspan != 0
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(style, nodes[1], s), s, join_lines = true)
+    end
+    if nodes[2].head === :block
+        s.indent += s.opts.indent
+        n = pretty(style, nodes[2], s, ignore_single_line = true)
+        add_node!(t, n, s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
+    end
+    add_node!(t, pretty(style, cst[end], s), s)
     t
 end
 
@@ -83,14 +87,16 @@ function p_binaryopcall(
     nospace = false,
 )
     style = getstyle(bs)
-    t = FST(cst, nspaces(s))
+    t = FST(Binary, cst, nspaces(s))
     op = cst[2]
-    nonest = nonest || op.kind === Tokens.COLON
-    if cst.parent.typ === CSTParser.Curly &&
-       op.kind in (Tokens.ISSUBTYPE, Tokens.ISSUPERTYPE) &&
+
+    nonest = nonest || CSTParser.is_colon(op)
+
+    if CSTParser.iscurly(cst.parent) &&
+       (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
         nospace = true
-    elseif op.kind === Tokens.COLON
+    elseif CSTParser.is_colon(op)
         nospace = true
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
@@ -101,14 +107,14 @@ function p_binaryopcall(
         n = pretty(style, cst[1], s)
     end
 
-    if op.kind === Tokens.COLON &&
+    if CSTParser.is_colon(op) &&
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s)
@@ -121,19 +127,17 @@ function p_binaryopcall(
     if op.fullspan == 0
         # Do nothing - represents a binary op with no textual representation.
         # For example: `2a`, which is equivalent to `2 * a`.
-    elseif op.kind === Tokens.EX_OR
+    elseif CSTParser.is_exor(op)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     elseif (
-        is_number(cst[1]) ||
-        op.kind === Tokens.FWDFWD_SLASH ||
-        op.kind === Tokens.CIRCUMFLEX_ACCENT
-    ) && op.dot
+        CSTParser.isnumber(cst[1]) || is_fwdfwd_slash(op) || is_circumflex_accent(op)
+    ) && CSTParser.isdotted(op)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif op.kind !== Tokens.IN && (
+    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op)) && (
         nospace || (
-            op.kind !== Tokens.ANON_FUNC && CSTParser.precedence(op) in (
+            !CSTParser.is_anon_func(op) && precedence(op) in (
                 CSTParser.ColonOp,
                 CSTParser.RationalOp,
                 CSTParser.PowerOp,
@@ -155,14 +159,14 @@ function p_binaryopcall(
         n = pretty(style, cst[3], s)
     end
 
-    if op.kind === Tokens.COLON &&
+    if CSTParser.is_colon(op) &&
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[3]) &&
        !is_iterable(cst[3])
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, "(")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
         add_node!(t, n, s, join_lines = true)
-        paren = FST(CSTParser.PUNCTUATION, -1, n.startline, n.startline, ")")
+        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
         add_node!(t, n, s, join_lines = true)
@@ -178,16 +182,17 @@ end
 
 function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
-    t = FST(cst, nspaces(s))
+    t = FST(Return, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
-        for a in cst.args[2:end]
+        for i = 2:length(cst)
+            a = cst[i]
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-    elseif cst[2].kind === Tokens.NOTHING
+    elseif CSTParser.is_nothing(cst[2])
         add_node!(t, Whitespace(1), s)
-        no = FST(CSTParser.IDENTIFIER, -1, t.endline, t.endline, "nothing")
+        no = FST(IDENTIFIER, -1, t.endline, t.endline, "nothing")
         add_node!(t, no, s, join_lines = true)
     end
     t

@@ -13,11 +13,13 @@ function is_str_or_cmd(t::Tokens.Kind)
     return false
 end
 
-function is_str_or_cmd(typ::CSTParser.Head)
-    typ === CSTParser.StringH && return true
-    typ === CSTParser.x_Str && return true
-    typ === CSTParser.x_Cmd && return true
-    return false
+function is_str_or_cmd(cst::CSTParser.EXPR)
+    CSTParser.isstring(cst) || CSTParser.iscmd(cst)
+end
+
+function tokenize(val::AbstractString)::Tokens.Kind
+    toks = collect(Tokenize.tokenize(val))
+    toks[1].kind
 end
 
 struct Document
@@ -54,7 +56,7 @@ function Document(text::AbstractString)
     str = ""
 
     goffset = 0
-    for (idx, t) in enumerate(CSTParser.Tokenize.tokenize(text))
+    for (idx, t) in enumerate(Tokenize.tokenize(text))
         if t.kind === Tokens.WHITESPACE
             offset = goffset
             for c in t.val

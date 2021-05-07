@@ -264,15 +264,6 @@
         @test bluefmt(str_, 4, 27) == str
     end
 
-    @testset "do not prepend return in `do` blocks" begin
-        str = """
-        map(arg1, arg2) do x, y
-            expr1
-            expr2
-        end"""
-        @test bluefmt(str, always_use_return = true) == str
-    end
-
     @testset "separate kw args with semicolon" begin
         str_ = "xy = f(x, y=3)"
         str = "xy = f(x; y = 3)"

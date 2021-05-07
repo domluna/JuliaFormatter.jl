@@ -183,8 +183,17 @@
         t = run_pretty(str_, opts = Options(margin = 80, import_to_using = true))
         @test t.len == 13
 
-        # #232
+        # issue 232
         str = """import A.b"""
+        @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b: c"""
+        @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b.c"""
+        @test fmt(str, import_to_using = true) == str
+
+        str = """import A.b.c: d"""
         @test fmt(str, import_to_using = true) == str
     end
 
@@ -607,7 +616,7 @@
         @test fmt(str, format_docstrings = true) == str
 
         str = raw"""
-        @doc doc\"""
+        @doc docϵ\"""
            foo()
         \"""
         foo() = bar()"""
@@ -631,7 +640,7 @@
         @test fmt(str, format_docstrings = true) == str
 
         # issue 160
-        str = """
+        str = raw"""
         module MyModule
 
         import Markdown: @doc_str

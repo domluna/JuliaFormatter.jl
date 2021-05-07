@@ -1,6 +1,3 @@
-"""
-`FNode` is a node used for formatting which does not have a `CSTParser` equivalent.
-"""
 @enum(
     FNode,
 
@@ -14,18 +11,91 @@
     TRAILINGCOMMA,
     TRAILINGSEMICOLON,
     INVERSETRAILINGSEMICOLON,
-
-    # no equivalent in CSTParser
+    KEYWORD,
+    LITERAL,
+    OPERATOR,
+    PUNCTUATION,
+    IDENTIFIER,
     MacroBlock,
+    MacroCall,
+    MacroStr,
+    Macroname,
+    GlobalRefDoc,
+    TupleN,
+    RefN,
+    ModuleN,
+    Unary,
+    Binary,
+    Chain,
+    Comparison,
+    Conditional,
+    Where,
+    Vect,
+    Braces,
+    Brackets,
+    Curly,
+    Call,
+    Parameters,
+    Kw,
+    Vcat,
+    Hcat,
+    TypedVcat,
+    TypedHcat,
+    Row,
+    BracesCat,
+    TypedComprehension,
+    Comprehension,
+    Generator,
+    Filter,
+    Flatten,
+    For,
+    While,
+    If,
+    Begin,
+    Try,
+    Quote,
+    Do,
+    Let,
+    Block,
+    BareModule,
+    TopLevel,
+    StringN,
+    Macro,
+    FunctionN,
+    Struct,
+    Mutable,
+    Primitive,
+    Abstract,
+    Return,
+    Local,
+    Outer,
+    Global,
+    Const,
+    Import,
+    Export,
+    Using,
+    File,
+    Quotenode,
+    Unknown,
+    As,
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
+
+struct OpMeta
+    kind::Tokens.Kind
+    dotted::Bool
+end
+
+# struct OpCallMeta
+#     lazy_circuit
+# end
 
 """
 Formatted Syntax Tree
 """
 mutable struct FST
-    typ::Union{CSTParser.Head,FNode}
+    typ::FNode
 
     # Start and end lines of the node
     # in the original source file.
@@ -46,15 +116,18 @@ mutable struct FST
     # due to `)` after `f(arg)`.
     extra_margin::Int
     line_offset::Int
+
+    opmeta::Union{Nothing,OpMeta}
 end
 
-FST(cst::CSTParser.EXPR, indent::Int) =
-    FST(cst.typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1)
+FST(typ::FNode, cst::CSTParser.EXPR, indent::Int) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1, nothing)
 
-FST(typ::CSTParser.Head, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1)
+FST(typ::FNode, indent::Int) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1, nothing)
 
 function FST(
+    typ::FNode,
     cst::CSTParser.EXPR,
     line_offset::Int,
     startline::Int,
@@ -62,7 +135,7 @@ function FST(
     val::AbstractString,
 )
     FST(
-        cst.typ,
+        typ,
         startline,
         endline,
         0,
@@ -73,11 +146,12 @@ function FST(
         AllowNest,
         0,
         line_offset,
+        nothing,
     )
 end
 
 function FST(
-    typ::CSTParser.Head,
+    typ::FNode,
     line_offset::Int,
     startline::Int,
     endline::Int,
@@ -95,6 +169,7 @@ function FST(
         AllowNest,
         0,
         line_offset,
+        nothing,
     )
 end
 
@@ -121,22 +196,35 @@ end
 end
 
 @inline Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1)
-@inline Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)
+@inline Semicolon() =
+    FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingComma() =
-    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
-@inline InverseTrailingSemicolon() =
-    FST(INVERSETRAILINGSEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1)
+    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
+@inline InverseTrailingSemicolon() = FST(
+    INVERSETRAILINGSEMICOLON,
+    -1,
+    -1,
+    0,
+    1,
+    ";",
+    nothing,
+    nothing,
+    AllowNest,
+    0,
+    -1,
+    nothing,
+)
 @inline Whitespace(n) =
-    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Placeholder(n) =
-    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1)
+    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 @inline Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 @inline InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1)
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 
 @inline must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
 @inline cant_nest(fst::FST) = fst.nest_behavior === NeverNest
@@ -146,55 +234,104 @@ end
 @inline is_leaf(fst::FST) = fst.nodes === nothing
 
 @inline is_punc(cst::CSTParser.EXPR) = CSTParser.ispunctuation(cst)
-@inline is_punc(fst::FST) = fst.typ === CSTParser.PUNCTUATION
-@inline is_end(x) = x.typ === CSTParser.KEYWORD && x.val == "end"
-@inline is_colon(x) = x.typ === CSTParser.OPERATOR && x.val == ":"
-@inline is_comma(fst::FST) =
-    (fst.typ === CSTParser.PUNCTUATION && fst.val == ",") || fst.typ === TRAILINGCOMMA
+@inline is_punc(fst::FST) = fst.typ === PUNCTUATION
+
+@inline is_end(x::CSTParser.EXPR) = x.head === :END && x.val == "end"
+@inline is_end(x::FST) = x.typ === KEYWORD && x.val == "end"
+
+@inline is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
+
+@inline is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
 @inline is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
-@inline is_colon_op(cst::CSTParser.EXPR) =
-    (cst.typ === CSTParser.BinaryOpCall && cst[2].kind === Tokens.COLON) ||
-    cst.typ === CSTParser.ColonOpCall
+@inline is_circumflex_accent(x::CSTParser.EXPR) =
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "^")
+@inline is_fwdfwd_slash(x::CSTParser.EXPR) =
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "//")
 
-@inline is_colon_op(fst::FST) =
-    (fst.typ === CSTParser.BinaryOpCall && op_kind(fst) === Tokens.COLON) ||
-    fst.typ === CSTParser.ColonOpCall
-
-@inline function is_number(cst::CSTParser.EXPR)
-    cst.typ === CSTParser.LITERAL || return false
-    return cst.kind === Tokens.INTEGER || cst.kind === Tokens.FLOAT
-end
-
+# TODO: fix this
 function is_multiline(fst::FST)
-    fst.typ === CSTParser.StringH && return true
-    if fst.typ === CSTParser.x_Str && fst[2].typ === CSTParser.StringH
+    if fst.typ === StringN && fst.endline > fst.startline
         return true
-    elseif fst.typ === CSTParser.x_Cmd && fst[2].typ === CSTParser.StringH
+    elseif fst.typ === Vcat && fst.endline > fst.startline
         return true
-    elseif fst.typ === CSTParser.Vcat && fst.endline > fst.startline
+    elseif fst.typ === TypedVcat && fst.endline > fst.startline
         return true
-    elseif fst.typ === CSTParser.TypedVcat && fst.endline > fst.startline
+    elseif fst.typ === MacroStr && fst.endline > fst.startline
         return true
     end
     false
 end
 
-function is_importer_exporter(fst::FST)
-    fst.typ === CSTParser.Import && return true
-    fst.typ === CSTParser.Export && return true
-    fst.typ === CSTParser.Using && return true
+@inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
+
+function is_macrodoc(cst::CSTParser.EXPR)
+    cst.head === :macrocall &&
+        length(cst) == 4 &&
+        CSTParser.isidentifier(cst[1]) &&
+        cst[1].val == "@doc" &&
+        (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
+end
+
+function is_macrostr(cst::CSTParser.EXPR)
+    cst.head === :macrocall || return false
+    length(cst) > 2 || return false
+    CSTParser.isidentifier(cst[1]) || return false
+
+    m = match(r"@(.*)_(str|cmd)", cst[1].val)
+    m !== nothing || return false
+
+    val = m.captures[1]
+
+    # r"hello" is parsed as @r_str"hello"
+    # if it was originally r"hello" then
+    # the number of bytes in the matched string (between @ and _)
+    # will be == the span of the node.
+    #
+    # In this example the span == 1.
+    ncodeunits(val) == cst[1].span || return false
+
+    return is_str_or_cmd(cst[3])
+end
+
+function is_call(cst::CSTParser.EXPR)
+    t = CSTParser.is_func_call(cst)
+    t !== nothing && t && return is_opener(cst[2])
     return false
 end
 
-@inline is_macrocall(fst::FST) = fst.typ === CSTParser.MacroCall || fst.typ === MacroBlock
+function is_if(cst::CSTParser.EXPR)
+    cst.head === :if && cst[1].head === :IF && return true
+    cst.head === :elseif && cst[1].head === :ELSEIF && return true
+    return false
+end
 
-function is_macrodoc(cst::CSTParser.EXPR)
-    return cst.typ === CSTParser.MacroCall &&
-           length(cst) == 3 &&
-           cst[1].typ === CSTParser.MacroName &&
-           cst[1][2].val == "doc" &&
-           is_str(cst[2])
+function is_conditional(cst::CSTParser.EXPR)
+    CSTParser.isconditional(x)
+end
+
+function is_colon_call(cst::CSTParser.EXPR)
+    CSTParser.isoperator(cst) && cst.val == ":" && return true
+    cst.head == :call && is_colon_call(cst.args[1]) && return true
+    return false
+end
+
+function is_custom_leaf(fst::FST)
+    fst.typ === NEWLINE ||
+        fst.typ === SEMICOLON ||
+        fst.typ === WHITESPACE ||
+        fst.typ === PLACEHOLDER ||
+        fst.typ === NOTCODE ||
+        fst.typ === INLINECOMMENT ||
+        fst.typ === TRAILINGCOMMA ||
+        fst.typ === TRAILINGSEMICOLON ||
+        fst.typ === INVERSETRAILINGSEMICOLON
+end
+
+function is_nothing(cst::CSTParser.EXPR)
+    CSTParser.is_nothing(cst) && return true
+    cst.val === nothing && cst.args === nothing && return true
+    return false
 end
 
 # f a function which returns a bool
@@ -216,52 +353,55 @@ end
 # TODO: Remove once this is fixed in CSTParser.
 # https://github.com/julia-vscode/CSTParser.jl/issues/108
 function get_args(cst::CSTParser.EXPR)
-    if cst.typ === CSTParser.MacroCall ||
-       cst.typ === CSTParser.TypedVcat ||
-       cst.typ === CSTParser.Ref ||
-       cst.typ === CSTParser.Curly ||
-       cst.typ === CSTParser.Call ||
-       cst.typ === CSTParser.TypedComprehension
-        return get_args(cst.args[2:end])
-    elseif cst.typ === CSTParser.WhereOpCall
+    if cst.head === :macrocall ||
+       cst.head === :typed_vcat ||
+       cst.head === :ref ||
+       cst.head === :curly ||
+       is_call(cst) ||
+       cst.head === :typed_comprehension
+        return get_args(collect(cst)[2:end])
+    elseif cst.head === :where
         # get the arguments in B of `A where B`
-        return get_args(cst.args[3:end])
-    elseif cst.typ === CSTParser.Braces ||
-           cst.typ === CSTParser.Vcat ||
-           cst.typ === CSTParser.BracesCat ||
-           cst.typ === CSTParser.TupleH ||
-           cst.typ === CSTParser.Vect ||
-           cst.typ === CSTParser.InvisBrackets ||
-           cst.typ === CSTParser.Parameters ||
-           cst.typ === CSTParser.Comprehension
+        return get_args(collect(cst)[3:end])
+    elseif cst.head === :braces ||
+           cst.head === :vcat ||
+           cst.head === :bracescat ||
+           cst.head === :tuple ||
+           cst.head === :vect ||
+           cst.head === :brackets ||
+           cst.head === :parameters ||
+           cst.head === :comprehension
         return get_args(cst.args)
     end
-    CSTParser.get_args(cst)
+    return get_args(cst.args)
 end
 
-function get_args(args::Vector{CSTParser.EXPR})
+function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
     args0 = CSTParser.EXPR[]
     for a in args
-        CSTParser.ispunctuation(a) && continue
-        if CSTParser.typof(a) === CSTParser.Parameters
-            for j = 1:length(a.args)
-                parg = a[j]
-                CSTParser.ispunctuation(parg) && continue
-                push!(args0, parg)
-            end
+        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a)
+            continue
+        end
+        if a.head === :parameters
+            push!(args0, get_args(a)...)
         else
             push!(args0, a)
         end
     end
     args0
 end
+
+function get_args(args::Nothing)
+    return CSTParser.EXPR[]
+end
+
 @inline n_args(x) = length(get_args(x))
 
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
         loc =
-            s.offset > length(s.doc.text) && t.typ === CSTParser.TopLevel ?
+            s.offset > length(s.doc.text) && t.typ === TopLevel ?
             cursor_loc(s, s.offset - 1) : cursor_loc(s)
         for l = t.endline:loc[1]
             if has_semicolon(s.doc, l)
@@ -272,7 +412,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
 
         # If there's no semicolon, treat it
-        # as a FNode
+        # as formatter node
         if n.startline == -1
             t.len += length(n)
             n.startline = t.endline
@@ -282,12 +422,12 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         end
     elseif n.typ === TRAILINGCOMMA
         en = t.nodes[end]
-        if en.typ === CSTParser.Generator ||
-           en.typ === CSTParser.Filter ||
-           en.typ === CSTParser.Flatten ||
-           en.typ === CSTParser.MacroCall ||
+        if en.typ === Generator ||
+           en.typ === Filter ||
+           en.typ === Flatten ||
+           en.typ === MacroCall ||
            en.typ === MacroBlock ||
-           (is_comma(en) && t.typ === CSTParser.TupleH && n_args(t.ref[]) == 1)
+           (is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1)
             # don't insert trailing comma in these cases
         elseif is_comma(en)
             t.nodes[end] = n
@@ -306,7 +446,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif n.typ isa FNode && is_leaf(n)
+    elseif is_custom_leaf(n)
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline
@@ -314,10 +454,10 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if n.typ === CSTParser.Block && length(n) == 0
+    if n.typ === Block && length(n) == 0
         push!(t.nodes, n)
         return
-    elseif n.typ === CSTParser.Parameters
+    elseif n.typ === Parameters
         # unpack Parameters arguments into the parent node
         if n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
@@ -329,8 +469,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
         if length(n.nodes) > 0
             nws = 1
-            if (t.typ === CSTParser.Curly || t.typ === CSTParser.WhereOpCall) &&
-               !s.opts.whitespace_typedefs
+            if (t.typ === Curly || t.typ === Where) && !s.opts.whitespace_typedefs
                 nws = 0
             end
             multi_arg = n_args(t.ref[]) > 0
@@ -340,7 +479,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             add_node!(t, nn, s, join_lines = true)
         end
         return
-    elseif s.opts.import_to_using && n.typ === CSTParser.Import
+    elseif s.opts.import_to_using && n.typ === Import
         usings = import_to_usings(n, s)
         if length(usings) > 0
             for nn in usings
@@ -348,10 +487,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             end
             return
         end
-    elseif n.typ === CSTParser.BinaryOpCall &&
-           n[1].typ === CSTParser.BinaryOpCall &&
-           n[1][end].typ === CSTParser.WhereOpCall
-        # normalize FST representation for WhereOpCall
+    elseif n.typ === Binary && n[1].typ === Binary && n[1][end].typ === Where
+        # normalize FST representation for Where
         binaryop_to_whereop!(n, s)
     end
 
@@ -376,8 +513,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
             rm_block_nl =
                 s.opts.remove_extra_newlines &&
-                t.typ !== CSTParser.ModuleH &&
-                (n.typ === CSTParser.Block || is_end(n))
+                t.typ !== ModuleN &&
+                (n.typ === Block || is_end(n))
 
             if remove_empty_notcode(t) || rm_block_nl
                 nest = false
@@ -439,7 +576,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
     if !join_lines && is_end(n)
         # end keyword isn't useful w.r.t margin lengths
-    elseif t.typ === CSTParser.StringH
+    elseif t.typ === StringN
         # The length of this node is the length of
         # the longest string. The length of the string is
         # only considered "in the positive" when it's past
@@ -484,88 +621,155 @@ Returns the length to any node type in `ntyps` based off the `start` index.
 end
 
 @inline is_closer(fst::FST) =
-    fst.typ === CSTParser.PUNCTUATION &&
-    (fst.val == "}" || fst.val == ")" || fst.val == "]")
+    fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
 @inline is_closer(cst::CSTParser.EXPR) =
-    cst.kind === Tokens.RBRACE || cst.kind === Tokens.RPAREN || cst.kind === Tokens.RSQUARE
+    cst.head === :RBRACE || cst.head === :RPAREN || cst.head === :RSQUARE
 
 @inline is_opener(fst::FST) =
-    fst.typ === CSTParser.PUNCTUATION &&
-    (fst.val == "{" || fst.val == "(" || fst.val == "[")
+    fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
 @inline is_opener(cst::CSTParser.EXPR) =
-    cst.kind === Tokens.LBRACE || cst.kind === Tokens.LPAREN || cst.kind === Tokens.LSQUARE
+    cst.head === :LBRACE || cst.head === :LPAREN || cst.head === :LSQUARE
 
-@inline is_str(cst::CSTParser.EXPR) = is_str_or_cmd(cst.kind) || is_str_or_cmd(cst.typ)
-
-function is_iterable(x::Union{CSTParser.EXPR,FST})
-    x.typ === CSTParser.TupleH && return true
-    x.typ === CSTParser.Vect && return true
-    x.typ === CSTParser.Vcat && return true
-    x.typ === CSTParser.Braces && return true
-    x.typ === CSTParser.Call && return true
-    x.typ === CSTParser.Curly && return true
-    x.typ === CSTParser.Comprehension && return true
-    x.typ === CSTParser.TypedComprehension && return true
-    x.typ === CSTParser.MacroCall && return true
-    x.typ === CSTParser.InvisBrackets && return true
-    x.typ === CSTParser.Ref && return true
-    x.typ === CSTParser.TypedVcat && return true
-    x.typ === CSTParser.Import && return true
-    x.typ === CSTParser.Using && return true
-    x.typ === CSTParser.Export && return true
+function is_iterable(x::CSTParser.EXPR)
+    x.head === :tuple && return true
+    x.head === :vect && return true
+    x.head === :vcat && return true
+    x.head === :braces && return true
+    is_call(x) && return true
+    x.head === :curly && return true
+    x.head === :comprehension && return true
+    x.head === :typed_comprehension && return true
+    x.head === :macrocall && return true
+    x.head === :brackets && return true
+    x.head === :ref && return true
+    x.head === :typed_vcat && return true
+    x.head === :import && return true
+    x.head === :using && return true
+    x.head === :export && return true
     return false
 end
 
-function is_comprehension(x::Union{CSTParser.EXPR,FST})
-    x.typ === CSTParser.Comprehension && return true
-    x.typ === CSTParser.TypedComprehension && return true
+function is_iterable(x::FST)
+    x.typ === TupleN && return true
+    x.typ === Vect && return true
+    x.typ === Vcat && return true
+    x.typ === Braces && return true
+    x.typ === Call && return true
+    x.typ === Curly && return true
+    x.typ === Comprehension && return true
+    x.typ === TypedComprehension && return true
+    x.typ === MacroCall && return true
+    x.typ === Brackets && return true
+    x.typ === RefN && return true
+    x.typ === TypedVcat && return true
+    x.typ === Import && return true
+    x.typ === Using && return true
+    x.typ === Export && return true
     return false
 end
 
-function is_block(x::Union{CSTParser.EXPR,FST})
-    x.typ === CSTParser.If && return true
-    x.typ === CSTParser.Do && return true
-    x.typ === CSTParser.Try && return true
-    x.typ === CSTParser.Begin && return true
-    x.typ === CSTParser.For && return true
-    x.typ === CSTParser.While && return true
-    x.typ === CSTParser.Let && return true
-    (x.typ === CSTParser.Quote && x[1].val == "quote") && return true
+function is_comprehension(x::CSTParser.EXPR)
+    x.head === :comprehension && return true
+    x.head === :typed_comprehension && return true
     return false
 end
 
-function is_opcall(x::Union{CSTParser.EXPR,FST})
-    x.typ === CSTParser.BinaryOpCall && return true
-    x.typ === CSTParser.Comparison && return true
-    x.typ === CSTParser.ChainOpCall && return true
-    # InvisBrackets are often mixed with operators
+function is_comprehension(x::FST)
+    x.typ === Comprehension && return true
+    x.typ === TypedComprehension && return true
+    return false
+end
+
+function is_block(x::CSTParser.EXPR)
+    is_if(x) ||
+        x.head === :do ||
+        x.head === :try ||
+        (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) ||
+        x.head === :for ||
+        x.head === :while ||
+        x.head === :let ||
+        x.head === :quote && x[1].head == :QUOTE
+end
+
+function is_block(x::FST)
+    x.typ === If && return true
+    x.typ === Do && return true
+    x.typ === Try && return true
+    x.typ === Begin && return true
+    x.typ === For && return true
+    x.typ === While && return true
+    x.typ === Let && return true
+    x.typ === Quote && x[1].val == "quote" && return true
+    return false
+end
+
+function is_opcall(x::CSTParser.EXPR)
+    is_binary(x) && return true
+    x.head === :comparison && return true
+    is_chain(x) && return true
+    # is_unary(x) && return true
+    # Brackets are often mixed with operators
     # so kwargs are propagated through its related
     # functions
-    x.typ === CSTParser.InvisBrackets && return true
+    x.head === :brackets && return true
+    return false
+end
+
+function is_opcall(x::FST)
+    x.typ === Binary && return true
+    x.typ === Comparison && return true
+    x.typ === Chain && return true
+    # x.typ === Unary && return true
+    # Brackets are often mixed with operators
+    # so kwargs are propagated through its related
+    # functions
+    x.typ === Brackets && return true
     return false
 end
 
 # Generator typ
 # (x for x in 1:10)
 # (x for x in 1:10 if x % 2 == 0)
-function is_gen(x::Union{CSTParser.EXPR,FST})
-    x.typ === CSTParser.Generator && return true
-    x.typ === CSTParser.Filter && return true
-    x.typ === CSTParser.Flatten && return true
-    # x.typ === CSTParser.InvisBrackets && return true
+function is_gen(x::CSTParser.EXPR)
+    x.head === :generator && return true
+    x.head === :filter && return true
+    x.head === :flatten && return true
+    # x.head === :brackets && return true
     return false
 end
 
-function is_assignment(x::Union{FST,CSTParser.EXPR})
-    if x.typ === CSTParser.BinaryOpCall && is_assignment(op_kind(x))
+function is_gen(x::FST)
+    x.typ === Generator && return true
+    x.typ === Filter && return true
+    x.typ === Flatten && return true
+    # x.typ === Brackets && return true
+    return false
+end
+
+function is_binary(x::CSTParser.EXPR)
+    (CSTParser.isbinarycall(x) || CSTParser.isbinarysyntax(x)) &&
+        length(x) == 3 &&
+        CSTParser.isoperator(x[2])
+end
+
+function is_unary(x::CSTParser.EXPR)
+    CSTParser.isunarycall(x) || CSTParser.isunarysyntax(x)
+end
+
+function is_chain(x::CSTParser.EXPR)
+    CSTParser.ischainedcall(x)
+end
+
+function is_assignment(x::FST)
+    if x.typ === Binary && is_assignment(op_kind(x))
         return true
     end
 
     if (
-        x.typ === CSTParser.Const ||
-        x.typ === CSTParser.Local ||
-        x.typ === CSTParser.Global ||
-        x.typ === CSTParser.Outer ||
+        x.typ === Const ||
+        x.typ === Local ||
+        x.typ === Global ||
+        x.typ === Outer ||
         x.typ === MacroBlock
     ) && is_assignment(x[end])
         return true
@@ -573,84 +777,105 @@ function is_assignment(x::Union{FST,CSTParser.EXPR})
 
     return false
 end
+
 is_assignment(kind::Tokens.Kind) = CSTParser.precedence(kind) == CSTParser.AssignmentOp
+function is_assignment(cst::CSTParser.EXPR)
+    op = get_binary_op(cst)
+    op === nothing && return false
+    precedence(op) == CSTParser.AssignmentOp
+end
 is_assignment(::Nothing) = false
+
+function precedence(cst::CSTParser.EXPR)
+    CSTParser.isoperator(cst) || return 0
+    val = CSTParser.isdotted(cst) ? cst.val[2:end] : cst.val
+    CSTParser.get_prec(val)
+end
 
 function is_function_or_macro_def(cst::CSTParser.EXPR)
     CSTParser.defines_function(cst) && return true
-    cst.typ === CSTParser.Macro && return true
-    cst.typ === CSTParser.WhereOpCall && return true
+    cst.head === :macro && return true
+    cst.head === :where && return true
     return false
 end
 
 function nest_block(cst::CSTParser.EXPR)
-    cst.typ === CSTParser.If && return true
-    cst.typ === CSTParser.Do && return true
-    cst.typ === CSTParser.Try && return true
-    cst.typ === CSTParser.For && return true
-    cst.typ === CSTParser.While && return true
-    cst.typ === CSTParser.Let && return true
+    is_if(cst) && return true
+    cst.head === :do && return true
+    cst.head === :try && return true
+    cst.head === :for && return true
+    cst.head === :while && return true
+    cst.head === :let && return true
     return false
 end
 
 function remove_empty_notcode(fst::FST)
     is_iterable(fst) && return true
-    fst.typ === CSTParser.BinaryOpCall && return true
-    fst.typ === CSTParser.ConditionalOpCall && return true
-    fst.typ === CSTParser.Comparison && return true
-    fst.typ === CSTParser.ChainOpCall && return true
+    fst.typ === Binary && return true
+    fst.typ === Conditional && return true
+    fst.typ === Comparison && return true
+    fst.typ === Chain && return true
     return false
 end
 
-nest_assignment(cst::CSTParser.EXPR) = is_assignment(cst[2].kind)
+function get_binary_op(cst::CSTParser.EXPR)
+    if cst.head == :call
+        return cst.args[1]
+    elseif length(cst) == 3 && CSTParser.isoperator(cst[2])
+        return cst[2]
+    elseif CSTParser.isoperator(cst.head)
+        return cst.head
+    end
+end
 
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
 function unnestable_node(cst::CSTParser.EXPR)
-    cst.typ === CSTParser.TupleH && return true
-    cst.typ === CSTParser.Vect && return true
-    cst.typ === CSTParser.Braces && return true
-    cst.typ === CSTParser.BracesCat && return true
-    cst.typ === CSTParser.Comprehension && return true
-    cst.typ === CSTParser.InvisBrackets && return true
+    cst.head === :tuple && return true
+    cst.head === :vect && return true
+    cst.head === :braces && return true
+    cst.head === :bracescat && return true
+    cst.head === :comprehension && return true
+    cst.head === :brackets && return true
     return false
 end
 
 function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
-    CSTParser.defines_function(cst) && cst[1].typ !== CSTParser.UnaryOpCall && return true
-    nest_assignment(cst) && return !is_str(cst[3])
+    CSTParser.defines_function(cst) && is_unary(cst[1]) && return true
+    is_assignment(cst) && return !is_str_or_cmd(cst[3])
     true
 end
 
 function nest_rhs(cst::CSTParser.EXPR)::Bool
     if CSTParser.defines_function(cst)
         rhs = cst[3]
-        rhs.typ === CSTParser.Block && (rhs = rhs[1])
+        rhs.head === :block && (rhs = rhs[1])
         return nest_block(rhs)
     end
     false
 end
 
-function op_kind(cst::CSTParser.EXPR)::Union{Nothing,Tokens.Kind}
-    if cst.typ === CSTParser.BinaryOpCall ||
-       cst.typ === CSTParser.Comparison ||
-       cst.typ === CSTParser.ChainOpCall
-        return cst[2].kind
-    elseif cst.typ === CSTParser.UnaryOpCall
-        return cst[1].typ === CSTParser.OPERATOR ? cst[1].kind : cst[2].kind
+function op_kind(cst::CSTParser.EXPR)
+    if is_binary(cst) || cst.head === :comparison || is_chain(cst)
+        return tokenize(cst[2].val)
+    elseif is_unary(cst)
+        op = CSTParser.isoperator(cst[1]) ? cst[1] : cst[2]
+        return tokenize(op.val)
     end
     return nothing
 end
-op_kind(::Nothing) = nothing
-function op_kind(fst::FST)::Union{Nothing,Tokens.Kind}
-    fst.ref === nothing ? nothing : op_kind(fst.ref[])
+
+function op_kind(fst::FST)
+    if fst.typ === OPERATOR
+        return fst.opmeta.kind
+    elseif is_opcall(fst)
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx === nothing && return nothing
+        return fst[idx].opmeta.kind
+    end
+    return nothing
 end
-
-get_op(fst::FST) = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
-get_op(cst::CSTParser.EXPR) = cst[2]
-
-is_lazy_op(kind) = kind === Tokens.LAZY_AND || kind === Tokens.LAZY_OR
 
 """
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
@@ -681,27 +906,27 @@ var = a && b
 ```
 """
 function is_standalone_shortcircuit(cst::CSTParser.EXPR)
-    kind = op_kind(cst)
-    is_lazy_op(kind) || return false
+    val = cst[2].val
+    (val == "&&" || val == "||") || return false
 
     function valid(n)
         n === nothing && return true
-        n.typ === CSTParser.InvisBrackets && return false
-        n.typ === CSTParser.MacroCall && return false
-        n.typ === CSTParser.Return && return false
-        n.typ === CSTParser.If && return false
-        n.typ === CSTParser.Block && nest_assignment(n.parent) && return false
-        n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
+        n.head === :brackets && return false
+        n.head === :macrocall && return false
+        n.head === :return && return false
+        is_if(n) && return false
+        n.head === :block && is_assignment(n.parent) && return false
+        is_binary(n) && is_assignment(n) && return false
         return true
     end
 
     function ignore(n::CSTParser.EXPR)
-        n.typ === CSTParser.InvisBrackets && return false
-        n.typ === CSTParser.If && return false
-        n.typ === CSTParser.Block && return false
-        n.typ === CSTParser.MacroCall && return false
-        n.typ === CSTParser.Return && return false
-        n.typ === CSTParser.BinaryOpCall && nest_assignment(n) && return false
+        n.head === :brackets && return false
+        is_if(n) && return false
+        n.head === :block && return false
+        n.head === :macrocall && return false
+        n.head === :return && return false
+        is_binary(n) && is_assignment(n) && return false
         return true
     end
 
@@ -709,65 +934,53 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
 end
 
 """
-    separate_kwargs_with_semicolon!(fst::FST)
+    eq_to_in_normalization!(fst::FST, always_for_in::Bool)
 
-Ensures keyword arguments are separated with a ";".
-
-### Examples
-
-Replace "," with ";".
+Transforms
 
 ```julia
-a = f(x, y = 3)
+for i = iter body end
 
-->
+=>
 
-a = f(x; y = 3)
+for i in iter body end
 ```
 
-Move ";" to the prior to the first positional argument.
+AND
 
 ```julia
-a = f(x = 1; y = 2)
+for i in 1:10 body end
 
-->
+=>
 
-a = f(; x = 1, y = 2)
+for i = 1:10 body end
 ```
+
+- https://github.com/domluna/JuliaFormatter.jl/issues/34
 """
-function separate_kwargs_with_semicolon!(fst::FST)
-    kw_idx = findfirst(n -> n.typ === CSTParser.Kw, fst.nodes)
-    kw_idx === nothing && return
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
-    # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
-    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
-    # @info "" kw_idx sc_idx comma_idx ph_idx
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+    if fst.typ === Binary
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx === nothing && return
+        op = fst[idx]
 
-    if sc_idx !== nothing && sc_idx > kw_idx
-        # move ; prior to first kwarg
-        fst[sc_idx].val = ","
-        fst[sc_idx].typ = CSTParser.PUNCTUATION
-        if comma_idx === nothing
-            if ph_idx !== nothing
-                fst[ph_idx] = Placeholder(1)
-                insert!(fst, ph_idx, Semicolon())
-            else
-                insert!(fst, kw_idx, Placeholder(1))
-                insert!(fst, kw_idx, Semicolon())
-            end
+        if always_for_in
+            op.val = "in"
+            op.len = length(op.val)
+            return
         end
-    elseif sc_idx === nothing && comma_idx === nothing
-        if ph_idx !== nothing
-            fst[ph_idx] = Placeholder(1)
-            insert!(fst, ph_idx, Semicolon())
-        else
-            insert!(fst, kw_idx, Placeholder(1))
-            insert!(fst, kw_idx, Semicolon())
+
+        # @info "" op.val fst[end].typ op_kind(fst[end])
+        if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
+            op.val = "in"
+            op.len = length(op.val)
+        elseif op.val == "in" && op_kind(fst[end]) === Tokens.COLON
+            op.val = "="
+            op.len = length(op.val)
         end
-    elseif sc_idx === nothing
-        fst[comma_idx].val = ";"
-        fst[comma_idx].typ = SEMICOLON
+    elseif fst.typ === Block || fst.typ === Brackets
+        for n in fst.nodes
+            eq_to_in_normalization!(n, always_for_in)
+        end
     end
-    return
 end

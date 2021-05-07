@@ -896,6 +896,10 @@
         str = "\$Module.@macro"
         @test fmt(str_) == str
         @test fmt(str) == str
+
+        # @doc here should not be parsed as a macro string
+        str = raw"push!(docs, :(@doc($meta, $(each.args[end]), $define)))"
+        @test fmt(str) == str
     end
 
     @testset "macro block" begin
@@ -1606,6 +1610,19 @@
         str = """foo(
             ```hello```,
         )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = raw"""
+        occursin(r"^#!\s*format\s*:\s*off\s*$", t.val)
+        """
+        @test fmt(str_) == str_
+
+        str = raw"""
+        occursin(
+            r"^#!\s*format\s*:\s*off\s*$",
+            t.val,
+        )
+        """
         @test fmt(str_, 4, 1) == str
     end
 
@@ -2579,7 +2596,7 @@
         )"""
         @test fmt("(x   for x  in  1 : 10)", 2, 1) == str
 
-        # indent for TupleH with no parens
+        # indent for TupleN with no parens
         str = """
         function foo()
             arg1,
@@ -3648,7 +3665,7 @@
         @test fmt("@func(a, b, c,)", 4, 1) == str
     end
 
-    @testset "comphrehensions types" begin
+    @testset "comprehension types" begin
         str_ = "var = (x, y) for x = 1:10, y = 1:10"
         str = """
         var = (x, y) for x = 1:10,
@@ -3705,6 +3722,22 @@
             )
         end"""
         @test fmt(str_, 4, 50) == str
+
+        str_ = "(b for b in bar if b == 0 for bar in foo)"
+        @test format_text(str_) == str_
+        @test fmt(str_) == str_
+
+        str = """
+        (
+            b for
+            b in
+            bar if
+            b ==
+            0 for
+            bar in
+            foo
+        )"""
+        @test fmt(str_, 4, 1) == str
     end
 
     @testset "invisbrackets" begin

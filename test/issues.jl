@@ -1,13 +1,4 @@
 @testset "Github Issues" begin
-    @testset "Splitpath issue" begin
-        # TODO(odow): seet the TODO in src/JuliaFormatter.jl. Remove once
-        # JuliaFormatter.jl drops support for Julia 1.0.
-        dirs = JuliaFormatter.splitpath(@__DIR__)
-        @test length(dirs) > 2
-        @test dirs[end] == "test"
-        @test occursin("JuliaFormatter", dirs[end-1])
-    end
-
     @testset "issue #137" begin
         str = """
         (
@@ -690,5 +681,14 @@
             T2}(arg1,
                 arg2)"""
         @test yasfmt(str_, 4, 1) == str
+    end
+
+    if VERSION >= v"1.6.0"
+        @testset "issue 396 (import as)" begin
+            str = """import Base.threads as th"""
+            @test fmt(str) == str
+            @test fmt(str, margin = 1) == str
+            @test fmt(str, margin = 1, import_to_using = true) == str
+        end
     end
 end
