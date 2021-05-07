@@ -18,7 +18,7 @@ function is_str_or_cmd(cst::CSTParser.EXPR)
 end
 
 function tokenize(val::AbstractString)::Tokens.Kind
-    toks = collect(CSTParser.Tokenize.tokenize(val))
+    toks = collect(Tokenize.tokenize(val))
     toks[1].kind
 end
 
@@ -56,7 +56,7 @@ function Document(text::AbstractString)
     str = ""
 
     goffset = 0
-    for (idx, t) in enumerate(CSTParser.Tokenize.tokenize(text))
+    for (idx, t) in enumerate(Tokenize.tokenize(text))
         if t.kind === Tokens.WHITESPACE
             offset = goffset
             for c in t.val

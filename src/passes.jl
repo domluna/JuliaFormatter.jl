@@ -122,7 +122,7 @@ function pipe_to_function_call(fst::FST)
 end
 
 function import_to_usings(fst::FST, s::State)
-    findfirst(is_colon, fst.nodes) === nothing || return FST[]
+    findfirst(n -> is_colon(n) || n.typ === As, fst.nodes) === nothing || return FST[]
     findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
         return FST[]
 

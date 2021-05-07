@@ -691,4 +691,11 @@
                 arg2)"""
         @test yasfmt(str_, 4, 1) == str
     end
+
+    @testset "issue 396 (import as)" begin
+        str = """import Base.threads as th"""
+        @test fmt(str) == str
+        @test fmt(str, margin=1) == str
+        @test fmt(str, margin=1, import_to_using=true) == str
+    end
 end

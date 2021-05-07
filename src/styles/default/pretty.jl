@@ -9,6 +9,8 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_punctuation(style, cst, s)
     elseif CSTParser.iskeyword(cst)
         return p_keyword(style, cst, s)
+    elseif cst.head === :as
+        return p_as(style, cst, s)
     elseif cst.head === :string
         return p_stringh(style, cst, s)
     elseif CSTParser.isliteral(cst)
@@ -1949,6 +1951,20 @@ function p_using(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_using(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_using(DefaultStyle(style), cst, s)
+
+function p_as(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(As, cst, nspaces(s))
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, p_keyword(style, cst[2], s), s, join_lines = true)
+    # no nesting for the time being
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    return t
+end
+p_as(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_as(DefaultStyle(style), cst, s)
 
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)

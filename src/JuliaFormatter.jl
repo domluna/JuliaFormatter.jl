@@ -210,6 +210,15 @@ using B: B
 using C: C
 ```
 
+Exceptions:
+
+1. If `as` is found in the import expression. `using` CANNOT be used in this context. The following example will not be rewritten.
+
+```
+import Base.Threads as th
+```
+
+
 ### `pipe_to_function_call`
 
 If true, `x |> f` is rewritten to `f(x)`.

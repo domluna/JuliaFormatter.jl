@@ -77,6 +77,7 @@
     File,
     Quotenode,
     Unknown,
+    As,
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
