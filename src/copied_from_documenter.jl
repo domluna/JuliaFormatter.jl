@@ -6,8 +6,8 @@ const PROMPT_REGEX = r"^julia> (.*)$"
 const SOURCE_REGEX = r"^       (.*)$"
 
 function repl_splitter(code)
-    lines  = split(string(code, "\n"), '\n')
-    input  = String[]
+    lines = split(string(code, "\n"), '\n')
+    input = String[]
     output = String[]
     buffer = IOBuffer() # temporary buffer for doctest inputs and outputs
     found_first_prompt = false
