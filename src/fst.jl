@@ -275,7 +275,10 @@ end
 
 function is_macrodoc(fst::FST)
     fst.typ === GlobalRefDoc && return true
-    fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc" && return true
+    fst.typ === MacroBlock &&
+        fst[1].typ === Macroname &&
+        fst[1][1].val == "@doc" &&
+        return true
     return false
 end
 
@@ -991,4 +994,3 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
         end
     end
 end
-

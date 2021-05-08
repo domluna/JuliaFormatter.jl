@@ -698,7 +698,7 @@
             raw\""" Doc string.\"""f
         end
         """
-        @test fmt(str, always_use_return=true) == str
+        @test fmt(str, always_use_return = true) == str
 
         str = """
         function __init__()
@@ -708,7 +708,7 @@
             f
         end
         """
-        @test fmt(str, always_use_return=true) == str
+        @test fmt(str, always_use_return = true) == str
 
         str = """
         function __init__()
@@ -718,6 +718,6 @@
             f
         end
         """
-        @test fmt(str, always_use_return=true) == str
+        @test fmt(str, always_use_return = true) == str
     end
 end
