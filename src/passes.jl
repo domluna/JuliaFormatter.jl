@@ -365,7 +365,7 @@ function prepend_return!(fst::FST, s::State)
     ln.typ === MacroCall && return
     ln.typ === MacroBlock && return
     ln.typ === MacroStr && return
-    if length(fst.nodes) > 2 && (is_macrostr(fst[end-2]) || is_macrodoc(fst[end-2]))
+    if length(fst.nodes) > 2 && (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
         # The last node is has a docstring prior to it so a return should not be prepended
         # fst[end-1] is a newline
         return

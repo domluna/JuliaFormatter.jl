@@ -302,7 +302,6 @@ function is_macrostr(cst::CSTParser.EXPR)
 
     return is_str_or_cmd(cst[3])
 end
-is_macrostr(fst::FST) = fst.typ === MacroStr
 
 function is_call(cst::CSTParser.EXPR)
     t = CSTParser.is_func_call(cst)
