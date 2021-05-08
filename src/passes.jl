@@ -339,7 +339,7 @@ end
 """
     prepend_return!(fst::FST, s::State)
 
-Prepends `return` to the last expression of a block.
+Prepends `return` to the last expression of a block if applicable.
 
 ```julia
 function foo()
@@ -364,6 +364,12 @@ function prepend_return!(fst::FST, s::State)
     ln.typ === Return && return
     ln.typ === MacroCall && return
     ln.typ === MacroBlock && return
+    ln.typ === MacroStr && return
+    if length(fst.nodes) > 2 && (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
+        # The last node is has a docstring prior to it so a return should not be prepended
+        # fst[end-1] is a newline
+        return
+    end
 
     ret = FST(Return, fst.indent)
     kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "return")
@@ -371,6 +377,7 @@ function prepend_return!(fst::FST, s::State)
     add_node!(ret, Whitespace(1), s)
     add_node!(ret, ln, s, join_lines = true)
     fst[end] = ret
+    return
 end
 
 """

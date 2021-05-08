@@ -691,4 +691,33 @@
             @test fmt(str, margin = 1, import_to_using = true) == str
         end
     end
+
+    @testset "issue 405" begin
+        str = """
+        function __init__()
+            raw\""" Doc string.\"""f
+        end
+        """
+        @test fmt(str, always_use_return = true) == str
+
+        str = """
+        function __init__()
+            @doc raw\"""
+            Doc string.
+            \"""
+            f
+        end
+        """
+        @test fmt(str, always_use_return = true) == str
+
+        str = """
+        function __init__()
+            raw\"""
+            Doc string.
+            \"""
+            f
+        end
+        """
+        @test fmt(str, always_use_return = true) == str
+    end
 end

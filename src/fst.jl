@@ -273,6 +273,15 @@ function is_macrodoc(cst::CSTParser.EXPR)
         (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
 end
 
+function is_macrodoc(fst::FST)
+    fst.typ === GlobalRefDoc && return true
+    fst.typ === MacroBlock &&
+        fst[1].typ === Macroname &&
+        fst[1][1].val == "@doc" &&
+        return true
+    return false
+end
+
 function is_macrostr(cst::CSTParser.EXPR)
     cst.head === :macrocall || return false
     length(cst) > 2 || return false
