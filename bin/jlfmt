@@ -19,7 +19,7 @@ using ArgParse
 function parse_commandline()
     s = ArgParseSettings()
     @add_arg_table! s begin
-        "paths" 
+        "paths"
         help = "paths to format if input not supplied via stdin"
         nargs = '*'
         arg_type = String
@@ -63,7 +63,7 @@ function main()
         haskey(kwargs, "style") && error("Use --style to specify a style")
         kwargs[Symbol(k)] = parse_val(v)
     end
-    
+
     if length(raw["paths"]) > 0 && bytesavailable(stdin) > 0
         error("Cannot pass input via stdin if 'paths' is specified")
     elseif bytesavailable(stdin) > 0
