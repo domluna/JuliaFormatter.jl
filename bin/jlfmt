@@ -2,6 +2,7 @@
 #=
 export JULIA_PROJECT="$(dirname ${BASH_SOURCE[0]})"
 export JULIA_LOAD_PATH=":${JULIA_LOAD_PATH}"
+export JULIA_DEPOT_PATH="${JULIA_DEPOT_PATH}:"
 JULIA="julia --color=yes --startup-file=no -O1 --compile=min"
 CMD="${JULIA} ${BASH_SOURCE[0]}"
 exec $CMD "$@"
