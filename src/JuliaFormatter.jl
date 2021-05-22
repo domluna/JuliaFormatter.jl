@@ -579,6 +579,6 @@ function parse_config(tomlfile)
     return kwargs(config_dict)
 end
 
-overwrite_options(options, config) = kwargs(merge(options, config))
+overwrite_options(options, config) = merge(NamedTuple(options), NamedTuple(config))
 
 end
