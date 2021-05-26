@@ -720,4 +720,21 @@
         """
         @test fmt(str, always_use_return = true) == str
     end
+
+    @testset "issue 417" begin
+        str = """
+        formαt"JPEG"
+        """
+        @test fmt(str) == str
+
+        str = """
+        A.formαt"JPEG"
+        """
+        @test fmt(str) == str
+
+        str = """
+        A.B.formαt"JPEG"
+        """
+        @test fmt(str) == str
+    end
 end

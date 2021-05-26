@@ -285,11 +285,30 @@ end
 function is_macrostr(cst::CSTParser.EXPR)
     cst.head === :macrocall || return false
     length(cst) > 2 || return false
-    CSTParser.isidentifier(cst[1]) || return false
 
-    m = match(r"@(.*)_(str|cmd)", cst[1].val)
+    local n::Union{Nothing,CSTParser.EXPR}
+    n = if CSTParser.isidentifier(cst[1])
+        cst[1]
+    elseif CSTParser.is_getfield_w_quotenode(cst[1])
+        # last quotenode
+        qn = cst[1][end]
+        # identifier
+        qn[end]
+    else
+        nothing
+    end
+    n !== nothing || return false
+
+    is_macrostr_identifier(n) || return false
+
+    return is_str_or_cmd(cst[3])
+end
+
+function is_macrostr_identifier(cst::CSTParser.EXPR)
+    CSTParser.isidentifier(cst) || return false
+
+    m = match(r"@(.*)_(str|cmd)", cst.val)
     m !== nothing || return false
-
     val = m.captures[1]
 
     # r"hello" is parsed as @r_str"hello"
@@ -298,9 +317,7 @@ function is_macrostr(cst::CSTParser.EXPR)
     # will be == the span of the node.
     #
     # In this example the span == 1.
-    ncodeunits(val) == cst[1].span || return false
-
-    return is_str_or_cmd(cst[3])
+    ncodeunits(val) == cst.span
 end
 
 function is_call(cst::CSTParser.EXPR)

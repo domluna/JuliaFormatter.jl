@@ -553,20 +553,17 @@ function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(MacroStr, cst, nspaces(s))
 
-    loc = cursor_loc(s)
-    val = cst[1].val
+    for (i, a) in enumerate(cst)
+        if CSTParser.is_nothing(a)
+            s.offset += a.fullspan
+            continue
+        elseif is_macrostr_identifier(a)
+            add_node!(t, p_macrostr_identifier(style, a, s), s, join_lines = true)
+        else
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        end
 
-    idx = findfirst(==('_'), val)
-    val = val[2:prevind(val, idx)]
-    s.offset += length(val)
-    n = FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
-    add_node!(t, n, s, join_lines = true)
-
-    for i = 3:length(cst)
-        a = cst[i]
-        n = pretty(style, cst[i], s)
-        add_node!(t, n, s, join_lines = true)
-        if i < length(cst) && a.fullspan > a.span
+        if i > 2 && i < length(cst) && a.fullspan > a.span
             add_node!(t, Whitespace(1), s)
         end
     end
@@ -575,6 +572,30 @@ function p_macrostr(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_macrostr(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_macrostr(DefaultStyle(style), cst, s)
+
+"""
+This is a special prettifier to handle the case of string macros. As such it is not
+part of [`pretty`](@ref).
+
+```julia
+format"hello"
+```
+
+The above "format" identifier is parsed by CSTParser as if the text is "@format_str".
+This creates problems when we format without intervention:
+
+ 1. "@format_str" is printed instead of "format"
+ 2. The state offset is incorrect since the length of "@format_str" is greater than "format"
+"""
+function p_macrostr_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    loc = cursor_loc(s)
+    idx = findfirst(==('_'), cst.val)
+    val = cst.val[2:prevind(cst.val, idx)]
+    s.offset += length(val) + (cst.fullspan - cst.span)
+    return FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
+end
+p_macrostr_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_macrostr_identifier(DefaultStyle(style), cst, s)
 
 # MacroCall
 function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -1025,8 +1046,11 @@ function p_quotenode(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if CSTParser.is_nothing(a)
             s.offset += a.fullspan
             continue
+        elseif is_macrostr_identifier(a)
+            add_node!(t, p_macrostr_identifier(style, a, s), s, join_lines = true)
+        else
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-        add_node!(t, pretty(style, a, s), s, join_lines = true)
     end
     t
 end
