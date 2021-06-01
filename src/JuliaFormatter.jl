@@ -459,11 +459,11 @@ function format_file(
         error("$filename must be a Julia (.jl) or Markdown (.md) source file")
     end
     formatted_str = replace(formatted_str, r"\n*$" => "\n")
-
-    if overwrite
+    already_formatted = (formatted_str == str)
+    if overwrite && !already_formatted
         write(filename, formatted_str)
     end
-    return formatted_str == str
+    return already_formatted
 end
 
 """
