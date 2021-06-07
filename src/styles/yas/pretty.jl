@@ -340,10 +340,6 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 tupargs = CSTParser.EXPR[]
                 for j = i+1:length(cst)
                     push!(tupargs, cst[j])
-
-                    # add_node!(t, Placeholder(1), s)
-                    # add_node!(t, n, s, join_lines = true)
-                    # add_node!(t, Whitespace(1), s)
                 end
                 tup = p_tuple(style, tupargs, s)
                 add_node!(t, tup, s, join_lines = true)
