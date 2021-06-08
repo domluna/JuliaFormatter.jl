@@ -743,13 +743,13 @@
         [z for y in x for z in y]
         """
         @test yasfmt(str) == str
-        @test yasfmt(str, margin=25) == str
+        @test yasfmt(str, margin = 25) == str
 
         str_ = """
         [z
          for y in x for z in y]
         """
-        @test yasfmt(str_, margin=24) == str
+        @test yasfmt(str_, margin = 24) == str
 
         str_ = """
         [z
@@ -758,6 +758,6 @@
          for z in
              y]
         """
-        @test yasfmt(str_, margin=1) == str
+        @test yasfmt(str_, margin = 1) == str
     end
 end
