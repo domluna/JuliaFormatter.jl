@@ -337,8 +337,13 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 for j = i+1:length(cst)
                     push!(tupargs, cst[j])
                 end
+
+                # verify this is not another for loop
+                any(b -> b.head === :FOR, tupargs) && continue
+
                 tup = p_tuple(style, tupargs, s)
                 add_node!(t, tup, s, join_lines = true)
+
                 if has_for_kw
                     for nn in tup.nodes
                         eq_to_in_normalization!(nn, s.opts.always_for_in)
@@ -366,7 +371,7 @@ function p_filter(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 end
 
 function p_flatten(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    p_generator(ys, cst, s)
+    t = p_generator(ys, cst, s)
     t.typ = Flatten
     t
 end
