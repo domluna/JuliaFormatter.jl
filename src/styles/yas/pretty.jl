@@ -122,10 +122,6 @@ function p_tuple(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
         elseif CSTParser.is_comma(a) && i < length(nodes) && !is_punc(nodes[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif CSTParser.iskeyword(a)
-            add_node!(t, Placeholder(1), s)
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
         else
             add_node!(t, n, s, join_lines = true)
         end
