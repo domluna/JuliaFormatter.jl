@@ -581,4 +581,9 @@ end
 
 overwrite_options(options, config) = merge(NamedTuple(options), NamedTuple(config))
 
+if Base.VERSION >= v"1.6"
+    include("other/precompile.jl")
+    _precompile_()
+end
+
 end
