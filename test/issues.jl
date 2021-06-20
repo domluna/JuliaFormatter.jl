@@ -680,7 +680,7 @@
         new{T1,
             T2}(arg1,
                 arg2)"""
-        @test yasfmt(str_, m=1) == str
+        @test yasfmt(str_, m = 1) == str
     end
 
     if VERSION >= v"1.6.0"
@@ -768,6 +768,6 @@
         str_ = """
         var\"##iv#469\" =
             (@variables(t))[1]"""
-        @test fmt(str, m=length(str)-1) == str_
+        @test fmt(str, m = length(str) - 1) == str_
     end
 end
