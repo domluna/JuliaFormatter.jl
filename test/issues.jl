@@ -680,15 +680,15 @@
         new{T1,
             T2}(arg1,
                 arg2)"""
-        @test yasfmt(str_, 4, 1) == str
+        @test yasfmt(str_, m=1) == str
     end
 
     if VERSION >= v"1.6.0"
         @testset "issue 396 (import as)" begin
             str = """import Base.threads as th"""
             @test fmt(str) == str
-            @test fmt(str, margin = 1) == str
-            @test fmt(str, margin = 1, import_to_using = true) == str
+            @test fmt(str, m = 1) == str
+            @test fmt(str, m = 1, import_to_using = true) == str
         end
     end
 
@@ -743,13 +743,13 @@
         [z for y in x for z in y]
         """
         @test yasfmt(str) == str
-        @test yasfmt(str, margin = 25) == str
+        @test yasfmt(str, m = 25) == str
 
         str_ = """
-        [z
-         for y in x for z in y]
+        [z for y in x
+         for z in y]
         """
-        @test yasfmt(str_, margin = 24) == str
+        @test yasfmt(str, m = 24) == str_
 
         str_ = """
         [z
@@ -758,6 +758,16 @@
          for z in
              y]
         """
-        @test yasfmt(str_, margin = 1) == str
+        @test yasfmt(str, m = 1) == str_
+    end
+
+    @testset "issue 427" begin
+        str = "var\"##iv#469\" = (@variables(t))[1]"
+        @test fmt(str) == str
+
+        str_ = """
+        var\"##iv#469\" =
+            (@variables(t))[1]"""
+        @test fmt(str, m=length(str)-1) == str_
     end
 end

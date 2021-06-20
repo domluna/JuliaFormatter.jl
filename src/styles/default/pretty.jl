@@ -1,7 +1,9 @@
 # Creates a _prettified_ version of a CST.
 function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     style = getstyle(ds)
-    if CSTParser.isidentifier(cst)
+    if cst.head === :NONSTDIDENTIFIER
+        return p_nonstdidentifier(style, cst, s)
+    elseif CSTParser.isidentifier(cst)
         return p_identifier(style, cst, s)
     elseif CSTParser.isoperator(cst)
         return p_operator(style, cst, s)
@@ -139,7 +141,6 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_quotenode(style, cst, s)
     end
 
-    # @warn "unknown type" cst
     t = FST(Unknown, cst, nspaces(s))
     for a in cst
         if CSTParser.is_nothing(a)
@@ -167,6 +168,17 @@ function p_file(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 end
 p_file(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_file(DefaultStyle(style), cst, s)
+
+@inline function p_nonstdidentifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(NonStdIdentifier, cst, nspaces(s))
+    for a in cst.args
+        add_node!(t, pretty(style, a, s), s, join_lines = true)
+    end
+    t
+end
+p_nonstdidentifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
+    p_nonstdidentifier(DefaultStyle(style), cst, s)
 
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)

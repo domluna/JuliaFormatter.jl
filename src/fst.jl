@@ -16,6 +16,7 @@
     OPERATOR,
     PUNCTUATION,
     IDENTIFIER,
+    # non-leaf nodes
     MacroBlock,
     MacroCall,
     MacroStr,
@@ -78,6 +79,7 @@
     Quotenode,
     Unknown,
     As,
+    NonStdIdentifier, # i.e. var"##iv369"
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)

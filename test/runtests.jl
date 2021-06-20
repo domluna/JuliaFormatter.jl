@@ -7,6 +7,14 @@ fmt1(s; i = 4, m = 80, kwargs...) =
     JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
 fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 
+yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
+yasfmt(str; i = 4, m = 80, kwargs...) = fmt(str; i=i, m=m, style = YASStyle(), kwargs...)
+yasfmt(str, i::Int, m::Int; kwargs...) = yasfmt(str; i=i, m=m, kwargs...)
+
+bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
+bluefmt(str; i = 4, m = 80, kwargs...) = fmt(str; i, m, style = BlueStyle(), kwargs...)
+bluefmt(str, i::Int, m::Int; kwargs...) = bluefmt(str; i=i, m=m, kwargs...)
+
 # Verifies formatting the formatted text
 # results in the same output
 function fmt(s; i = 4, m = 80, kwargs...)
@@ -34,12 +42,6 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
     t, s
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
-
-yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
-yasfmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = YASStyle(), kwargs...)
-
-bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
-bluefmt(str, i = 4, m = 80; kwargs...) = fmt(str, i, m; style = BlueStyle(), kwargs...)
 
 @testset "JuliaFormatter" begin
     include("default_style.jl")
