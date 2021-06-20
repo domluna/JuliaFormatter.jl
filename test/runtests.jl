@@ -13,7 +13,8 @@ yasfmt(str; i = 4, m = 80, kwargs...) =
 yasfmt(str, i::Int, m::Int; kwargs...) = yasfmt(str; i = i, m = m, kwargs...)
 
 bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
-bluefmt(str; i = 4, m = 80, kwargs...) = fmt(str; i, m, style = BlueStyle(), kwargs...)
+bluefmt(str; i = 4, m = 80, kwargs...) =
+    fmt(str; i = i, m = m, style = BlueStyle(), kwargs...)
 bluefmt(str, i::Int, m::Int; kwargs...) = bluefmt(str; i = i, m = m, kwargs...)
 
 # Verifies formatting the formatted text
