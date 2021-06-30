@@ -770,4 +770,16 @@
             (@variables(t))[1]"""
         @test fmt(str, m = length(str) - 1) == str_
     end
+
+    @testset "issue 429" begin
+        str = """
+        find_derivatives!(vars, expr::Equation, f=identity) = (find_derivatives!(vars, expr.lhs, f); find_derivatives!(vars, expr.rhs, f); vars)
+        """
+        str_ = """
+        function find_derivatives!(vars, expr::Equation, f = identity)
+            (find_derivatives!(vars, expr.lhs, f); find_derivatives!(vars, expr.rhs, f); vars)
+        end
+        """
+        @test fmt(str, m=92, short_to_long_function_def=true) == str_
+    end
 end
