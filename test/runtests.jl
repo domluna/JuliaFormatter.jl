@@ -7,6 +7,15 @@ fmt1(s; i = 4, m = 80, kwargs...) =
     JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
 fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 
+# Verifies formatting the formatted text
+# results in the same output
+function fmt(s; i = 4, m = 80, kwargs...)
+    kws = merge(options(DefaultStyle()), kwargs)
+    s1 = fmt1(s; kws..., i = i, m = m)
+    return fmt1(s1; kws..., i = i, m = m)
+end
+fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
+
 yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
 yasfmt(str; i = 4, m = 80, kwargs...) =
     fmt(str; i = i, m = m, style = YASStyle(), kwargs...)
@@ -16,15 +25,6 @@ bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
 bluefmt(str; i = 4, m = 80, kwargs...) =
     fmt(str; i = i, m = m, style = BlueStyle(), kwargs...)
 bluefmt(str, i::Int, m::Int; kwargs...) = bluefmt(str; i = i, m = m, kwargs...)
-
-# Verifies formatting the formatted text
-# results in the same output
-function fmt(s; i = 4, m = 80, kwargs...)
-    kws = merge(options(DefaultStyle()), kwargs)
-    s1 = fmt1(s; kws..., i = i, m = m)
-    return fmt1(s1; kws..., i = i, m = m)
-end
-fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)

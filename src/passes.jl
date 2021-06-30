@@ -202,6 +202,8 @@ end
 ```
 """
 function short_to_long_function_def!(fst::FST, s::State)
+    (fst[1].typ !== Call && fst[1].typ !== Where) && return
+
     # 3 cases
     #
     # case 1
@@ -212,61 +214,44 @@ function short_to_long_function_def!(fst::FST, s::State)
     #
     # case 3
     #   func(a::T)::R where T = body
-
     funcdef = FST(FunctionN, fst.indent)
-    if fst[1].typ === Call || fst[1].typ === Where
-        # function
-        kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
-        add_node!(funcdef, kw, s)
-        add_node!(funcdef, Whitespace(1), s)
+    # function
+    kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
+    add_node!(funcdef, kw, s)
+    add_node!(funcdef, Whitespace(1), s)
 
-        # func(a)
-        # OR
-        # func(a) where T
-        add_node!(funcdef, fst[1], s, join_lines = true)
+    # func(a)
+    # OR
+    # func(a) where T
+    add_node!(funcdef, fst[1], s, join_lines = true)
 
-        # body
-        s.opts.always_use_return && prepend_return!(fst[end], s)
+    # body
+
+    s.opts.always_use_return && prepend_return!(fst[end], s)
+    if fst[end].typ === Block
         add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
-        add_indent!(funcdef[end], s, s.opts.indent)
-
-        # end
-        kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
-        add_node!(funcdef, kw, s)
-
-        fst.typ = funcdef.typ
-        fst.nodes = funcdef.nodes
-        fst.len = funcdef.len
-    elseif fst[1].typ === Binary && fst[1][end].typ === Where
+    else
+        # ```
         # function
-        kw = FST(KEYWORD, -1, fst[1].startline, fst[1].endline, "function")
-        add_node!(funcdef, kw, s)
-        add_node!(funcdef, Whitespace(1), s)
-
-        # func(a)
-        add_node!(funcdef, fst[1][1], s, join_lines = true)
-
-        whereop = fst[1][end]
-        decl = FST(OPERATOR, -1, fst[1].startline, fst[1].endline, "::")
-        delc.opmeta = OpMeta(Tokens.DECLARATION, false)
-
-        # ::R where T
-        add_node!(funcdef, decl, s, join_lines = true)
-        add_node!(funcdef, whereop, s, join_lines = true)
-
-        # body
-        s.opts.always_use_return && prepend_return!(fst[end], s)
-        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
-        add_indent!(funcdef[end], s, s.opts.indent)
-
+        #     body
         # end
-        kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
-        add_node!(funcdef, kw, s)
-
-        fst.typ = funcdef.typ
-        fst.nodes = funcdef.nodes
-        fst.len = funcdef.len
+        # ```
+        #
+        # `body` is parsed wrapped block node. Wrapping it in
+        # a `Block` node ensures the indent is correct.
+        bl = FST(Block, fst[end].indent)
+        add_node!(bl, fst[end], s)
+        add_node!(funcdef, bl, s, max_padding = s.opts.indent)
     end
+    add_indent!(funcdef[end], s, s.opts.indent)
+
+    # end
+    kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
+    add_node!(funcdef, kw, s)
+
+    fst.typ = funcdef.typ
+    fst.nodes = funcdef.nodes
+    fst.len = funcdef.len
 end
 
 """
