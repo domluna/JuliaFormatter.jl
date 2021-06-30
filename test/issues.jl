@@ -780,6 +780,6 @@
             (find_derivatives!(vars, expr.lhs, f); find_derivatives!(vars, expr.rhs, f); vars)
         end
         """
-        @test fmt(str, m=92, short_to_long_function_def=true) == str_
+        @test fmt(str, m = 92, short_to_long_function_def = true) == str_
     end
 end
