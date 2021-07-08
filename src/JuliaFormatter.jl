@@ -37,26 +37,7 @@ DefaultStyle() = DefaultStyle(nothing)
 
 @inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 function options(s::DefaultStyle)
-    return (;
-        indent = 4,
-        margin = 92,
-        always_for_in = false,
-        whitespace_typedefs = false,
-        whitespace_ops_in_indices = false,
-        remove_extra_newlines = false,
-        import_to_using = false,
-        pipe_to_function_call = false,
-        short_to_long_function_def = false,
-        always_use_return = false,
-        whitespace_in_kwargs = true,
-        annotate_untyped_fields_with_any = true,
-        format_docstrings = false,
-        align_struct_field = false,
-        align_assignment = false,
-        align_conditional = false,
-        align_pair_arrow = false,
-        conditional_to_if = false,
-    )
+    return (;)
 end
 
 include("document.jl")
