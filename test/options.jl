@@ -1372,4 +1372,54 @@
         @test fmt(mixed_windows_str, normalize_line_endings = "windows") == windows_str
         @test fmt(mixed_unix_str, normalize_line_endings = "windows") == windows_str
     end
+
+    @testset "align matrix" begin
+        # default formatting
+        str = """
+        a = [
+            100 300 400
+            1 eee 40000
+            2 α b
+        ]
+        """
+        @test fmt(fmt(str), align_matrix=true) == str
+        str_ = """
+        a = [100 300 400
+             1 eee 40000
+             2 α b]
+        """
+        @test fmt(fmt(str), align_matrix=true, style=YASStyle()) == str_
+
+        # left-aligned
+        str = """
+        a = [
+            100 300 400
+            1   eee 40000
+            2   α   b
+        ]
+        """
+        @test fmt(str, align_matrix=true) == str
+        str_ = """
+        a = [100 300 400
+             1   eee 40000
+             2   α   b]
+        """
+        @test fmt(str, align_matrix=true, style=YASStyle()) == str_
+
+        # right-aligned
+        str = """
+        a = [
+            100 3000   400
+              1  eee     b
+              2    α 40000
+        ]
+        """
+        fmt(str, align_matrix=true) == str
+        str_ = """
+        a = [100 3000   400
+               1  eee     b
+               2    α 40000]
+        """
+        @test fmt(str, align_matrix=true, style=YASStyle()) == str_
+    end
 end
