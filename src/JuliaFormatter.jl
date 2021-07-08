@@ -360,12 +360,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     flatten_fst!(fst)
 
-    if s.opts.align_struct_field ||
-       s.opts.align_conditional ||
-       s.opts.align_assignment ||
-       s.opts.align_pair_arrow
-        align_fst!(fst, s.opts)
-    end
+    needs_alignment(s.opts) && align_fst!(fst, s.opts)
 
     nest!(style, fst, s)
 

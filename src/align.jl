@@ -1,4 +1,3 @@
-
 function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
     const_idxs = Int[]
@@ -12,6 +11,8 @@ function align_fst!(fst::FST, opts::Options)
             align_struct!(n)
         elseif opts.align_conditional && n.typ === Conditional
             align_conditional!(n)
+        elseif opts.align_matrix && (n.typ === Vcat || n.typ === TypedVcat)
+            align_matrix!(n)
         else
             align_fst!(n, opts)
         end
@@ -259,3 +260,41 @@ function align_conditional!(fst::FST)
 
     return
 end
+
+
+"""
+Adjust whitespace in between matrix elements such that it's the same as the original source file.
+"""
+function align_matrix!(fst::FST)
+    rows = filter(n -> n.typ === Row, fst.nodes)
+
+    min_offset = minimum(map(rows) do r
+        r[1].line_offset
+    end)
+
+    # add whitespace prior to initial element
+    # if elements are aligned to the right
+    for r in rows
+        if r[1].line_offset > min_offset
+            diff = r[1].line_offset - min_offset
+            insert!(r.nodes, 1, Whitespace(diff))
+        end
+    end
+
+    for r in rows
+        for (i, n) in enumerate(r.nodes)
+            # skip whitespace nodes appearing before initial element
+            if i > 1 && n.typ === WHITESPACE
+                n1 = r[i-1]
+                n2 = r[i+1]
+
+                diff = n2.line_offset - n1.line_offset - length(n1)
+
+                r[i] = Whitespace(diff)
+            end
+        end
+    end
+
+    return
+end
+
