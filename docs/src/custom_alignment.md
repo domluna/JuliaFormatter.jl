@@ -207,6 +207,8 @@ pages = [
 
 ### `align_matrix`
 
+ > TLDR: If you want to align matrix elements yourself set this to `true`
+
 Whitespace surrounding matrix elements in the original source file is maintained. Differs from other alignment options since it does not try to "detect" alignment and then adjust other elements.
 
 ```julia
