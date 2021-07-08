@@ -23,8 +23,8 @@ end
 
 function needs_alignment(opts::Options)
     opts.align_struct_field ||
-       opts.align_conditional ||
-       opts.align_assignment ||
-       opts.align_pair_arrow ||
-       opts.align_matrix
+        opts.align_conditional ||
+        opts.align_assignment ||
+        opts.align_pair_arrow ||
+        opts.align_matrix
 end

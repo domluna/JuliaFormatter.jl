@@ -261,7 +261,6 @@ function align_conditional!(fst::FST)
     return
 end
 
-
 """
 Adjust whitespace in between matrix elements such that it's the same as the original source file.
 """
@@ -297,4 +296,3 @@ function align_matrix!(fst::FST)
 
     return
 end
-

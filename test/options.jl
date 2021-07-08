@@ -1382,13 +1382,13 @@
             2 α b
         ]
         """
-        @test fmt(fmt(str), align_matrix=true) == str
+        @test fmt(fmt(str), align_matrix = true) == str
         str_ = """
         a = [100 300 400
              1 eee 40000
              2 α b]
         """
-        @test fmt(fmt(str), align_matrix=true, style=YASStyle()) == str_
+        @test fmt(fmt(str), align_matrix = true, style = YASStyle()) == str_
 
         # left-aligned
         str = """
@@ -1398,13 +1398,13 @@
             2   α   b
         ]
         """
-        @test fmt(str, align_matrix=true) == str
+        @test fmt(str, align_matrix = true) == str
         str_ = """
         a = [100 300 400
              1   eee 40000
              2   α   b]
         """
-        @test fmt(str, align_matrix=true, style=YASStyle()) == str_
+        @test fmt(str, align_matrix = true, style = YASStyle()) == str_
 
         # right-aligned
         str = """
@@ -1414,12 +1414,12 @@
               2    α 40000
         ]
         """
-        fmt(str, align_matrix=true) == str
+        fmt(str, align_matrix = true) == str
         str_ = """
         a = [100 3000   400
                1  eee     b
                2    α 40000]
         """
-        @test fmt(str, align_matrix=true, style=YASStyle()) == str_
+        @test fmt(str, align_matrix = true, style = YASStyle()) == str_
     end
 end
