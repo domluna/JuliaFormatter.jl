@@ -56,6 +56,8 @@ function options(s::DefaultStyle)
         align_conditional = false,
         align_pair_arrow = false,
         conditional_to_if = false,
+        normalize_line_endings = "auto",
+        align_matrix = false,
     )
 end
 
@@ -112,6 +114,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         align_pair_arrow::Bool = false,
         conditional_to_if = false,
         normalize_line_endings = "auto",
+        align_matrix::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -360,12 +363,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     flatten_fst!(fst)
 
-    if s.opts.align_struct_field ||
-       s.opts.align_conditional ||
-       s.opts.align_assignment ||
-       s.opts.align_pair_arrow
-        align_fst!(fst, s.opts)
-    end
+    needs_alignment(s.opts) && align_fst!(fst, s.opts)
 
     nest!(style, fst, s)
 

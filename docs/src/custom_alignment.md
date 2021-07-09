@@ -63,6 +63,7 @@ In order for alignment to occur the option must be set to `true`. Available opti
 - `align_struct_field`
 - `align_conditional`
 - `align_pair_arrow`
+- `align_matrix`
 
 > **Caveat: Since nesting is disabled when alignment occurs be careful when adding comments to the RHS expression. This will be fixed in a future release**
 
@@ -202,3 +203,47 @@ pages = [
     "API Reference"       => "api.md",
 ]
 ```
+
+
+### `align_matrix`
+
+ > TLDR: If you want to align matrix elements yourself set this to `true`
+
+Whitespace surrounding matrix elements in the original source file is maintained. Differs from other alignment options since it does not try to "detect" alignment and then adjust other elements.
+
+```julia
+# Elements left-aligned in original source
+julia> s = """
+       a = [
+       100 300 400
+       1   eee 40000
+       2   α   b
+       ]"""
+"a = [\n100 300 400\n1   eee 40000\n2   α   b\n]"
+
+julia> format_text(s, align_matrix=true) |> print
+a = [
+    100 300 400
+    1   eee 40000
+    2   α   b
+]
+
+# Elements right-aligned in original source
+julia> s = """
+       a = [
+       100 300   400
+         1  ee 40000
+         2   a     b
+       ]"""
+"a = [\n100 300   400\n  1  ee 40000\n  2   a     b\n]"
+
+julia>
+
+julia> format_text(s, align_matrix=true) |> print
+a = [
+    100 300   400
+      1  ee 40000
+      2   a     b
+]
+```
+

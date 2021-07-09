@@ -18,4 +18,13 @@ Base.@kwdef struct Options
     align_pair_arrow::Bool = false
     conditional_to_if::Bool = false
     normalize_line_endings::String = "auto"
+    align_matrix::Bool = false
+end
+
+function needs_alignment(opts::Options)
+    opts.align_struct_field ||
+        opts.align_conditional ||
+        opts.align_assignment ||
+        opts.align_pair_arrow ||
+        opts.align_matrix
 end
