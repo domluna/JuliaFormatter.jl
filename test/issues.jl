@@ -782,4 +782,9 @@
         """
         @test fmt(str, m = 92, short_to_long_function_def = true) == str_
     end
+
+    @testset "issue 440" begin
+        str = "import Base.+"
+        @test fmt(str) == str
+    end
 end
