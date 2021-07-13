@@ -210,7 +210,12 @@ p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
-    FST(PUNCTUATION, loc[2], loc[1], loc[1], cst.val)
+    val = if cst.val === nothing && cst.head === :DOT
+        "."
+    else
+        cst.val
+    end
+    FST(PUNCTUATION, loc[2], loc[1], loc[1], val)
 end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
