@@ -787,4 +787,23 @@
         str = "import Base.+"
         @test fmt(str) == str
     end
+
+    @testset "issue 444" begin
+        str_ = """
+        function (a,b,c;)
+        body
+        end
+        """
+        str = """
+        function (
+            a,
+            b,
+            c;
+        )
+            body
+        end
+        """
+        @test fmt(str_, m = 1) == str
+        @test bluefmt(str_, m = 1) == str
+    end
 end
