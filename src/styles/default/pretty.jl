@@ -1784,7 +1784,6 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(TupleN, cst, nspaces(s))
 
     args = get_args(cst)
-    # args = cst.args
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
     for (i, a) in enumerate(cst)
@@ -1798,7 +1797,11 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(n) && nest
-            add_node!(t, TrailingComma(), s)
+            # An odd case but this could occur if there are no keyword arguments.
+            # In which case ";," is invalid syntax.
+            if t[end].typ !== SEMICOLON
+                add_node!(t, TrailingComma(), s)
+            end
             add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
