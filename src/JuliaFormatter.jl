@@ -63,7 +63,7 @@ end
 
 if VERSION < v"1.3"
     # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
-    function count(t::Union{AbstractString,Regex}, s::AbstractString; overlap::Bool=false)
+    function count(t::Union{AbstractString,Regex}, s::AbstractString; overlap::Bool = false)
         n = 0
         i, e = firstindex(s), lastindex(s)
         while true
@@ -545,7 +545,8 @@ function format(paths; options...)::Bool
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext in (".jl", ".md") && !(".git" in split(full_path, Base.Filesystem.path_separator))
+                    if ext in (".jl", ".md") &&
+                       !(".git" in split(full_path, Base.Filesystem.path_separator))
                         dir = realpath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)
