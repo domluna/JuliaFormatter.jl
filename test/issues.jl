@@ -708,7 +708,15 @@
             f
         end
         """
-        @test fmt(str, always_use_return = true) == str
+        str_ret = """
+        function __init__()
+            return @doc raw\"""
+                   Doc string.
+                   \"""
+            f
+        end
+        """
+        @test fmt(str, always_use_return = true) == str_ret
 
         str = """
         function __init__()
