@@ -814,4 +814,15 @@
         @test fmt(str_, m = 1) == str
         @test bluefmt(str_, m = 1) == str
     end
+
+    @testset "issue 431" begin
+        str = """
+        local Jcx_rows, Jcx_cols, Jcx_vals, Jct_val
+        """
+        @test fmt(str) == str
+
+        str_ = "global a=2,b"
+        str = "global a = 2, b"
+        @test fmt(str_) == str
+    end
 end
