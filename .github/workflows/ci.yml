@@ -17,10 +17,11 @@ jobs:
           - '1.5'
           - '^1.6.0-0'
           - 'nightly'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        julia-arch: [x64, x86]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        exclude:
+          - os: macOS-latest
+            julia-arch: x86
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
