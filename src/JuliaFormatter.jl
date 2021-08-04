@@ -547,17 +547,8 @@ function format(paths; options...)::Bool
                     full_path = joinpath(root, file)
                     formatted_file &
                     if ext in (".jl", ".md") &&
-                       !(".git" in split(full_path, Base.Filesystem.path_separator)) &&
-                       ispath(root)
-                        dir = try
-                            realpath(root)
-                        catch err
-                            if err isa SystemError
-                                root
-                            else
-                                rethrow(err)
-                            end
-                        end
+                       !(".git" in split(full_path, Base.Filesystem.path_separator))
+                        dir = abspath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)
                         else
