@@ -541,13 +541,14 @@ function format(paths; options...)::Bool
         else
             reduce(walkdir(path), init = true) do formatted_path, dir_branch
                 root, dirs, files = dir_branch
+                root = normpath(root)
                 formatted_path & reduce(files, init = true) do formatted_file, file
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
                     if ext in (".jl", ".md") &&
                        !(".git" in split(full_path, Base.Filesystem.path_separator)) &&
-                       isdir(root)
+                       ispath(root)
                         dir = realpath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)
