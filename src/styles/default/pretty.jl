@@ -1789,7 +1789,7 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
     for (i, a) in enumerate(cst)
-        n = if is_binary(a) && a[2].val === "="
+        n = if is_binary(a) && a[2].val == "="
             p_kw(style, a, s)
         else
             pretty(style, a, s)

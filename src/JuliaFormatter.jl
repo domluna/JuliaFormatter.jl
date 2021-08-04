@@ -61,6 +61,24 @@ function options(s::DefaultStyle)
     )
 end
 
+if VERSION < v"1.3"
+    # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
+    function count(t::Union{AbstractString,Regex}, s::AbstractString; overlap::Bool = false)
+        n = 0
+        i, e = firstindex(s), lastindex(s)
+        while true
+            r = findnext(t, s, i)
+            r === nothing && break
+            n += 1
+            j = overlap || isempty(r) ? first(r) : last(r)
+            j > e && break
+            @inbounds i = nextind(s, j)
+        end
+        return n
+    end
+end
+count(args...; kwargs...) = Base.count(args...; kwargs...)
+
 include("document.jl")
 include("options.jl")
 include("state.jl")
@@ -385,9 +403,9 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     text = String(take!(io))
 
-    replacer = if s.opts.normalize_line_endings === "unix"
+    replacer = if s.opts.normalize_line_endings == "unix"
         WINDOWS_TO_UNIX
-    elseif s.opts.normalize_line_endings === "windows"
+    elseif s.opts.normalize_line_endings == "windows"
         UNIX_TO_WINDOWS
     else
         choose_line_ending_replacer(s.doc.text)
@@ -523,12 +541,14 @@ function format(paths; options...)::Bool
         else
             reduce(walkdir(path), init = true) do formatted_path, dir_branch
                 root, dirs, files = dir_branch
+                root = normpath(root)
                 formatted_path & reduce(files, init = true) do formatted_file, file
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext in (".jl", ".md") && !(".git" in splitpath(full_path))
-                        dir = realpath(root)
+                    if ext in (".jl", ".md") &&
+                       !(".git" in split(full_path, Base.Filesystem.path_separator))
+                        dir = abspath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
                             overwrite_options(options, config)
                         else

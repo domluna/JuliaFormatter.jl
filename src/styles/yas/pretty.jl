@@ -35,7 +35,7 @@ end
 
 function nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || is_assignment(cst)) && return false
-    (cst[2].val === "=>" || cst[2].val === "->") && return false
+    (cst[2].val == "=>" || cst[2].val == "->") && return false
     return true
 end
 
@@ -98,7 +98,7 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif is_binary(a) && a[2].val === "="
+        elseif is_binary(a) && a[2].val == "="
             add_node!(t, p_kw(style, a, s), s, join_lines = true)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
