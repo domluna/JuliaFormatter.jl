@@ -825,4 +825,11 @@
         str = "global a = 2, b"
         @test fmt(str_) == str
     end
+
+    @testset "issue 449" begin
+        str = """
+        (var"x" = 1.0,)
+        """
+        @test fmt(str) == str
+    end
 end
