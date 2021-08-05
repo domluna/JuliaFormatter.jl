@@ -1414,7 +1414,10 @@ function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Kw, cst, nspaces(s))
 
-    exclamation = CSTParser.isidentifier(cst[1]) && endswith(cst[1].val, "!")
+    exclamation =
+        CSTParser.isidentifier(cst[1]) &&
+        !CSTParser.isnonstdid(cst[1]) &&
+        endswith(cst[1].val, "!")
 
     if !s.opts.whitespace_in_kwargs && exclamation
         n = pretty(style, cst[1], s)
