@@ -852,6 +852,6 @@
             end
         end
         """
-        @test fmt(str_, import_to_using=true) == str
+        @test fmt(str_, import_to_using = true) == str
     end
 end
