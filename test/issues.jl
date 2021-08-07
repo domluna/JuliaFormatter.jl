@@ -832,4 +832,26 @@
         """
         @test fmt(str) == str
     end
+
+    @testset "issue 451" begin
+        str_ = raw"""
+        function _initialize_backend(pkg::AbstractBackend)
+            sym = backend_package_name(pkg)
+            @eval Main begin
+                import $sym
+                export $sym
+            end
+        end
+        """
+        str = raw"""
+        function _initialize_backend(pkg::AbstractBackend)
+            sym = backend_package_name(pkg)
+            @eval Main begin
+                using $sym: $sym
+                export $sym
+            end
+        end
+        """
+        @test fmt(str_, import_to_using = true) == str
+    end
 end

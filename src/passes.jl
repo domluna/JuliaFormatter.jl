@@ -145,7 +145,7 @@ function import_to_usings(fst::FST, s::State)
         colon.opmeta = OpMeta(Tokens.COLON, false)
         add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, FST(IDENTIFIER, -1, sl, el, n[end].val), s, join_lines = true)
+        add_node!(use, n[end], s, join_lines = true)
 
         push!(usings, use)
     end
