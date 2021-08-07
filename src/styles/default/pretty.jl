@@ -1383,16 +1383,17 @@ p_comparison(
     p_comparison(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
 
 # Colon
-function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_import=false)
     style = getstyle(ds)
     t = FST(Chain, cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
     for a in cst
-        if is_opcall(a)
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
+        n = if is_opcall(a)
+            pretty(style, a, s, nonest = true, nospace = nospace)
         else
-            n = pretty(style, a, s)
+            pretty(style, a, s)
         end
+
 
         if s.opts.whitespace_ops_in_indices && !is_leaf(n) && !is_iterable(n)
             paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
@@ -1403,11 +1404,15 @@ function p_colonopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, n, s, join_lines = true)
         end
+
+        if CSTParser.is_colon(a) && from_import
+            add_node!(t, Whitespace(1), s)
+        end
     end
     t
 end
-p_colonopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_colonopcall(DefaultStyle(style), cst, s)
+p_colonopcall(style::S, cst::CSTParser.EXPR, s::State;from_import=false) where {S<:AbstractStyle} =
+    p_colonopcall(DefaultStyle(style), cst, s, from_import=from_import)
 
 # Kw
 function p_kw(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
@@ -1973,11 +1978,17 @@ function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     add_node!(t, Placeholder(1), s)
                 end
             end
+        elseif CSTParser.is_func_call(a) == true && is_colon_call(a[1])
+            # CSTParser.is_func_call can return nothing
+            # https://github.com/julia-vscode/CSTParser.jl/issues/306
+            n = p_colonopcall(style, a[1], s, from_import=true)
+            add_node!(t, n, s, join_lines=true)
         elseif CSTParser.is_comma(a) || CSTParser.is_colon(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            n = pretty(style, a, s)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
