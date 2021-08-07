@@ -1100,7 +1100,7 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         s.indent += s.opts.indent
         if cst[2].head === :block
-            add_node!(t, pretty(style, cst[2], s, join_body = true), s, join_lines = true)
+            add_node!(t, p_block(style, cst[2], s, join_body = true), s, join_lines = true)
         else
             add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
         end
@@ -1136,7 +1136,7 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     n = if cst[2].head === :block
         s.indent += s.opts.indent
-        n = pretty(style, cst[2], s, join_body = true)
+        n = p_block(style, cst[2], s, join_body = true)
         s.indent -= s.opts.indent
         n
     else
