@@ -814,6 +814,12 @@ function is_assignment(cst::CSTParser.EXPR)
 end
 is_assignment(::Nothing) = false
 
+function is_pairarrow(cst::CSTParser.EXPR)
+    op = get_binary_op(cst)
+    op === nothing && return false
+    CSTParser.is_pairarrow(op)
+end
+
 function precedence(cst::CSTParser.EXPR)
     CSTParser.isoperator(cst) || return 0
     val = CSTParser.isdotted(cst) ? cst.val[2:end] : cst.val
@@ -853,6 +859,8 @@ function get_binary_op(cst::CSTParser.EXPR)
         return cst[2]
     elseif CSTParser.isoperator(cst.head)
         return cst.head
+    else
+        return nothing
     end
 end
 
@@ -871,7 +879,9 @@ end
 
 function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
     CSTParser.defines_function(cst) && is_unary(cst[1]) && return true
-    is_assignment(cst) && return !is_str_or_cmd(cst[3])
+    if is_assignment(cst) || is_pairarrow(cst)
+        return !is_str_or_cmd(cst[3])
+    end
     true
 end
 
