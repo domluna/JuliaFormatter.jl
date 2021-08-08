@@ -2878,6 +2878,15 @@
             end
         end"""
         @test fmt(str, 4, 1) == str
+
+        # https://github.com/domluna/JuliaFormatter.jl/issues/453
+        str = """
+        bar = Dict(
+            :foo => \"""A triple quoted literal string
+                    with some words in it.\""",
+        )
+        """
+        @test fmt(str, 4, 20) == str
     end
 
     @testset "nesting line offset" begin
