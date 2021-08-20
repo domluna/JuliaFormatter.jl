@@ -17,22 +17,17 @@ function align_fst!(fst::FST, opts::Options)
             align_fst!(n, opts)
         end
 
-        if is_assignment(n) || n.typ === Kw
+        if opts.align_assignment && (is_assignment(n) || n.typ === Kw)
             # Gather all assignments within the current code block
             # they will be aligned at the end
             push!(assignment_idxs, i)
-        elseif n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
+        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
             push!(pair_arrow_idxs, i)
         end
     end
 
-    if opts.align_assignment
-        align_binaryopcalls!(fst, assignment_idxs)
-    end
-
-    if opts.align_pair_arrow
-        align_binaryopcalls!(fst, pair_arrow_idxs)
-    end
+    align_binaryopcalls!(fst, assignment_idxs)
+    align_binaryopcalls!(fst, pair_arrow_idxs)
 end
 
 """
@@ -160,16 +155,17 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             g = AlignGroup()
         end
 
+        #= @info "" map(nn -> nn.typ, n.nodes) =#
         binop, nlen, ws = if n.typ === Binary || n.typ === Kw
             nlen = length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
         else
-            binop = n[3]
+            binop_idx = findfirst(nn -> nn.typ === Binary, n.nodes)
+            binop = n[binop_idx]
             nlen = length(binop[1]) + length(fst[i][1]) + length(fst[i][2])
             binop, nlen, (binop[3].line_offset - n.line_offset) - nlen
         end
 
-        # @info "" binop.typ nlen ws
         push!(g, i, binop[3].line_offset, nlen, ws)
 
         prev_endline = n.endline
