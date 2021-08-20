@@ -155,7 +155,6 @@ function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
             g = AlignGroup()
         end
 
-        #= @info "" map(nn -> nn.typ, n.nodes) =#
         binop, nlen, ws = if n.typ === Binary || n.typ === Kw
             nlen = length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
