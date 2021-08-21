@@ -854,4 +854,31 @@
         """
         @test fmt(str_, import_to_using = true) == str
     end
+
+    @testset "issue 456" begin
+        str = """
+        function update()
+            @debug "isfull" dist = 3
+            a = 4
+            var3 = 2
+        end
+        """
+        @test fmt(str, align_assignment = true) == str
+
+        str = """
+        function update()
+            @debug "isfull" dist = 3
+            a                    = 4
+            var3    = 5
+        end
+        """
+        str_aligned = """
+        function update()
+            @debug "isfull" dist = 3
+            a                    = 4
+            var3                 = 5
+        end
+        """
+        @test fmt(str, align_assignment = true) == str_aligned
+    end
 end

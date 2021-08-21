@@ -17,36 +17,32 @@ function align_fst!(fst::FST, opts::Options)
             align_fst!(n, opts)
         end
 
-        if is_assignment(n) || n.typ === Kw
+        if opts.align_assignment && (is_assignment(n) || n.typ === Kw)
             # Gather all assignments within the current code block
             # they will be aligned at the end
             push!(assignment_idxs, i)
-        elseif n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
+        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
             push!(pair_arrow_idxs, i)
         end
     end
 
-    if opts.align_assignment
-        align_binaryopcalls!(fst, assignment_idxs)
-    end
-
-    if opts.align_pair_arrow
-        align_binaryopcalls!(fst, pair_arrow_idxs)
-    end
+    align_binaryopcalls!(fst, assignment_idxs)
+    align_binaryopcalls!(fst, pair_arrow_idxs)
 end
 
 """
+    AlignGroup
+
 Group of FST node indices and required metadata to potentially align them.
 
-- `node_idxs`. Indices of FST nodes affected by alignment.
-- `line_offsets`. Line offset of the character nodes may be aligned to
-in the source file.
-- `lens`. Length of the FST node prior to the alignment character. Used
-to calculate extra whitespace padding.
-- `whitespaces`. Number of whitespaces between the alignment character and
-the prior FST node. If this is > 1 it signifies additional whitespace was
-manually added by the user since the formatter would only use 0 or 1 whitespaces.
-
+    - `node_idxs`. Indices of FST nodes affected by alignment.
+    - `line_offsets`. Line offset of the character nodes may be aligned to
+    in the source file.
+    - `lens`. Length of the FST node prior to the alignment character. Used
+    to calculate extra whitespace padding.
+    - `whitespaces`. Number of whitespaces between the alignment character and
+    the prior FST node. If this is > 1 it signifies additional whitespace was
+    manually added by the user since the formatter would only use 0 or 1 whitespaces.
 """
 struct AlignGroup
     node_idxs::Vector{Int}
@@ -97,6 +93,64 @@ function align_binaryopcall!(fst::FST, diff::Int)
 end
 
 """
+    align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
+
+Aligns binary operator expressions.
+
+Additionally handles the case where a keyword such as `const` is used
+prior to the binary op call.
+"""
+function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
+    length(op_idxs) > 1 || return
+    prev_endline = fst[op_idxs[1]].endline
+    groups = AlignGroup[]
+    g = AlignGroup()
+
+    for i in op_idxs
+        n = fst[i]
+        if n.startline - prev_endline > 1
+            push!(groups, g)
+            g = AlignGroup()
+        end
+
+        binop, nlen, ws = if n.typ === Binary || n.typ === Kw
+            nlen = length(n[1])
+            n, nlen, (n[3].line_offset - n.line_offset) - nlen
+        else
+            binop_idx = findfirst(nn -> nn.typ === Binary, n.nodes)
+            binop = n[binop_idx]
+            nlen = length(binop[1]) + sum(length.(n[1:binop_idx-1]))
+            binop, nlen, (binop[3].line_offset - n.line_offset) - nlen
+        end
+
+        push!(g, i, binop[3].line_offset, nlen, ws)
+
+        prev_endline = n.endline
+    end
+    push!(groups, g)
+
+    for g in groups
+        align_len = align_to(g)
+        align_len === nothing && continue
+
+        for (i, idx) in enumerate(g.node_idxs)
+            diff = align_len - g.lens[i] + 1
+
+            typ = fst[idx].typ
+            if typ === Binary || typ === Kw
+                align_binaryopcall!(fst[idx], diff)
+            else
+                binop_idx = findfirst(n -> n.typ === Binary, fst[idx].nodes)
+                align_binaryopcall!(fst[idx][binop_idx], diff)
+            end
+            fst[idx].nest_behavior = NeverNest
+        end
+    end
+
+    return
+end
+
+"""
     align_struct!(fst::FST)
 
 Aligns struct fields.
@@ -137,63 +191,6 @@ function align_struct!(fst::FST)
             block_fst[idx].nest_behavior = NeverNest
         end
     end
-end
-
-"""
-    align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
-
-Aligns binary operator expressions.
-
-Additionally handles the case where a keyword such as `const` is used
-prior to the binary op call.
-"""
-function align_binaryopcalls!(fst::FST, op_idxs::Vector{Int})
-    length(op_idxs) > 1 || return
-    prev_endline = fst[op_idxs[1]].endline
-    groups = AlignGroup[]
-    g = AlignGroup()
-
-    for i in op_idxs
-        n = fst[i]
-        if n.startline - prev_endline > 1
-            push!(groups, g)
-            g = AlignGroup()
-        end
-
-        binop, nlen, ws = if n.typ === Binary || n.typ === Kw
-            nlen = length(n[1])
-            n, nlen, (n[3].line_offset - n.line_offset) - nlen
-        else
-            binop = n[3]
-            nlen = length(binop[1]) + length(fst[i][1]) + length(fst[i][2])
-            binop, nlen, (binop[3].line_offset - n.line_offset) - nlen
-        end
-
-        # @info "" binop.typ nlen ws
-        push!(g, i, binop[3].line_offset, nlen, ws)
-
-        prev_endline = n.endline
-    end
-    push!(groups, g)
-
-    for g in groups
-        align_len = align_to(g)
-        align_len === nothing && continue
-
-        for (i, idx) in enumerate(g.node_idxs)
-            diff = align_len - g.lens[i] + 1
-
-            typ = fst[idx].typ
-            if typ === Binary || typ === Kw
-                align_binaryopcall!(fst[idx], diff)
-            else
-                align_binaryopcall!(fst[idx][3], diff)
-            end
-            fst[idx].nest_behavior = NeverNest
-        end
-    end
-
-    return
 end
 
 """
