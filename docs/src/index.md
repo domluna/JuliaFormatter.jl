@@ -40,8 +40,14 @@ julia> format(FooPackage)
 
 ## Usage
 
-`JuliaFormatter` exports [`format`](@ref), [`format_file`](@ref), [`format_text`](@ref), and [`format_md`](@ref):
+`JuliaFormatter` exports [`format`](@ref), [`format_file`](@ref), [`format_text`](@ref), and [`format_md`](@ref).
 
-`JuliaFormatter` should work on any valid Julia and Markdown files.
-If `JuliaFormatter` cannot parse the code for any reason, it will throw an error pointing to the line that could not be parsed.
-If running [`format`](@ref) on multiple files, you may want to set `verbose = true` to print information about which file is being formatted.
+`format_md` has the same API as `format_text` but differ in that `format_md` expects the text content to be a Markdown document.
+
+See [`format_text`](@ref) docstring for formatting options at the text level and [`format_file`](@ref) docstring
+for formatting options at the file level.
+
+`JuliaFormatter` should work on any valid Julia and Markdown files.  If `JuliaFormatter` cannot parse
+the code for any reason, it will throw an error pointing to the line that could not be parsed. If running
+[`format`](@ref) on multiple files, you may want to set `verbose = true` to print information about which
+file is being formatted.
