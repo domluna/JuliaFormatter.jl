@@ -881,4 +881,28 @@
         """
         @test fmt(str, align_assignment = true) == str_aligned
     end
+
+    @testset "issue 460" begin
+        # Do not allow import to using conversion when in a macroblock context such as:
+        #
+        #   @everywhere import A, B
+        #
+        # Prior to this change this would be rewritten as:
+        #
+        #   @everywhere
+        #   using A: A
+        #   using B: B
+        #
+        # which breaks the code.
+        #
+        # There's an easy fix such that the first `using` is on the same line as @everywhere
+        # but beyond that we probably have to wrap it in a begin/end block. For now it's best
+        # to just not do the conversion in this situation.
+        str = """
+        using Distributed
+        @everywhere import Distributed
+        have_workers = Distributed.nprocs() - 1
+        """
+        @test fmt(str, import_to_using = true) == str
+    end
 end
