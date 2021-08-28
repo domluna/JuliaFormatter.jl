@@ -234,12 +234,17 @@ using C: C
 
 Exceptions:
 
-1. If `as` is found in the import expression. `using` CANNOT be used in this context. The following example will not be rewritten.
+If `as` is found in the import expression. `using` CANNOT be used in this context. The following example will NOT BE rewritten.
 
-```
+```julia
 import Base.Threads as th
 ```
 
+If `import` is used in the following context it is NOT rewritten. This may change in a future patch.
+
+```julia
+@everywhere import A, B
+```
 
 ### `pipe_to_function_call`
 

@@ -507,12 +507,11 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             add_node!(t, nn, s, join_lines = true)
         end
         return
-    elseif s.opts.import_to_using && n.typ === Import
+    elseif s.opts.import_to_using && n.typ === Import && t.typ !== MacroBlock
         usings = import_to_usings(n, s)
         if length(usings) > 0
             for (i, nn) in enumerate(usings)
-                join_lines = i == 1 ? true : false
-                add_node!(t, nn, s; join_lines = join_lines, max_padding = 0)
+                add_node!(t, nn, s; join_lines = false, max_padding = 0)
             end
             return
         end

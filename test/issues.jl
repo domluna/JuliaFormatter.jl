@@ -883,34 +883,26 @@
     end
 
     @testset "issue 460" begin
-        # NOTE: if there are two packages imported on the same line then this will be
-        # rewritten as:
+        # Do not allow import to using conversion when in a macroblock context such as:
         #
         #   @everywhere import A, B
         #
-        #   ->
+        # Prior to this change this would be rewritten as:
         #
-        #   @everywhere using A: A
+        #   @everywhere
+        #   using A: A
         #   using B: B
         #
-        # This shouldn't be a practical issue but it's important to keep in mind.
+        # which breaks the code.
         #
-        # A solution could be to wrap it in a begin end block
-        #
-        #   @everywhere begin
-        #       using A: A
-        #       using B: B
-        #   end
-        str_ = """
-        using Distributed
-        @everywhere import Distributed
-        have_workers = Distributed.nprocs()-1
-        """
+        # There's an easy fix such that the first `using` is on the same line as @everywhere
+        # but beyond that we probably have to wrap it in a begin/end block. For now it's best
+        # to just not do the conversion in this situation.
         str = """
         using Distributed
-        @everywhere using Distributed: Distributed
+        @everywhere import Distributed
         have_workers = Distributed.nprocs() - 1
         """
-        @test fmt(str_, import_to_using = true) == str
+        @test fmt(str, import_to_using = true) == str
     end
 end
