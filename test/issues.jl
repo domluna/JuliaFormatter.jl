@@ -888,10 +888,19 @@
         #
         #   @everywhere import A, B
         #
+        #   ->
+        #
         #   @everywhere using A: A
         #   using B: B
         #
         # This shouldn't be a practical issue but it's important to keep in mind.
+        #
+        # A solution could be to wrap it in a begin end block
+        #
+        #   @everywhere begin
+        #       using A: A
+        #       using B: B
+        #   end
         str_ = """
         using Distributed
         @everywhere import Distributed
