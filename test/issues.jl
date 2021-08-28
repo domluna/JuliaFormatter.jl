@@ -881,4 +881,27 @@
         """
         @test fmt(str, align_assignment = true) == str_aligned
     end
+
+    @testset "issue 460" begin
+        # NOTE: if there are two packages imported on the same line then this will be
+        # rewritten as:
+        #
+        #   @everywhere import A, B
+        #
+        #   @everywhere using A: A
+        #   using B: B
+        #
+        # This shouldn't be a practical issue but it's important to keep in mind.
+        str_ = """
+        using Distributed
+        @everywhere import Distributed
+        have_workers = Distributed.nprocs()-1
+        """
+        str = """
+        using Distributed
+        @everywhere using Distributed: Distributed
+        have_workers = Distributed.nprocs() - 1
+        """
+        @test fmt(str_, import_to_using = true) == str
+    end
 end
