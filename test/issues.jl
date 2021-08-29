@@ -916,6 +916,10 @@
             end
         end
         """
-        @test fmt(str, annotate_untyped_fields_with_any = false, align_struct_field = true) == str
+        @test fmt(
+            str,
+            annotate_untyped_fields_with_any = false,
+            align_struct_field = true,
+        ) == str
     end
 end
