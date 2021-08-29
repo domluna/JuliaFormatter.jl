@@ -61,6 +61,7 @@ function Base.push!(g::AlignGroup, idx::Int, line_offset::Int, len::Int, ws::Int
 end
 
 function align_to(g::AlignGroup)::Union{Nothing,Int}
+    length(g.lens) > 0 || return nothing
     # determine whether alignment might be warranted
     max_len, max_idx = findmax(g.lens)
     max_idxs = findall(==(g.line_offsets[max_idx]), g.line_offsets)
