@@ -905,4 +905,21 @@
         """
         @test fmt(str, import_to_using = true) == str
     end
+
+    @testset "issue 463" begin
+        str = """
+        using Test
+
+        @testset "displayKw" begin
+            struct S
+                f
+            end
+        end
+        """
+        @test fmt(
+            str,
+            annotate_untyped_fields_with_any = false,
+            align_struct_field = true,
+        ) == str
+    end
 end
