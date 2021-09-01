@@ -922,4 +922,11 @@
             align_struct_field = true,
         ) == str
     end
+
+    @testset "issue 467" begin
+        str_ = "-3.. -2"
+        str = "-3 .. -2"
+        @test fmt(str_) == str
+        @test bluefmt(str_) == str
+    end
 end

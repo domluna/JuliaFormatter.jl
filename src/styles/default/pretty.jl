@@ -1539,7 +1539,6 @@ function p_binaryopcall(
     elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op)) && (
         nospace || (
             !CSTParser.is_anon_func(op) && precedence(op) in (
-                CSTParser.ColonOp,
                 CSTParser.PowerOp,
                 CSTParser.DeclarationOp,
                 CSTParser.DotOp,
