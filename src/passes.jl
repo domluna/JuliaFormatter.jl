@@ -539,3 +539,20 @@ function separate_kwargs_with_semicolon!(fst::FST)
 
     return
 end
+
+"""
+    remove_superflous_whitespace!(fst::FST)
+
+Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
+"""
+function remove_superflous_whitespace!(fst::FST)
+    is_leaf(fst) && return
+    for (i, n) in enumerate(fst.nodes)
+        if (n.typ === WHITESPACE || n.typ === PLACEHOLDER) &&
+           i < length(fst.nodes) &&
+           (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
+
+        fst[i] = Whitespace(0)
+        end
+    end
+end

@@ -20,6 +20,7 @@ Base.@kwdef struct Options
     normalize_line_endings::String = "auto"
     align_matrix::Bool = false
     remove_trailing_comma::Bool = false
+    ignore_maximum_width::Bool = false
 end
 
 function needs_alignment(opts::Options)

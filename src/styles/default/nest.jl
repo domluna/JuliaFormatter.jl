@@ -231,15 +231,15 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     opener = findfirst(is_opener, fst.nodes) !== nothing
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        line_offset = s.line_offset
-        if opener
-            fst[end].indent = fst.indent
-        end
-        if fst.typ !== TupleN || opener
-            fst.indent += s.opts.indent
-        end
+    line_offset = s.line_offset
+    if opener
+        fst[end].indent = fst.indent
+    end
+    if fst.typ !== TupleN || opener
+        fst.indent += s.opts.indent
+    end
 
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -380,10 +380,10 @@ n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    fst.indent = s.line_offset
 
     if line_margin > s.opts.margin || must_nest(fst)
         line_offset = s.line_offset
-        fst.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
         for (i, idx) in enumerate(phs)
             if i == 1
@@ -504,9 +504,10 @@ n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    line_offset = s.line_offset
+    fst.indent = s.line_offset
+
     if line_margin > s.opts.margin || must_nest(fst)
-        line_offset = s.line_offset
-        fst.indent = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
         for (i, idx) in enumerate(phs)
             if i == 1
@@ -708,9 +709,10 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
+    line_offset = s.line_offset
+    indent >= 0 && (fst.indent = indent)
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        line_offset = s.line_offset
-        indent >= 0 && (fst.indent = indent)
 
         if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
             fst.indent += s.opts.indent
