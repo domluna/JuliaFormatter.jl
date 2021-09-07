@@ -416,6 +416,8 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     nest!(style, fst, s)
 
+    # ignore maximum width can be extra whitespace at the end of lines
+    # remove it all before we print.
     s.opts.ignore_maximum_width && remove_superflous_whitespace!(fst)
 
     s.line_offset = 0
