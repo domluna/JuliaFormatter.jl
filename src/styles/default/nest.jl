@@ -682,7 +682,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
         return
-    elseif s.opts.ignore_maximum_width
+    elseif s.opts.ignore_maximum_width && length(idxs) == 2
         cst = fst.ref[]
         indent_nest =
             CSTParser.defines_function(cst) ||
