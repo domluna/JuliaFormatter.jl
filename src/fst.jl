@@ -537,10 +537,6 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     if s.opts.ignore_maximum_width
         # join based on position in original file
         join_lines = t.endline == n.startline
-
-        if t.typ === Binary && !join_lines
-            t.nest_behavior = AlwaysNest
-        end
     end
 
     if !is_prev_newline(t.nodes[end])

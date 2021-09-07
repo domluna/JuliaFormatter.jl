@@ -408,8 +408,6 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     end
     hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))
 
-    s.opts.ignore_maximum_width && remove_superflous_whitespace!(fst)
-
     s.opts.pipe_to_function_call && pipe_to_function_call_pass!(fst)
 
     flatten_fst!(fst)
@@ -417,6 +415,8 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     needs_alignment(s.opts) && align_fst!(fst, s.opts)
 
     nest!(style, fst, s)
+
+    s.opts.ignore_maximum_width && remove_superflous_whitespace!(fst)
 
     s.line_offset = 0
     io = IOBuffer()
@@ -426,9 +426,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         format_check(io, Notcode(1, fst.startline - 1), s)
         print_leaf(io, Newline(), s)
     end
-
     print_tree(io, fst, s)
-
     if fst.endline < length(s.doc.range_to_line)
         print_leaf(io, Newline(), s)
         format_check(io, Notcode(fst.endline + 1, length(s.doc.range_to_line)), s)

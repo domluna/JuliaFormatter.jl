@@ -591,15 +591,17 @@ end
 
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    line_offset = s.line_offset
+    line_margin = line_offset + length(fst) + fst.extra_margin
+
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+
     rhs = fst[end]
     rhs.typ === Block && (rhs = rhs[1])
 
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs))
-        line_offset = s.line_offset
         i1 = idxs[1]
         i2 = idxs[2]
         fst[i1] = Newline(length = fst[i1].len)
@@ -679,22 +681,45 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-    else
-        # length of op and surrounding whitespace
-        oplen = sum(length.(fst[2:end]))
+        return
+    elseif s.opts.ignore_maximum_width
+        cst = fst.ref[]
+        indent_nest =
+            CSTParser.defines_function(cst) ||
+            is_assignment(cst) ||
+            op_kind(fst) === Tokens.PAIR_ARROW ||
+            op_kind(fst) === Tokens.ANON_FUNC ||
+            is_standalone_shortcircuit(cst)
 
-        for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif i == 1
-                n.extra_margin = oplen + fst.extra_margin
-                nest!(style, n, s)
-            elseif i == length(fst.nodes)
-                n.extra_margin = fst.extra_margin
-                nest!(style, n, s)
-            else
-                nest!(style, n, s)
+        diff_line = fst[end].startline != fst[1].startline
+        i2 = idxs[2]
+
+        if indent_nest && diff_line
+            fst[i2] = Whitespace(s.opts.indent)
+            # reset the indent of the RHS
+            if fst[end].indent > fst.indent
+                fst[end].indent = fst.indent
             end
+            add_indent!(fst[end], s, s.opts.indent)
+        else
+            fst.indent = s.line_offset
+        end
+    end
+
+    # length of op and surrounding whitespace
+    oplen = sum(length.(fst[2:end]))
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif i == 1
+            n.extra_margin = oplen + fst.extra_margin
+            nest!(style, n, s)
+        elseif i == length(fst.nodes)
+            n.extra_margin = fst.extra_margin
+            nest!(style, n, s)
+        else
+            nest!(style, n, s)
         end
     end
 end
