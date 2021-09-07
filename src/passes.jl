@@ -551,8 +551,10 @@ function remove_superflous_whitespace!(fst::FST)
         if (n.typ === WHITESPACE || n.typ === PLACEHOLDER) &&
            i < length(fst.nodes) &&
            (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
-
-        fst[i] = Whitespace(0)
+            fst[i] = Whitespace(0)
+        else
+            remove_superflous_whitespace!(n)
         end
     end
+    return
 end

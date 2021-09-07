@@ -271,11 +271,21 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
         if opener
             s.line_offset = fst[end].indent + 1
         end
-    else
-        extra_margin = fst.extra_margin
-        opener && (extra_margin += 1)
-        nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
+
+        return
+    elseif s.opts.ignore_maximum_width
+        for (i, n) in enumerate(fst.nodes)
+            if !is_leaf(n)
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+            end
+        end
     end
+
+    extra_margin = fst.extra_margin
+    opener && (extra_margin += 1)
+    nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
+    return
 end
 n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s)
@@ -452,18 +462,18 @@ n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    # "B"
+    has_braces = is_closer(fst[end])
+    if has_braces
+        fst[end].indent = fst.indent
+    end
+
     if line_margin > s.opts.margin || must_nest(fst)
         line_offset = s.line_offset
         Blen = sum(length.(fst[2:end]))
 
         fst[1].extra_margin = Blen + fst.extra_margin
         nest!(style, fst[1], s)
-
-        # "B"
-        has_braces = is_closer(fst[end])
-        if has_braces
-            fst[end].indent = fst.indent
-        end
 
         over = (s.line_offset + Blen + fst.extra_margin > s.opts.margin) || must_nest(fst)
         fst.indent += s.opts.indent
@@ -494,9 +504,11 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-    else
-        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        return
     end
+
+    nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    return
 end
 n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_whereopcall!(DefaultStyle(style), fst, s)
@@ -712,12 +724,11 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     line_offset = s.line_offset
     indent >= 0 && (fst.indent = indent)
 
+    if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
+        fst.indent += s.opts.indent
+    end
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-
-        if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
-            fst.indent += s.opts.indent
-        end
-
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -741,9 +752,19 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 nest!(style, n, s)
             end
         end
-    else
-        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        return
+    elseif s.opts.ignore_maximum_width
+        for (i, n) in enumerate(fst.nodes)
+            # chainopcall / comparison
+            if (i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR) ||
+                !is_leaf(n)
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+            end
+        end
     end
+    nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    return
 end
 n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)

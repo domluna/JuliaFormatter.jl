@@ -1595,45 +1595,54 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+
+    curly_ctx = cst.parent.head === :curly ||
+        cst[3].head === :curly ||
+        cst[3].head === :bracescat ||
+        cst[3].head === :parameters
+
     add_braces =
-        !CSTParser.is_lbrace(cst[3]) &&
-        cst.parent.head !== :curly &&
-        cst[3].head !== :curly &&
-        cst[3].head !== :bracescat
+        !curly_ctx &&
+        !CSTParser.is_lbrace(cst[3])
+
+    bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
 
     brace = FST(PUNCTUATION, -1, t.endline, t.endline, "{")
-    add_braces && add_node!(t, brace, s, join_lines = true)
+    add_braces && add_node!(bc, brace, s, join_lines = true)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
     for i = 3:length(cst)
         a = cst[i]
         if is_opener(a) && nest
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            add_node!(bc, pretty(style, a, s), s, join_lines = true)
+            add_node!(bc, Placeholder(0), s)
             s.indent += s.opts.indent
         elseif is_closer(a) && nest
-            add_node!(t, TrailingComma(), s)
-            add_node!(t, Placeholder(0), s)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(bc, TrailingComma(), s)
+            add_node!(bc, Placeholder(0), s)
+            add_node!(bc, pretty(style, a, s), s, join_lines = true)
             s.indent -= s.opts.indent
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(nws), s)
+            add_node!(bc, pretty(style, a, s), s, join_lines = true)
+            add_node!(bc, Placeholder(nws), s)
         elseif is_binary(a)
             add_node!(
-                t,
+                bc,
                 pretty(style, a, s, nospace = !s.opts.whitespace_typedefs),
                 s,
                 join_lines = true,
             )
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            n = pretty(style, a, s)
+            add_node!(bc, n, s, join_lines = true)
         end
     end
 
-    brace = FST(PUNCTUATION, -1, t.endline, t.endline, "}")
-    add_braces && add_node!(t, brace, s, join_lines = true)
+    brace = FST(PUNCTUATION, -1, bc.endline, bc.endline, "}")
+    add_braces && add_node!(bc, brace, s, join_lines = true)
+
+    !curly_ctx && add_node!(t, bc, s, join_lines=true)
 
     t
 end
