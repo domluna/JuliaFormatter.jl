@@ -501,7 +501,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
         if length(n.nodes) > 0
             nws = 1
-            if (t.typ === Curly || t.typ === Where  || t.typ === BracesCat) && !s.opts.whitespace_typedefs
+            if (t.typ === Curly || t.typ === Where || t.typ === BracesCat) &&
+               !s.opts.whitespace_typedefs
                 nws = 0
             end
             multi_arg = !isnothing(t.ref) && n_args(t.ref[]) > 0

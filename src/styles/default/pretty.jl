@@ -1596,14 +1596,13 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
-    curly_ctx = cst.parent.head === :curly ||
+    curly_ctx =
+        cst.parent.head === :curly ||
         cst[3].head === :curly ||
         cst[3].head === :bracescat ||
         cst[3].head === :parameters
 
-    add_braces =
-        !curly_ctx &&
-        !CSTParser.is_lbrace(cst[3])
+    add_braces = !curly_ctx && !CSTParser.is_lbrace(cst[3])
 
     bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
 
@@ -1642,7 +1641,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     brace = FST(PUNCTUATION, -1, bc.endline, bc.endline, "}")
     add_braces && add_node!(bc, brace, s, join_lines = true)
 
-    !curly_ctx && add_node!(t, bc, s, join_lines=true)
+    !curly_ctx && add_node!(t, bc, s, join_lines = true)
 
     t
 end

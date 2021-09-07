@@ -756,8 +756,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     elseif s.opts.ignore_maximum_width
         for (i, n) in enumerate(fst.nodes)
             # chainopcall / comparison
-            if (i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR) ||
-                !is_leaf(n)
+            if (i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR) || !is_leaf(n)
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
             end
