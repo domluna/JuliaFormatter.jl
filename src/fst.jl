@@ -478,7 +478,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif is_custom_leaf(n)# || n.typ === PUNCTUATION
+    elseif is_custom_leaf(n) || is_comma(n)
         t.len += length(n)
         n.startline = t.startline
         n.endline = t.endline
