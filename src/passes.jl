@@ -548,7 +548,7 @@ Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLIN
 function remove_superflous_whitespace!(fst::FST)
     is_leaf(fst) && return
     for (i, n) in enumerate(fst.nodes)
-        if (n.typ === WHITESPACE || n.typ === PLACEHOLDER) &&
+        if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
            i < length(fst.nodes) &&
            (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
             fst[i] = Whitespace(0)
