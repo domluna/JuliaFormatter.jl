@@ -706,6 +706,24 @@ function is_iterable(x::FST)
     return false
 end
 
+"""
+Returns whether `fst` can be an iterable argument. For example in
+the case of a function call, which is of type `Call`:
+
+```julia
+f(a, b, c; k1=v1)
+```
+
+This would return `true` for `a`, `b`, `c` and `k1=v1` and `false` for all other nodes.
+"""
+function is_iterable_arg(fst::FST)
+    fst.typ === PUNCTUATION && return false
+    fst.typ === KEYWORD && return false
+    fst.typ === OPERATOR && return false
+    is_custom_leaf(fst) && return false
+    return true
+end
+
 function is_comprehension(x::CSTParser.EXPR)
     x.head === :comprehension && return true
     x.head === :typed_comprehension && return true

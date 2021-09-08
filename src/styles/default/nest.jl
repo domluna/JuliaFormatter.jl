@@ -187,7 +187,19 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     fst.indent += s.opts.indent
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
+
+    if s.opts.ignore_maximum_width
+        for (i, n) in enumerate(fst.nodes)
+            if n.typ === PLACEHOLDER
+                si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+                nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+            elseif n.typ === NEWLINE
+                s.line_offset = fst.indent
+            else
+                nest!(style, n, s)
+            end
+        end
+    elseif idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         if can_nest(fst)
             if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
                 fst[idx] = Newline(length = fst[idx].len)
@@ -238,13 +250,30 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
         fst.indent += s.opts.indent
     end
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
+    src_diff_line = if s.opts.ignore_maximum_width
+        last_arg_idx = findlast(is_iterable_arg, fst.nodes)
+        last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                if src_diff_line
+                    si = findnext(
+                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                        fst.nodes,
+                        i + 1,
+                    )
+                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
@@ -270,20 +299,12 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
         if opener
             s.line_offset = fst[end].indent + 1
         end
-
-        return
-    elseif s.opts.ignore_maximum_width
-        for (i, n) in enumerate(fst.nodes)
-            if !is_leaf(n)
-                diff = fst.indent - fst[i].indent
-                add_indent!(n, s, diff)
-            end
-        end
+    else
+        extra_margin = fst.extra_margin
+        opener && (extra_margin += 1)
+        nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 
-    extra_margin = fst.extra_margin
-    opener && (extra_margin += 1)
-    nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     return
 end
 n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
@@ -334,12 +355,23 @@ n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+    if s.opts.ignore_maximum_width
+        n_tuple!(ds, fst, s)
+    else
+        _n_comprehension!(ds, fst, s, indent)
+    end
+    return
+end
+
+function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State, indent::Int)
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nested = false
 
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
     closer = is_closer(fst[end])
+
     if closer && (line_margin > s.opts.margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         if idx !== nothing
@@ -520,6 +552,9 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
 
     if line_margin > s.opts.margin || must_nest(fst)
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
+        if s.opts.ignore_maximum_width
+            phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
+        end
         for (i, idx) in enumerate(phs)
             if i == 1
                 fst[idx] = Newline(length = fst[idx].len)
@@ -550,7 +585,10 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1])
+            if n.typ === NEWLINE &&
+               !is_comment(fst[i+1]) &&
+               !is_comment(fst[i-1]) &&
+               i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 if i == length(fst.nodes) - 1
@@ -564,8 +602,10 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 else
                     s.line_offset = fst.indent
                 end
+            elseif n.typ === NEWLINE
+                s.line_offset = fst.indent
             else
-                walk(increment_line_offset!, fst[i], s)
+                walk(increment_line_offset!, n, s)
             end
         end
 
@@ -599,8 +639,11 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     rhs = fst[end]
     rhs.typ === Block && (rhs = rhs[1])
 
+    # is the LHS on a different line than the RHS ?
+    src_diff_line = s.opts.ignore_maximum_width && fst[1].endline != fst[end].startline
+
     if length(idxs) == 2 &&
-       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs))
+       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
         i2 = idxs[2]
         fst[i1] = Newline(length = fst[i1].len)
@@ -641,7 +684,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         # Undo nest if possible
-        if can_nest(fst) && !no_unnest(rhs)
+        if can_nest(fst) && !no_unnest(rhs) && !src_diff_line
             line_margin = s.line_offset
 
             # replace IN with all of precedence level 6
@@ -666,8 +709,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                 end
             else
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
+                #= @info "ok" rw line_margin =#
                 line_margin += rw
             end
+            #= @info "" line_margin fst.extra_margin =#
 
             if line_margin + fst.extra_margin <= s.opts.margin
                 fst[i1] = Whitespace(1)
@@ -681,28 +726,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
         return
-    elseif s.opts.ignore_maximum_width && length(idxs) == 2
-        cst = fst.ref[]
-        indent_nest =
-            CSTParser.defines_function(cst) ||
-            is_assignment(cst) ||
-            op_kind(fst) === Tokens.PAIR_ARROW ||
-            op_kind(fst) === Tokens.ANON_FUNC ||
-            is_standalone_shortcircuit(cst)
-
-        diff_line = fst[end].startline != fst[1].startline
-        i2 = idxs[2]
-
-        if indent_nest && diff_line
-            fst[i2] = Whitespace(s.opts.indent)
-            # reset the indent of the RHS
-            if fst[end].indent > fst.indent
-                fst[end].indent = fst.indent
-            end
-            add_indent!(fst[end], s, s.opts.indent)
-        else
-            fst.indent = s.line_offset
-        end
     end
 
     # length of op and surrounding whitespace
@@ -777,14 +800,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             end
         end
         return
-    elseif s.opts.ignore_maximum_width
-        for (i, n) in enumerate(fst.nodes)
-            # chainopcall / comparison
-            if (i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR) || !is_leaf(n)
-                diff = fst.indent - fst[i].indent
-                add_indent!(n, s, diff)
-            end
-        end
     end
     nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     return
