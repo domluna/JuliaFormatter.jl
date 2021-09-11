@@ -491,7 +491,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     elseif n.typ === Parameters
         # unpack Parameters arguments into the parent node
-        if !isnothing(t.ref) && n_args(t.ref[]) == n_args(n.ref[])
+        if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
             idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
@@ -505,7 +505,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
                !s.opts.whitespace_typedefs
                 nws = 0
             end
-            multi_arg = !isnothing(t.ref) && n_args(t.ref[]) > 0
+            multi_arg = t.ref !== nothing && n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
         for nn in n.nodes
