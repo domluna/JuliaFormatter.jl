@@ -1441,5 +1441,13 @@
 
         str = "funccall(arg1, arg2, arg3)"
         @test fmt(str_, remove_trailing_comma = true) == str
+
+        # corner case - if the comma is removed it is no longer a tuple
+        str_ = "(tuple,)"
+        str = """
+        (
+            tuple,
+        )"""
+        @test fmt(str_, 4, 1, remove_trailing_comma = true) == str
     end
 end
