@@ -478,7 +478,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     elseif n.typ === INLINECOMMENT
         push!(t.nodes, n)
         return
-    elseif is_custom_leaf(n) || is_comma(n)
+    elseif is_custom_leaf(n)
         t.len += length(n)
         n.startline = t.endline
         n.endline = t.endline
@@ -534,7 +534,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width
+    if s.opts.ignore_maximum_width && !is_comma(n)
         # join based on position in original file
         join_lines = t.endline == n.startline
     end
