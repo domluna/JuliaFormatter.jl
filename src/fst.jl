@@ -466,7 +466,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             t[end] = n
         else
             t.len += length(n)
-            n.startline = t.startline
+            n.startline = t.endline
             n.endline = t.endline
             push!(t.nodes, n)
         end

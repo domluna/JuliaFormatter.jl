@@ -112,13 +112,14 @@ end
         s::State,
         idx::Int;
         stop_idx::Union{Int,Nothing} = nothing,
-    )
+    )::Bool
 
-Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than
-the allowed margin.
+Converts the node at `idx` to a `NEWLINE` if the current margin plus the additional margin
+from `fst[idx:stop_idx-1]` is greater than the allowed margin.
 
-If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will
-be included.
+If `stop_idx == nothing` the range is `fst[idx:end]`.
+
+Returns whether nesting occurred.
 """
 function nest_if_over_margin!(
     style,
@@ -126,7 +127,7 @@ function nest_if_over_margin!(
     s::State,
     idx::Int;
     stop_idx::Union{Int,Nothing} = nothing,
-)
+)::Bool
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing
@@ -138,7 +139,9 @@ function nest_if_over_margin!(
     if margin > s.opts.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
         fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent
-    else
-        nest!(style, fst[idx], s)
+        return true
     end
+
+    nest!(style, fst[idx], s)
+    return false
 end

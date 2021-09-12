@@ -240,13 +240,13 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    opener = findfirst(is_opener, fst.nodes) !== nothing
+    has_closer = is_closer(fst[end])
 
     line_offset = s.line_offset
-    if opener
+    if has_closer
         fst[end].indent = fst.indent
     end
-    if fst.typ !== TupleN || opener
+    if fst.typ !== TupleN || has_closer
         fst.indent += s.opts.indent
     end
 
@@ -269,7 +269,17 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
                         fst.nodes,
                         i + 1,
                     )
-                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    if has_closer && !nested && n.startline == fst[end].startline
+                        # trailing types are automatically converted, undo this if
+                        # there is no nest and the closer is on the same in the
+                        # original source.
+                        if fst[i-1].typ === TRAILINGCOMMA ||
+                           fst[i-1].typ === TRAILINGSEMICOLON
+                            fst[i-1].val = ""
+                            fst[i-1].len = 0
+                        end
+                    end
                 else
                     fst[i] = Newline(length = n.len)
                     s.line_offset = fst.indent
@@ -286,7 +296,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
-            elseif opener && (i == 1 || i == length(fst.nodes))
+            elseif has_closer && (i == 1 || i == length(fst.nodes))
                 nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
@@ -296,12 +306,12 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
             end
         end
 
-        if opener
+        if has_closer
             s.line_offset = fst[end].indent + 1
         end
     else
         extra_margin = fst.extra_margin
-        opener && (extra_margin += 1)
+        has_closer && (extra_margin += 1)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 
@@ -354,16 +364,16 @@ n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
-function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+function n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
     if s.opts.ignore_maximum_width
         n_tuple!(ds, fst, s)
     else
-        _n_comprehension!(ds, fst, s, indent)
+        _n_comprehension!(ds, fst, s)
     end
     return
 end
 
-function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State, indent::Int)
+function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -410,8 +420,8 @@ function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State, indent::Int)
     end
 end
 
-n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
-    n_comprehension!(DefaultStyle(style), fst, s, indent = indent)
+n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_comprehension!(DefaultStyle(style), fst, s)
 
 @inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) =
     n_comprehension!(ds, fst, s)
