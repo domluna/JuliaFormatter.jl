@@ -58,6 +58,7 @@ function options(s::DefaultStyle)
         conditional_to_if = false,
         normalize_line_endings = "auto",
         align_matrix = false,
+        remove_trailing_comma = false,
     )
 end
 
@@ -133,6 +134,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         conditional_to_if = false,
         normalize_line_endings = "auto",
         align_matrix::Bool = false,
+        remove_trailing_comma::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -353,6 +355,30 @@ end
 
 One of `"unix"` (normalize all `\r\n` to `\n`), `"windows"` (normalize all `\n` to `\r\n`), `"auto"` (automatically
 choose based on which line ending is more common in the file).
+
+### `remove_trailing_comma`
+
+default: `false`
+
+Trailing commas are added after the final argument when nesting occurs and the closing punctuation appears on the next line.
+
+For example when the following is nested (assuming `DefaultStyle`):
+
+```julia
+funccall(arg1, arg2, arg3)
+```
+
+it turns into:
+
+```julia
+funccall(
+    arg1,
+    arg2,
+    arg3, # trailing comma added after `arg3` (final arugment) !!!
+)
+```
+
+With `remove_trailing_comma` set to `true` the trailing comma above is never added.
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)

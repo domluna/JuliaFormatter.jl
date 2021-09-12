@@ -454,12 +454,16 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
            en.typ === Filter ||
            en.typ === Flatten ||
            en.typ === MacroCall ||
-           en.typ === MacroBlock ||
-           (is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1)
-            # don't insert trailing comma in these cases
+           en.typ === MacroBlock
+            # don't add trailing comma in these cases
+        elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
+            # preserve comma
+        elseif s.opts.remove_trailing_comma
+            if is_comma(en)
+                t[end] = Whitespace(0)
+            end
         elseif is_comma(en)
-            t.nodes[end] = n
-            t.len -= 1
+            t[end] = n
         else
             t.len += length(n)
             n.startline = t.startline
