@@ -464,7 +464,6 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             end
         end
 
-
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE &&
