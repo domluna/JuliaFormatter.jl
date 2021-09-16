@@ -466,7 +466,10 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1]) && i in phs
+            if n.typ === NEWLINE &&
+               !is_comment(fst[i+1]) &&
+               !is_comment(fst[i-1]) &&
+               i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 w, _ = length_to(fst, (NEWLINE,), start = i + 1)
