@@ -431,11 +431,14 @@ n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    line_offset = s.line_offset
     fst.indent = s.line_offset
 
     if line_margin > s.opts.margin || must_nest(fst)
-        line_offset = s.line_offset
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
+        if s.opts.ignore_maximum_width
+            phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
+        end
         for (i, idx) in enumerate(phs)
             if i == 1
                 fst[idx] = Newline(length = fst[idx].len)
@@ -463,18 +466,19 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1])
+            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1]) && i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 w, _ = length_to(fst, (NEWLINE,), start = i + 1)
                 width += w
-                # @info "" s.line_offset w width fst[i-1].typ fst[i-1].val width <= s.opts.margin
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
                     s.line_offset += length(fst[i])
                 else
                     s.line_offset = fst.indent
                 end
+            elseif n.typ === NEWLINE
+                s.line_offset = fst.indent
             else
                 walk(increment_line_offset!, fst[i], s)
             end
