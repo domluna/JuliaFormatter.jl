@@ -434,7 +434,7 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
-    if line_margin > s.opts.margin || must_nest(fst)
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
         if s.opts.ignore_maximum_width
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
@@ -463,6 +463,7 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 nest!(style, n, s)
             end
         end
+
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
@@ -567,7 +568,7 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
-    if line_margin > s.opts.margin || must_nest(fst)
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
         if s.opts.ignore_maximum_width
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
@@ -659,7 +660,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     # is the LHS on a different line than the RHS ?
     src_diff_line = s.opts.ignore_maximum_width && fst[1].endline != fst[end].startline
 
-    if length(idxs) == 2 && src_diff_line
+    if length(idxs) == 2 &&
+       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
         i2 = idxs[2]
         fst[i1] = Newline(length = fst[i1].len)
@@ -671,31 +673,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             op_kind(fst) === Tokens.PAIR_ARROW ||
             op_kind(fst) === Tokens.ANON_FUNC ||
             is_standalone_shortcircuit(cst)
-
-        if indent_nest
-            s.line_offset = fst.indent + s.opts.indent
-            fst[i2] = Whitespace(s.opts.indent)
-
-            # reset the indent of the RHS
-            if fst[end].indent > fst.indent
-                fst[end].indent = fst.indent
-            end
-            add_indent!(fst[end], s, s.opts.indent)
-        end
-    elseif length(idxs) == 2 &&
-       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs))
-        i1 = idxs[1]
-        i2 = idxs[2]
-        fst[i1] = Newline(length = fst[i1].len)
-        cst = fst.ref[]
-
-        indent_nest =
-            CSTParser.defines_function(cst) ||
-            is_assignment(cst) ||
-            op_kind(fst) === Tokens.PAIR_ARROW ||
-            op_kind(fst) === Tokens.ANON_FUNC ||
-            is_standalone_shortcircuit(cst)
-        @info "" src_diff_line line_margin op_kind(fst) indent_nest
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent
