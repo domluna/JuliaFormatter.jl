@@ -136,7 +136,9 @@ function nest_if_over_margin!(
         margin += sum(length.(fst[idx:stop_idx-1]))
     end
 
-    if margin > s.opts.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
+    if margin > s.opts.margin ||
+       (idx < length(fst.nodes) && is_comment(fst[idx+1])) ||
+       (idx > 1 && is_comment(fst[idx-1]))
         fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent
         return true
