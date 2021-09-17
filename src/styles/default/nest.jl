@@ -792,7 +792,8 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         fst.indent += s.opts.indent
     end
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
+    if idx !== nothing &&
+       (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
