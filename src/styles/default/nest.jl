@@ -792,13 +792,22 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         fst.indent += s.opts.indent
     end
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                if s.opts.ignore_maximum_width
+                    si = findnext(
+                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                        fst.nodes,
+                        i + 1,
+                    )
+                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
