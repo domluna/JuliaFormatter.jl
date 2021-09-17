@@ -561,12 +561,23 @@
           let var1 =
               value1,
             var2,
+            var3 = value3
+
+            body
+          end"""
+        @test fmt(str_, 2, 17) == str
+
+        str = """
+        foo =
+          let var1 =
+              value1,
+            var2,
             var3 =
               value3
 
             body
           end"""
-        @test fmt(str_, 2, 17) == str
+        @test fmt(str_, 2, 16) == str
         @test fmt(str_, 2, 1) == str
 
         str_ = """

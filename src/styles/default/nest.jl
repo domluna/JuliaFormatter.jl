@@ -813,22 +813,21 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 n.val = ","
                 n.len = 1
                 nest!(style, n, s)
-            elseif i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR
-                # chainopcall / comparison
-                diff = fst.indent - fst[i].indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1 + length(fst[i+2])
-                nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                n.extra_margin = 1
+                if i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR
+                    # chainopcall / comparison
+                    n.extra_margin = 1 + length(fst[i+2])
+                elseif i < length(fst.nodes)
+                    n.extra_margin = 1
+                end
                 nest!(style, n, s)
             end
         end
-        return
+    else
+        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
-    nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     return
 end
 n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
