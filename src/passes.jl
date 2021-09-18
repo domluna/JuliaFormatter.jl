@@ -506,7 +506,6 @@ function separate_kwargs_with_semicolon!(fst::FST)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
     ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
-    # @info "" kw_idx sc_idx comma_idx ph_idx
 
     if sc_idx !== nothing && sc_idx > kw_idx
         # move ; prior to first kwarg

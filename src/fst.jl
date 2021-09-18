@@ -1036,7 +1036,6 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             return
         end
 
-        # @info "" op.val fst[end].typ op_kind(fst[end])
         if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)

@@ -726,14 +726,12 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                 end
             else
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
-                #= @info "ok" rw line_margin =#
                 line_margin += rw
             end
-            #= @info "" line_margin fst.extra_margin =#
 
             if line_margin + fst.extra_margin <= s.opts.margin
                 fst[i1] = Whitespace(1)
-                if indent_nest
+                if indent_nest || style isa YASStyle
                     fst[i2] = Whitespace(0)
                     walk(unnest!(style), rhs, s)
                 end
