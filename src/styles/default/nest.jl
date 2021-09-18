@@ -735,7 +735,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                 fst[i1] = Whitespace(1)
                 if indent_nest
                     fst[i2] = Whitespace(0)
-                    walk(unnest!, rhs, s)
+                    walk(unnest!(style), rhs, s)
                 end
             end
         end

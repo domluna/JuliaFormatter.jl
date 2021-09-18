@@ -86,7 +86,6 @@ include("state.jl")
 include("fst.jl")
 include("passes.jl")
 include("align.jl")
-include("nest_utils.jl")
 
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
@@ -94,6 +93,8 @@ include("styles/yas/pretty.jl")
 include("styles/yas/nest.jl")
 include("styles/blue/pretty.jl")
 include("styles/blue/nest.jl")
+
+include("nest_utils.jl")
 
 include("print.jl")
 

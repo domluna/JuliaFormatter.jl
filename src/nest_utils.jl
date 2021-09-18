@@ -79,7 +79,7 @@ function nl_to_ws!(fst::FST, s::State)
     return
 end
 
-function dedent!(fst::FST, s::State)
+function dedent!(style::S, fst::FST, s::State) where S <: AbstractStyle
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -89,12 +89,22 @@ function dedent!(fst::FST, s::State)
     end
 end
 
-function unnest!(fst::FST, s::State)
+function dedent!(style::YASStyle, fst::FST, s::State)
+    if is_closer(fst) || fst.typ === NOTCODE
+        fst.indent -= s.opts.indent
+    elseif is_leaf(fst) || fst.typ === StringN
+        return
+    else
+        fst.indent = s.line_offset
+    end
+end
+
+function unnest!(style::S, fst::FST, s::State) where S <: AbstractStyle
     if is_leaf(fst)
         s.line_offset += length(fst)
     end
 
-    dedent!(fst, s)
+    dedent!(style, fst, s)
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
@@ -103,6 +113,12 @@ function unnest!(fst::FST, s::State)
     nl_to_ws!(fst, s)
 
     return
+end
+
+function unnest!(style::S) where S <: AbstractStyle
+    (fst::FST, s::State) -> begin
+        unnest!(style, fst, s)
+    end
 end
 
 """
