@@ -94,6 +94,8 @@ function dedent!(style::YASStyle, fst::FST, s::State)
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
         return
+    elseif is_iterable(fst)
+        fst.indent = s.line_offset + 1
     else
         fst.indent = s.line_offset
     end
