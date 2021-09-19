@@ -1011,7 +1011,11 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
     val = cst[2].val
     (val == "&&" || val == "||") || return false
 
-    return parent_is(cst, _valid_parent_node_for_standalone_circuit, ignore = _ignore_node_for_standalone_circuit)
+    return parent_is(
+        cst,
+        _valid_parent_node_for_standalone_circuit,
+        ignore = _ignore_node_for_standalone_circuit,
+    )
 end
 
 """
