@@ -534,7 +534,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width && !is_comma(n)
+    if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t))
         # join based on position in original file
         join_lines = t.endline == n.startline
     end
