@@ -97,7 +97,6 @@ function rrule(::typeof(cross), a::AbstractVector{<:Real}, b::AbstractVector{<:R
     return Ω, cross_pullback
 end
 
-
 #####
 ##### `det`
 #####
@@ -183,7 +182,6 @@ function rrule(::typeof(tr), x)
     return tr(x), tr_pullback
 end
 
-
 #####
 ##### `pinv`
 #####
@@ -191,10 +189,7 @@ end
 @scalar_rule pinv(x) -(Ω^2)
 
 function frule(
-    (_, ẋ),
-    ::typeof(pinv),
-    x::AbstractVector{T},
-    tol::Real = 0,
+    (_, ẋ), ::typeof(pinv), x::AbstractVector{T}, tol::Real=0
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     Δx = unthunk(ẋ)
@@ -204,10 +199,7 @@ function frule(
 end
 
 function frule(
-    (_, ẋ),
-    ::typeof(pinv),
-    x::LinearAlgebra.AdjOrTransAbsVec{T},
-    tol::Real = 0,
+    (_, ẋ), ::typeof(pinv), x::LinearAlgebra.AdjOrTransAbsVec{T}, tol::Real=0
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     Δx = unthunk(ẋ)
@@ -237,8 +229,7 @@ function frule((_, Ȧ), ::typeof(pinv), A::AbstractMatrix{T}; kwargs...) where 
 end
 
 function rrule(
-    ::typeof(pinv),
-    x::Union{AbstractVector{T},LinearAlgebra.AdjOrTransAbsVec{T}},
+    ::typeof(pinv), x::Union{AbstractVector{T},LinearAlgebra.AdjOrTransAbsVec{T}}
 ) where {T<:Union{Real,Complex}}
     y, full_pb = rrule(pinv, x, 0)
     pinv_pullback(Δy) = return full_pb(Δy)[1:2]
@@ -246,9 +237,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(pinv),
-    x::AbstractVector{T},
-    tol::Real,
+    ::typeof(pinv), x::AbstractVector{T}, tol::Real
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     function pinv_pullback(ȳ)
@@ -260,9 +249,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(pinv),
-    x::LinearAlgebra.AdjOrTransAbsVec{T},
-    tol::Real,
+    ::typeof(pinv), x::LinearAlgebra.AdjOrTransAbsVec{T}, tol::Real
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     function pinv_pullback(ȳ)
@@ -321,10 +308,7 @@ end
 # included because the primal mutates and uses `schur` and LAPACK
 
 function rrule(
-    ::typeof(sylvester),
-    A::StridedMatrix{T},
-    B::StridedMatrix{T},
-    C::StridedMatrix{T},
+    ::typeof(sylvester), A::StridedMatrix{T}, B::StridedMatrix{T}, C::StridedMatrix{T}
 ) where {T<:BlasFloat}
     RA, QA = schur(A)
     RB, QB = schur(B)
@@ -349,10 +333,7 @@ end
 # included because the primal uses `schur`, for which we don't have a rule
 
 function frule(
-    (_, Ȧ, Ċ),
-    ::typeof(lyap),
-    A::StridedMatrix{T},
-    C::StridedMatrix{T},
+    (_, Ȧ, Ċ), ::typeof(lyap), A::StridedMatrix{T}, C::StridedMatrix{T}
 ) where {T<:BlasFloat}
     ΔA = unthunk(Ȧ)
     ΔC = unthunk(Ċ)
@@ -369,9 +350,7 @@ end
 # included because the primal mutates and uses `schur` and LAPACK
 
 function rrule(
-    ::typeof(lyap),
-    A::StridedMatrix{T},
-    C::StridedMatrix{T},
+    ::typeof(lyap), A::StridedMatrix{T}, C::StridedMatrix{T}
 ) where {T<:BlasFloat}
     R, Q = schur(A)
     D = Q' * (C * Q)

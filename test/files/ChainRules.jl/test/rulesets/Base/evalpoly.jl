@@ -21,7 +21,7 @@ VERSION ≥ v"1.4" && @testset "evalpoly" begin
         isempty(np) && !isempty(nx) && continue
         m = 5
         x = randn(T, nx..., nx...)
-        p = [randn(T, np..., np...) for _ = 1:m]
+        p = [randn(T, np..., np...) for _ in 1:m]
         test_frule(evalpoly, x, p)
         test_frule(evalpoly, x, Tuple(p))
         test_rrule(evalpoly, x, p)

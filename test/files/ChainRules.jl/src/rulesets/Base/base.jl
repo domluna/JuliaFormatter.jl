@@ -2,8 +2,7 @@
 # that also have FastMath versions.
 
 @scalar_rule copysign(y, x) (
-    ifelse(signbit(x) != signbit(y), -one(y), +one(y)),
-    NoTangent(),
+    ifelse(signbit(x) != signbit(y), -one(y), +one(y)), NoTangent()
 )
 
 @scalar_rule one(x) zero(x)
@@ -115,7 +114,6 @@ end
 @scalar_rule asech(x) -(inv(x * sqrt(1 - x^2)))
 @scalar_rule asinh(x) inv(sqrt(x^2 + 1))
 @scalar_rule atanh(x) inv(1 - x^2)
-
 
 @scalar_rule acosd(x) (-(oftype(x, 180)) / π) / sqrt(1 - x^2)
 @scalar_rule acotd(x) (-(oftype(x, 180)) / π) / (1 + x^2)

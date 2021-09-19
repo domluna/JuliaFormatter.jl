@@ -37,7 +37,7 @@ function rand_eigen(T::Type, n::Int)
     end
 
     # make sure the sorting of eigenvalues is well defined
-    λ = 10(_rand(T, n) .+ (0:3:3(n-1)))
+    λ = 10(_rand(T, n) .+ (0:3:(3(n - 1))))
 
     return V * Diagonal(λ) / V
 end
@@ -47,8 +47,7 @@ end
         n = 10
         @testset "lu! frule" begin
             @testset "lu!(A::Matrix{$T}, $pivot) for size(A)=($m, $n)" for T in (
-                    Float64,
-                    ComplexF64,
+                    Float64, ComplexF64
                 ),
                 pivot in (LU_ROW_MAXIMUM, LU_NO_PIVOT),
                 m in (7, 10, 13)
@@ -59,25 +58,17 @@ end
                 Asingular = zeros(n, n)
                 ΔAsingular = rand_tangent(Asingular)
                 @test_throws SingularException frule(
-                    (ZeroTangent(), copy(ΔAsingular)),
-                    lu!,
-                    copy(Asingular),
-                    LU_ROW_MAXIMUM,
+                    (ZeroTangent(), copy(ΔAsingular)), lu!, copy(Asingular), LU_ROW_MAXIMUM
                 )
                 frule(
-                    (ZeroTangent(), ΔAsingular),
-                    lu!,
-                    Asingular,
-                    LU_ROW_MAXIMUM;
-                    check = false,
+                    (ZeroTangent(), ΔAsingular), lu!, Asingular, LU_ROW_MAXIMUM; check=false
                 )
                 @test true  # above line would have errored if this was not working right
             end
         end
         @testset "lu rrule" begin
             @testset "lu(A::Matrix{$T}, $pivot) for size(A)=($m, $n)" for T in (
-                    Float64,
-                    ComplexF64,
+                    Float64, ComplexF64
                 ),
                 pivot in (LU_ROW_MAXIMUM, LU_NO_PIVOT),
                 m in (7, 10, 13)
@@ -86,10 +77,10 @@ end
             end
             @testset "check=false passed to primal function" begin
                 Asingular = zeros(n, n)
-                F = lu(Asingular, LU_ROW_MAXIMUM; check = false)
-                ΔF = Tangent{typeof(F)}(; U = rand_tangent(F.U), L = rand_tangent(F.L))
+                F = lu(Asingular, LU_ROW_MAXIMUM; check=false)
+                ΔF = Tangent{typeof(F)}(; U=rand_tangent(F.U), L=rand_tangent(F.L))
                 @test_throws SingularException rrule(lu, Asingular, LU_ROW_MAXIMUM)
-                _, back = rrule(lu, Asingular, LU_ROW_MAXIMUM; check = false)
+                _, back = rrule(lu, Asingular, LU_ROW_MAXIMUM; check=false)
                 back(ΔF)
                 @test true  # above line would have errored if this was not working right
             end
@@ -98,14 +89,12 @@ end
             @testset "getproperty(::LU, k) rrule" begin
                 # test that the getproperty rrule composes correctly with the lu rrule
                 @testset "getproperty(lu(A::Matrix), :$k) for size(A)=($m, $n)" for k in (
-                        :U,
-                        :L,
-                        :factors,
+                        :U, :L, :factors
                     ),
                     m in (7, 10, 13)
 
                     F = lu(randn(m, n))
-                    test_rrule(getproperty, F, k; check_inferred = false)
+                    test_rrule(getproperty, F, k; check_inferred=false)
                 end
             end
             @testset "matrix inverse using LU" begin
@@ -120,7 +109,7 @@ end
         for n in [4, 6, 10], m in [3, 5, 9]
             @testset "($n x $m) svd" begin
                 X = randn(n, m)
-                test_rrule(svd, X; atol = 1e-6, rtol = 1e-6)
+                test_rrule(svd, X; atol=1e-6, rtol=1e-6)
             end
         end
 
@@ -130,15 +119,11 @@ end
                 F = svd(X)
                 rand_adj = adjoint(rand(reverse(size(F.V))...))
 
-                test_rrule(getproperty, F, :U; check_inferred = false)
-                test_rrule(getproperty, F, :S; check_inferred = false)
-                test_rrule(getproperty, F, :Vt; check_inferred = false)
+                test_rrule(getproperty, F, :U; check_inferred=false)
+                test_rrule(getproperty, F, :S; check_inferred=false)
+                test_rrule(getproperty, F, :Vt; check_inferred=false)
                 test_rrule(
-                    getproperty,
-                    F,
-                    :V;
-                    check_inferred = false,
-                    output_tangent = rand_adj,
+                    getproperty, F, :V; check_inferred=false, output_tangent=rand_adj
                 )
             end
         end
@@ -185,7 +170,7 @@ end
             # NOTE: eigen!/eigen are not type-stable, so neither are their frule/rrule
 
             # avoid implementing to_vec(::Eigen)
-            asnt(E::Eigen) = (values = E.values, vectors = E.vectors)
+            asnt(E::Eigen) = (values=E.values, vectors=E.vectors)
 
             # NOTE: for unstructured matrices, low enough n, and this specific seed, finite
             # differences of eigen seems to be stable enough for direct comparison.
@@ -227,22 +212,22 @@ end
                 F_rev, back = rrule(eigen, X)
                 @test F_rev == F
                 # NOTE: eigen is not type-stable, so neither are is its rrule
-                _, X̄_values_ad = @maybe_inferred back(CT(values = λ̄))
+                _, X̄_values_ad = @maybe_inferred back(CT(; values=λ̄))
                 @test X̄_values_ad ≈ j′vp(_fdm, x -> eigen(x).values, λ̄, X)[1]
-                _, X̄_vectors_ad = @maybe_inferred back(CT(vectors = V̄))
+                _, X̄_vectors_ad = @maybe_inferred back(CT(; vectors=V̄))
                 # need the conversion to `complex` here, since FiniteDiff is currently buggy if functions
                 # return arrays of either real or complex values based solely on the input values (not the
                 # input types). See https://github.com/JuliaLang/julia/issues/41243
                 @test X̄_vectors_ad ≈
                       j′vp(_fdm, x -> complex.(eigen(x).vectors), complex.(V̄), X)[1] rtol =
                     1e-6
-                F̄ = CT(values = λ̄, vectors = V̄)
+                F̄ = CT(; values=λ̄, vectors=V̄)
                 s̄elf, X̄_ad = @maybe_inferred back(F̄)
                 @test s̄elf === NoTangent()
                 X̄_fd = j′vp(_fdm, asnt ∘ eigen, F̄, X)[1]
                 @test X̄_ad ≈ X̄_fd rtol = 1e-4
                 @test @maybe_inferred(back(ZeroTangent())) === (NoTangent(), ZeroTangent())
-                F̄zero = CT(values = ZeroTangent(), vectors = ZeroTangent())
+                F̄zero = CT(; values=ZeroTangent(), vectors=ZeroTangent())
                 @test @maybe_inferred(back(F̄zero)) === (NoTangent(), ZeroTangent())
 
                 T <: Real && @testset "cotangent is real when input is" begin
@@ -252,15 +237,14 @@ end
                     F = eigen(X)
                     V̄ = rand_tangent(F.vectors)
                     λ̄ = rand_tangent(F.values)
-                    F̄ = Tangent{typeof(F)}(values = λ̄, vectors = V̄)
+                    F̄ = Tangent{typeof(F)}(; values=λ̄, vectors=V̄)
                     X̄ = rrule(eigen, X)[2](F̄)[2]
                     @test eltype(X̄) <: Real
                 end
             end
 
             @testset "normalization/phase functions are idempotent" for T in (
-                Float64,
-                ComplexF64,
+                Float64, ComplexF64
             )
                 # this is as much a math check as a code check. because normalization when
                 # applied repeatedly is idempotent, repeated pushforward/pullback should
@@ -297,8 +281,8 @@ end
 
                 n = 10
                 @testset "eigen!(::Matrix{$T})" for T in (Float64, ComplexF64)
-                    A, ΔA =
-                        Matrix(Hermitian(randn(T, n, n))), Matrix(Hermitian(randn(T, n, n)))
+                    A, ΔA = Matrix(Hermitian(randn(T, n, n))),
+                    Matrix(Hermitian(randn(T, n, n)))
 
                     F = eigen!(copy(A))
                     @test frule((ZeroTangent(), ZeroTangent()), eigen!, copy(A)) ==
@@ -324,7 +308,7 @@ end
                     A, ΔU, Δλ = Matrix(Hermitian(randn(T, n, n))), randn(T, n, n), randn(n)
 
                     F = eigen(A)
-                    ΔF = Tangent{typeof(F)}(; values = Δλ, vectors = ΔU)
+                    ΔF = Tangent{typeof(F)}(; values=Δλ, vectors=ΔU)
                     F_ad, back = rrule(eigen, A)
                     @test F_ad == F
 
@@ -386,8 +370,8 @@ end
             @testset "hermitian matrices" begin
                 n = 10
                 @testset "eigvals!(::Matrix{$T})" for T in (Float64, ComplexF64)
-                    A, ΔA =
-                        Matrix(Hermitian(randn(T, n, n))), Matrix(Hermitian(randn(T, n, n)))
+                    A, ΔA = Matrix(Hermitian(randn(T, n, n))),
+                    Matrix(Hermitian(randn(T, n, n)))
                     λ = eigvals!(copy(A))
                     λ_ad, ∂λ_ad = frule((ZeroTangent(), copy(ΔA)), eigvals!, copy(A))
                     @test λ_ad ≈ λ # inexact because frule uses eigen not eigvals
@@ -417,7 +401,7 @@ end
     @testset "cholesky" begin
         @testset "Real" begin
             check_inferred = VERSION ≥ v"1.5"
-            test_rrule(cholesky, 0.8; check_inferred = check_inferred)
+            test_rrule(cholesky, 0.8; check_inferred=check_inferred)
         end
         @testset "Diagonal{<:Real}" begin
             D = Diagonal(rand(5) .+ 0.1)
@@ -426,7 +410,7 @@ end
                 cholesky,
                 D ⊢ Diagonal(randn(5)),
                 Val(false);
-                output_tangent = Tangent{typeof(C)}(factors = Diagonal(randn(5))),
+                output_tangent=Tangent{typeof(C)}(; factors=Diagonal(randn(5))),
             )
         end
 

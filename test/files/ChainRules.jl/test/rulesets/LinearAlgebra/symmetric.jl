@@ -19,19 +19,16 @@
                     SymHerm,
                     x,
                     uplo;
-                    output_tangent = ΔΩ,
+                    output_tangent=ΔΩ,
                     # type stability here critically relies on uplo being constant propagated,
                     # so we need to test this more carefully below
-                    check_inferred = false,
+                    check_inferred=false,
                 )
                 if check_inferred && false # ChainRulesCore #407
                     @maybe_inferred (function (SymHerm, x, ΔΩ, ::Val)
                         return rrule(SymHerm, x, uplo)[2](ΔΩ)
                     end)(
-                        SymHerm,
-                        x,
-                        ΔΩ,
-                        Val(uplo),
+                        SymHerm, x, ΔΩ, Val(uplo)
                     )
                 end
             end
@@ -42,17 +39,14 @@
                     SymHerm,
                     x ⊢ Diagonal(randn(T, 3)),
                     uplo;
-                    check_inferred = false,
-                    output_tangent = ΔΩ,
+                    check_inferred=false,
+                    output_tangent=ΔΩ,
                 )
                 if check_inferred && false # ChainRulesCore #407
                     @maybe_inferred (function (SymHerm, x, ΔΩ, ::Val)
                         return rrule(SymHerm, x, uplo)[2](ΔΩ)
                     end)(
-                        SymHerm,
-                        x,
-                        ΔΩ,
-                        Val(uplo),
+                        SymHerm, x, ΔΩ, Val(uplo)
                     )
                 end
             end
@@ -85,7 +79,7 @@
     @testset "eigendecomposition" begin
         @testset "eigen/eigen!" begin
             # avoid implementing to_vec(::Eigen)
-            asnt(E::Eigen) = (values = E.values, vectors = E.vectors)
+            asnt(E::Eigen) = (values=E.values, vectors=E.vectors)
 
             function _eigen_stable(A)
                 F = eigen(A)
@@ -95,8 +89,7 @@
 
             n = 10
             @testset "frule for eigen!(::$SymHerm{$T}) uplo=$uplo" for SymHerm in (
-                    Symmetric,
-                    Hermitian,
+                    Symmetric, Hermitian
                 ),
                 T in (SymHerm === Symmetric ? (Float64,) : (Float64, ComplexF64)),
                 uplo in (:L, :U)
@@ -109,8 +102,9 @@
                 @test @maybe_inferred(
                     frule((ZeroTangent(), ZeroTangent()), eigen!, copy(symA))
                 ) == (F, ZeroTangent())
-                F_ad, ∂F_ad =
-                    @maybe_inferred frule((ZeroTangent(), copy(ΔsymA)), eigen!, copy(symA))
+                F_ad, ∂F_ad = @maybe_inferred frule(
+                    (ZeroTangent(), copy(ΔsymA)), eigen!, copy(symA)
+                )
                 @test F_ad == F
                 @test ∂F_ad isa Tangent{typeof(F)}
                 @test ∂F_ad.values isa typeof(F.values)
@@ -128,8 +122,7 @@
             end
 
             @testset "rrule for eigen(::$SymHerm{$T}) uplo=$uplo" for SymHerm in (
-                    Symmetric,
-                    Hermitian,
+                    Symmetric, Hermitian
                 ),
                 T in (SymHerm === Symmetric ? (Float64,) : (Float64, ComplexF64)),
                 uplo in (:L, :U)
@@ -138,7 +131,7 @@
                 symA = SymHerm(A, uplo)
 
                 F = eigen(symA)
-                ΔF = Tangent{typeof(F)}(; values = Δλ, vectors = ΔU)
+                ΔF = Tangent{typeof(F)}(; values=Δλ, vectors=ΔU)
                 F_ad, back = @maybe_inferred rrule(eigen, symA)
                 @test F_ad == F
 
@@ -173,8 +166,7 @@
             # this test set checks that the rules compose correctly for the function
             # f(A) = I, using eigenvectors, where all sensitivities should cancel
             @testset "phase convention from low value" begin
-                @testset for min_val in
-                             [0, eps(), sqrt(eps()), cbrt(eps()), eps()^(1 // 4)],
+                @testset for min_val in [0, eps(), sqrt(eps()), cbrt(eps()), eps()^(1//4)],
                     uplo in (:U, :L)
 
                     U = randn(ComplexF64, n, n)
@@ -195,7 +187,7 @@
 
                     Ω̄ = randn(eltype(A), (n, n))
                     V̄ = V * (Ω̄ + Ω̄')
-                    F̄ = Tangent{typeof(F)}(vectors = V̄)
+                    F̄ = Tangent{typeof(F)}(; vectors=V̄)
                     _, back = rrule(eigen, A)
                     Ā = back(F̄)[2]
                     @test maximum(abs, Ā) < sqrt(eps())
@@ -206,8 +198,7 @@
         @testset "eigvals!/eigvals" begin
             n = 10
             @testset "frule for eigvals!(::$SymHerm{$T}) uplo=$uplo" for SymHerm in (
-                    Symmetric,
-                    Hermitian,
+                    Symmetric, Hermitian
                 ),
                 T in (SymHerm === Symmetric ? (Float64,) : (Float64, ComplexF64)),
                 uplo in (:L, :U)
@@ -215,17 +206,12 @@
                 A, ΔA = randn(T, n, n), randn(T, n, n)
                 symA = SymHerm(A, uplo)
                 ΔsymA = @maybe_inferred frule(
-                    (ZeroTangent(), ΔA, ZeroTangent()),
-                    SymHerm,
-                    A,
-                    uplo,
+                    (ZeroTangent(), ΔA, ZeroTangent()), SymHerm, A, uplo
                 )[2]
 
                 λ = eigvals!(copy(symA))
                 λ_ad, ∂λ_ad = @maybe_inferred frule(
-                    (ZeroTangent(), copy(ΔsymA)),
-                    eigvals!,
-                    copy(symA),
+                    (ZeroTangent(), copy(ΔsymA)), eigvals!, copy(symA)
                 )
                 @test λ_ad ≈ λ # inexact because frule uses eigen not eigvals
                 @test ∂λ_ad isa typeof(λ)
@@ -233,8 +219,7 @@
             end
 
             @testset "rrule for eigvals(::$SymHerm{$T}) uplo=$uplo" for SymHerm in (
-                    Symmetric,
-                    Hermitian,
+                    Symmetric, Hermitian
                 ),
                 T in (SymHerm === Symmetric ? (Float64,) : (Float64, ComplexF64)),
                 uplo in (:L, :U)
@@ -261,7 +246,7 @@
 
     @testset "singular value decomposition" begin
         # avoid implementing to_vec(::SVD)
-        asnt(F::SVD) = (U = F.U, S = F.S, V = F.V, Vt = F.Vt)
+        asnt(F::SVD) = (U=F.U, S=F.S, V=F.V, Vt=F.Vt)
 
         function _svd_stable(A)
             F = svd(A)
@@ -284,7 +269,7 @@
 
                 F = svd(symA)
                 CT = Tangent{typeof(F)}
-                ΔF = CT(; U = ΔU, V = ΔV, Vt = ΔVt, S = ΔS)
+                ΔF = CT(; U=ΔU, V=ΔV, Vt=ΔVt, S=ΔS)
                 F_ad, back = @maybe_inferred rrule(svd, symA)
                 @test F_ad == F
 
@@ -412,8 +397,9 @@
                         else
                             Union{Matrix{T},Hermitian{T}}
                         end
-                        Y_ad, ∂Y_ad =
-                            @maybe_inferred Tuple{TY,T∂Y} frule((ZeroTangent(), ΔA), f, A)
+                        Y_ad, ∂Y_ad = @maybe_inferred Tuple{TY,T∂Y} frule(
+                            (ZeroTangent(), ΔA), f, A
+                        )
                     end
                     @test Y_ad == Y
                     @test typeof(Y_ad) === typeof(Y)
@@ -421,23 +407,21 @@
                     @test ∂Y_ad isa typeof(Y)
                     hasproperty(∂Y_ad, :uplo) && @test ∂Y_ad.uplo == Y.uplo
                     @test parent(∂Y_ad) ≈ jvp(
-                        _fdm,
-                        x -> Matrix{TC}(parent(f(TA(x, uplo)))),
-                        (A.data, ΔA.data),
+                        _fdm, x -> Matrix{TC}(parent(f(TA(x, uplo)))), (A.data, ΔA.data)
                     )
                 end
 
                 @testset "stable for (almost-)singular input" begin
                     λ, U = eigen(rand_matfun_input(f, TA, T, :U, n, true))
                     m = div(n, 2)
-                    λ[1:m] .= λ[m+1:2m] .+ cbrt(eps(eltype(λ))) / 100
+                    λ[1:m] .= λ[(m + 1):(2m)] .+ cbrt(eps(eltype(λ))) / 100
                     A = TA(U * Diagonal(λ) * U')
                     ΔA = TA(randn(T, n, n))
                     _, ∂Y = frule((ZeroTangent(), ΔA), f, A)
                     @test parent(∂Y) ≈
                           jvp(_fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A.data, ΔA.data))
 
-                    λ[1:m] .= λ[m+1:2m]
+                    λ[1:m] .= λ[(m + 1):(2m)]
                     A2 = TA(U * Diagonal(λ) * U')
                     ΔA2 = TA(randn(T, n, n))
                     _, ∂Y2 = frule((ZeroTangent(), ΔA2), f, A2)
@@ -452,9 +436,7 @@
                     ΔA = TA(randn(T, n, n))
                     _, ∂Y = frule((ZeroTangent(), ΔA), f, A)
                     @test parent(∂Y) ≈ jvp(
-                        _fdm,
-                        x -> Matrix{TC}(parent(f(TA(x)))),
-                        (A.data, ΔA.data),
+                        _fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A.data, ΔA.data)
                     )
                 end
             end
@@ -494,24 +476,21 @@
                     _, ∂A2 = back(ΔY2)
                     ∂data2 = rrule(Hermitian, A.data, uplo)[2](∂A2)[2]
                     @test ∂data2 ≈ j′vp(
-                        _fdm,
-                        x -> Matrix{Complex{real(T)}}(f(TA(x, uplo))),
-                        ΔY2,
-                        A.data,
+                        _fdm, x -> Matrix{Complex{real(T)}}(f(TA(x, uplo))), ΔY2, A.data
                     )[1]
                 end
 
                 @testset "stable for (almost-)singular input" begin
                     λ, U = eigen(rand_matfun_input(f, TA, T, :U, n, true))
                     m = div(n, 2)
-                    λ[1:m] .= λ[m+1:2m] .+ cbrt(eps(eltype(λ))) / 100
+                    λ[1:m] .= λ[(m + 1):(2m)] .+ cbrt(eps(eltype(λ))) / 100
                     A = TA(U * Diagonal(λ) * U')
                     ΔY = TA(randn(T, n, n))
                     ∂A = rrule(f, A)[2](ΔY)[2]
                     ∂data = rrule(Hermitian, A.data, :U)[2](∂A)[2]
                     @test ∂data ≈ j′vp(_fdm, x -> parent(f(TA(x))), ΔY, A.data)[1]
 
-                    λ[1:m] .= λ[m+1:2m]
+                    λ[1:m] .= λ[(m + 1):(2m)]
                     A2 = TA(U * Diagonal(λ) * U')
                     ΔY2 = TA(randn(T, n, n))
                     ∂A2 = rrule(f, A2)[2](ΔY2)[2]

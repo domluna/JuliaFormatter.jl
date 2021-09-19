@@ -66,7 +66,7 @@ const FASTABLE_AST = quote
                 Δz = Tangent{Tuple{T,T}}(randn(T), randn(T))
 
                 test_frule(sincos, randn(T))
-                test_rrule(sincos, randn(T); output_tangent = Δz)
+                test_rrule(sincos, randn(T); output_tangent=Δz)
             end
         end
     end
@@ -95,7 +95,7 @@ const FASTABLE_AST = quote
     end
 
     @testset "Unary complex functions" begin
-        for f ∈ (abs, abs2, conj), z ∈ (-4.1 - 0.02im, 6.4, 3 + im)
+        for f in (abs, abs2, conj), z in (-4.1 - 0.02im, 6.4, 3 + im)
             @testset "Unary complex functions f = $f, z = $z" begin
                 complex_jacobian_test(f, z)
             end
@@ -103,7 +103,7 @@ const FASTABLE_AST = quote
         # As per PR #196, angle gives a ZeroTangent() pullback for Real z and ΔΩ, rather than
         # the one you'd get from considering the reals as embedded in the complex plane
         # so we need to special case it's tests
-        for z ∈ (-4.1 - 0.02im, 6.4 + 0im, 3 + im)
+        for z in (-4.1 - 0.02im, 6.4 + 0im, 3 + im)
             complex_jacobian_test(angle, z)
         end
         @test frule((ZeroTangent(), randn()), angle, randn())[2] === ZeroTangent()
@@ -297,7 +297,6 @@ end
     @testset "fastmath_able Base functions" begin
         $FASTABLE_AST
     end
-
 
     @testset "fastmath_able FastMath functions" begin
         $(Base.FastMath.make_fastmath(FASTABLE_AST))

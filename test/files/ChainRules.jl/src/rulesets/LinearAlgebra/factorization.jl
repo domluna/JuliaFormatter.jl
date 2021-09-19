@@ -48,9 +48,9 @@ function frule(
         ldiv!(L, ∂factors)
         @views begin
             ∂factors1 = ∂factors[:, 1:q]
-            ∂factors2 = ∂factors[:, (q+1):end]
+            ∂factors2 = ∂factors[:, (q + 1):end]
             U1 = UpperTriangular(U[:, 1:q])
-            U2 = U[:, (q+1):end]
+            U2 = U[:, (q + 1):end]
         end
         rdiv!(∂factors1, U1)
         ∂L = tril(∂factors1, -1)
@@ -64,9 +64,9 @@ function frule(
         rdiv!(∂factors, U)
         @views begin
             ∂factors1 = ∂factors[1:q, :]
-            ∂factors2 = ∂factors[(q+1):end, :]
+            ∂factors2 = ∂factors[(q + 1):end, :]
             L1 = UnitLowerTriangular(L[1:q, :])
-            L2 = L[(q+1):end, :]
+            L2 = L[(q + 1):end, :]
         end
         ldiv!(L1, ∂factors1)
         ∂U = triu(∂factors1)
@@ -75,7 +75,7 @@ function frule(
         lmul!(L1, tril!(∂factors1, -1))
         ∂factors1 .+= ∂U
     end
-    ∂F = Tangent{typeof(F)}(; factors = ∂factors)
+    ∂F = Tangent{typeof(F)}(; factors=∂factors)
     return F, ∂F
 end
 
@@ -102,9 +102,9 @@ function _lu_pullback(ΔF::Tangent, m, n, eltypeA, pivot, F)
         triu!(copyto!(∂A, ∂factors))
         @views begin
             factors1 = factors[:, 1:q]
-            U2 = factors[:, (q+1):end]
+            U2 = factors[:, (q + 1):end]
             ∂A1 = ∂A[:, 1:q]
-            ∂A2 = ∂A[:, (q+1):end]
+            ∂A2 = ∂A[:, (q + 1):end]
             ∂L = tril(∂factors[:, 1:q], -1)
         end
         L = UnitLowerTriangular(factors1)
@@ -117,9 +117,9 @@ function _lu_pullback(ΔF::Tangent, m, n, eltypeA, pivot, F)
         tril!(copyto!(∂A, ∂factors), -1)
         @views begin
             factors1 = factors[1:q, :]
-            L2 = factors[(q+1):end, :]
+            L2 = factors[(q + 1):end, :]
             ∂A1 = ∂A[1:q, :]
-            ∂A2 = ∂A[(q+1):end, :]
+            ∂A2 = ∂A[(q + 1):end, :]
             ∂U = triu(∂factors[1:q, :])
         end
         U = UpperTriangular(factors1)
@@ -134,13 +134,11 @@ function _lu_pullback(ΔF::Tangent, m, n, eltypeA, pivot, F)
     end
     return NoTangent(), ∂A, NoTangent()
 end
-_lu_pullback(ΔF::AbstractThunk, m, n, eltypeA, pivot, F) =
-    _lu_pullback(unthunk(ΔF), m, n, eltypeA, pivot, F)
+function _lu_pullback(ΔF::AbstractThunk, m, n, eltypeA, pivot, F)
+    return _lu_pullback(unthunk(ΔF), m, n, eltypeA, pivot, F)
+end
 function rrule(
-    ::typeof(lu),
-    A::StridedMatrix,
-    pivot::Union{LU_RowMaximum,LU_NoPivot};
-    kwargs...,
+    ::typeof(lu), A::StridedMatrix, pivot::Union{LU_RowMaximum,LU_NoPivot}; kwargs...
 )
     m, n = size(A)
     F = lu(A, pivot; kwargs...)
@@ -155,9 +153,7 @@ end
 # this rrule is necessary because the primal mutates
 
 function rrule(
-    ::typeof(getproperty),
-    F::TF,
-    x::Symbol,
+    ::typeof(getproperty), F::TF, x::Symbol
 ) where {T,TF<:LU{T,<:StridedMatrix{T}}}
     function getproperty_LU_pullback(ΔY)
         ∂factors = if x === :L
@@ -173,7 +169,7 @@ function rrule(
         else
             return (NoTangent(), NoTangent(), NoTangent())
         end
-        ∂F = Tangent{TF}(; factors = ∂factors)
+        ∂F = Tangent{TF}(; factors=∂factors)
         return NoTangent(), ∂F, NoTangent()
     end
     getproperty_LU_pullback(ΔY::AbstractThunk) = getproperty_LU_pullback(unthunk(ΔY))
@@ -215,7 +211,7 @@ function rrule(::typeof(inv), F::LU{<:Any,<:StridedMatrix})
         ∂L = tril!(L' \ ∂factors, -1)
         triu!(rdiv!(∂factors, U'))
         ∂factors .+= ∂L
-        ∂F = Tangent{typeof(F)}(; factors = ∂factors)
+        ∂F = Tangent{typeof(F)}(; factors=∂factors)
         return NoTangent(), ∂F
     end
     return inv(F), inv_LU_pullback
@@ -240,13 +236,13 @@ function rrule(::typeof(getproperty), F::T, x::Symbol) where {T<:SVD}
     function getproperty_svd_pullback(Ȳ)
         C = Tangent{T}
         ∂F = if x === :U
-            C(U = Ȳ)
+            C(; U=Ȳ)
         elseif x === :S
-            C(S = Ȳ)
+            C(; S=Ȳ)
         elseif x === :V
-            C(Vt = Ȳ')
+            C(; Vt=Ȳ')
         elseif x === :Vt
-            C(Vt = Ȳ)
+            C(; Vt=Ȳ)
         end
         return NoTangent(), ∂F, NoTangent()
     end
@@ -263,7 +259,7 @@ function svd_rev(USV::SVD, Ū, s̄, V̄)
 
     k = length(s)
     T = eltype(s)
-    F = T[i == j ? 1 : inv(@inbounds s[j]^2 - s[i]^2) for i = 1:k, j = 1:k]
+    F = T[i == j ? 1 : inv(@inbounds s[j]^2 - s[i]^2) for i in 1:k, j in 1:k]
 
     # We do a lot of matrix operations here, so we'll try to be memory-friendly and do
     # as many of the computations in-place as possible. Benchmarking shows that the in-
@@ -296,19 +292,17 @@ end
 # - support degenerate matrices (see #144)
 
 function frule(
-    (_, ΔA),
-    ::typeof(eigen!),
-    A::StridedMatrix{T};
-    kwargs...,
+    (_, ΔA), ::typeof(eigen!), A::StridedMatrix{T}; kwargs...
 ) where {T<:BlasFloat}
     ΔA isa AbstractZero && return (eigen!(A; kwargs...), ΔA)
     if ishermitian(A)
-        sortby =
-            get(kwargs, :sortby, VERSION ≥ v"1.2.0" ? LinearAlgebra.eigsortby : nothing)
+        sortby = get(
+            kwargs, :sortby, VERSION ≥ v"1.2.0" ? LinearAlgebra.eigsortby : nothing
+        )
         return if sortby === nothing
             frule((ZeroTangent(), Hermitian(ΔA)), eigen!, Hermitian(A))
         else
-            frule((ZeroTangent(), Hermitian(ΔA)), eigen!, Hermitian(A); sortby = sortby)
+            frule((ZeroTangent(), Hermitian(ΔA)), eigen!, Hermitian(A); sortby=sortby)
         end
     end
     F = eigen!(A; kwargs...)
@@ -321,14 +315,12 @@ function frule(
     fill!(∂Kdiag, 0)
     ∂V = mul!(tmp, V, ∂K)
     _eigen_norm_phase_fwd!(∂V, A, V)
-    ∂F = Tangent{typeof(F)}(values = ∂λ, vectors = ∂V)
+    ∂F = Tangent{typeof(F)}(; values=∂λ, vectors=∂V)
     return F, ∂F
 end
 
 function rrule(
-    ::typeof(eigen),
-    A::StridedMatrix{T};
-    kwargs...,
+    ::typeof(eigen), A::StridedMatrix{T}; kwargs...
 ) where {T<:Union{Real,Complex}}
     F = eigen(A; kwargs...)
     function eigen_pullback(ΔF::Tangent)
@@ -402,7 +394,7 @@ end
 function _findrealmaxabs2(x)
     amax = abs2(first(x))
     imax = 1
-    @inbounds for i = 2:length(x)
+    @inbounds for i in 2:length(x)
         xi = x[i]
         !isreal(xi) && continue
         a = abs2(xi)
@@ -417,16 +409,14 @@ end
 #####
 
 function frule(
-    (_, ΔA),
-    ::typeof(eigvals!),
-    A::StridedMatrix{T};
-    kwargs...,
+    (_, ΔA), ::typeof(eigvals!), A::StridedMatrix{T}; kwargs...
 ) where {T<:BlasFloat}
     ΔA isa AbstractZero && return eigvals!(A; kwargs...), ΔA
     if ishermitian(A)
         λ, ∂λ = frule((ZeroTangent(), Hermitian(ΔA)), eigvals!, Hermitian(A))
-        sortby =
-            get(kwargs, :sortby, VERSION ≥ v"1.2.0" ? LinearAlgebra.eigsortby : nothing)
+        sortby = get(
+            kwargs, :sortby, VERSION ≥ v"1.2.0" ? LinearAlgebra.eigsortby : nothing
+        )
         _sorteig!_fwd(∂λ, λ, sortby)
     else
         F = eigen!(A; kwargs...)
@@ -444,14 +434,12 @@ function frule(
 end
 
 function rrule(
-    ::typeof(eigvals),
-    A::StridedMatrix{T};
-    kwargs...,
+    ::typeof(eigvals), A::StridedMatrix{T}; kwargs...
 ) where {T<:Union{Real,Complex}}
     F, eigen_back = rrule(eigen, A; kwargs...)
     λ = F.values
     function eigvals_pullback(Δλ)
-        ∂F = Tangent{typeof(F)}(values = Δλ)
+        ∂F = Tangent{typeof(F)}(; values=Δλ)
         _, ∂A = eigen_back(∂F)
         return NoTangent(), ∂A
     end
@@ -460,9 +448,9 @@ end
 
 # adapted from LinearAlgebra.sorteig!
 function _sorteig!_fwd(Δλ, λ, sortby)
-    Δλ isa AbstractZero && return (sort!(λ; by = sortby), Δλ)
+    Δλ isa AbstractZero && return (sort!(λ; by=sortby), Δλ)
     if sortby !== nothing
-        p = sortperm(λ; alg = QuickSort, by = sortby)
+        p = sortperm(λ; alg=QuickSort, by=sortby)
         permute!(λ, p)
         permute!(Δλ, p)
     end
@@ -499,8 +487,9 @@ end
 function _cholesky_realuplo_pullback(ΔC::Tangent, C)
     return NoTangent(), ΔC.factors[1, 1] / (2 * C.U[1, 1]), NoTangent()
 end
-_cholesky_realuplo_pullback(Ȳ::AbstractThunk, C) =
-    _cholesky_realuplo_pullback(unthunk(Ȳ), C)
+function _cholesky_realuplo_pullback(Ȳ::AbstractThunk, C)
+    return _cholesky_realuplo_pullback(unthunk(Ȳ), C)
+end
 function rrule(::typeof(cholesky), A::Real, uplo::Symbol)
     C = cholesky(A, uplo)
     cholesky_pullback(ȳ) = _cholesky_realuplo_pullback(ȳ, C)
@@ -511,10 +500,11 @@ function _cholesky_Diagonal_pullback(ΔC::Tangent, C)
     Ā = Diagonal(diag(ΔC.factors) .* inv.(2 .* C.factors.diag))
     return NoTangent(), Ā, NoTangent()
 end
-_cholesky_Diagonal_pullback(Ȳ::AbstractThunk, C) =
-    _cholesky_Diagonal_pullback(unthunk(Ȳ), C)
-function rrule(::typeof(cholesky), A::Diagonal{<:Real}, ::Val{false}; check::Bool = true)
-    C = cholesky(A, Val(false); check = check)
+function _cholesky_Diagonal_pullback(Ȳ::AbstractThunk, C)
+    return _cholesky_Diagonal_pullback(unthunk(Ȳ), C)
+end
+function rrule(::typeof(cholesky), A::Diagonal{<:Real}, ::Val{false}; check::Bool=true)
+    C = cholesky(A, Val(false); check=check)
     cholesky_pullback(ȳ) = _cholesky_Diagonal_pullback(ȳ, C)
     return C, cholesky_pullback
 end
@@ -526,16 +516,17 @@ function rrule(
     ::typeof(cholesky),
     A::LinearAlgebra.HermOrSym{<:LinearAlgebra.BlasReal,<:StridedMatrix},
     ::Val{false};
-    check::Bool = true,
+    check::Bool=true,
 )
-    C = cholesky(A, Val(false); check = check)
+    C = cholesky(A, Val(false); check=check)
     function _cholesky_HermOrSym_pullback(ΔC::Tangent)
         Ā, U = _cholesky_pullback_shared_code(C, ΔC)
         Ā = BLAS.trsm!('R', 'U', 'C', 'N', one(eltype(Ā)) / 2, U.data, Ā)
         return NoTangent(), _symhermtype(A)(Ā), NoTangent()
     end
-    _cholesky_HermOrSym_pullback(Ȳ::AbstractThunk) =
-        _cholesky_HermOrSym_pullback(unthunk(Ȳ))
+    function _cholesky_HermOrSym_pullback(Ȳ::AbstractThunk)
+        return _cholesky_HermOrSym_pullback(unthunk(Ȳ))
+    end
     return C, _cholesky_HermOrSym_pullback
 end
 
@@ -543,9 +534,9 @@ function rrule(
     ::typeof(cholesky),
     A::StridedMatrix{<:LinearAlgebra.BlasReal},
     ::Val{false};
-    check::Bool = true,
+    check::Bool=true,
 )
-    C = cholesky(A, Val(false); check = check)
+    C = cholesky(A, Val(false); check=check)
     function _cholesky_Strided_pullback(ΔC::Tangent)
         Ā, U = _cholesky_pullback_shared_code(C, ΔC)
         Ā = BLAS.trsm!('R', 'U', 'C', 'N', one(eltype(Ā)), U.data, Ā)
@@ -572,15 +563,15 @@ function rrule(::typeof(getproperty), F::T, x::Symbol) where {T<:Cholesky}
         C = Tangent{T}
         ∂F = if x === :U
             if F.uplo === 'U'
-                C(U = UpperTriangular(Ȳ))
+                C(; U=UpperTriangular(Ȳ))
             else
-                C(L = LowerTriangular(Ȳ'))
+                C(; L=LowerTriangular(Ȳ'))
             end
         elseif x === :L
             if F.uplo === 'L'
-                C(L = LowerTriangular(Ȳ))
+                C(; L=LowerTriangular(Ȳ))
             else
-                C(U = UpperTriangular(Ȳ'))
+                C(; U=UpperTriangular(Ȳ'))
             end
         end
         return NoTangent(), ∂F, NoTangent()

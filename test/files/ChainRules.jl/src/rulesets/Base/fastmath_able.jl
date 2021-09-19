@@ -34,7 +34,6 @@ let
 
         @scalar_rule tan(x) 1 + Ω^2
 
-
         # Trig-Hyperbolic
         @scalar_rule cosh(x) sinh(x)
         @scalar_rule sinh(x) cosh(x)
@@ -139,10 +138,7 @@ let
 
         ## `hypot`
         function frule(
-            (_, Δx, Δy),
-            ::typeof(hypot),
-            x::T,
-            y::T,
+            (_, Δx, Δy), ::typeof(hypot), x::T, y::T
         ) where {T<:Union{Real,Complex}}
             Ω = hypot(x, y)
             n = ifelse(iszero(Ω), one(Ω), Ω)

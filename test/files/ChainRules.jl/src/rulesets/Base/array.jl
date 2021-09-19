@@ -26,8 +26,7 @@ end
 # Numbers and arrays are often promoted, to make a uniform vector.
 # ProjectTo here reverses this
 function rrule(
-    ::typeof(Base.vect),
-    X::Vararg{Union{Number,AbstractArray{<:Number}},N},
+    ::typeof(Base.vect), X::Vararg{Union{Number,AbstractArray{<:Number}},N}
 ) where {N}
     projects = map(ProjectTo, X)
     function vect_pullback(ȳ)
@@ -71,10 +70,9 @@ end
 function rrule(
     ::typeof(repeat),
     xs::AbstractArray;
-    inner = ntuple(Returns(1), ndims(xs)),
-    outer = ntuple(Returns(1), ndims(xs)),
+    inner=ntuple(Returns(1), ndims(xs)),
+    outer=ntuple(Returns(1), ndims(xs)),
 )
-
     project_Xs = ProjectTo(xs)
     S = size(xs)
     function repeat_pullback(ȳ)
@@ -84,28 +82,27 @@ function rrule(
         for (dest_idx, val) in pairs(IndexCartesian(), dY)
             # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
             # wrap around based on original size S.
-            src_idx =
-                [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)]
+            src_idx = [
+                mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim in 1:length(S)
+            ]
             Δ′[src_idx...] += val
         end
         x̄ = project_Xs(Δ′)
         return (NoTangent(), x̄)
     end
 
-    return repeat(xs; inner = inner, outer = outer), repeat_pullback
+    return repeat(xs; inner=inner, outer=outer), repeat_pullback
 end
 
 function rrule(::typeof(repeat), xs::AbstractArray, counts::Integer...)
-
     project_Xs = ProjectTo(xs)
     S = size(xs)
     function repeat_pullback(ȳ)
         dY = unthunk(ȳ)
         size2ndims = ntuple(
-            d -> isodd(d) ? get(S, 1 + d ÷ 2, 1) : get(counts, d ÷ 2, 1),
-            2 * ndims(dY),
+            d -> isodd(d) ? get(S, 1 + d ÷ 2, 1) : get(counts, d ÷ 2, 1), 2 * ndims(dY)
         )
-        reduced = sum(reshape(dY, size2ndims); dims = ntuple(d -> 2d, ndims(dY)))
+        reduced = sum(reshape(dY, size2ndims); dims=ntuple(d -> 2d, ndims(dY)))
         x̄ = project_Xs(reshape(reduced, S))
         return (NoTangent(), x̄, map(Returns(NoTangent()), counts)...)
     end
@@ -168,7 +165,7 @@ function rrule(::typeof(reduce), ::typeof(hcat), As::AbstractVector{<:AbstractVe
     axe = axes(As, 1)
     function reduce_hcat_pullback_1(dY)
         hi = Ref(0)
-        dAs = map(_ -> dY[:, hi[]+=1], axe)
+        dAs = map(_ -> dY[:, hi[] += 1], axe)
         return (NoTangent(), NoTangent(), dAs)
     end
     return reduce(hcat, As), reduce_hcat_pullback_1
@@ -234,8 +231,14 @@ end
 _val(::Val{x}) where {x} = x
 
 function rrule(::typeof(cat), Xs::Union{AbstractArray,Number}...; dims)
-    Y = cat(Xs...; dims = dims)
-    cdims = dims isa Val ? Int(_val(dims)) : dims isa Integer ? Int(dims) : Tuple(dims)
+    Y = cat(Xs...; dims=dims)
+    cdims = if dims isa Val
+        Int(_val(dims))
+    elseif dims isa Integer
+        Int(dims)
+    else
+        Tuple(dims)
+    end
     ndimsY = Val(ndims(Y))
     sizes = map(size, Xs)
     project_Xs = map(ProjectTo, Xs)
@@ -246,7 +249,11 @@ function rrule(::typeof(cat), Xs::Union{AbstractArray,Number}...; dims)
             ndimsX = length(sizeX)
             index = ntuple(ndimsY) do d
                 if d in cdims
-                    d > ndimsX ? (prev[d] + 1) : (prev[d]+1:prev[d]+sizeX[d])
+                    if d > ndimsX
+                        (prev[d] + 1)
+                    else
+                        ((prev[d] + 1):(prev[d] + sizeX[d]))
+                    end
                 else
                     d > ndimsX ? 1 : (:)
                 end
@@ -283,7 +290,11 @@ function rrule(::typeof(hvcat), rows, values::Union{AbstractArray,Number}...)
             ndimsX = length(sizeX)
             index = ntuple(ndimsY) do d
                 if d in (1, 2)
-                    d > ndimsX ? (prev[d] + 1) : (prev[d]+1:prev[d]+sizeX[d])
+                    if d > ndimsX
+                        (prev[d] + 1)
+                    else
+                        ((prev[d] + 1):(prev[d] + sizeX[d]))
+                    end
                 else
                     d > ndimsX ? 1 : (:)
                 end

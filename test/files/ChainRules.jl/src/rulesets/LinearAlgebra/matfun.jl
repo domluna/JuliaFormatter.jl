@@ -202,12 +202,12 @@ function _matfun!(::typeof(exp), A::StridedMatrix{T}) where {T<:BlasFloat}
     W = C[2] * P
     V = C[1] * P
     Apows = typeof(P)[]
-    for k = 1:(div(size(C, 1), 2)-1)
+    for k in 1:(div(size(C, 1), 2) - 1)
         k2 = 2 * k
         P *= A2
         push!(Apows, P)
-        W += C[k2+2] * P
-        V += C[k2+1] * P
+        W += C[k2 + 2] * P
+        V += C[k2 + 1] * P
     end
     U = A * W
     X = V + U
@@ -215,7 +215,7 @@ function _matfun!(::typeof(exp), A::StridedMatrix{T}) where {T<:BlasFloat}
     ldiv!(F, X)
     Xpows = typeof(X)[X]
     if si > 0  # squaring to reverse dividing by power of 2
-        for t = 1:si
+        for t in 1:si
             X *= X
             push!(Xpows, X)
         end
@@ -231,11 +231,7 @@ end
 # Condition Number Estimation", SIAM. 30 (4). pp. 1639-1657.
 # http://eprints.maths.manchester.ac.uk/id/eprint/1218
 function _matfun_frechet!(
-    ::typeof(exp),
-    ΔA,
-    A::StridedMatrix{T},
-    X,
-    (ilo, ihi, scale, C, si, Apows, W, F, Xpows),
+    ::typeof(exp), ΔA, A::StridedMatrix{T}, X, (ilo, ihi, scale, C, si, Apows, W, F, Xpows)
 ) where {T<:BlasFloat}
     n = LinearAlgebra.checksquare(A)
     _balance!(ΔA, ilo, ihi, scale, n)
@@ -251,12 +247,12 @@ function _matfun_frechet!(
     ∂P = copy(∂A2)
     ∂W = C[4] * ∂P
     ∂V = C[3] * ∂P
-    for k = 2:(length(Apows)-1)
+    for k in 2:(length(Apows) - 1)
         k2 = 2 * k
-        P = Apows[k-1]
+        P = Apows[k - 1]
         ∂P, ∂temp = mul!(mul!(∂temp, ∂P, A2), P, ∂A2, true, true), ∂P
-        axpy!(C[k2+2], ∂P, ∂W)
-        axpy!(C[k2+1], ∂P, ∂V)
+        axpy!(C[k2 + 2], ∂P, ∂W)
+        axpy!(C[k2 + 1], ∂P, ∂V)
     end
     ∂U, ∂temp = mul!(mul!(∂temp, A, ∂W), ΔA, W, true, true), ∂W
     ∂temp .= ∂U .- ∂V
@@ -265,7 +261,7 @@ function _matfun_frechet!(
     ldiv!(F, ∂X)
 
     if si > 0
-        for t = 1:(length(Xpows)-1)
+        for t in 1:(length(Xpows) - 1)
             X = Xpows[t]
             ∂X, ∂temp = mul!(mul!(∂temp, X, ∂X), ∂X, X, true, true), ∂X
         end
@@ -275,11 +271,7 @@ function _matfun_frechet!(
     return ∂X
 end
 function _matfun_frechet!(
-    f::typeof(exp),
-    a::AbstractThunk,
-    A::StridedMatrix{T},
-    X,
-    t,
+    f::typeof(exp), a::AbstractThunk, A::StridedMatrix{T}, X, t
 ) where {T<:BlasFloat}
     return _matfun_frechet!(f, unthunk(a), A, X, t)
 end
@@ -292,22 +284,22 @@ end
 function _balance!(X, ilo, ihi, scale, n)
     n = size(X, 1)
     if ihi < n
-        for j = (ihi+1):n
+        for j in (ihi + 1):n
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
     if ilo > 1
-        for j = (ilo-1):-1:1
+        for j in (ilo - 1):-1:1
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
 
-    for j = ilo:ihi
+    for j in ilo:ihi
         scj = scale[j]
-        for i = 1:n
+        for i in 1:n
             X[j, i] /= scj
         end
-        for i = 1:n
+        for i in 1:n
             X[i, j] *= scj
         end
     end
@@ -316,23 +308,23 @@ end
 
 # Reverse of _balance!
 function _unbalance!(X, ilo, ihi, scale, n)
-    for j = ilo:ihi
+    for j in ilo:ihi
         scj = scale[j]
-        for i = 1:n
+        for i in 1:n
             X[j, i] *= scj
         end
-        for i = 1:n
+        for i in 1:n
             X[i, j] /= scj
         end
     end
 
     if ilo > 1
-        for j = (ilo-1):-1:1
+        for j in (ilo - 1):-1:1
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
     if ihi < n
-        for j = (ihi+1):n
+        for j in (ihi + 1):n
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end

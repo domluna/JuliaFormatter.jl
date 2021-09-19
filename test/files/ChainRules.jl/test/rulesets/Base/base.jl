@@ -64,7 +64,7 @@
                 Δz = Tangent{Tuple{T,T}}(randn(T), randn(T))
 
                 test_frule(sincospi, randn(T))
-                test_rrule(sincospi, randn(T); output_tangent = Δz)
+                test_rrule(sincospi, randn(T); output_tangent=Δz)
             end
         end
     end  # Trig
@@ -90,7 +90,7 @@
         test_scalar(Complex, randn(ComplexF64))
 
         test_frule(Complex, randn(), randn(Float32))
-        test_rrule(Complex, randn(), randn(Float32); rtol = 1.0e-7, atol = 1.0e-7)
+        test_rrule(Complex, randn(), randn(Float32); rtol=1.0e-7, atol=1.0e-7)
     end
 
     @testset "*(x, y) (scalar)" begin
@@ -169,12 +169,12 @@
         for x in (-0.6, -0.2, 0.1, 0.6)
             # thanks to RoundNearest
             if 0 > x % 1 > 0.5 || -1 < x % 1 <= 0.5
-                test_scalar(round, x; fdm = backward_fdm(5, 1))
+                test_scalar(round, x; fdm=backward_fdm(5, 1))
             else
-                test_scalar(round, x; fdm = forward_fdm(5, 1))
+                test_scalar(round, x; fdm=forward_fdm(5, 1))
             end
-            test_scalar(floor, x; fdm = backward_fdm(5, 1))
-            test_scalar(ceil, x; fdm = forward_fdm(5, 1))
+            test_scalar(floor, x; fdm=backward_fdm(5, 1))
+            test_scalar(ceil, x; fdm=forward_fdm(5, 1))
         end
     end
 
@@ -190,10 +190,7 @@
 
     @testset "Logging" begin
         @test frule(
-            (NoTangent(), NoTangent(), NoTangent()),
-            Base.depwarn,
-            "message",
-            :f,
+            (NoTangent(), NoTangent(), NoTangent()), Base.depwarn, "message", :f
         ) !== nothing
         @test rrule(Base.depwarn, "message", :f) !== nothing
     end
@@ -206,9 +203,9 @@
 
     @testset "Float conversions" begin
         for f in (float, Float32, Float64, AbstractFloat)
-            test_frule(f, 1.2; rtol = 1.0e-3, atol = 1.0e-3)
-            test_frule(f, 1 ⊢ 1.7; rtol = 1.0e-3, atol = 1.0e-3)
-            test_rrule(f, 1.2; rtol = 1.0e-3, atol = 1.0e-3)
+            test_frule(f, 1.2; rtol=1.0e-3, atol=1.0e-3)
+            test_frule(f, 1 ⊢ 1.7; rtol=1.0e-3, atol=1.0e-3)
+            test_rrule(f, 1.2; rtol=1.0e-3, atol=1.0e-3)
 
             # test_rrule doesn't like integers, so test that case manually
             let y = rand(Int), x = randn()

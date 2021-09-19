@@ -17,11 +17,11 @@
         # separated from other values
         if fnorm === LinearAlgebra.normInf
             x[end] = 1000rand(T)
-            kwargs = (atol = 1e-5, rtol = 1e-5)
+            kwargs = (atol=1e-5, rtol=1e-5)
         elseif fnorm == LinearAlgebra.normMinusInf
             x .*= 1000
             x[end] = rand(T)
-            kwargs = (atol = 1e-5, rtol = 1e-5)
+            kwargs = (atol=1e-5, rtol=1e-5)
         else
             kwargs = NamedTuple()
         end
@@ -81,7 +81,7 @@
             test_rrule(norm, x)
             x isa Matrix && @testset "$MT" for MT in
                                                (Diagonal, UpperTriangular, LowerTriangular)
-                test_rrule(norm, MT(x); check_inferred = VERSION >= v"1.5")
+                test_rrule(norm, MT(x); check_inferred=VERSION >= v"1.5")
             end
 
             ȳ = rand_tangent(norm(x))
@@ -100,8 +100,7 @@
         end
     end
     @testset "$fnorm(x::Array{$T,$(length(sz))}, $p) with size $sz" for fnorm in (
-            norm,
-            LinearAlgebra.normp,
+            norm, LinearAlgebra.normp
         ),
         p in (1.0, 2.0, Inf, -Inf, 2.5),
         T in (Float64, ComplexF64),
@@ -115,13 +114,13 @@
             if !isempty(x)
                 x[end] = 1000rand(T)
             end
-            kwargs = (atol = 1e-5, rtol = 1e-5)
+            kwargs = (atol=1e-5, rtol=1e-5)
         elseif p == -Inf
             if !isempty(x)
                 x .*= 1000
                 x[end] = rand(T)
             end
-            kwargs = (atol = 1e-5, rtol = 1e-5)
+            kwargs = (atol=1e-5, rtol=1e-5)
         else
             kwargs = NamedTuple()
         end
@@ -129,7 +128,7 @@
         test_rrule(fnorm, x, p; kwargs...)
         x isa Matrix &&
             @testset "$MT" for MT in (Diagonal, UpperTriangular, LowerTriangular)
-                test_rrule(fnorm, MT(x), p; kwargs..., check_inferred = VERSION >= v"1.5")
+                test_rrule(fnorm, MT(x), p; kwargs..., check_inferred=VERSION >= v"1.5")
             end
 
         ȳ = rand_tangent(fnorm(x, p))

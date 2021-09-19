@@ -156,14 +156,12 @@ VERSION >= v"1.1" && @non_differentiable fieldtypes(T)
 @non_differentiable findall(::Function, ::AbstractArray)
 @non_differentiable findall(::AbstractArray)
 @non_differentiable findfirst(
-    ::Union{Regex,AbstractString,Function,AbstractChar},
-    ::AbstractString,
+    ::Union{Regex,AbstractString,Function,AbstractChar}, ::AbstractString
 )
 @non_differentiable findfirst(::Function, ::Any)
 @non_differentiable findfirst(::AbstractArray)
 @non_differentiable findlast(
-    ::Union{AbstractString,Function,AbstractChar},
-    ::AbstractString,
+    ::Union{AbstractString,Function,AbstractChar}, ::AbstractString
 )
 @non_differentiable findlast(::Function, ::Any)
 @non_differentiable findlast(::AbstractArray)
@@ -322,9 +320,7 @@ VERSION >= v"1.4" && @non_differentiable only(::Char)
 
 @non_differentiable partialsortperm(::AbstractVector, ::Union{Integer,OrdinalRange})
 @non_differentiable partialsortperm!(
-    ::AbstractVector{<:Integer},
-    ::AbstractVector,
-    ::Union{Integer,OrdinalRange},
+    ::AbstractVector{<:Integer}, ::AbstractVector, ::Union{Integer,OrdinalRange}
 )
 @non_differentiable pointer(::Any)
 @non_differentiable popdisplay(::AbstractDisplay)
@@ -352,13 +348,13 @@ if isdefined(Base, :redirect_stdio)
     @non_differentiable Base.redirect_stdio(::Any)
 else
     @non_differentiable redirect_stderr(
-        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext},
+        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext}
     )
     @non_differentiable redirect_stdin(
-        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext},
+        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext}
     )
     @non_differentiable redirect_stdout(
-        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext},
+        ::Union{IOStream,Base.LibuvStream,Base.DevNull,IOContext}
     )
 end
 @non_differentiable relpath(::AbstractString, ::AbstractString)

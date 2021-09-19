@@ -24,13 +24,20 @@ end
 
 frule((_, _, ȧ, ḃ), ::typeof(ifelse), c, a, b) = (ifelse(c, a, b), ifelse(c, ȧ, ḃ))
 function rrule(::typeof(ifelse), c, a, b)
-    ifelse_pullback(Δ) =
-        (NoTangent(), NoTangent(), ifelse(c, Δ, ZeroTangent()), ifelse(c, ZeroTangent(), Δ))
+    function ifelse_pullback(Δ)
+        return (
+            NoTangent(),
+            NoTangent(),
+            ifelse(c, Δ, ZeroTangent()),
+            ifelse(c, ZeroTangent(), Δ),
+        )
+    end
     return ifelse(c, a, b), ifelse_pullback
 end
 # ensure type stability for numbers
 function rrule(::typeof(ifelse), c, a::Number, b::Number)
-    ifelse_pullback(Δ) =
-        (NoTangent(), NoTangent(), ifelse(c, Δ, zero(Δ)), ifelse(c, zero(Δ), Δ))
+    function ifelse_pullback(Δ)
+        return (NoTangent(), NoTangent(), ifelse(c, Δ, zero(Δ)), ifelse(c, zero(Δ), Δ))
+    end
     return ifelse(c, a, b), ifelse_pullback
 end

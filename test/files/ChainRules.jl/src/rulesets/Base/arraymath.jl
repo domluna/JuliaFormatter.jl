@@ -19,7 +19,6 @@ end
 ##### `*`
 #####
 
-
 function rrule(
     ::typeof(*),
     A::AbstractVecOrMat{<:CommutativeMulNumber},
@@ -54,8 +53,6 @@ function rrule(
     return A * B, times_pullback
 end
 
-
-
 function rrule(
     ::typeof(*),
     A::AbstractVector{<:CommutativeMulNumber},
@@ -69,25 +66,18 @@ function rrule(
         return (
             NoTangent(),
             InplaceableThunk(
-                X̄ -> mul!(X̄, Ȳ, vec(B'), true, true),
-                @thunk(project_A(Ȳ * vec(B'))),
+                X̄ -> mul!(X̄, Ȳ, vec(B'), true, true), @thunk(project_A(Ȳ * vec(B')))
             ),
             InplaceableThunk(
-                X̄ -> mul!(X̄, A', Ȳ, true, true),
-                @thunk(project_B(A' * Ȳ)),
+                X̄ -> mul!(X̄, A', Ȳ, true, true), @thunk(project_B(A' * Ȳ))
             ),
         )
     end
     return A * B, times_pullback
 end
 
-
-
-
 function rrule(
-    ::typeof(*),
-    A::CommutativeMulNumber,
-    B::AbstractArray{<:CommutativeMulNumber},
+    ::typeof(*), A::CommutativeMulNumber, B::AbstractArray{<:CommutativeMulNumber}
 )
     project_A = ProjectTo(A)
     project_B = ProjectTo(B)
@@ -97,8 +87,7 @@ function rrule(
             NoTangent(),
             @thunk(project_A(dot(Ȳ, B)')),
             InplaceableThunk(
-                X̄ -> mul!(X̄, conj(A), Ȳ, true, true),
-                @thunk(project_B(A' * Ȳ)),
+                X̄ -> mul!(X̄, conj(A), Ȳ, true, true), @thunk(project_B(A' * Ȳ))
             ),
         )
     end
@@ -106,9 +95,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(*),
-    B::AbstractArray{<:CommutativeMulNumber},
-    A::CommutativeMulNumber,
+    ::typeof(*), B::AbstractArray{<:CommutativeMulNumber}, A::CommutativeMulNumber
 )
     project_A = ProjectTo(A)
     project_B = ProjectTo(B)
@@ -117,15 +104,13 @@ function rrule(
         return (
             NoTangent(),
             InplaceableThunk(
-                X̄ -> mul!(X̄, conj(A), Ȳ, true, true),
-                @thunk(project_B(A' * Ȳ)),
+                X̄ -> mul!(X̄, conj(A), Ȳ, true, true), @thunk(project_B(A' * Ȳ))
             ),
             @thunk(project_A(dot(Ȳ, B)')),
         )
     end
     return A * B, times_pullback
 end
-
 
 #####
 ##### `muladd`
@@ -146,12 +131,10 @@ function rrule(
         Ȳ = unthunk(ȳ)
         matmul = (
             InplaceableThunk(
-                dA -> mul!(dA, Ȳ, B', true, true),
-                @thunk(project_A(Ȳ * B')),
+                dA -> mul!(dA, Ȳ, B', true, true), @thunk(project_A(Ȳ * B'))
             ),
             InplaceableThunk(
-                dB -> mul!(dB, A', Ȳ, true, true),
-                @thunk(project_B(A' * Ȳ)),
+                dB -> mul!(dB, A', Ȳ, true, true), @thunk(project_B(A' * Ȳ))
             ),
         )
         addon = if z isa Bool
@@ -160,11 +143,11 @@ function rrule(
             @thunk(project_z(sum(Ȳ)))
         else
             InplaceableThunk(
-                dz -> sum!(dz, Ȳ; init = false),
+                dz -> sum!(dz, Ȳ; init=false),
                 @thunk(project_z(sum!(similar(z, eltype(Ȳ)), Ȳ))),
             )
         end
-        (NoTangent(), matmul..., addon)
+        return (NoTangent(), matmul..., addon)
     end
     return muladd(A, B, z), muladd_pullback_1
 end
@@ -184,7 +167,7 @@ function rrule(
         dy = unthunk(ȳ)
         ut_thunk = InplaceableThunk(dut -> dut .+= v' .* dy, @thunk(project_ut(v' .* dy)))
         v_thunk = InplaceableThunk(dv -> dv .+= ut' .* dy, @thunk(project_v(ut' .* dy)))
-        (NoTangent(), ut_thunk, v_thunk, z isa Bool ? NoTangent() : project_z(dy))
+        return (NoTangent(), ut_thunk, v_thunk, z isa Bool ? NoTangent() : project_z(dy))
     end
     return muladd(ut, v, z), muladd_pullback_2
 end
@@ -203,8 +186,8 @@ function rrule(
     function muladd_pullback_3(ȳ)
         Ȳ = unthunk(ȳ)
         proj = (
-            @thunk(project_u(vec(sum(Ȳ .* conj.(vt), dims = 2)))),
-            @thunk(project_vt(vec(sum(u .* conj.(Ȳ), dims = 1))')),
+            @thunk(project_u(vec(sum(Ȳ .* conj.(vt); dims=2)))),
+            @thunk(project_vt(vec(sum(u .* conj.(Ȳ); dims=1))')),
         )
         addon = if z isa Bool
             NoTangent()
@@ -212,11 +195,11 @@ function rrule(
             @thunk(project_z(sum(Ȳ)))
         else
             InplaceableThunk(
-                dz -> sum!(dz, Ȳ; init = false),
+                dz -> sum!(dz, Ȳ; init=false),
                 @thunk(project_z(sum!(similar(z, eltype(Ȳ)), Ȳ))),
             )
         end
-        (NoTangent(), proj..., addon)
+        return (NoTangent(), proj..., addon)
     end
     return muladd(u, vt, z), muladd_pullback_3
 end
@@ -238,7 +221,7 @@ function rrule(::typeof(/), A::AbstractVecOrMat{<:Real}, B::AbstractVecOrMat{<:R
         ∂A = last(dA_pb(unthunk(dAᵀ)))
         ∂B = last(dB_pb(unthunk(dBᵀ)))
 
-        (NoTangent(), ∂A, ∂B)
+        return (NoTangent(), ∂A, ∂B)
     end
     return C, slash_pullback
 end
@@ -265,7 +248,6 @@ function rrule(::typeof(\), A::AbstractVecOrMat{<:Real}, B::AbstractVecOrMat{<:R
         return NoTangent(), ∂A, ∂B
     end
     return Y, backslash_pullback
-
 end
 
 #####
@@ -273,9 +255,7 @@ end
 #####
 
 function rrule(
-    ::typeof(/),
-    A::AbstractArray{<:CommutativeMulNumber},
-    b::CommutativeMulNumber,
+    ::typeof(/), A::AbstractArray{<:CommutativeMulNumber}, b::CommutativeMulNumber
 )
     Y = A / b
     function slash_pullback_scalar(ȳ)
@@ -288,9 +268,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(\),
-    b::CommutativeMulNumber,
-    A::AbstractArray{<:CommutativeMulNumber},
+    ::typeof(\), b::CommutativeMulNumber, A::AbstractArray{<:CommutativeMulNumber}
 )
     Y, back = rrule(/, A, b)
     function backslash_pullback(dY)  # just reverses the arguments!
@@ -310,7 +288,6 @@ function rrule(::typeof(-), x::AbstractArray)
     end
     return -x, negation_pullback
 end
-
 
 #####
 ##### Addition (Multiarg `+`)

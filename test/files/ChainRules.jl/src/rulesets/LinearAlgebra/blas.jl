@@ -105,11 +105,7 @@ end
 #####
 
 function rrule(
-    ::typeof(gemv),
-    tA::Char,
-    α::T,
-    A::AbstractMatrix{T},
-    x::AbstractVector{T},
+    ::typeof(gemv), tA::Char, α::T, A::AbstractMatrix{T}, x::AbstractVector{T}
 ) where {T<:BlasFloat}
     y = gemv(tA, α, A, x)
     function gemv_pullback(Ȳ)
@@ -117,19 +113,16 @@ function rrule(
         if uppercase(tA) === 'N'
             ∂A = InplaceableThunk(Ā -> ger!(α', ȳ, x, Ā), @thunk(α' * ȳ * x'))
             ∂x = InplaceableThunk(
-                x̄ -> gemv!('C', α', A, ȳ, one(T), x̄),
-                @thunk(gemv('C', α', A, ȳ)),
+                x̄ -> gemv!('C', α', A, ȳ, one(T), x̄), @thunk(gemv('C', α', A, ȳ))
             )
         elseif uppercase(tA) === 'C'
             ∂A = InplaceableThunk(Ā -> ger!(α, x, ȳ, Ā), @thunk(α * x * ȳ'))
             ∂x = InplaceableThunk(
-                x̄ -> gemv!('N', α', A, ȳ, one(T), x̄),
-                @thunk(gemv('N', α', A, ȳ)),
+                x̄ -> gemv!('N', α', A, ȳ, one(T), x̄), @thunk(gemv('N', α', A, ȳ))
             )
         else  # uppercase(tA) === 'T'
             ∂A = InplaceableThunk(
-                Ā -> conj!(ger!(α, x, ȳ, conj!(Ā))),
-                @thunk(conj(α * x * ȳ')),
+                Ā -> conj!(ger!(α, x, ȳ, conj!(Ā))), @thunk(conj(α * x * ȳ'))
             )
             ∂x = InplaceableThunk(
                 x̄ -> gemv!('N', α', conj(A), ȳ, one(T), x̄),
@@ -142,10 +135,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(gemv),
-    tA::Char,
-    A::AbstractMatrix{T},
-    x::AbstractVector{T},
+    ::typeof(gemv), tA::Char, A::AbstractMatrix{T}, x::AbstractVector{T}
 ) where {T<:BlasFloat}
     y, inner_pullback = rrule(gemv, tA, one(T), A, x)
     function gemv_pullback(Ȳ)
@@ -160,12 +150,7 @@ end
 #####
 
 function rrule(
-    ::typeof(gemm),
-    tA::Char,
-    tB::Char,
-    α::T,
-    A::AbstractMatrix{T},
-    B::AbstractMatrix{T},
+    ::typeof(gemm), tA::Char, tB::Char, α::T, A::AbstractMatrix{T}, B::AbstractMatrix{T}
 ) where {T<:BlasFloat}
     C = gemm(tA, tB, α, A, B)
     function gemm_pullback(Cbar)
@@ -187,8 +172,7 @@ function rrule(
                     @thunk(gemm('N', 'N', α', C̄, B)),
                 )
                 ∂B = InplaceableThunk(
-                    B̄ -> gemm!('C', 'N', α, C̄, A, β, B̄),
-                    @thunk(gemm('C', 'N', α, C̄, A)),
+                    B̄ -> gemm!('C', 'N', α, C̄, A, β, B̄), @thunk(gemm('C', 'N', α, C̄, A))
                 )
             else  # uppercase(tB) === 'T'
                 ∂A = InplaceableThunk(
@@ -203,8 +187,7 @@ function rrule(
         elseif uppercase(tA) === 'C'
             if uppercase(tB) === 'N'
                 ∂A = InplaceableThunk(
-                    Ā -> gemm!('N', 'C', α, B, C̄, β, Ā),
-                    @thunk(gemm('N', 'C', α, B, C̄)),
+                    Ā -> gemm!('N', 'C', α, B, C̄, β, Ā), @thunk(gemm('N', 'C', α, B, C̄))
                 )
                 ∂B = InplaceableThunk(
                     B̄ -> gemm!('N', 'N', α', A, C̄, β, B̄),
@@ -212,17 +195,14 @@ function rrule(
                 )
             elseif uppercase(tB) === 'C'
                 ∂A = InplaceableThunk(
-                    Ā -> gemm!('C', 'C', α, B, C̄, β, Ā),
-                    @thunk(gemm('C', 'C', α, B, C̄)),
+                    Ā -> gemm!('C', 'C', α, B, C̄, β, Ā), @thunk(gemm('C', 'C', α, B, C̄))
                 )
                 ∂B = InplaceableThunk(
-                    B̄ -> gemm!('C', 'C', α, C̄, A, β, B̄),
-                    @thunk(gemm('C', 'C', α, C̄, A)),
+                    B̄ -> gemm!('C', 'C', α, C̄, A, β, B̄), @thunk(gemm('C', 'C', α, C̄, A))
                 )
             else  # uppercase(tB) === 'T'
                 ∂A = InplaceableThunk(
-                    Ā -> gemm!('T', 'C', α, B, C̄, β, Ā),
-                    @thunk(gemm('T', 'C', α, B, C̄)),
+                    Ā -> gemm!('T', 'C', α, B, C̄, β, Ā), @thunk(gemm('T', 'C', α, B, C̄))
                 )
                 ∂B = InplaceableThunk(
                     B̄ -> gemm!('T', 'T', α', C̄, A, β, B̄),
@@ -245,8 +225,7 @@ function rrule(
                     @thunk(gemm('T', 'T', α', B, C̄)),
                 )
                 ∂B = InplaceableThunk(
-                    B̄ -> gemm!('C', 'T', α, C̄, A, β, B̄),
-                    @thunk(gemm('C', 'T', α, C̄, A)),
+                    B̄ -> gemm!('C', 'T', α, C̄, A, β, B̄), @thunk(gemm('C', 'T', α, C̄, A))
                 )
             else  # uppercase(tB) === 'T'
                 ∂A = InplaceableThunk(
@@ -265,11 +244,7 @@ function rrule(
 end
 
 function rrule(
-    ::typeof(gemm),
-    tA::Char,
-    tB::Char,
-    A::AbstractMatrix{T},
-    B::AbstractMatrix{T},
+    ::typeof(gemm), tA::Char, tB::Char, A::AbstractMatrix{T}, B::AbstractMatrix{T}
 ) where {T<:BlasFloat}
     C, inner_pullback = rrule(gemm, tA, tB, one(T), A, B)
     function gemm_pullback(Ȳ)

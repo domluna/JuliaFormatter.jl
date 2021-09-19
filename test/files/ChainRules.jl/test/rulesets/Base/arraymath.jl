@@ -46,9 +46,7 @@
                     Transpose(p ⋆ m) ⊢ Transpose(p ⋆ m),
                 )
                 test_rrule(
-                    *,
-                    Adjoint(m ⋆ n) ⊢ Adjoint(m ⋆ n),
-                    Adjoint(p ⋆ m) ⊢ Adjoint(p ⋆ m),
+                    *, Adjoint(m ⋆ n) ⊢ Adjoint(m ⋆ n), Adjoint(p ⋆ m) ⊢ Adjoint(p ⋆ m)
                 )
 
                 test_rrule(*, Transpose(m ⋆ n) ⊢ Transpose(m ⋆ n), (m ⋆ p))
@@ -120,16 +118,16 @@
 
     @testset "$f" for f in (/, \)
         @testset "Matrix" begin
-            for n = 3:5, m = 3:5
+            for n in 3:5, m in 3:5
                 A = randn(m, n)
                 B = randn(m, n)
-                test_rrule(f, A, B; check_inferred = false) # ChainRulesCore #407
+                test_rrule(f, A, B; check_inferred=false) # ChainRulesCore #407
             end
         end
         @testset "Vector" begin
             x = randn(10)
             y = randn(10)
-            test_rrule(f, x, y; check_inferred = false) # ChainRulesCore #407
+            test_rrule(f, x, y; check_inferred=false) # ChainRulesCore #407
         end
         if f == (\)
             @testset "Matrix $f Vector" begin
@@ -140,21 +138,21 @@
             @testset "Vector $f Matrix" begin
                 x = randn(10)
                 Y = randn(10, 4)
-                test_rrule(f, x, Y; output_tangent = Transpose(rand(4)))
+                test_rrule(f, x, Y; output_tangent=Transpose(rand(4)))
             end
         else
             A = rand(2, 4)
             B = rand(4, 4)
-            test_rrule(f, A, B; check_inferred = false) # ChainRulesCore #407
+            test_rrule(f, A, B; check_inferred=false) # ChainRulesCore #407
         end
     end
 
     @testset "/ and \\ Scalar-AbstractArray" begin
-        A = round.(10 .* randn(3, 4, 5), digits = 1)
+        A = round.(10 .* randn(3, 4, 5), digits=1)
         test_rrule(/, A, 7.2)
         test_rrule(\, 7.2, A)
 
-        C = round.(10 .* randn(6) .+ im .* 10 .* randn(6), digits = 1)
+        C = round.(10 .* randn(6) .+ im .* 10 .* randn(6), digits=1)
         test_rrule(/, C, 7.2 + 8.3im)
         test_rrule(\, 7.2 + 8.3im, C)
     end
@@ -164,7 +162,7 @@
         Ā = randn(4, 4)
 
         test_rrule(-, A)
-        test_rrule(-, Diagonal(A); output_tangent = Diagonal(Ā))
+        test_rrule(-, Diagonal(A); output_tangent=Diagonal(Ā))
     end
 
     @testset "addition" begin

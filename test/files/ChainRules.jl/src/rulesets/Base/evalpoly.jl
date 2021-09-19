@@ -5,7 +5,7 @@ if VERSION ≥ v"1.4"
         N = length(p)
         @inbounds y = p[N]
         Δy = Δp[N]
-        @inbounds for i = (N-1):-1:1
+        @inbounds for i in (N - 1):-1:1
             Δy = muladd(Δx, y, muladd(x, Δy, Δp[i]))
             y = muladd(x, y, p[i])
         end
@@ -39,7 +39,7 @@ if VERSION ≥ v"1.4"
             exs = []
             vars = []
             ex = :(p[$N])
-            for i = 1:(N-1)
+            for i in 1:(N - 1)
                 yi = Symbol("y", i)
                 push!(vars, yi)
                 push!(exs, :($yi = $ex))
@@ -55,7 +55,7 @@ if VERSION ≥ v"1.4"
         N = length(p)
         y = p[N]
         ys = (y, ntuple(N - 2) do i
-            return y = muladd(x, y, p[N-i])
+            return y = muladd(x, y, p[N - i])
         end...)
         y = muladd(x, y, p[1])
         return y, ys
@@ -65,10 +65,10 @@ if VERSION ≥ v"1.4"
         @inbounds yn = one(x) * p[N]
         ys = similar(p, typeof(yn), N - 1)
         @inbounds ys[1] = yn
-        @inbounds for i = 2:(N-1)
-            ys[i] = muladd(x, ys[i-1], p[N-i+1])
+        @inbounds for i in 2:(N - 1)
+            ys[i] = muladd(x, ys[i - 1], p[N - i + 1])
         end
-        @inbounds y = muladd(x, ys[N-1], p[1])
+        @inbounds y = muladd(x, ys[N - 1], p[1])
         return y, ys
     end
 
@@ -87,7 +87,7 @@ if VERSION ≥ v"1.4"
             exs = []
             vars = []
             N = length(p.parameters)
-            for i = 2:(N-1)
+            for i in 2:(N - 1)
                 ∂pi = Symbol("∂p", i)
                 push!(vars, ∂pi)
                 push!(exs, :(∂x = _evalpoly_backx(x, ys[$(N - i)], ∂x, ∂yi)))
@@ -115,13 +115,13 @@ if VERSION ≥ v"1.4"
         ∂yi = unthunk(Δy)
         N = length(p)
         ∂p1 = _evalpoly_backp(p[1], ∂yi)
-        ∂x = _evalpoly_backx(x, ys[N-1], ∂yi)
+        ∂x = _evalpoly_backx(x, ys[N - 1], ∂yi)
         ∂yi = x′ * ∂yi
         ∂p = (
             ∂p1,
             ntuple(N - 2) do i
-                ∂x = _evalpoly_backx(x, ys[N-i-1], ∂x, ∂yi)
-                ∂pi = _evalpoly_backp(p[i+1], ∂yi)
+                ∂x = _evalpoly_backx(x, ys[N - i - 1], ∂x, ∂yi)
+                ∂pi = _evalpoly_backp(p[i + 1], ∂yi)
                 ∂yi = x′ * ∂yi
                 return ∂pi
             end...,
@@ -136,11 +136,11 @@ if VERSION ≥ v"1.4"
         @inbounds ∂p1 = _evalpoly_backp(p[1], ∂yi)
         ∂p = similar(p, typeof(∂p1))
         @inbounds begin
-            ∂x = _evalpoly_backx(x, ys[N-1], ∂yi)
+            ∂x = _evalpoly_backx(x, ys[N - 1], ∂yi)
             ∂yi = x′ * ∂yi
             ∂p[1] = ∂p1
-            for i = 2:(N-1)
-                ∂x = _evalpoly_backx(x, ys[N-i], ∂x, ∂yi)
+            for i in 2:(N - 1)
+                ∂x = _evalpoly_backx(x, ys[N - i], ∂x, ∂yi)
                 ∂p[i] = _evalpoly_backp(p[i], ∂yi)
                 ∂yi = x′ * ∂yi
             end

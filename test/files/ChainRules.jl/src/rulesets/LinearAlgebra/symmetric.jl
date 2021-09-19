@@ -58,7 +58,7 @@ end
             return _hermitian_back(ΔΩ, uplo)
         end
     end
-    error()
+    return error()
 end
 
 @inline function _symmetric_back(Ω̄, uplo::Symbol)
@@ -124,7 +124,7 @@ function frule(
     fill!(∂Kdiag, 0)
     ∂U = mul!(tmp, U, ∂K)
     _eigen_norm_phase_fwd!(∂U, A, U)
-    ∂F = Tangent{typeof(F)}(values = ∂λ, vectors = ∂U)
+    ∂F = Tangent{typeof(F)}(; values=∂λ, vectors=∂U)
     return F, ∂F
 end
 
@@ -231,7 +231,7 @@ function rrule(
     F, eigen_back = rrule(eigen, A; kwargs...)
     λ = F.values
     function eigvals_pullback(Δλ)
-        ∂F = Tangent{typeof(F)}(values = Δλ)
+        ∂F = Tangent{typeof(F)}(; values=Δλ)
         _, ∂A = eigen_back(∂F)
         return NoTangent(), ∂A
     end
@@ -246,8 +246,7 @@ end
 # otherwise, this rule just applies the chain rule and can be removed when mutation
 # is supported by reverse-mode AD packages
 function rrule(
-    ::typeof(svd),
-    A::LinearAlgebra.RealHermSymComplexHerm{<:BLAS.BlasReal,<:StridedMatrix},
+    ::typeof(svd), A::LinearAlgebra.RealHermSymComplexHerm{<:BLAS.BlasReal,<:StridedMatrix}
 )
     F = svd(A)
     function svd_pullback(ΔF::Tangent)
@@ -292,7 +291,7 @@ function rrule(
 )
     λ, back = rrule(eigvals, A)
     S = abs.(λ)
-    p = sortperm(S; rev = true)
+    p = sortperm(S; rev=true)
     permute!(S, p)
     function svdvals_pullback(ΔS)
         ∂λ = real.(ΔS)
@@ -439,11 +438,7 @@ end
 
 # Computes ∂Y = U * (P .* (U' * ΔA * U)) * U' with fewer allocations
 function _matfun_frechet(
-    f,
-    ΔA,
-    A::LinearAlgebra.RealHermSymComplexHerm,
-    Y,
-    (λ, U, fλ, df_dλ),
+    f, ΔA, A::LinearAlgebra.RealHermSymComplexHerm, Y, (λ, U, fλ, df_dλ)
 )
     # We will overwrite tmp matrix several times to hold different values
     tmp = mul!(similar(U, Base.promote_eltype(U, ΔA)), ΔA, U)
@@ -476,7 +471,7 @@ end
 # broadcast multiply Δ by the matrix of difference quotients P, storing the result in PΔ.
 # If β is is nonzero, then @. PΔ = β*PΔ + P*Δ
 # if type of PΔ is incompatible with result, new matrix is allocated
-function _muldiffquotmat!!(PΔ, f, λ, fλ, ∂fλ, Δ, β = false)
+function _muldiffquotmat!!(PΔ, f, λ, fλ, ∂fλ, Δ, β=false)
     if eltype(PΔ) <: Real && eltype(fλ) <: Complex
         PΔ2 = similar(PΔ, complex(eltype(PΔ)))
         return _muldiffquotmat!!(PΔ2, f, λ, fλ, ∂fλ, Δ, β)
@@ -517,8 +512,8 @@ end
 function _hermitrizelike!(A_, S::LinearAlgebra.RealHermSymComplexHerm)
     A = eltype(S) <: Real ? real(A_) : A_
     n = size(A, 1)
-    for i = 1:n
-        for j = (i+1):n
+    for i in 1:n
+        for j in (i + 1):n
             A[i, j] = (A[i, j] + conj(A[j, i])) / 2
             A[j, i] = conj(A[i, j])
         end

@@ -2,13 +2,13 @@
 ##### `sum(x)`
 #####
 
-function frule((_, ẋ), ::typeof(sum), x; dims = :)
-    return sum(x; dims = dims), sum(ẋ; dims = dims)
+function frule((_, ẋ), ::typeof(sum), x; dims=:)
+    return sum(x; dims=dims), sum(ẋ; dims=dims)
 end
 
-function rrule(::typeof(sum), x::AbstractArray; dims = :)
+function rrule(::typeof(sum), x::AbstractArray; dims=:)
     project = ProjectTo(x)
-    y = sum(x; dims = dims)
+    y = sum(x; dims=dims)
     function sum_pullback(dy_raw)
         dy = unthunk(dy_raw)
         x_thunk = InplaceableThunk(
@@ -35,8 +35,9 @@ end
 
 function rrule(::typeof(_unsum), x, dy, dims)
     z = _unsum(x, dy, dims)
-    _unsum_pullback(dz) =
-        (NoTangent(), NoTangent(), sum(unthunk(dz); dims = dims), NoTangent())
+    function _unsum_pullback(dz)
+        return (NoTangent(), NoTangent(), sum(unthunk(dz); dims=dims), NoTangent())
+    end
     return z, _unsum_pullback
 end
 
@@ -65,14 +66,10 @@ function rrule(
 end
 
 function rrule(
-    config::RuleConfig{>:HasReverseMode},
-    ::typeof(sum),
-    f,
-    xs::AbstractArray;
-    dims = :,
+    config::RuleConfig{>:HasReverseMode}, ::typeof(sum), f, xs::AbstractArray; dims=:
 )
     fx_and_pullbacks = map(x -> rrule_via_ad(config, f, x), xs)
-    y = sum(first, fx_and_pullbacks; dims = dims)
+    y = sum(first, fx_and_pullbacks; dims=dims)
 
     pullbacks = last.(fx_and_pullbacks)
 
@@ -101,40 +98,34 @@ end
     ::typeof(sum),
     x::AbstractArray,
     y::AbstractArray;
-    dims = :,
+    dims=:,
 )
 
 function frule(
-    (_, _, Δx),
-    ::typeof(sum),
-    ::typeof(abs2),
-    x::AbstractArray{T};
-    dims = :,
+    (_, _, Δx), ::typeof(sum), ::typeof(abs2), x::AbstractArray{T}; dims=:
 ) where {T<:Union{Real,Complex}}
     ẋ = unthunk(Δx)
-    y = sum(abs2, x; dims = dims)
+    y = sum(abs2, x; dims=dims)
     ∂y = if dims isa Colon
         2 * real(dot(x, ẋ))
     elseif VERSION ≥ v"1.2" # multi-iterator mapreduce introduced in v1.2
-        mapreduce(+, x, ẋ; dims = dims) do xi, dxi
+        mapreduce(+, x, ẋ; dims=dims) do xi, dxi
             2 * _realconjtimes(xi, dxi)
         end
     else
-        2 * sum(_realconjtimes.(x, ẋ); dims = dims)
+        2 * sum(_realconjtimes.(x, ẋ); dims=dims)
     end
     return y, ∂y
 end
 
 function rrule(
-    ::typeof(sum),
-    ::typeof(abs2),
-    x::AbstractArray{T};
-    dims = :,
+    ::typeof(sum), ::typeof(abs2), x::AbstractArray{T}; dims=:
 ) where {T<:Union{Real,Complex}}
-    y = sum(abs2, x; dims = dims)
+    y = sum(abs2, x; dims=dims)
     function sum_abs2_pullback(ȳ)
-        x_thunk =
-            InplaceableThunk(dx -> dx .+= 2 .* real.(ȳ) .* x, @thunk(2 .* real.(ȳ) .* x))
+        x_thunk = InplaceableThunk(
+            dx -> dx .+= 2 .* real.(ȳ) .* x, @thunk(2 .* real.(ȳ) .* x)
+        )
         return (NoTangent(), NoTangent(), x_thunk)
     end
     return y, sum_abs2_pullback
@@ -145,13 +136,9 @@ end
 # and if we don't specify what do do for one that HasReverseMode then it is ambigious
 for Config in (RuleConfig, RuleConfig{>:HasReverseMode})
     @eval function rrule(
-        ::$Config,
-        ::typeof(sum),
-        ::typeof(abs2),
-        x::AbstractArray{T};
-        dims = :,
+        ::$Config, ::typeof(sum), ::typeof(abs2), x::AbstractArray{T}; dims=:
     ) where {T<:Union{Real,Complex}}
-        return rrule(sum, abs2, x; dims = dims)
+        return rrule(sum, abs2, x; dims=dims)
     end
 end
 
@@ -159,12 +146,8 @@ end
 ##### `prod`
 #####
 
-function rrule(
-    ::typeof(prod),
-    x::AbstractArray{T};
-    dims = :,
-) where {T<:CommutativeMulNumber}
-    y = prod(x; dims = dims)
+function rrule(::typeof(prod), x::AbstractArray{T}; dims=:) where {T<:CommutativeMulNumber}
+    y = prod(x; dims=dims)
     project_x = ProjectTo(x)
     # vald = dims isa Colon ? nothing : dims isa Integer ? Val(Int(dims)) : Val(Tuple(dims))
     function prod_pullback(ȳ)
@@ -174,9 +157,13 @@ function rrule(
             dx -> if dims === (:)
                 ∇prod!(dx, x, dy, y)
             elseif any(iszero, x)
-                vald =
-                    dims isa Colon ? nothing :
-                    dims isa Integer ? Val(Int(dims)) : Val(Tuple(dims))
+                vald = if dims isa Colon
+                    nothing
+                elseif dims isa Integer
+                    Val(Int(dims))
+                else
+                    Val(Tuple(dims))
+                end
                 ∇prod_dims!(dx, vald, x, dy, y)
             else
                 dx .+= conj.(y ./ x) .* dy
@@ -186,9 +173,13 @@ function rrule(
                 if dims === (:)
                     ∇prod(x, dy, y)
                 elseif any(iszero, x)  # Then, and only then, will ./x lead to NaN
-                    vald =
-                        dims isa Colon ? nothing :
-                        dims isa Integer ? Val(Int(dims)) : Val(Tuple(dims))
+                    vald = if dims isa Colon
+                        nothing
+                    elseif dims isa Integer
+                        Val(Int(dims))
+                    else
+                        Val(Tuple(dims))
+                    end
                     ∇prod_dims(vald, x, dy, y)  # val(Int(dims)) is about 2x faster than Val(Tuple(dims))
                 else
                     conj.(y ./ x) .* dy
@@ -200,7 +191,7 @@ function rrule(
     return y, prod_pullback
 end
 
-function ∇prod_dims(vald::Val{dims}, x, dy, y = prod(x; dims = dims)) where {dims}
+function ∇prod_dims(vald::Val{dims}, x, dy, y=prod(x; dims=dims)) where {dims}
     T = promote_type(eltype(x), eltype(dy))
     dx = fill!(similar(x, T, axes(x)), zero(T))
     ∇prod_dims!(dx, vald, x, dy, y)
@@ -216,14 +207,14 @@ function ∇prod_dims!(dx, ::Val{dims}, x, dy, y) where {dims}
     return dx
 end
 
-function ∇prod(x, dy::Number = 1, y::Number = prod(x))
+function ∇prod(x, dy::Number=1, y::Number=prod(x))
     T = promote_type(eltype(x), eltype(dy))
     dx = fill!(similar(x, T, axes(x)), zero(T)) # axes(x) makes MArray on StaticArrays, Array for structured matrices
     ∇prod!(dx, x, dy, y)
     return dx
 end
 
-function ∇prod!(dx, x, dy::Number = 1, y::Number = prod(x))
+function ∇prod!(dx, x, dy::Number=1, y::Number=prod(x))
     numzero = iszero(y) ? count(iszero, x) : 0
     if numzero == 0  # This can happen while y==0, if there are several small xs
         dx .+= conj.(y ./ x) .* dy
@@ -235,7 +226,7 @@ function ∇prod!(dx, x, dy::Number = 1, y::Number = prod(x))
     return dx
 end
 
-function ∇prod_one_zero!(dx, x, dy::Number = 1)  # Assumes exactly one x is zero
+function ∇prod_one_zero!(dx, x, dy::Number=1)  # Assumes exactly one x is zero
     i_zero = 0
     p_rest = one(promote_type(eltype(x), typeof(dy)))
     for i in eachindex(x)
@@ -244,15 +235,15 @@ function ∇prod_one_zero!(dx, x, dy::Number = 1)  # Assumes exactly one x is ze
         i_zero = ifelse(iszero(xi), i, i_zero)
     end
     dx[i_zero] += p_rest * dy
-    return
+    return nothing
 end
 
 #####
 ##### `cumprod`
 #####
 
-function rrule(::typeof(cumprod), x::AbstractVector{<:Real}; dims::Integer = 1)
-    y = cumprod(x; dims = dims)  # does nothing unless dims == 1
+function rrule(::typeof(cumprod), x::AbstractVector{<:Real}; dims::Integer=1)
+    y = cumprod(x; dims=dims)  # does nothing unless dims == 1
     project_x = ProjectTo(x)
     function cumprod_pullback_1(dy_raw)
         dy = unthunk(dy_raw)
@@ -262,11 +253,13 @@ function rrule(::typeof(cumprod), x::AbstractVector{<:Real}; dims::Integer = 1)
             else
                 dx .+= dy
             end,
-            @thunk project_x(if dims == 1
-                ∇cumprod(x, dy, y)
-            else
-                dy
-            end)
+            @thunk project_x(
+                if dims == 1
+                    ∇cumprod(x, dy, y)
+                else
+                    dy
+                end,
+            )
         )
         return (NoTangent(), dx_thunk)
     end
@@ -274,7 +267,7 @@ function rrule(::typeof(cumprod), x::AbstractVector{<:Real}; dims::Integer = 1)
 end
 
 function rrule(::typeof(cumprod), x::AbstractArray{<:Real}; dims::Integer)
-    y = cumprod(x; dims = dims)
+    y = cumprod(x; dims=dims)
     project_x = ProjectTo(x)
     function cumprod_pullback_2(dy_raw)
         dy = unthunk(dy_raw)
@@ -285,12 +278,14 @@ function rrule(::typeof(cumprod), x::AbstractArray{<:Real}; dims::Integer)
             else
                 dx .+= dy
             end,
-            @thunk project_x(if dims <= ndims(x)
-                vald = Val(Int(dims))
-                ∇cumprod_dim(vald, x, dy, y)
-            else
-                dy
-            end)
+            @thunk project_x(
+                if dims <= ndims(x)
+                    vald = Val(Int(dims))
+                    ∇cumprod_dim(vald, x, dy, y)
+                else
+                    dy
+                end,
+            )
         )
         return (NoTangent(), dx_thunk)
     end
@@ -298,10 +293,7 @@ function rrule(::typeof(cumprod), x::AbstractArray{<:Real}; dims::Integer)
 end
 
 function ∇cumprod_dim(
-    vald::Val{dim},
-    x::AbstractArray,
-    dy = fill!(zero(x), 1),
-    y = cumprod(x; dims = dim),
+    vald::Val{dim}, x::AbstractArray, dy=fill!(zero(x), 1), y=cumprod(x; dims=dim)
 ) where {dim}
     T = promote_type(eltype(x), eltype(dy))
     dx = fill!(similar(x, T, axes(x)), zero(T))
@@ -310,11 +302,7 @@ function ∇cumprod_dim(
 end
 
 @inline function ∇cumprod_dim!(
-    dx::AbstractArray,
-    ::Val{dim},
-    x::AbstractArray,
-    dy,
-    y,
+    dx::AbstractArray, ::Val{dim}, x::AbstractArray, dy, y
 ) where {dim}
     iters = ntuple(k -> k == dim ? Ref(:) : axes(x, k), ndims(x))
     for ind in Iterators.product(iters...)
@@ -323,7 +311,7 @@ end
     return dx
 end
 
-function ∇cumprod(x::AbstractVector, dy = one(x), y = cumprod(x))
+function ∇cumprod(x::AbstractVector, dy=one(x), y=cumprod(x))
     T = promote_type(eltype(x), eltype(dy))  # really needs to allow dy * y / x
     dx = fill!(similar(x, T, axes(x)), zero(T))  # axes(x) makes MArray on StaticArrays, Array for structured matrices
     ∇cumprod!(dx, x, dy, y)
@@ -334,14 +322,14 @@ end
     lo, hi = firstindex(x), lastindex(x)
     z = something(findfirst(iszero, x), hi + 1)
     acc = zero(eltype(dy))
-    @inbounds for k = z-1:-1:lo
+    @inbounds for k in (z - 1):-1:lo
         acc += y[k] * dy[k]
         dx[k] += acc / x[k]
     end
     @inbounds if z != hi + 1
-        yk = z == 1 ? one(eltype(y)) : y[z-1]  # will be prod(x[j] for j=1:k if j!=z)
+        yk = z == 1 ? one(eltype(y)) : y[z - 1]  # will be prod(x[j] for j=1:k if j!=z)
         dx[z] += yk * dy[z]
-        for k = (z+1):hi
+        for k in (z + 1):hi
             yk *= x[k]
             dx[z] += yk * dy[k]
         end

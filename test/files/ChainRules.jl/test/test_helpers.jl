@@ -4,7 +4,7 @@ struct Multiplier{T}
 end
 (m::Multiplier)(y) = m.x * y
 function ChainRulesCore.rrule(m::Multiplier, y)
-    Multiplier_pullback(z̄) = Tangent{typeof(m)}(; x = y * z̄), m.x * z̄
+    Multiplier_pullback(z̄) = Tangent{typeof(m)}(; x=y * z̄), m.x * z̄
     return m(y), Multiplier_pullback
 end
 

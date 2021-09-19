@@ -1,8 +1,5 @@
 function rrule(
-    ::typeof(partialsort),
-    xs::AbstractVector,
-    k::Union{Integer,OrdinalRange};
-    kwargs...,
+    ::typeof(partialsort), xs::AbstractVector, k::Union{Integer,OrdinalRange}; kwargs...
 )
     inds = partialsortperm(xs, k; kwargs...)
     ys = xs[inds]

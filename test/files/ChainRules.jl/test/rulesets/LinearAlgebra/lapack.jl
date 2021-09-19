@@ -2,8 +2,7 @@
     @testset "trsyl!" begin
         @testset "T=$T, m=$m, n=$n, transa='$transa', transb='$transb', isgn=$isgn" for T in
                                                                                         (
-                Float64,
-                ComplexF64,
+                Float64, ComplexF64
             ),
             transa in (T <: Real ? ('N', 'C', 'T') : ('N', 'C')),
             transb in (T <: Real ? ('N', 'C', 'T') : ('N', 'C')),

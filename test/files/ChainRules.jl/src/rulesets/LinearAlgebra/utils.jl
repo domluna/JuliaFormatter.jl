@@ -6,7 +6,7 @@ function _mulsubtrans!!(X::AbstractMatrix{<:Real}, F::AbstractMatrix{<:Real})
     T = promote_type(eltype(X), eltype(F))
     Y = (T <: eltype(X)) ? X : similar(X, T)
     k = size(X, 1)
-    @inbounds for j = 1:k, i = 1:j  # Iterate the upper triangle
+    @inbounds for j in 1:k, i in 1:j  # Iterate the upper triangle
         if i == j
             Y[i, i] = zero(T)
         else
@@ -22,7 +22,7 @@ _mulsubtrans!!(X::AbstractMatrix{<:Real}, F::AbstractZero) = F
 # I - X, overwrites X
 function _eyesubx!(X::AbstractMatrix)
     n, m = size(X)
-    @inbounds for j = 1:m, i = 1:n
+    @inbounds for j in 1:m, i in 1:n
         X[i, j] = (i == j) - X[i, j]
     end
     return X
