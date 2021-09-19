@@ -84,9 +84,8 @@ function rrule(
         for (dest_idx, val) in pairs(IndexCartesian(), dY)
             # First, round dest_idx[dim] to nearest gridpoint defined by inner[dim], then
             # wrap around based on original size S.
-            src_idx = [
-                mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)
-            ]
+            src_idx =
+                [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)]
             Δ′[src_idx...] += val
         end
         x̄ = project_Xs(Δ′)

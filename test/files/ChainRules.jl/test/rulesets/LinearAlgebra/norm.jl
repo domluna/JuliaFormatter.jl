@@ -196,7 +196,7 @@ end
     end
     @testset "x::Vector{$T}, p=$p" for T in (Float64, ComplexF64),
         p in (1.0, 2.0, -Inf, Inf, 2.5)
- # skip p=0, since FD is unstable
+        # skip p=0, since FD is unstable
         x = randn(T, 3)
         test_rrule(normalize, x, p)
         @test rrule(normalize, x, p)[2](ZeroTangent()) ===
