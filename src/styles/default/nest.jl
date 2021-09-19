@@ -188,7 +188,8 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     fst.indent += s.opts.indent
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
+    if idx !== nothing &&
+       (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
         if can_nest(fst)
             if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
                 fst[idx] = Newline(length = fst[idx].len)
