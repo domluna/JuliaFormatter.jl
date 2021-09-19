@@ -958,6 +958,27 @@ function op_kind(fst::FST)
     return nothing
 end
 
+function _valid_parent_node_for_standalone_circuit(n::CSTParser.EXPR)
+    n.head === :brackets && return false
+    n.head === :macrocall && return false
+    n.head === :return && return false
+    is_if(n) && return false
+    n.head === :block && is_assignment(n.parent) && return false
+    is_binary(n) && is_assignment(n) && return false
+    return true
+end
+_valid_parent_node_for_standalone_circuit(n::Nothing) = true
+
+function _ignore_node_for_standalone_circuit(n::CSTParser.EXPR)
+    n.head === :brackets && return false
+    is_if(n) && return false
+    n.head === :block && return false
+    n.head === :macrocall && return false
+    n.head === :return && return false
+    is_binary(n) && is_assignment(n) && return false
+    return true
+end
+
 """
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
 
@@ -990,28 +1011,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
     val = cst[2].val
     (val == "&&" || val == "||") || return false
 
-    function valid(n)
-        n === nothing && return true
-        n.head === :brackets && return false
-        n.head === :macrocall && return false
-        n.head === :return && return false
-        is_if(n) && return false
-        n.head === :block && is_assignment(n.parent) && return false
-        is_binary(n) && is_assignment(n) && return false
-        return true
-    end
-
-    function ignore(n::CSTParser.EXPR)
-        n.head === :brackets && return false
-        is_if(n) && return false
-        n.head === :block && return false
-        n.head === :macrocall && return false
-        n.head === :return && return false
-        is_binary(n) && is_assignment(n) && return false
-        return true
-    end
-
-    return parent_is(cst, valid, ignore = ignore)
+    return parent_is(cst, _valid_parent_node_for_standalone_circuit, ignore = _ignore_node_for_standalone_circuit)
 end
 
 """
