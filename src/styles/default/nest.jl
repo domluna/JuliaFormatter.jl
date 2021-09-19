@@ -188,18 +188,7 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     fst.indent += s.opts.indent
 
-    if s.opts.ignore_maximum_width
-        for (i, n) in enumerate(fst.nodes)
-            if n.typ === PLACEHOLDER
-                si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
-                nest_if_over_margin!(style, fst, s, i; stop_idx = si)
-            elseif n.typ === NEWLINE
-                s.line_offset = fst.indent
-            else
-                nest!(style, n, s)
-            end
-        end
-    elseif idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
         if can_nest(fst)
             if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
                 fst[idx] = Newline(length = fst[idx].len)
@@ -212,8 +201,13 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                if s.opts.ignore_maximum_width
+                    si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
