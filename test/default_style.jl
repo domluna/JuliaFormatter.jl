@@ -4386,4 +4386,16 @@ some_function(
         str = "const FOO = '😢'"
         @test fmt(str) == str
     end
+
+    @testset "comprehension leftover extra margin" begin
+        str_ = """
+        src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)]
+        """
+        str = """
+        src_idx = [
+            mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)
+        ]
+        """
+        @test fmt(str_, 4, 78) == str
+    end
 end

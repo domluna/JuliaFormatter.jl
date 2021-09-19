@@ -328,6 +328,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    nested = false
 
     closer = is_closer(fst[end])
     if closer && (line_margin > s.opts.margin || must_nest(fst))
@@ -342,6 +343,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
 
         add_indent!(fst, s, s.opts.indent)
         fst[end].indent = fst.indent - s.opts.indent
+        nested = true
     end
 
     for (i, n) in enumerate(fst.nodes)
@@ -357,7 +359,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         elseif i == length(fst.nodes) && !closer
             nest!(style, n, s)
         else
-            n.extra_margin = 1
+            n.extra_margin = nested ? 0 : 1
             nest!(style, n, s)
         end
     end
