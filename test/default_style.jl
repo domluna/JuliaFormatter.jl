@@ -4391,7 +4391,7 @@ some_function(
         str_ = """
         src_idx = [mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)]
         """
-        str =  """
+        str = """
         src_idx = [
             mod1(div(dest_idx[dim] - 1, inner[dim]) + 1, S[dim]) for dim = 1:length(S)
         ]
