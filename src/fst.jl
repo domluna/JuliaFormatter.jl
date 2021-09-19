@@ -688,18 +688,33 @@ function is_iterable(x::CSTParser.EXPR)
 end
 
 function is_iterable(x::FST)
+    is_named_iterable(x) && return true
+    is_unnamed_iterable(x) && return true
+    is_import_expr(x) && return true
+    return false
+end
+
+function is_unnamed_iterable(x::FST)
     x.typ === TupleN && return true
     x.typ === Vect && return true
     x.typ === Vcat && return true
     x.typ === Braces && return true
+    x.typ === Comprehension && return true
+    x.typ === Brackets && return true
+    return false
+end
+
+function is_named_iterable(x::FST)
     x.typ === Call && return true
     x.typ === Curly && return true
-    x.typ === Comprehension && return true
     x.typ === TypedComprehension && return true
     x.typ === MacroCall && return true
-    x.typ === Brackets && return true
     x.typ === RefN && return true
     x.typ === TypedVcat && return true
+    return false
+end
+
+function is_import_expr(x::FST)
     x.typ === Import && return true
     x.typ === Using && return true
     x.typ === Export && return true
