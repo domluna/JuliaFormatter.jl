@@ -534,7 +534,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t))
+    if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t) || t.typ === FunctionN ||
+            t.typ  === Macro || is_typedef(t) || t.typ === ModuleN || t.typ === BareModule)
         # join based on position in original file
         join_lines = t.endline == n.startline
     end
@@ -771,6 +772,14 @@ function is_block(x::FST)
     x.typ === While && return true
     x.typ === Let && return true
     x.typ === Quote && x[1].val == "quote" && return true
+    return false
+end
+
+function is_typedef(fst::FST)
+    fst.typ === Struct && return true
+    fst.typ === Mutable && return true
+    fst.typ === Primitive && return true
+    fst.typ === Abstract && return true
     return false
 end
 
