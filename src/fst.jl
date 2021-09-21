@@ -534,8 +534,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width &&
-       !(
+    if s.opts.ignore_maximum_width && !(
         is_comma(n) ||
         is_block(t) ||
         t.typ === FunctionN ||

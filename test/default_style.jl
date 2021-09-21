@@ -3889,7 +3889,6 @@ some_function(
         @test fmt(str_, 4, 9) == str
         @test fmt(str_, 4, 1) == str
 
-
         str_ = """
         if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t) || t.typ === FunctionN ||
                     t.typ  === Macro || is_typedef(t))
