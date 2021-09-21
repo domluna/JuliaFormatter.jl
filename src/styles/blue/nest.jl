@@ -3,9 +3,9 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     lidx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    opener = findfirst(is_opener, fst.nodes) !== nothing
     multiline_arg = findfirst(is_block, fst.nodes) !== nothing
     multiline_arg && (fst.nest_behavior = AlwaysNest)
+    has_closer = is_closer(fst[end])
 
     src_diff_line = if s.opts.ignore_maximum_width
         last_arg_idx = findlast(is_iterable_arg, fst.nodes)
@@ -29,10 +29,10 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             end
 
         line_offset = s.line_offset
-        if opener
+        if has_closer
             fst[end].indent = fst.indent
         end
-        if fst.typ !== TupleN || opener
+        if fst.typ !== TupleN || has_closer
             fst.indent += s.opts.indent
         end
 
@@ -78,7 +78,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
-            elseif opener && (i == 1 || i == length(fst.nodes))
+            elseif has_closer && (i == 1 || i == length(fst.nodes))
                 nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
@@ -89,13 +89,13 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             end
         end
 
-        if opener
+        if has_closer
             s.line_offset = fst[end].indent + 1
         end
 
     else
         extra_margin = fst.extra_margin
-        opener && (extra_margin += 1)
+        has_closer && (extra_margin += 1)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
 end
