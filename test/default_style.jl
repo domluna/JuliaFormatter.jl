@@ -3888,6 +3888,28 @@ some_function(
         end"""
         @test fmt(str_, 4, 9) == str
         @test fmt(str_, 4, 1) == str
+
+
+        str_ = """
+        if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t) || t.typ === FunctionN ||
+                    t.typ  === Macro || is_typedef(t))
+                # join based on position in original file
+                join_lines = t.endline == n.startline
+        end
+        """
+        str = """
+        if s.opts.ignore_maximum_width && !(
+            is_comma(n) ||
+            is_block(t) ||
+            t.typ === FunctionN ||
+            t.typ === Macro ||
+            is_typedef(t)
+        )
+            # join based on position in original file
+            join_lines = t.endline == n.startline
+        end
+        """
+        @test fmt(str_, 4, 80) == str
     end
 
     @testset "unnest" begin

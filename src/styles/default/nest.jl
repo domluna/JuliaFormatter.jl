@@ -703,7 +703,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                    rhs.typ === Binary &&
                    !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
                ) ||
-               rhs.typ === Unary ||
+               rhs.typ === Unary && rhs[end].typ !== Brackets ||
                rhs.typ === Chain ||
                rhs.typ === Comparison ||
                rhs.typ === Conditional
