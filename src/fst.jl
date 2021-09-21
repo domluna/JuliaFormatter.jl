@@ -534,8 +534,16 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width && !(is_comma(n) || is_block(t) || t.typ === FunctionN ||
-            t.typ  === Macro || is_typedef(t) || t.typ === ModuleN || t.typ === BareModule)
+    if s.opts.ignore_maximum_width &&
+       !(
+        is_comma(n) ||
+        is_block(t) ||
+        t.typ === FunctionN ||
+        t.typ === Macro ||
+        is_typedef(t) ||
+        t.typ === ModuleN ||
+        t.typ === BareModule
+    )
         # join based on position in original file
         join_lines = t.endline == n.startline
     end
