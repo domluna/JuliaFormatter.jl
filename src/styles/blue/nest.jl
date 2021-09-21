@@ -7,16 +7,26 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
     multiline_arg = findfirst(is_block, fst.nodes) !== nothing
     multiline_arg && (fst.nest_behavior = AlwaysNest)
 
-    if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
+    src_diff_line = if s.opts.ignore_maximum_width
+        last_arg_idx = findlast(is_iterable_arg, fst.nodes)
+        last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         args_range = fidx+1:lidx-1
         args_margin = sum(length.(fst[args_range]))
 
-        nest_to_oneline = if can_nest(fst)
-            (fst.indent + s.opts.indent + args_margin <= s.opts.margin) &&
+        nest_to_oneline =
+            if can_nest(fst) &&
+               !src_diff_line &&
+               (fst.indent + s.opts.indent + args_margin <= s.opts.margin)
                 !contains_comment(fst.nodes[args_range])
-        else
-            false
-        end
+            else
+                false
+            end
 
         line_offset = s.line_offset
         if opener
@@ -32,9 +42,28 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             elseif nest_to_oneline && (i == fidx || i == lidx)
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
-            elseif !nest_to_oneline && n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+            elseif n.typ === PLACEHOLDER && !nest_to_oneline
+                if src_diff_line
+                    si = findnext(
+                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                        fst.nodes,
+                        i + 1,
+                    )
+                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    if has_closer && !nested && n.startline == fst[end].startline
+                        # trailing types are automatically converted, undo this if
+                        # there is no nest and the closer is on the same in the
+                        # original source.
+                        if fst[i-1].typ === TRAILINGCOMMA ||
+                           fst[i-1].typ === TRAILINGSEMICOLON
+                            fst[i-1].val = ""
+                            fst[i-1].len = 0
+                        end
+                    end
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             elseif n.typ === TRAILINGCOMMA
                 if !nest_to_oneline
                     n.val = ","
@@ -79,7 +108,6 @@ end
 @inline n_parameters!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
 @inline n_invisbrackets!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
 @inline n_bracescat!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
-# @inline n_vcat!(bs::BlueStyle, fst::FST, s::State) = n_tuple!(bs, fst, s)
 
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)
