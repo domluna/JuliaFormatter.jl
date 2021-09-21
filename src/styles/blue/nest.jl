@@ -20,9 +20,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
         args_margin = sum(length.(fst[args_range]))
 
         nest_to_oneline =
-            if can_nest(fst) &&
-               !src_diff_line &&
-               (fst.indent + s.opts.indent + args_margin <= s.opts.margin)
+            if can_nest(fst) && (fst.indent + s.opts.indent + args_margin <= s.opts.margin)
                 !contains_comment(fst.nodes[args_range])
             else
                 false
@@ -39,10 +37,10 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
-            elseif nest_to_oneline && (i == fidx || i == lidx)
+            elseif (i == fidx || i == lidx) && !src_diff_line && nest_to_oneline
                 fst[i] = Newline(length = n.len)
                 s.line_offset = fst.indent
-            elseif n.typ === PLACEHOLDER && !nest_to_oneline
+            elseif n.typ === PLACEHOLDER
                 if src_diff_line
                     si = findnext(
                         n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
@@ -60,9 +58,11 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                             fst[i-1].len = 0
                         end
                     end
-                else
+                elseif !nest_to_oneline
                     fst[i] = Newline(length = n.len)
                     s.line_offset = fst.indent
+                else
+                    nest!(style, n, s)
                 end
             elseif n.typ === TRAILINGCOMMA
                 if !nest_to_oneline
