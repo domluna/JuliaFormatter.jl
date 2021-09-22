@@ -115,11 +115,12 @@ function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State)
         conditional_to_if_block!(fst, s)
         nest!(style, fst, s)
     else
-        n_conditionalopcall!(DefaultStyle(bs), fst, s)
+        n_conditionalopcall!(DefaultStyle(style), fst, s)
     end
     return
 end
 
 function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State)
-    n_binaryopcall!(YASStyle(bs), fst, s)
+    style = getstyle(bs)
+    n_binaryopcall!(YASStyle(style), fst, s)
 end

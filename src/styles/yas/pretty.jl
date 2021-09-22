@@ -40,7 +40,8 @@ function nestable(::YASStyle, cst::CSTParser.EXPR)
 end
 
 function p_import(ys::YASStyle, cst::CSTParser.EXPR, s::State)
-    t = p_import(DefaultStyle(ys), cst, s)
+    style = getstyle(ys)
+    t = p_import(DefaultStyle(style), cst, s)
     idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
     if idx !== nothing && is_colon(t[idx-1])
         t[idx] = Whitespace(1)

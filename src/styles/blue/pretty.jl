@@ -47,7 +47,8 @@ function nestable(::BlueStyle, cst::CSTParser.EXPR)
 end
 
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
-    t = p_call(DefaultStyle(bs), cst, s)
+    style = getstyle(bs)
+    t = p_call(DefaultStyle(style), cst, s)
     if !parent_is(cst, is_function_or_macro_def)
         separate_kwargs_with_semicolon!(t)
     end
