@@ -275,15 +275,19 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     add_node!(t, Whitespace(1), s)
 
-    add_braces =
-        !CSTParser.is_lbrace(cst[3]) &&
-        cst.parent.head !== :curly &&
-        cst[3].head !== :curly &&
-        cst[3].head !== :bracescat
+    curly_ctx =
+        cst.parent.head === :curly ||
+        cst[3].head === :curly ||
+        cst[3].head === :bracescat ||
+        cst[3].head === :parameters
+
+    add_braces = !curly_ctx && !CSTParser.is_lbrace(cst[3])
+
+    bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
 
     if add_braces
         brace = FST(PUNCTUATION, -1, t.endline, t.endline, "{")
-        add_node!(t, brace, s, join_lines = true)
+        add_node!(bc, brace, s, join_lines = true)
     end
 
     for i = 3:length(cst)
@@ -293,17 +297,20 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         if CSTParser.is_comma(a) && i == length(cst) - 1
             continue
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            add_node!(bc, n, s, join_lines = true)
+            add_node!(bc, Placeholder(0), s)
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(bc, n, s, join_lines = true)
         end
     end
 
     if add_braces
         brace = FST(PUNCTUATION, -1, t.endline, t.endline, "}")
-        add_node!(t, brace, s, join_lines = true)
+        add_node!(bc, brace, s, join_lines = true)
     end
+
+    !curly_ctx && add_node!(t, bc, s, join_lines = true)
+
     t
 end
 
