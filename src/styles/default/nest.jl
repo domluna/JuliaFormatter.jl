@@ -790,7 +790,23 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                if s.opts.ignore_maximum_width
+                # Placeholder at the end of a block is the separator
+                # to the body. For example:
+                #
+                # for x in (a, b), y in (c, d)
+                #     body
+                # end
+                #
+                # If "x in (a, b), y in (c, d)" is nested then a newline
+                # is inserted to separte "y in (c, d)" from "body":
+                #
+                # for x in (a, b),
+                #     y in (c, d)
+                #
+                #     body
+                # end
+                #
+                if s.opts.ignore_maximum_width && i < length(fst.nodes)
                     si = findnext(
                         n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
                         fst.nodes,
