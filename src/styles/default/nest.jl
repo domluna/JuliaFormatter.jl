@@ -778,6 +778,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
     line_offset = s.line_offset
+    has_nl = false
     indent >= 0 && (fst.indent = indent)
 
     if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
@@ -789,7 +790,10 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
+                has_nl = true
             elseif n.typ === PLACEHOLDER
+                # NOTE:
+                #
                 # Placeholder at the end of a block is the separator
                 # to the body. For example:
                 #
@@ -806,16 +810,24 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 #     body
                 # end
                 #
-                if s.opts.ignore_maximum_width && i < length(fst.nodes)
-                    si = findnext(
-                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
-                        fst.nodes,
-                        i + 1,
-                    )
-                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                if s.opts.ignore_maximum_width
+                    if i < length(fst.nodes)
+                        si = findnext(
+                            n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                            fst.nodes,
+                            i + 1,
+                        )
+                        nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    elseif has_nl
+                        fst[i] = Newline(length = n.len)
+                        s.line_offset = fst.indent
+                    else
+                        nest!(style, n, s)
+                    end
                 else
                     fst[i] = Newline(length = n.len)
                     s.line_offset = fst.indent
+                    has_nl = true
                 end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
