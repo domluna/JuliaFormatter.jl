@@ -425,6 +425,18 @@ end
 
 @inline n_args(x) = length(get_args(x))
 
+"""
+    add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
+
+Appends `n` to `t`.
+
+- `join_lines` if `false` a NEWLINE node will be added and `n` will appear
+on the next line, otherwise it will appear on the same line as the previous
+node (when printing).
+- `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
+of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
+`n` will be added to `t`.
+"""
 function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
     if n.typ === SEMICOLON
         join_lines = true
@@ -534,14 +546,17 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     end
 
-    if s.opts.ignore_maximum_width && !(
+    # if `max_padding` >= 0 `n` should appear on the next line
+    # even if it's contrary on the original source.
+    if s.opts.ignore_maximum_width && max_padding == -1 && !(
         is_comma(n) ||
         is_block(t) ||
         t.typ === FunctionN ||
         t.typ === Macro ||
         is_typedef(t) ||
         t.typ === ModuleN ||
-        t.typ === BareModule
+        t.typ === BareModule ||
+        is_end(n)
     )
         # join based on position in original file
         join_lines = t.endline == n.startline
@@ -779,7 +794,6 @@ function is_block(x::FST)
     x.typ === For && return true
     x.typ === While && return true
     x.typ === Let && return true
-    x.typ === Block && return true
     x.typ === Quote && x[1].val == "quote" && return true
     return false
 end
