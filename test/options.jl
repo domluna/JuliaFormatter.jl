@@ -1510,7 +1510,21 @@
                 @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
             end
 
-            # trailing comma
+
+            str_ = "try a catch e finally c end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = "if a body1 elseif b body2 elseif c body3 else body4 end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = "begin a;b;c end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = "function foo() a;b;c end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+        end
+
+        @testset "trailing comma" begin
             str_ = """
             using A
             ,
@@ -1521,15 +1535,6 @@
                 B
             """
             @test fmt(str_, ignore_maximum_width = true) == str
-
-            str_ = "try a catch e finally c end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
-
-            str_ = "if a body1 elseif b body2 elseif c body3 else body4 end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
-
-            str_ = "begin a;b;c end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
         end
     end
 end
