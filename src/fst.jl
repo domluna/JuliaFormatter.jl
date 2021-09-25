@@ -548,16 +548,18 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
     # if `max_padding` >= 0 `n` should appear on the next line
     # even if it's contrary on the original source.
-    if s.opts.ignore_maximum_width && max_padding == -1 && !(
-        is_comma(n) ||
-        is_block(t) ||
-        t.typ === FunctionN ||
-        t.typ === Macro ||
-        is_typedef(t) ||
-        t.typ === ModuleN ||
-        t.typ === BareModule ||
-        is_end(n)
-    )
+    if s.opts.ignore_maximum_width &&
+       max_padding == -1 &&
+       !(
+           is_comma(n) ||
+           is_block(t) ||
+           t.typ === FunctionN ||
+           t.typ === Macro ||
+           is_typedef(t) ||
+           t.typ === ModuleN ||
+           t.typ === BareModule ||
+           is_end(n)
+       )
         # join based on position in original file
         join_lines = t.endline == n.startline
     end

@@ -1510,7 +1510,6 @@
                 @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
             end
 
-
             str_ = "try a catch e finally c end"
             @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
 
