@@ -840,7 +840,9 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                     # chainopcall / comparison
                     n.extra_margin = 1 + length(fst[i+2])
                 elseif i < length(fst.nodes)
-                    n.extra_margin = 1
+                    if !(i == length(fst.nodes) - 1 && fst[i+1].typ === PLACEHOLDER)
+                        n.extra_margin = 1
+                    end
                 end
                 nest!(style, n, s)
             end
