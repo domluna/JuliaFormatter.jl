@@ -1450,4 +1450,86 @@
         )"""
         @test fmt(str_, 4, 1, remove_trailing_comma = true) == str
     end
+
+    @testset "ignore maximum width" begin
+        str = raw"""
+        @testset "T=$T, m=$m, n=$n" for T in (Float64, ComplexF64), m in (2, 3), n in (1, 3)
+            body
+        end
+        """
+        @test fmt(str, 4, 84, ignore_maximum_width = true) == str
+
+        @testset "maintain original structure" begin
+            for m in (:module, :baremodule)
+                str_ = "$m M body end"
+                @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            end
+
+            str_ = "struct S body end"
+            @test fmt(
+                str_,
+                ignore_maximum_width = true,
+                annotate_untyped_fields_with_any = false,
+            ) == fmt(str_, annotate_untyped_fields_with_any = false)
+
+            str_ = "mutable struct S body end"
+            @test fmt(
+                str_,
+                ignore_maximum_width = true,
+                annotate_untyped_fields_with_any = false,
+            ) == fmt(str_, annotate_untyped_fields_with_any = false)
+
+            str_ = """
+            abstract
+
+            type
+            foo
+
+              end"""
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = """
+            primitive
+
+            type
+            foo
+
+            64
+
+              end"""
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = """
+            function foo
+
+              end"""
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            for f in (:function, :macro)
+                str_ = "$f foo() body end"
+                @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            end
+
+            # trailing comma
+            str_ = """
+            using A
+            ,
+              B
+            """
+            str = """
+            using A,
+                B
+            """
+            @test fmt(str_, ignore_maximum_width = true) == str
+
+            str_ = "try a catch e finally c end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = "if a body1 elseif b body2 elseif c body3 else body4 end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+
+            str_ = "begin a;b;c end"
+            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+        end
+    end
 end
