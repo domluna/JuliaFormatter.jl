@@ -1452,13 +1452,6 @@
     end
 
     @testset "ignore maximum width" begin
-        str = raw"""
-        @testset "T=$T, m=$m, n=$n" for T in (Float64, ComplexF64), m in (2, 3), n in (1, 3)
-            body
-        end
-        """
-        @test fmt(str, 4, 84, ignore_maximum_width = true) == str
-
         @testset "maintain original structure" begin
             for m in (:module, :baremodule)
                 str_ = "$m M body end"
@@ -1523,7 +1516,7 @@
             @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
         end
 
-        @testset "trailing comma" begin
+        @testset "trailing comma going solo" begin
             str_ = """
             using A
             ,
@@ -1535,5 +1528,37 @@
             """
             @test fmt(str_, ignore_maximum_width = true) == str
         end
+
+        @testset "misc" begin
+            str = raw"""
+            @testset "T=$T, m=$m, n=$n" for T in (Float64, ComplexF64), m in (2, 3), n in (1, 3)
+                body
+            end
+            """
+            @test fmt(str, 4, 84, ignore_maximum_width = true) == str
+        end
+
+        @testset "blue style" begin
+            str = """
+            function foo(
+                arg1, arg2
+            )
+                body
+            end
+            """
+            @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
+            @test bluefmt(str, 4, 1, ignore_maximum_width = true) == bluefmt(str, 4, 1)
+
+            str = """
+            function foo(
+                arg1,
+                arg2,
+            )
+                body
+            end
+            """
+            @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
+        end
+
     end
 end
