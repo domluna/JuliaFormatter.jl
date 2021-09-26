@@ -751,7 +751,7 @@ Returns whether `fst` can be an iterable argument. For example in
 the case of a function call, which is of type `Call`:
 
 ```julia
-f(a, b, c; k1=v1)
+(a, b, c; k1=v1)
 ```
 
 This would return `true` for `a`, `b`, `c` and `k1=v1` and `false` for all other nodes.
