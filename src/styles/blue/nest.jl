@@ -7,6 +7,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
     multiline_arg && (fst.nest_behavior = AlwaysNest)
     has_closer = is_closer(fst[end])
 
+    # "foo(a, b, c)" is true if "foo" and "c" are on different lines
     src_diff_line = if s.opts.ignore_maximum_width
         last_arg_idx = findlast(is_iterable_arg, fst.nodes)
         last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
@@ -26,6 +27,30 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                 false
             end
 
+        # nesting is initiated by source code
+        src_nest = src_diff_line && line_margin <= s.opts.margin
+
+        args_diff_line = if src_nest
+            # first arg
+            first_arg_idx = if fst.typ === TupleN && !has_closer
+                1
+            elseif is_opener(fst[1])
+                # (...)
+                findfirst(is_iterable_arg, fst.nodes)
+            else
+                # f(...)
+                findnext(is_iterable_arg, fst.nodes, 2)
+            end
+            first_arg = first_arg_idx === nothing ? fst[1] : fst[first_arg_idx]
+            # last arg
+            last_arg_idx = findlast(is_iterable_arg, fst.nodes)
+            last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+
+            first_arg.endline != last_arg.startline
+        else
+            false
+        end
+
         line_offset = s.line_offset
         if has_closer
             fst[end].indent = fst.indent
@@ -33,6 +58,8 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
         if fst.typ !== TupleN || has_closer
             fst.indent += s.opts.indent
         end
+
+        add_trailing_comma = (src_nest && args_diff_line) || (!src_nest && !nest_to_oneline)
 
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
@@ -65,7 +92,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                     nest!(style, n, s)
                 end
             elseif n.typ === TRAILINGCOMMA
-                if !nest_to_oneline
+                if add_trailing_comma
                     n.val = ","
                     n.len = 1
                 end
