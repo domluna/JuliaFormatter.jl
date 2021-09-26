@@ -244,6 +244,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
         fst.indent += s.opts.indent
     end
 
+    # "foo(a, b, c)" is true if "foo" and "c" are on different lines
     src_diff_line = if s.opts.ignore_maximum_width
         last_arg_idx = findlast(is_iterable_arg, fst.nodes)
         last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
