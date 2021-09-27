@@ -1522,7 +1522,7 @@ function p_binaryopcall(
 
     nrhs = nest_rhs(cst)
     nrhs && (t.nest_behavior = AlwaysNest)
-    nest = (nestable(style, cst) && !nonest) || nrhs
+    nest = (is_binaryop_nestable(style, cst) && !nonest) || nrhs
 
     if op.fullspan == 0
         # Do nothing - represents a binary op with no textual representation.
@@ -1559,11 +1559,11 @@ function p_binaryopcall(
        !is_iterable(cst[3])
         paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
-        add_node!(t, n, s, join_lines = true)
+        add_node!(t, n, s, join_lines = true, override_custom_nest = !nest)
         paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s, join_lines = true)
+        add_node!(t, n, s, join_lines = true, override_custom_nest = !nest)
     end
 
     if nest

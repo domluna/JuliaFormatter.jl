@@ -1536,6 +1536,80 @@
             end
             """
             @test fmt(str, 4, 84, ignore_maximum_width = true) == str
+
+            str_ = """
+            function foo(
+                arg1,
+                arg2,)
+
+                body
+            end
+            """
+            str = """
+            function foo(
+                arg1,
+                arg2)
+
+                body
+            end
+            """
+            @test fmt(str_, ignore_maximum_width = true) == str
+            @test bluefmt(str_, ignore_maximum_width = true) == str
+
+            str = """
+            function foo(
+                         arg1,
+                         arg2)
+
+                body
+            end
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+        end
+
+        @testset "binary op" begin
+            str_ = """
+            a =
+            b
+            """
+            str = """
+            a =
+                b
+            """
+            @test fmt(str_, ignore_maximum_width = true) == str
+            @test bluefmt(str_, ignore_maximum_width = true) == str
+
+            str = """
+            a = b
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            a =
+            (b,c)
+            """
+            str = """
+            a =
+                (b, c)
+            """
+            @test fmt(str_, ignore_maximum_width = true) == str
+
+            str = """
+            a = (b, c)
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test bluefmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            a =
+            "hello"
+            """
+            str = """
+            a = "hello"
+            """
+            @test fmt(str_, ignore_maximum_width = true) == str
+            @test bluefmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, ignore_maximum_width = true) == str
         end
 
         @testset "blue style" begin

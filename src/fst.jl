@@ -436,8 +436,10 @@ node (when printing).
 - `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
 of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
 `n` will be added to `t`.
+- `override_custom_nest` is only used when `ignore_maximum_width` option is `true`. In which
+`n` is added to `t` as if `ignore_maximum_width` was false.
 """
-function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
+function add_node!(t::FST, n::FST, s::State; join_lines::Bool = false, max_padding::Int = -1, override_custom_nest::Bool=false)
     if n.typ === SEMICOLON
         join_lines = true
         loc =
@@ -549,6 +551,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
     # if `max_padding` >= 0 `n` should appear on the next line
     # even if it's contrary on the original source.
     if s.opts.ignore_maximum_width &&
+       !override_custom_nest &&
        max_padding == -1 &&
        !(
            is_comma(n) ||
@@ -954,7 +957,7 @@ function unnestable_node(cst::CSTParser.EXPR)
     return false
 end
 
-function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
+function is_binaryop_nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
     CSTParser.defines_function(cst) && is_unary(cst[1]) && return true
     if is_assignment(cst) || is_pairarrow(cst)
         return !is_str_or_cmd(cst[3])

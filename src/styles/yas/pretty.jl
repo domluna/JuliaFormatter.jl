@@ -33,7 +33,7 @@ function options(style::YASStyle)
     )
 end
 
-function nestable(::YASStyle, cst::CSTParser.EXPR)
+function is_binaryop_nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || is_assignment(cst)) && return false
     (cst[2].val == "=>" || cst[2].val == "->") && return false
     return true
