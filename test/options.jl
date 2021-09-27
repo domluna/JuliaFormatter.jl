@@ -1633,6 +1633,5 @@
             """
             @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
         end
-
     end
 end

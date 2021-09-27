@@ -426,7 +426,14 @@ end
 @inline n_args(x) = length(get_args(x))
 
 """
-    add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
+    add_node!(
+        t::FST,
+        n::FST,
+        s::State;
+        join_lines::Bool = false,
+        max_padding::Int = -1,
+        override_custom_nest::Bool = false,
+    )
 
 Appends `n` to `t`.
 
@@ -439,7 +446,14 @@ of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the 
 - `override_custom_nest` is only used when `ignore_maximum_width` option is `true`. In which
 `n` is added to `t` as if `ignore_maximum_width` was false.
 """
-function add_node!(t::FST, n::FST, s::State; join_lines::Bool = false, max_padding::Int = -1, override_custom_nest::Bool=false)
+function add_node!(
+    t::FST,
+    n::FST,
+    s::State;
+    join_lines::Bool = false,
+    max_padding::Int = -1,
+    override_custom_nest::Bool = false,
+)
     if n.typ === SEMICOLON
         join_lines = true
         loc =
