@@ -929,4 +929,20 @@
         @test fmt(str_) == str
         @test bluefmt(str_) == str
     end
+
+    @testset "issue 475" begin
+        str_ = """
+        @deprecate(
+            presign(path::AWSS3.S3Path, duration::Period=Hour(1); config::AWSConfig=aws_config()),
+            AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
+        )
+        """
+        str = """
+        @deprecate(
+            presign(path::AWSS3.S3Path; duration::Period=Hour(1), config::AWSConfig=aws_config()),
+            AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
+        )
+        """
+        @test bluefmt(str_, 4, 100, whitespace_in_kwargs = false) == str
+    end
 end
