@@ -1555,16 +1555,6 @@
             """
             @test fmt(str_, ignore_maximum_width = true) == str
             @test bluefmt(str_, ignore_maximum_width = true) == str
-
-            str = """
-            function foo(
-                         arg1,
-                         arg2)
-
-                body
-            end
-            """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
         end
 
         @testset "binary op" begin
@@ -1639,15 +1629,25 @@
             function foo(
                 arg1,
                 arg2,
-            )
+            ) where {
+            T1,
+            T2,
+            }
                 body
             end
             """
+            @test yasfmt(str_, ignore_maximum_width = true) ==
+                  yasfmt(str_, 4, 1, ignore_maximum_width = false)
+
+            str_ = """
+            @foo(
+                arg1,
+                arg2,
+            )
+            """
             str = """
-            function foo(arg1,
-                         arg2)
-                body
-            end
+            @foo(arg1,
+                 arg2,)
             """
             @test yasfmt(str_, ignore_maximum_width = true) == str
 
@@ -1672,6 +1672,18 @@
             str = """
             [arg1,
              arg2]
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            A[
+                arg1,
+                arg2,
+            ]
+            """
+            str = """
+            A[arg1,
+              arg2]
             """
             @test yasfmt(str_, ignore_maximum_width = true) == str
 
@@ -1708,6 +1720,40 @@
             (invisbrackets)
             """
             @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            [
+                row1;
+                row2;
+            ]
+            """
+            str = """
+            [row1;
+             row2]
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            T[
+                row1;
+                row2;
+            ]
+            """
+            str = """
+            T[row1;
+              row2]
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            [
+            a for a = 1:10
+            ]
+            """
+            str = """
+            [a for a = 1:10]
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
         end
 
         @testset "imports" begin
@@ -1719,7 +1765,7 @@
             using A,  #inline
               # comment
               B, C#inline"""
-            @test fmt(str_, 2, 80, ignore_maximum_width=true) == str
+            @test fmt(str_, 2, 80, ignore_maximum_width = true) == str
 
             str_ = """
             using CommonMark:
@@ -1740,8 +1786,8 @@
                 Parser,
                 Rule, TableRule
             """
-            @test fmt(str_, 4, 37, ignore_maximum_width=true) == str_
-            @test fmt(str_, 4, 36, ignore_maximum_width=true) == str
+            @test fmt(str_, 4, 37, ignore_maximum_width = true) == str_
+            @test fmt(str_, 4, 36, ignore_maximum_width = true) == str
 
             str = """
             using CommonMark:
@@ -1752,7 +1798,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 51, ignore_maximum_width=true) == str
+            @test yasfmt(str_, 4, 51, ignore_maximum_width = true) == str
 
             str = """
             using CommonMark:
@@ -1764,7 +1810,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 50, ignore_maximum_width=true) == str
+            @test yasfmt(str_, 4, 50, ignore_maximum_width = true) == str
         end
 
         @testset "matrices" begin
@@ -1774,7 +1820,7 @@
             str = """
             T[a b Expr()
                 d e Expr()]"""
-            @test fmt(str_, ignore_maximum_width=true) == str
+            @test fmt(str_, ignore_maximum_width = true) == str
         end
     end
 end

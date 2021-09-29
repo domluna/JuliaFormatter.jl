@@ -136,7 +136,7 @@ function p_tuple(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
             add_node!(t, n, s, join_lines = true, override_custom_nest = true)
-        elseif i > 1 && is_opener(cst[i-1])
+        elseif i > 1 && is_opener(nodes[i-1])
             add_node!(t, n, s, join_lines = true, override_custom_nest = true)
         else
             add_node!(t, n, s, join_lines = true)
@@ -160,7 +160,13 @@ function p_invisbrackets(
         t.nest_behavior = AlwaysNest
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true, override_custom_nest = true)
+    add_node!(
+        t,
+        pretty(style, cst[1], s),
+        s,
+        join_lines = true,
+        override_custom_nest = true,
+    )
 
     n = if cst[2].head === :block
         pretty(style, cst[2], s, from_quote = true)
@@ -171,7 +177,13 @@ function p_invisbrackets(
     end
     add_node!(t, n, s, join_lines = true, override_custom_nest = true)
 
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true, override_custom_nest = true)
+    add_node!(
+        t,
+        pretty(style, cst[3], s),
+        s,
+        join_lines = true,
+        override_custom_nest = true,
+    )
 
     t
 end
@@ -212,13 +224,15 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        if !is_closer(a) && i > st
+        if is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif !is_closer(a) && i > st
             join_lines = i == st + 1 ? true : t.endline == n.startline
             if join_lines && i != st + 1
                 add_node!(t, Placeholder(1), s)
             end
 
-            add_node!(t, n, s; join_lines = join_lines)
+            add_node!(t, n, s; join_lines = join_lines, override_custom_nest = i == st + 1)
             if i != length(cst) - 1
                 has_semicolon(s.doc, n.startline) &&
                     add_node!(t, InverseTrailingSemicolon(), s)
@@ -241,14 +255,23 @@ function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(cst)
-        if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
-        elseif is_binary(a) || is_chain(a) || a.head === :brackets || a.head === :comparison
-            n = pretty(style, a, s, nonest = true, nospace = nospace)
-            add_node!(t, n, s, join_lines = true)
+        n = if is_binary(a) || is_chain(a) || a.head === :brackets || a.head === :comparison
+            pretty(style, a, s, nonest = true, nospace = nospace)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            pretty(style, a, s)
+        end
+
+        if CSTParser.is_comma(a) && i + 1 == length(cst)
+            continue
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        else
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -263,8 +286,20 @@ function p_comprehension(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     end
 
     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    add_node!(
+        t,
+        pretty(style, cst[2], s),
+        s,
+        join_lines = true,
+        override_custom_nest = true,
+    )
+    add_node!(
+        t,
+        pretty(style, cst[3], s),
+        s,
+        join_lines = true,
+        override_custom_nest = true,
+    )
     t
 end
 
@@ -285,18 +320,61 @@ end
 
 function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
-    fst = p_macrocall(DefaultStyle(style), cst, s)
-    fst.typ == MacroCall || return fst
-    is_closer(cst[end]) || return fst
+    t = FST(MacroCall, cst, nspaces(s))
 
-    # remove initial and last placeholders
-    # @call(PLACEHOLDER, args..., PLACEHOLDER) -> @call(args...)
-    idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    idx !== nothing && (fst[idx] = Whitespace(0))
-    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    idx !== nothing && (fst[idx] = Whitespace(0))
+    args = get_args(cst)
+    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    has_closer = is_closer(cst[end])
 
-    return fst
+    !has_closer && (t.typ = MacroBlock)
+
+    # same as CSTParser.Call but whitespace sensitive
+    for (i, a) in enumerate(cst)
+        if CSTParser.is_nothing(a)
+            s.offset += a.fullspan
+            continue
+        end
+
+        n = pretty(style, a, s)
+        if CSTParser.ismacroname(a)
+            if has_closer || length(args) == 0
+                add_node!(t, n, s, join_lines = true)
+            else
+                add_node!(t, n, s, join_lines = true)
+                add_node!(t, Whitespace(1), s)
+            end
+        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif t.typ === MacroBlock
+            if has_closer
+                add_node!(t, n, s, join_lines = true)
+                if i < length(cst) - 1 && cst[i+1].head != :parameters
+                    add_node!(t, Whitespace(1), s)
+                end
+            else
+                padding = is_block(n) ? 0 : -1
+                add_node!(t, n, s, join_lines = true, max_padding = padding)
+                i < length(cst) && add_node!(t, Whitespace(1), s)
+            end
+        else
+            if has_closer
+                add_node!(t, n, s, join_lines = true)
+            else
+                padding = is_block(n) ? 0 : -1
+                add_node!(t, n, s, join_lines = true, max_padding = padding)
+            end
+        end
+    end
+    # move placement of @ to the end
+    #
+    # @Module.macro -> Module.@macro
+    t[1] = move_at_sign_to_the_end(t[1], s)
+    t
 end
 
 function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
@@ -332,6 +410,10 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(bc, n, s, join_lines = true)
             add_node!(bc, Placeholder(0), s)
+        elseif is_closer(n)
+            add_node!(bc, n, s, join_lines = true, override_custom_nest = true)
+        elseif is_opener(cst[i-1])
+            add_node!(bc, n, s, join_lines = true, override_custom_nest = true)
         else
             add_node!(bc, n, s, join_lines = true)
         end
