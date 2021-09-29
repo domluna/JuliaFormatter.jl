@@ -1633,5 +1633,72 @@
             """
             @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
         end
+
+        @testset "imports" begin
+            str_ = """
+            using A,  #inline
+                      # comment
+            B, C#inline"""
+            str = """
+            using A,  #inline
+              # comment
+              B, C#inline"""
+            @test fmt(str_, 2, 80, ignore_maximum_width=true) == str
+
+            str_ = """
+            using CommonMark:
+                AdmonitionRule,
+                CodeBlock, enable!, FootnoteRule,
+                markdown,
+                MathRule,
+                Parser,
+                Rule, TableRule
+            """
+            str = """
+            using CommonMark:
+                AdmonitionRule,
+                CodeBlock, enable!,
+                FootnoteRule,
+                markdown,
+                MathRule,
+                Parser,
+                Rule, TableRule
+            """
+            @test fmt(str_, 4, 37, ignore_maximum_width=true) == str_
+            @test fmt(str_, 4, 36, ignore_maximum_width=true) == str
+
+            str = """
+            using CommonMark:
+                              AdmonitionRule,
+                              CodeBlock, enable!, FootnoteRule,
+                              markdown,
+                              MathRule,
+                              Parser,
+                              Rule, TableRule
+            """
+            @test yasfmt(str_, 4, 51, ignore_maximum_width=true) == str
+
+            str = """
+            using CommonMark:
+                              AdmonitionRule,
+                              CodeBlock, enable!,
+                              FootnoteRule,
+                              markdown,
+                              MathRule,
+                              Parser,
+                              Rule, TableRule
+            """
+            @test yasfmt(str_, 4, 50, ignore_maximum_width=true) == str
+        end
+
+        @testset "matrices" begin
+            str_ = """
+            T[ a b Expr();
+            d e Expr();]"""
+            str = """
+            T[a b Expr()
+                d e Expr()]"""
+            @test fmt(str_, ignore_maximum_width=true) == str
+        end
     end
 end
