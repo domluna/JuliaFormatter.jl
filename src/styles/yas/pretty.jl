@@ -71,6 +71,10 @@ function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -88,8 +92,13 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(TupleN, cst, nspaces(s))
     for (i, a) in enumerate(cst)
+        n = if is_binary(a) && a[2].val == "="
+            p_kw(style, a, s)
+        else
+            pretty(style, a, s)
+        end
+
         if CSTParser.is_comma(a) && i + 1 == length(cst)
-            n = pretty(style, a, s)
             if length(cst.args) == 1
                 add_node!(t, n, s, join_lines = true)
             elseif !is_closer(cst[i+1])
@@ -97,12 +106,14 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Placeholder(1), s)
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
-        elseif is_binary(a) && a[2].val == "="
-            add_node!(t, p_kw(style, a, s), s, join_lines = true)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -123,6 +134,10 @@ function p_tuple(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
         elseif CSTParser.is_comma(a) && i < length(nodes) && !is_punc(nodes[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -139,12 +154,25 @@ function p_invisbrackets(
     nospace = false,
 )
     style = getstyle(ys)
-    t = p_invisbrackets(DefaultStyle(style), cst, s, nonest = nonest, nospace = nospace)
-    for (i, n) in enumerate(t.nodes)
-        if n.typ === PLACEHOLDER
-            t[i] = Whitespace(length(n))
-        end
+    t = FST(Brackets, cst, nspaces(s))
+
+    if is_block(cst[2]) || (cst[2].head === :generator && is_block(cst[2][1]))
+        t.nest_behavior = AlwaysNest
     end
+
+    add_node!(t, pretty(style, cst[1], s), s, join_lines = true, override_custom_nest = true)
+
+    n = if cst[2].head === :block
+        pretty(style, cst[2], s, from_quote = true)
+    elseif is_opcall(cst[2])
+        pretty(style, cst[2], s, nonest = nonest, nospace = nospace)
+    else
+        pretty(style, cst[2], s)
+    end
+    add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+
+    add_node!(t, pretty(style, cst[3], s), s, join_lines = true, override_custom_nest = true)
+
     t
 end
 
@@ -158,6 +186,10 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
+        elseif is_closer(n)
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
+        elseif i > 1 && is_opener(cst[i-1])
+            add_node!(t, n, s, join_lines = true, override_custom_nest = true)
         else
             add_node!(t, n, s, join_lines = true)
         end

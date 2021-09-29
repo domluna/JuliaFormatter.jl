@@ -1634,6 +1634,82 @@
             @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
         end
 
+        @testset "yas style" begin
+            str_ = """
+            function foo(
+                arg1,
+                arg2,
+            )
+                body
+            end
+            """
+            str = """
+            function foo(arg1,
+                         arg2)
+                body
+            end
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            (
+                arg1,
+                arg2,
+            )
+            """
+            str = """
+            (arg1,
+             arg2)
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            [
+                arg1,
+                arg2,
+            ]
+            """
+            str = """
+            [arg1,
+             arg2]
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            {
+                arg1,
+                arg2,
+            }
+            """
+            str = """
+            {arg1,
+             arg2}
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            A{
+                arg1,
+                arg2,
+            }
+            """
+            str = """
+            A{arg1,
+              arg2}
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+
+            str_ = """
+            (
+                invisbrackets
+            )
+            """
+            str = """
+            (invisbrackets)
+            """
+            @test yasfmt(str_, ignore_maximum_width = true) == str
+        end
+
         @testset "imports" begin
             str_ = """
             using A,  #inline
