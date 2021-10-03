@@ -72,9 +72,21 @@ function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(cst[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -109,9 +121,21 @@ function p_tuple(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(cst[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -135,9 +159,21 @@ function p_tuple(ys::YASStyle, nodes::Vector{CSTParser.EXPR}, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(nodes[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -199,9 +235,21 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(cst[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -225,14 +273,26 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         if is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif !is_closer(a) && i > st
             join_lines = i == st + 1 ? true : t.endline == n.startline
             if join_lines && i != st + 1
                 add_node!(t, Placeholder(1), s)
             end
 
-            add_node!(t, n, s; join_lines = join_lines, override_join_lines_based_on_source = i == st + 1)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = join_lines,
+                override_join_lines_based_on_source = i == st + 1,
+            )
             if i != length(cst) - 1
                 has_semicolon(s.doc, n.startline) &&
                     add_node!(t, InverseTrailingSemicolon(), s)
@@ -267,9 +327,21 @@ function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(cst[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(t, n, s, join_lines = true)
         end
@@ -347,9 +419,21 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif i > 1 && is_opener(cst[i-1])
-            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif t.typ === MacroBlock
             if has_closer
                 add_node!(t, n, s, join_lines = true)
@@ -411,9 +495,21 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(bc, n, s, join_lines = true)
             add_node!(bc, Placeholder(0), s)
         elseif is_closer(n)
-            add_node!(bc, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                bc,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         elseif is_opener(cst[i-1])
-            add_node!(bc, n, s, join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                bc,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         else
             add_node!(bc, n, s, join_lines = true)
         end

@@ -994,7 +994,7 @@
 
         end"""
         @test fmt(str_, align_assignment = true) == str
-        @test fmt(str_, align_assignment = true, join_lines_based_on_source=true) == str
+        @test fmt(str_, align_assignment = true, join_lines_based_on_source = true) == str
 
         # the aligned consts will NOT be nestable
         str = """
@@ -1022,7 +1022,8 @@
 
         end"""
         @test fmt(str_, 4, 1, align_assignment = true) == str
-        @test fmt(str_, 4, 1, align_assignment = true, join_lines_based_on_source=true) == str
+        @test fmt(str_, 4, 1, align_assignment = true, join_lines_based_on_source = true) ==
+              str
 
         str = """
         a  = 1
@@ -1040,7 +1041,8 @@
         hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
         """
         @test fmt(str, 4, 1, align_assignment = true) == str
-        @test fmt(str, 4, 1, align_assignment = true, join_lines_based_on_source=true) == str
+        @test fmt(str, 4, 1, align_assignment = true, join_lines_based_on_source = true) ==
+              str
 
         str = """
         μs, ns = divrem(ns, 1000)
@@ -1067,7 +1069,14 @@
         )
         """
         @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false) == str
-        @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false, join_lines_based_on_source=true) == str
+        @test fmt(
+            str,
+            4,
+            100,
+            align_assignment = true,
+            whitespace_in_kwargs = false,
+            join_lines_based_on_source = true,
+        ) == str
 
         str_ = """
         s           = model.sys
@@ -1082,7 +1091,13 @@
         poles        = eigvals(A - K * C)
         """
         @test fmt(str_, 4, 100, align_assignment = true) == str
-        @test fmt(str_, 4, 100, align_assignment = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str_,
+            4,
+            100,
+            align_assignment = true,
+            join_lines_based_on_source = true,
+        ) == str
 
         str_ = """
         s             = model.sys
@@ -1116,7 +1131,13 @@
         end
         """
         @test fmt(str, 4, 100, align_assignment = true) == str
-        @test fmt(str, 4, 100, align_assignment = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str,
+            4,
+            100,
+            align_assignment = true,
+            join_lines_based_on_source = true,
+        ) == str
     end
 
     @testset "align conditionals" begin
@@ -1168,7 +1189,13 @@
             )
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
-        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str_,
+            4,
+            1,
+            align_conditional = true,
+            join_lines_based_on_source = true,
+        ) == str
 
         str_ = """
         index = zeros(n <= typemax(Int8)  ? Int8  :    # inline
@@ -1184,7 +1211,13 @@
             )
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
-        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str_,
+            4,
+            1,
+            align_conditional = true,
+            join_lines_based_on_source = true,
+        ) == str
 
         str_ = """
         index =
@@ -1224,7 +1257,13 @@
               cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 100, align_conditional = true) == str
-        @test fmt(str_, 4, 100, align_conditional = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str_,
+            4,
+            100,
+            align_conditional = true,
+            join_lines_based_on_source = true,
+        ) == str
 
         str = """
         val =
@@ -1232,7 +1271,13 @@
             cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
-        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
+        @test fmt(
+            str_,
+            4,
+            1,
+            align_conditional = true,
+            join_lines_based_on_source = true,
+        ) == str
     end
 
     @testset "align pair arrow `=>`" begin
@@ -1282,7 +1327,8 @@
             ]
         """
         @test fmt(str_, 4, 1, align_pair_arrow = true) == str
-        @test fmt(str_, 4, 1, align_pair_arrow = true, join_lines_based_on_source=true) == str
+        @test fmt(str_, 4, 1, align_pair_arrow = true, join_lines_based_on_source = true) ==
+              str
     end
 
     @testset "conditional to `if` block" begin
@@ -1650,7 +1696,8 @@
             end
             """
             @test bluefmt(str, 4, 1000, join_lines_based_on_source = true) == str
-            @test bluefmt(str, 4, 1, join_lines_based_on_source = true) == bluefmt(str, 4, 1)
+            @test bluefmt(str, 4, 1, join_lines_based_on_source = true) ==
+                  bluefmt(str, 4, 1)
 
             str = """
             function foo(

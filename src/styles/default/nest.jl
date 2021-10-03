@@ -652,7 +652,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     rhs.typ === Block && (rhs = rhs[1])
 
     # is the LHS on a different line than the RHS ?
-    src_diff_line = s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
+    src_diff_line =
+        s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
 
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
