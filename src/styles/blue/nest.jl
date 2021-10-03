@@ -8,7 +8,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
     has_closer = is_closer(fst[end])
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
-    src_diff_line = if s.opts.ignore_maximum_width
+    src_diff_line = if s.opts.join_lines_based_on_source
         last_arg_idx = findlast(is_iterable_arg, fst.nodes)
         last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
         fst[1].endline != last_arg.startline

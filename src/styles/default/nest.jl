@@ -201,7 +201,7 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                if s.opts.ignore_maximum_width
+                if s.opts.join_lines_based_on_source
                     si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
                     nest_if_over_margin!(style, fst, s, i; stop_idx = si)
                 else
@@ -245,7 +245,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     end
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
-    src_diff_line = if s.opts.ignore_maximum_width
+    src_diff_line = if s.opts.join_lines_based_on_source
         last_arg_idx = findlast(is_iterable_arg, fst.nodes)
         last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
         fst[1].endline != last_arg.startline
@@ -360,7 +360,7 @@ n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
 function n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
-    if s.opts.ignore_maximum_width
+    if s.opts.join_lines_based_on_source
         n_tuple!(ds, fst, s)
     else
         _n_comprehension!(ds, fst, s)
@@ -429,9 +429,9 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
-        if s.opts.ignore_maximum_width
+        if s.opts.join_lines_based_on_source
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
         end
         for (i, idx) in enumerate(phs)
@@ -562,9 +562,9 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
-        if s.opts.ignore_maximum_width
+        if s.opts.join_lines_based_on_source
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
         end
         for (i, idx) in enumerate(phs)
@@ -652,7 +652,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     rhs.typ === Block && (rhs = rhs[1])
 
     # is the LHS on a different line than the RHS ?
-    src_diff_line = s.opts.ignore_maximum_width && fst[1].endline != fst[end].startline
+    src_diff_line = s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
 
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
@@ -787,7 +787,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     end
 
     if idx !== nothing &&
-       (line_margin > s.opts.margin || must_nest(fst) || s.opts.ignore_maximum_width)
+       (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -811,7 +811,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                 #     body
                 # end
                 #
-                if s.opts.ignore_maximum_width
+                if s.opts.join_lines_based_on_source
                     if i < length(fst.nodes)
                         si = findnext(
                             n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,

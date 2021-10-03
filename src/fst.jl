@@ -432,7 +432,7 @@ end
         s::State;
         join_lines::Bool = false,
         max_padding::Int = -1,
-        override_custom_nest::Bool = false,
+        override_join_lines_based_on_source::Bool = false,
     )
 
 Appends `n` to `t`.
@@ -443,8 +443,8 @@ node (when printing).
 - `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
 of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
 `n` will be added to `t`.
-- `override_custom_nest` is only used when `ignore_maximum_width` option is `true`. In which
-`n` is added to `t` as if `ignore_maximum_width` was false.
+- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`. In which
+`n` is added to `t` as if `join_lines_based_on_source` was false.
 """
 function add_node!(
     t::FST,
@@ -452,7 +452,7 @@ function add_node!(
     s::State;
     join_lines::Bool = false,
     max_padding::Int = -1,
-    override_custom_nest::Bool = false,
+    override_join_lines_based_on_source::Bool = false,
 )
     if n.typ === SEMICOLON
         join_lines = true
@@ -486,7 +486,8 @@ function add_node!(
             # don't add trailing comma in these cases
         elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
             # preserve comma
-        elseif s.opts.remove_trailing_comma
+        elseif s.opts.trailing_comma === nothing
+        elseif !s.opts.trailing_comma
             if is_comma(en)
                 t[end] = Whitespace(0)
             end
@@ -564,8 +565,8 @@ function add_node!(
 
     # if `max_padding` >= 0 `n` should appear on the next line
     # even if it's contrary on the original source.
-    if s.opts.ignore_maximum_width &&
-       !override_custom_nest &&
+    if s.opts.join_lines_based_on_source &&
+       !override_join_lines_based_on_source &&
        max_padding == -1 &&
        !(
            is_comma(n) ||

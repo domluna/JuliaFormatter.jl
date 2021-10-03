@@ -58,7 +58,7 @@ function options(s::DefaultStyle)
         conditional_to_if = false,
         normalize_line_endings = "auto",
         align_matrix = false,
-        remove_trailing_comma = false,
+        trailing_comma = true,
     )
 end
 
@@ -135,7 +135,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         conditional_to_if = false,
         normalize_line_endings = "auto",
         align_matrix::Bool = false,
-        remove_trailing_comma::Bool = false,
+        trailing_comma::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -145,24 +145,34 @@ code as another string.
 
 ### `indent`
 
+default: `4`
+
 The number of spaces used for an indentation.
 
 ### `margin`
+
+default: `92`
 
 The maximum length of a line. Code exceeding this margin will
 be formatted across multiple lines.
 
 ### `always_for_in`
 
+default: `false`
+
 If true, `=` is always replaced with `in` if part of a `for` loop condition.
 For example, `for i = 1:10` will be transformed to `for i in 1:10`.
 
 ### `whitespace_typedefs`
 
+default: `false`
+
 If true, whitespace is added for type definitions. Make this `true`
 if you prefer `Union{A <: B, C}` to `Union{A<:B,C}`.
 
 ### `whitespace_ops_in_indices`
+
+default: `false`
 
 If true, whitespace is added for binary operations in indices. Make this
 `true` if you prefer `arr[a + b]` to `arr[a+b]`. Additionally, if there's
@@ -171,6 +181,8 @@ a colon `:` involved, parenthesis will be added to the LHS and RHS.
 Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
 ### `remove_extra_newlines`
+
+default: `false`
 
 If true, superflous newlines will be removed. For example:
 
@@ -216,6 +228,8 @@ prior to the intial or after the final piece of code.
 
 ### `import_to_using`
 
+default: `false`
+
 If true, `import` expressions are rewritten to `using` expressions
 in the following cases:
 
@@ -251,9 +265,13 @@ If `import` is used in the following context it is NOT rewritten. This may chang
 
 ### `pipe_to_function_call`
 
+default: `false`
+
 If true, `x |> f` is rewritten to `f(x)`.
 
 ### `short_to_long_function_def`
+
+default: `false`
 
 Transforms a *short* function definition
 
@@ -270,6 +288,8 @@ end
 ```
 
 ### `always_use_return`
+
+default: `false`
 
 If true, `return` will be prepended to the last expression where
 applicable in function definitions, macro definitions, and do blocks.
@@ -294,6 +314,8 @@ end
 
 ### `whitespace_in_kwargs`
 
+default: `true`
+
 If true, `=` in keyword arguments will be surrounded by whitespace.
 
 ```julia
@@ -313,6 +335,8 @@ operation. This would change the semantics of the code and is therefore disallow
 
 ### `annotate_untyped_fields_with_any`
 
+default: `true`
+
 Annotates fields in a type definitions with `::Any` if no type annotation is provided:
 
 ```julia
@@ -331,16 +355,21 @@ end
 
 ### `format_docstrings`
 
+default: `false`
+
 Format code docstrings with the same options used for the code source.
 
 Markdown is formatted with [`CommonMark`](https://github.com/MichaelHatherly/CommonMark.jl) alongside Julia code.
 
 ### `align_*`
 
+default: `false`
+
 See `Custom Alignment` documentation.
 
 ### `conditional_to_if`
 
+default: `false`
 
 If the conditional `E ? A : B` exceeds the maximum margin converts it into the equivalent `if` block:
 
@@ -354,12 +383,14 @@ end
 
 ### `normalize_line_endings`
 
+default: `"auto"`
+
 One of `"unix"` (normalize all `\r\n` to `\n`), `"windows"` (normalize all `\n` to `\r\n`), `"auto"` (automatically
 choose based on which line ending is more common in the file).
 
-### `remove_trailing_comma`
+### `trailing_comma`
 
-default: `false`
+default: `true`
 
 Trailing commas are added after the final argument when nesting occurs and the closing punctuation appears on the next line.
 
@@ -379,7 +410,10 @@ funccall(
 )
 ```
 
-With `remove_trailing_comma` set to `true` the trailing comma above is never added.
+* When `trailing_comma` set to `true`, the trailing comma is always added during nesting.
+* When `trailing_comma` set to `false`, the trailing comma is always removed during nesting.
+* When `trailing_comma` set to `nothing`, the trailing comma appears as it does in the original
+source.
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
@@ -419,7 +453,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     # ignore maximum width can be extra whitespace at the end of lines
     # remove it all before we print.
-    s.opts.ignore_maximum_width && remove_superflous_whitespace!(fst)
+    s.opts.join_lines_based_on_source && remove_superflous_whitespace!(fst)
 
     s.line_offset = 0
     io = IOBuffer()

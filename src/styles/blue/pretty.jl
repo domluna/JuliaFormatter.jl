@@ -164,11 +164,11 @@ function p_binaryopcall(
        !is_iterable(cst[3])
         paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
         add_node!(t, paren, s, join_lines = true)
-        add_node!(t, n, s; join_lines = true, override_custom_nest = !nest)
+        add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = !nest)
         paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s; join_lines = true, override_custom_nest = !nest)
+        add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = !nest)
     end
 
     if nest

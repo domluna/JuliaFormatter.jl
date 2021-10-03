@@ -993,8 +993,8 @@
         const FOO = 1
 
         end"""
-        # @test fmt(str_, align_assignment = false) == str
         @test fmt(str_, align_assignment = true) == str
+        @test fmt(str_, align_assignment = true, join_lines_based_on_source=true) == str
 
         # the aligned consts will NOT be nestable
         str = """
@@ -1022,6 +1022,7 @@
 
         end"""
         @test fmt(str_, 4, 1, align_assignment = true) == str
+        @test fmt(str_, 4, 1, align_assignment = true, join_lines_based_on_source=true) == str
 
         str = """
         a  = 1
@@ -1039,13 +1040,14 @@
         hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
         """
         @test fmt(str, 4, 1, align_assignment = true) == str
+        @test fmt(str, 4, 1, align_assignment = true, join_lines_based_on_source=true) == str
 
         str = """
         μs, ns = divrem(ns, 1000)
         ms, μs = divrem(μs, 1000)
         s, ms = divrem(ms, 1000)
         """
-        @test fmt(str, 4, 100, align_assignment = true) == str
+        @test fmt(str, align_assignment = true) == str
 
         str = """
         run = wandb.init(
@@ -1065,6 +1067,7 @@
         )
         """
         @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false) == str
+        @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false, join_lines_based_on_source=true) == str
 
         str_ = """
         s           = model.sys
@@ -1079,6 +1082,7 @@
         poles        = eigvals(A - K * C)
         """
         @test fmt(str_, 4, 100, align_assignment = true) == str
+        @test fmt(str_, 4, 100, align_assignment = true, join_lines_based_on_source=true) == str
 
         str_ = """
         s             = model.sys
@@ -1112,6 +1116,7 @@
         end
         """
         @test fmt(str, 4, 100, align_assignment = true) == str
+        @test fmt(str, 4, 100, align_assignment = true, join_lines_based_on_source=true) == str
     end
 
     @testset "align conditionals" begin
@@ -1163,6 +1168,7 @@
             )
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
 
         str_ = """
         index = zeros(n <= typemax(Int8)  ? Int8  :    # inline
@@ -1178,6 +1184,7 @@
             )
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
 
         str_ = """
         index =
@@ -1217,6 +1224,7 @@
               cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 100, align_conditional = true) == str
+        @test fmt(str_, 4, 100, align_conditional = true, join_lines_based_on_source=true) == str
 
         str = """
         val =
@@ -1224,6 +1232,7 @@
             cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
         @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1, align_conditional = true, join_lines_based_on_source=true) == str
     end
 
     @testset "align pair arrow `=>`" begin
@@ -1273,6 +1282,7 @@
             ]
         """
         @test fmt(str_, 4, 1, align_pair_arrow = true) == str
+        @test fmt(str_, 4, 1, align_pair_arrow = true, join_lines_based_on_source=true) == str
     end
 
     @testset "conditional to `if` block" begin
@@ -1423,7 +1433,7 @@
         @test fmt(str, align_matrix = true, style = YASStyle()) == str_
     end
 
-    @testset "remove trailing commas" begin
+    @testset "trailing commas" begin
         str = """
         funccall(
             arg1,
@@ -1432,15 +1442,15 @@
         )"""
 
         str_ = "funccall(arg1, arg2, arg3)"
-        @test fmt(str_, 4, 1, remove_trailing_comma = true) == str
+        @test fmt(str_, 4, 1, trailing_comma = false) == str
 
         # last comma is removed
 
         str_ = "funccall(arg1, arg2, arg3,)"
-        @test fmt(str_, 4, 1, remove_trailing_comma = true) == str
+        @test fmt(str_, 4, 1, trailing_comma = false) == str
 
         str = "funccall(arg1, arg2, arg3)"
-        @test fmt(str_, remove_trailing_comma = true) == str
+        @test fmt(str_, trailing_comma = false) == str
 
         # corner case - if the comma is removed it is no longer a tuple
         str_ = "(tuple,)"
@@ -1448,27 +1458,56 @@
         (
             tuple,
         )"""
-        @test fmt(str_, 4, 1, remove_trailing_comma = true) == str
+        @test fmt(str_, 4, 1, trailing_comma = false) == str
+
+        str = """
+        funccall(
+            arg1,
+            arg2,
+            arg3
+        )"""
+
+        str_ = "funccall(arg1, arg2, arg3)"
+        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
+
+        # last comma is stays
+        str_ = "funccall(arg1, arg2, arg3,)"
+        str = """
+        funccall(
+            arg1,
+            arg2,
+            arg3,
+        )"""
+        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
+        @test fmt(str_, 4, 100, trailing_comma = nothing) == str_
+
+        # corner case - if the comma is removed it is no longer a tuple
+        str_ = "(tuple,)"
+        str = """
+        (
+            tuple,
+        )"""
+        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
     end
 
     @testset "ignore maximum width" begin
         @testset "maintain original structure" begin
             for m in (:module, :baremodule)
                 str_ = "$m M body end"
-                @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+                @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
             end
 
             str_ = "struct S body end"
             @test fmt(
                 str_,
-                ignore_maximum_width = true,
+                join_lines_based_on_source = true,
                 annotate_untyped_fields_with_any = false,
             ) == fmt(str_, annotate_untyped_fields_with_any = false)
 
             str_ = "mutable struct S body end"
             @test fmt(
                 str_,
-                ignore_maximum_width = true,
+                join_lines_based_on_source = true,
                 annotate_untyped_fields_with_any = false,
             ) == fmt(str_, annotate_untyped_fields_with_any = false)
 
@@ -1479,7 +1518,7 @@
             foo
 
               end"""
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = """
             primitive
@@ -1490,30 +1529,30 @@
             64
 
               end"""
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = """
             function foo
 
               end"""
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             for f in (:function, :macro)
                 str_ = "$f foo() body end"
-                @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+                @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
             end
 
             str_ = "try a catch e finally c end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "if a body1 elseif b body2 elseif c body3 else body4 end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "begin a;b;c end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "function foo() a;b;c end"
-            @test fmt(str_, ignore_maximum_width = true) == fmt(str_)
+            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
         end
 
         @testset "trailing comma going solo" begin
@@ -1526,7 +1565,7 @@
             using A,
                 B
             """
-            @test fmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "misc" begin
@@ -1535,7 +1574,7 @@
                 body
             end
             """
-            @test fmt(str, 4, 84, ignore_maximum_width = true) == str
+            @test fmt(str, 4, 84, join_lines_based_on_source = true) == str
 
             str_ = """
             function foo(
@@ -1553,8 +1592,8 @@
                 body
             end
             """
-            @test fmt(str_, ignore_maximum_width = true) == str
-            @test bluefmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test bluefmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "binary op" begin
@@ -1566,13 +1605,13 @@
             a =
                 b
             """
-            @test fmt(str_, ignore_maximum_width = true) == str
-            @test bluefmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test bluefmt(str_, join_lines_based_on_source = true) == str
 
             str = """
             a = b
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             a =
@@ -1582,13 +1621,13 @@
             a =
                 (b, c)
             """
-            @test fmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
 
             str = """
             a = (b, c)
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
-            @test bluefmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test bluefmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             a =
@@ -1597,9 +1636,9 @@
             str = """
             a = "hello"
             """
-            @test fmt(str_, ignore_maximum_width = true) == str
-            @test bluefmt(str_, ignore_maximum_width = true) == str
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test bluefmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "blue style" begin
@@ -1610,8 +1649,8 @@
                 body
             end
             """
-            @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
-            @test bluefmt(str, 4, 1, ignore_maximum_width = true) == bluefmt(str, 4, 1)
+            @test bluefmt(str, 4, 1000, join_lines_based_on_source = true) == str
+            @test bluefmt(str, 4, 1, join_lines_based_on_source = true) == bluefmt(str, 4, 1)
 
             str = """
             function foo(
@@ -1621,7 +1660,7 @@
                 body
             end
             """
-            @test bluefmt(str, 4, 1000, ignore_maximum_width = true) == str
+            @test bluefmt(str, 4, 1000, join_lines_based_on_source = true) == str
         end
 
         @testset "yas style" begin
@@ -1636,8 +1675,8 @@
                 body
             end
             """
-            @test yasfmt(str_, ignore_maximum_width = true) ==
-                  yasfmt(str_, 4, 1, ignore_maximum_width = false)
+            @test yasfmt(str_, join_lines_based_on_source = true) ==
+                  yasfmt(str_, 4, 1, join_lines_based_on_source = false)
 
             str_ = """
             @foo(
@@ -1649,7 +1688,7 @@
             @foo(arg1,
                  arg2,)
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             (
@@ -1661,7 +1700,7 @@
             (arg1,
              arg2)
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1673,7 +1712,7 @@
             [arg1,
              arg2]
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             A[
@@ -1685,7 +1724,7 @@
             A[arg1,
               arg2]
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             {
@@ -1697,7 +1736,7 @@
             {arg1,
              arg2}
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             A{
@@ -1709,7 +1748,7 @@
             A{arg1,
               arg2}
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             (
@@ -1719,7 +1758,7 @@
             str = """
             (invisbrackets)
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1731,7 +1770,7 @@
             [row1;
              row2]
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             T[
@@ -1743,7 +1782,7 @@
             T[row1;
               row2]
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1753,7 +1792,7 @@
             str = """
             [a for a = 1:10]
             """
-            @test yasfmt(str_, ignore_maximum_width = true) == str
+            @test yasfmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "imports" begin
@@ -1765,7 +1804,7 @@
             using A,  #inline
               # comment
               B, C#inline"""
-            @test fmt(str_, 2, 80, ignore_maximum_width = true) == str
+            @test fmt(str_, 2, 80, join_lines_based_on_source = true) == str
 
             str_ = """
             using CommonMark:
@@ -1786,8 +1825,8 @@
                 Parser,
                 Rule, TableRule
             """
-            @test fmt(str_, 4, 37, ignore_maximum_width = true) == str_
-            @test fmt(str_, 4, 36, ignore_maximum_width = true) == str
+            @test fmt(str_, 4, 37, join_lines_based_on_source = true) == str_
+            @test fmt(str_, 4, 36, join_lines_based_on_source = true) == str
 
             str = """
             using CommonMark:
@@ -1798,7 +1837,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 51, ignore_maximum_width = true) == str
+            @test yasfmt(str_, 4, 51, join_lines_based_on_source = true) == str
 
             str = """
             using CommonMark:
@@ -1810,7 +1849,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 50, ignore_maximum_width = true) == str
+            @test yasfmt(str_, 4, 50, join_lines_based_on_source = true) == str
         end
 
         @testset "matrices" begin
@@ -1820,7 +1859,7 @@
             str = """
             T[a b Expr()
                 d e Expr()]"""
-            @test fmt(str_, ignore_maximum_width = true) == str
+            @test fmt(str_, join_lines_based_on_source = true) == str
         end
     end
 end
