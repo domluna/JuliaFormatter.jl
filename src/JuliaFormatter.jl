@@ -392,6 +392,8 @@ choose based on which line ending is more common in the file).
 
 > default: `true`
 
+One of `true`, `false`, or `nothing`.
+
 Trailing commas are added after the final argument when nesting occurs and the closing punctuation appears on the next line.
 
 For example when the following is nested (assuming `DefaultStyle`):
