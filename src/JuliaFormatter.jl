@@ -412,8 +412,7 @@ funccall(
 
 * When set to `true`, the trailing comma is always added during nesting.
 * When set to `false`, the trailing comma is always removed during nesting.
-* When set to `nothing`, the trailing comma appears as it does in the original.
-source.
+* When set to `nothing`, the trailing comma appears as it does in the original source.
 
 ### `join_lines_based_on_source`
 
