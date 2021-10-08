@@ -186,9 +186,9 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        fst.indent += s.opts.indent
+    fst.indent += s.opts.indent
 
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         if can_nest(fst)
             if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
                 fst[idx] = Newline(length = fst[idx].len)
@@ -201,8 +201,13 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                if s.opts.join_lines_based_on_source
+                    si = findnext(n -> n.typ === PLACEHOLDER, fst.nodes, i + 1)
+                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
@@ -229,23 +234,51 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes)
-    opener = findfirst(is_opener, fst.nodes) !== nothing
+    has_closer = is_closer(fst[end])
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        line_offset = s.line_offset
-        if opener
-            fst[end].indent = fst.indent
-        end
-        if fst.typ !== TupleN || opener
-            fst.indent += s.opts.indent
-        end
+    line_offset = s.line_offset
+    if has_closer
+        fst[end].indent = fst.indent
+    end
+    if fst.typ !== TupleN || has_closer
+        fst.indent += s.opts.indent
+    end
 
+    # "foo(a, b, c)" is true if "foo" and "c" are on different lines
+    src_diff_line = if s.opts.join_lines_based_on_source
+        last_arg_idx = findlast(is_iterable_arg, fst.nodes)
+        last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                if src_diff_line
+                    si = findnext(
+                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                        fst.nodes,
+                        i + 1,
+                    )
+                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    if has_closer && !nested && n.startline == fst[end].startline
+                        # trailing types are automatically converted, undo this if
+                        # there is no nest and the closer is on the same in the
+                        # original source.
+                        if fst[i-1].typ === TRAILINGCOMMA ||
+                           fst[i-1].typ === TRAILINGSEMICOLON
+                            fst[i-1].val = ""
+                            fst[i-1].len = 0
+                        end
+                    end
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
@@ -258,7 +291,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)
-            elseif opener && (i == 1 || i == length(fst.nodes))
+            elseif has_closer && (i == 1 || i == length(fst.nodes))
                 nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
@@ -268,14 +301,16 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
             end
         end
 
-        if opener
+        if has_closer
             s.line_offset = fst[end].indent + 1
         end
     else
         extra_margin = fst.extra_margin
-        opener && (extra_margin += 1)
+        has_closer && (extra_margin += 1)
         nest!(style, fst.nodes, s, fst.indent, extra_margin = extra_margin)
     end
+
+    return
 end
 n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s)
@@ -324,13 +359,24 @@ n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
-function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+function n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
+    if s.opts.join_lines_based_on_source
+        n_tuple!(ds, fst, s)
+    else
+        _n_comprehension!(ds, fst, s)
+    end
+    return
+end
+
+function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nested = false
 
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
     closer = is_closer(fst[end])
+
     if closer && (line_margin > s.opts.margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
         if idx !== nothing
@@ -369,8 +415,8 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     end
 end
 
-n_comprehension!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
-    n_comprehension!(DefaultStyle(style), fst, s, indent = indent)
+n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_comprehension!(DefaultStyle(style), fst, s)
 
 @inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) =
     n_comprehension!(ds, fst, s)
@@ -380,11 +426,14 @@ n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    line_offset = s.line_offset
+    fst.indent = s.line_offset
 
-    if line_margin > s.opts.margin || must_nest(fst)
-        line_offset = s.line_offset
-        fst.indent = s.line_offset
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
+        if s.opts.join_lines_based_on_source
+            phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
+        end
         for (i, idx) in enumerate(phs)
             if i == 1
                 fst[idx] = Newline(length = fst[idx].len)
@@ -412,18 +461,22 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1])
+            if n.typ === NEWLINE &&
+               !is_comment(fst[i+1]) &&
+               !is_comment(fst[i-1]) &&
+               i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 w, _ = length_to(fst, (NEWLINE,), start = i + 1)
                 width += w
-                # @info "" s.line_offset w width fst[i-1].typ fst[i-1].val width <= s.opts.margin
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
                     s.line_offset += length(fst[i])
                 else
                     s.line_offset = fst.indent
                 end
+            elseif n.typ === NEWLINE
+                s.line_offset = fst.indent
             else
                 walk(increment_line_offset!, fst[i], s)
             end
@@ -452,18 +505,18 @@ n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
+    # "B"
+    has_braces = is_closer(fst[end])
+    if has_braces
+        fst[end].indent = fst.indent
+    end
+
     if line_margin > s.opts.margin || must_nest(fst)
         line_offset = s.line_offset
         Blen = sum(length.(fst[2:end]))
 
         fst[1].extra_margin = Blen + fst.extra_margin
         nest!(style, fst[1], s)
-
-        # "B"
-        has_braces = is_closer(fst[end])
-        if has_braces
-            fst[end].indent = fst.indent
-        end
 
         over = (s.line_offset + Blen + fst.extra_margin > s.opts.margin) || must_nest(fst)
         fst.indent += s.opts.indent
@@ -494,9 +547,11 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-    else
-        nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        return
     end
+
+    nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
+    return
 end
 n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_whereopcall!(DefaultStyle(style), fst, s)
@@ -504,10 +559,14 @@ n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    if line_margin > s.opts.margin || must_nest(fst)
-        line_offset = s.line_offset
-        fst.indent = s.line_offset
+    line_offset = s.line_offset
+    fst.indent = s.line_offset
+
+    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, fst.nodes))
+        if s.opts.join_lines_based_on_source
+            phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
+        end
         for (i, idx) in enumerate(phs)
             if i == 1
                 fst[idx] = Newline(length = fst[idx].len)
@@ -538,7 +597,10 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
 
         s.line_offset = line_offset
         for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE && !is_comment(fst[i+1]) && !is_comment(fst[i-1])
+            if n.typ === NEWLINE &&
+               !is_comment(fst[i+1]) &&
+               !is_comment(fst[i-1]) &&
+               i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 if i == length(fst.nodes) - 1
@@ -552,8 +614,10 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 else
                     s.line_offset = fst.indent
                 end
+            elseif n.typ === NEWLINE
+                s.line_offset = fst.indent
             else
-                walk(increment_line_offset!, fst[i], s)
+                walk(increment_line_offset!, n, s)
             end
         end
 
@@ -578,15 +642,21 @@ end
 
 function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    line_offset = s.line_offset
+    line_margin = line_offset + length(fst) + fst.extra_margin
+
     # If there's no placeholder the binary call is not nestable
     idxs = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+
     rhs = fst[end]
     rhs.typ === Block && (rhs = rhs[1])
 
+    # is the LHS on a different line than the RHS ?
+    src_diff_line =
+        s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
+
     if length(idxs) == 2 &&
-       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs))
-        line_offset = s.line_offset
+       (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
         i2 = idxs[2]
         fst[i1] = Newline(length = fst[i1].len)
@@ -627,7 +697,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
 
         # Undo nest if possible
-        if can_nest(fst) && !no_unnest(rhs)
+        if can_nest(fst) && !no_unnest(rhs) && !src_diff_line
             line_margin = s.line_offset
 
             # replace IN with all of precedence level 6
@@ -635,7 +705,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
                    rhs.typ === Binary &&
                    !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
                ) ||
-               rhs.typ === Unary ||
+               rhs.typ === Unary && rhs[end].typ !== Brackets ||
                rhs.typ === Chain ||
                rhs.typ === Comparison ||
                rhs.typ === Conditional
@@ -657,31 +727,32 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
 
             if line_margin + fst.extra_margin <= s.opts.margin
                 fst[i1] = Whitespace(1)
-                if indent_nest
+                if indent_nest || style isa YASStyle
                     fst[i2] = Whitespace(0)
-                    walk(unnest!, rhs, s)
+                    walk(unnest!(style), rhs, s)
                 end
             end
         end
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-    else
-        # length of op and surrounding whitespace
-        oplen = sum(length.(fst[2:end]))
+        return
+    end
 
-        for (i, n) in enumerate(fst.nodes)
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif i == 1
-                n.extra_margin = oplen + fst.extra_margin
-                nest!(style, n, s)
-            elseif i == length(fst.nodes)
-                n.extra_margin = fst.extra_margin
-                nest!(style, n, s)
-            else
-                nest!(style, n, s)
-            end
+    # length of op and surrounding whitespace
+    oplen = sum(length.(fst[2:end]))
+
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif i == 1
+            n.extra_margin = oplen + fst.extra_margin
+            nest!(style, n, s)
+        elseif i == length(fst.nodes)
+            n.extra_margin = fst.extra_margin
+            nest!(style, n, s)
+        else
+            nest!(style, n, s)
         end
     end
 end
@@ -708,40 +779,80 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
-        line_offset = s.line_offset
-        indent >= 0 && (fst.indent = indent)
+    line_offset = s.line_offset
+    has_nl = false
+    indent >= 0 && (fst.indent = indent)
 
-        if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
-            fst.indent += s.opts.indent
-        end
+    if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
+        fst.indent += s.opts.indent
+    end
 
+    if idx !== nothing &&
+       (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)
         for (i, n) in enumerate(fst.nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
+                has_nl = true
             elseif n.typ === PLACEHOLDER
-                fst[i] = Newline(length = n.len)
-                s.line_offset = fst.indent
+                # NOTE:
+                #
+                # Placeholder at the end of a block is the separator
+                # to the body. For example:
+                #
+                # for x in (a, b), y in (c, d)
+                #     body
+                # end
+                #
+                # If "x in (a, b), y in (c, d)" is nested then a newline
+                # is inserted to separte "y in (c, d)" from "body":
+                #
+                # for x in (a, b),
+                #     y in (c, d)
+                #
+                #     body
+                # end
+                #
+                if s.opts.join_lines_based_on_source
+                    if i < length(fst.nodes)
+                        si = findnext(
+                            n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                            fst.nodes,
+                            i + 1,
+                        )
+                        nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    elseif has_nl
+                        fst[i] = Newline(length = n.len)
+                        s.line_offset = fst.indent
+                    else
+                        nest!(style, n, s)
+                    end
+                else
+                    fst[i] = Newline(length = n.len)
+                    s.line_offset = fst.indent
+                    has_nl = true
+                end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
                 nest!(style, n, s)
-            elseif i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR
-                # chainopcall / comparison
-                diff = fst.indent - fst[i].indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1 + length(fst[i+2])
-                nest!(style, n, s)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                n.extra_margin = 1
+                if i < length(fst.nodes) - 1 && fst[i+2].typ === OPERATOR
+                    # chainopcall / comparison
+                    n.extra_margin = 1 + length(fst[i+2])
+                elseif i < length(fst.nodes)
+                    if !(i == length(fst.nodes) - 1 && fst[i+1].typ === PLACEHOLDER)
+                        n.extra_margin = 1
+                    end
+                end
                 nest!(style, n, s)
             end
         end
     else
         nest!(style, fst.nodes, s, fst.indent, extra_margin = fst.extra_margin)
     end
+    return
 end
 n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)

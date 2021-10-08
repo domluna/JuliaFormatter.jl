@@ -9,7 +9,7 @@
     # test_basic_config
     # ├─ .JuliaFormatter.toml (config2)
     # └─ code.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_basic_config")
+    sandbox_dir = joinpath(tempdir(), "test_basic_config")
     mkdir(sandbox_dir)
     try
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
@@ -30,7 +30,7 @@
     #    ├─ sub_code.jl (before -> after2)
     #    └─ subsub
     #       └─ subsub_code.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_search")
+    sandbox_dir = joinpath(tempdir(), "test_search")
     mkdir(sandbox_dir)
     try
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
@@ -60,7 +60,7 @@
     # ├─ code.jl (before -> after2)
     # └─ sub
     #    └─ sub_code.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_basic_walk")
+    sandbox_dir = joinpath(tempdir(), "test_basic_walk")
     mkdir(sandbox_dir)
     try
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
@@ -89,7 +89,7 @@
     # │  └─ sub_code1.jl (before -> after4)
     # └─ sub2
     #    └─ sub_code2.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_nested_config")
+    sandbox_dir = joinpath(tempdir(), "test_nested_config")
     mkdir(sandbox_dir)
     try
         sub1_dir = joinpath(sandbox_dir, "sub1")
@@ -128,7 +128,7 @@
     # │  └─ sub_code1.jl (before -> after4)
     # └─ sub2
     #    └─ sub_code2.jl (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_nested_config")
+    sandbox_dir = joinpath(tempdir(), "test_nested_config")
     mkdir(sandbox_dir)
     original_dir = pwd()
     try
@@ -188,7 +188,7 @@
     # test_basic_markdown_format
     # ├─ .JuliaFormatter.toml (config2)
     # └─ file.md (before -> after2)
-    sandbox_dir = joinpath(@__DIR__, "test_basic_config")
+    sandbox_dir = joinpath(tempdir(), "test_basic_config")
     mkdir(sandbox_dir)
     try
         config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)

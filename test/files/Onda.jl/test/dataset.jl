@@ -40,7 +40,7 @@ using Test, Onda, Dates, MsgPack
                     s.data)
             @test tmp == d.data
             @test d.data == (s.data .* s.signal.sample_resolution_in_unit .+
-                   s.signal.sample_offset_in_unit)
+                             s.signal.sample_offset_in_unit)
             if sizeof(s.signal.sample_type) >= 8
                 # decoding from 64-bit to floating point is fairly lossy
                 tmp = similar(s.data)

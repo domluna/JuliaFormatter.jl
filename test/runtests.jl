@@ -51,7 +51,8 @@ run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = mar
     include("blue_style.jl")
     include("issues.jl")
     include("options.jl")
-    include("config.jl")
     include("document.jl")
     include("interface.jl")
+    include("config.jl")
+    include("format_repo.jl")
 end

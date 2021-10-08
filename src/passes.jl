@@ -506,7 +506,6 @@ function separate_kwargs_with_semicolon!(fst::FST)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
     ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
-    # @info "" kw_idx sc_idx comma_idx ph_idx
 
     if sc_idx !== nothing && sc_idx > kw_idx
         # move ; prior to first kwarg
@@ -537,5 +536,24 @@ function separate_kwargs_with_semicolon!(fst::FST)
         fst[comma_idx].typ = SEMICOLON
     end
 
+    return
+end
+
+"""
+    remove_superflous_whitespace!(fst::FST)
+
+Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
+"""
+function remove_superflous_whitespace!(fst::FST)
+    is_leaf(fst) && return
+    for (i, n) in enumerate(fst.nodes)
+        if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
+           i < length(fst.nodes) &&
+           (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
+            fst[i] = Whitespace(0)
+        else
+            remove_superflous_whitespace!(n)
+        end
+    end
     return
 end

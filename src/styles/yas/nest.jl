@@ -74,6 +74,7 @@ end
 @inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
 @inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
 @inline n_vcat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+@inline n_bracescat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
@@ -119,7 +120,7 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
         elseif is_opener(n) && n.val == "{"
             fst.indent = s.line_offset + 1
             nest!(style, n, s)
-        elseif i == 1
+        elseif i == 1 || i == length(fst.nodes)
             nest!(style, n, s)
         else
             n.extra_margin = 1
@@ -151,10 +152,15 @@ end
 @inline n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 @inline n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 
-n_chainopcall!(ys::YASStyle, fst::FST, s::State) =
-    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
-n_comparison!(ys::YASStyle, fst::FST, s::State) =
-    n_block!(DefaultStyle(ys), fst, s, indent = s.line_offset)
+function n_chainopcall!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
+    n_block!(DefaultStyle(style), fst, s, indent = s.line_offset)
+end
+
+function n_comparison!(ys::YASStyle, fst::FST, s::State)
+    style = getstyle(ys)
+    n_block!(DefaultStyle(style), fst, s, indent = s.line_offset)
+end
 
 function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)

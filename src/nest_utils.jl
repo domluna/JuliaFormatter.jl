@@ -79,7 +79,7 @@ function nl_to_ws!(fst::FST, s::State)
     return
 end
 
-function dedent!(fst::FST, s::State)
+function dedent!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -89,12 +89,29 @@ function dedent!(fst::FST, s::State)
     end
 end
 
-function unnest!(fst::FST, s::State)
+function dedent!(style::YASStyle, fst::FST, s::State)
+    if is_closer(fst) || fst.typ === NOTCODE
+        fst.indent -= s.opts.indent
+    elseif is_leaf(fst) || fst.typ === StringN
+        return
+    elseif is_unnamed_iterable(fst)
+        fst.indent = s.line_offset
+        if is_opener(fst[1])
+            fst.indent += 1
+        end
+    elseif is_named_iterable(fst)
+        fst.indent = s.line_offset + length(fst[1]) + length(fst[2])
+    else
+        fst.indent = s.line_offset
+    end
+end
+
+function unnest!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
     if is_leaf(fst)
         s.line_offset += length(fst)
     end
 
-    dedent!(fst, s)
+    dedent!(style, fst, s)
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
@@ -105,6 +122,12 @@ function unnest!(fst::FST, s::State)
     return
 end
 
+function unnest!(style::S) where {S<:AbstractStyle}
+    (fst::FST, s::State) -> begin
+        unnest!(style, fst, s)
+    end
+end
+
 """
     nest_if_over_margin!(
         style,
@@ -112,13 +135,14 @@ end
         s::State,
         idx::Int;
         stop_idx::Union{Int,Nothing} = nothing,
-    )
+    )::Bool
 
-Converts the node at `idx` to a `NEWLINE` if the margin until `stop_idx` is greater than
-the allowed margin.
+Converts the node at `idx` to a `NEWLINE` if the current margin plus the additional margin
+from `fst[idx:stop_idx-1]` is greater than the allowed margin.
 
-If `stop_idx` is `nothing`, the margin of all nodes in `fst` including and after `idx` will
-be included.
+If `stop_idx == nothing` the range is `fst[idx:end]`.
+
+Returns whether nesting occurred.
 """
 function nest_if_over_margin!(
     style,
@@ -126,7 +150,7 @@ function nest_if_over_margin!(
     s::State,
     idx::Int;
     stop_idx::Union{Int,Nothing} = nothing,
-)
+)::Bool
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing
@@ -135,10 +159,14 @@ function nest_if_over_margin!(
         margin += sum(length.(fst[idx:stop_idx-1]))
     end
 
-    if margin > s.opts.margin || is_comment(fst[idx+1]) || is_comment(fst[idx-1])
+    if margin > s.opts.margin ||
+       (idx < length(fst.nodes) && is_comment(fst[idx+1])) ||
+       (idx > 1 && is_comment(fst[idx-1]))
         fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent
-    else
-        nest!(style, fst[idx], s)
+        return true
     end
+
+    nest!(style, fst[idx], s)
+    return false
 end

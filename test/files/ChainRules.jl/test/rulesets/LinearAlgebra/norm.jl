@@ -104,8 +104,7 @@
         ),
         p in (1.0, 2.0, Inf, -Inf, 2.5),
         T in (Float64, ComplexF64),
-        sz in
-        (fnorm === norm ? [(0,), (3,), (3, 3), (3, 2, 1)] : [(3,), (3, 3), (3, 2, 1)])
+        sz in (fnorm === norm ? [(0,), (3,), (3, 3), (3, 2, 1)] : [(3,), (3, 3), (3, 2, 1)])
 
         x = randn(T, sz)
         # finite differences is unstable if maxabs (minabs) values are not well

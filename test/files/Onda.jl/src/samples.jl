@@ -357,7 +357,7 @@ end
 function store_samples!(file_path::AbstractString, samples::Samples; overwrite::Bool=true,
                         serializer=serializer(samples.signal))
     overwrite || (isfile(file_path) &&
-     error("overwrite disabled but file path already exists: $(file_path)"))
+                  error("overwrite disabled but file path already exists: $(file_path)"))
     samples = encode(samples)
     open(io -> serialize_lpcm(io, samples.data, serializer), file_path, "w")
     return file_path

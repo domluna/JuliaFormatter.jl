@@ -425,7 +425,35 @@ end
 
 @inline n_args(x) = length(get_args(x))
 
-function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -1)
+"""
+    add_node!(
+        t::FST,
+        n::FST,
+        s::State;
+        join_lines::Bool = false,
+        max_padding::Int = -1,
+        override_join_lines_based_on_source::Bool = false,
+    )
+
+Appends `n` to `t`.
+
+- `join_lines` if `false` a NEWLINE node will be added and `n` will appear
+on the next line, otherwise it will appear on the same line as the previous
+node (when printing).
+- `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
+of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
+`n` will be added to `t`.
+- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`. In which
+`n` is added to `t` as if `join_lines_based_on_source` was false.
+"""
+function add_node!(
+    t::FST,
+    n::FST,
+    s::State;
+    join_lines::Bool = false,
+    max_padding::Int = -1,
+    override_join_lines_based_on_source::Bool = false,
+)
     if n.typ === SEMICOLON
         join_lines = true
         loc =
@@ -458,7 +486,8 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             # don't add trailing comma in these cases
         elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
             # preserve comma
-        elseif s.opts.remove_trailing_comma
+        elseif s.opts.trailing_comma === nothing
+        elseif !s.opts.trailing_comma
             if is_comma(en)
                 t[end] = Whitespace(0)
             end
@@ -466,7 +495,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
             t[end] = n
         else
             t.len += length(n)
-            n.startline = t.startline
+            n.startline = t.endline
             n.endline = t.endline
             push!(t.nodes, n)
         end
@@ -480,7 +509,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     elseif is_custom_leaf(n)
         t.len += length(n)
-        n.startline = t.startline
+        n.startline = t.endline
         n.endline = t.endline
         push!(t.nodes, n)
         return
@@ -491,7 +520,7 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         return
     elseif n.typ === Parameters
         # unpack Parameters arguments into the parent node
-        if n_args(t.ref[]) == n_args(n.ref[])
+        if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
             idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
@@ -501,10 +530,11 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
 
         if length(n.nodes) > 0
             nws = 1
-            if (t.typ === Curly || t.typ === Where) && !s.opts.whitespace_typedefs
+            if (t.typ === Curly || t.typ === Where || t.typ === BracesCat) &&
+               !s.opts.whitespace_typedefs
                 nws = 0
             end
-            multi_arg = n_args(t.ref[]) > 0
+            multi_arg = t.ref !== nothing && n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
         for nn in n.nodes
@@ -531,6 +561,25 @@ function add_node!(t::FST, n::FST, s::State; join_lines = false, max_padding = -
         t.line_offset = n.line_offset
         push!(t.nodes, n)
         return
+    end
+
+    # if `max_padding` >= 0 `n` should appear on the next line
+    # even if it's contrary on the original source.
+    if s.opts.join_lines_based_on_source &&
+       !override_join_lines_based_on_source &&
+       max_padding == -1 &&
+       !(
+           is_comma(n) ||
+           is_block(t) ||
+           t.typ === FunctionN ||
+           t.typ === Macro ||
+           is_typedef(t) ||
+           t.typ === ModuleN ||
+           t.typ === BareModule ||
+           is_end(n)
+       )
+        # join based on position in original file
+        join_lines = t.endline == n.startline
     end
 
     if !is_prev_newline(t.nodes[end])
@@ -682,22 +731,55 @@ function is_iterable(x::CSTParser.EXPR)
 end
 
 function is_iterable(x::FST)
+    is_named_iterable(x) && return true
+    is_unnamed_iterable(x) && return true
+    is_import_expr(x) && return true
+    return false
+end
+
+function is_unnamed_iterable(x::FST)
     x.typ === TupleN && return true
     x.typ === Vect && return true
     x.typ === Vcat && return true
     x.typ === Braces && return true
+    x.typ === Comprehension && return true
+    x.typ === Brackets && return true
+    return false
+end
+
+function is_named_iterable(x::FST)
     x.typ === Call && return true
     x.typ === Curly && return true
-    x.typ === Comprehension && return true
     x.typ === TypedComprehension && return true
     x.typ === MacroCall && return true
-    x.typ === Brackets && return true
     x.typ === RefN && return true
     x.typ === TypedVcat && return true
+    return false
+end
+
+function is_import_expr(x::FST)
     x.typ === Import && return true
     x.typ === Using && return true
     x.typ === Export && return true
     return false
+end
+
+"""
+Returns whether `fst` can be an iterable argument. For example in
+the case of a function call, which is of type `Call`:
+
+```julia
+(a, b, c; k1=v1)
+```
+
+This would return `true` for `a`, `b`, `c` and `k1=v1` and `false` for all other nodes.
+"""
+function is_iterable_arg(fst::FST)
+    fst.typ === PUNCTUATION && return false
+    fst.typ === KEYWORD && return false
+    fst.typ === OPERATOR && return false
+    is_custom_leaf(fst) && return false
+    return true
 end
 
 function is_comprehension(x::CSTParser.EXPR)
@@ -713,14 +795,15 @@ function is_comprehension(x::FST)
 end
 
 function is_block(x::CSTParser.EXPR)
-    is_if(x) ||
-        x.head === :do ||
-        x.head === :try ||
-        (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) ||
-        x.head === :for ||
-        x.head === :while ||
-        x.head === :let ||
-        x.head === :quote && x[1].head == :QUOTE
+    is_if(x) && return true
+    x.head === :do && return true
+    x.head === :try && return true
+    (x.head === :block && length(x) > 1 && x[1].head == :BEGIN) && return true
+    x.head === :for && return true
+    x.head === :while && return true
+    x.head === :let && return true
+    (x.head === :quote && x[1].head == :QUOTE) && return true
+    return false
 end
 
 function is_block(x::FST)
@@ -732,6 +815,14 @@ function is_block(x::FST)
     x.typ === While && return true
     x.typ === Let && return true
     x.typ === Quote && x[1].val == "quote" && return true
+    return false
+end
+
+function is_typedef(fst::FST)
+    fst.typ === Struct && return true
+    fst.typ === Mutable && return true
+    fst.typ === Primitive && return true
+    fst.typ === Abstract && return true
     return false
 end
 
@@ -881,7 +972,7 @@ function unnestable_node(cst::CSTParser.EXPR)
     return false
 end
 
-function nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
+function is_binaryop_nestable(::S, cst::CSTParser.EXPR) where {S<:AbstractStyle}
     CSTParser.defines_function(cst) && is_unary(cst[1]) && return true
     if is_assignment(cst) || is_pairarrow(cst)
         return !is_str_or_cmd(cst[3])
@@ -919,6 +1010,27 @@ function op_kind(fst::FST)
     return nothing
 end
 
+function _valid_parent_node_for_standalone_circuit(n::CSTParser.EXPR)
+    n.head === :brackets && return false
+    n.head === :macrocall && return false
+    n.head === :return && return false
+    is_if(n) && return false
+    n.head === :block && is_assignment(n.parent) && return false
+    is_binary(n) && is_assignment(n) && return false
+    return true
+end
+_valid_parent_node_for_standalone_circuit(n::Nothing) = true
+
+function _ignore_node_for_standalone_circuit(n::CSTParser.EXPR)
+    n.head === :brackets && return false
+    is_if(n) && return false
+    n.head === :block && return false
+    n.head === :macrocall && return false
+    n.head === :return && return false
+    is_binary(n) && is_assignment(n) && return false
+    return true
+end
+
 """
     is_standalone_shortcircuit(cst::CSTParser.EXPR)
 
@@ -951,28 +1063,11 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
     val = cst[2].val
     (val == "&&" || val == "||") || return false
 
-    function valid(n)
-        n === nothing && return true
-        n.head === :brackets && return false
-        n.head === :macrocall && return false
-        n.head === :return && return false
-        is_if(n) && return false
-        n.head === :block && is_assignment(n.parent) && return false
-        is_binary(n) && is_assignment(n) && return false
-        return true
-    end
-
-    function ignore(n::CSTParser.EXPR)
-        n.head === :brackets && return false
-        is_if(n) && return false
-        n.head === :block && return false
-        n.head === :macrocall && return false
-        n.head === :return && return false
-        is_binary(n) && is_assignment(n) && return false
-        return true
-    end
-
-    return parent_is(cst, valid, ignore = ignore)
+    return parent_is(
+        cst,
+        _valid_parent_node_for_standalone_circuit,
+        ignore = _ignore_node_for_standalone_circuit,
+    )
 end
 
 """
@@ -1012,7 +1107,6 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             return
         end
 
-        # @info "" op.val fst[end].typ op_kind(fst[end])
         if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)
