@@ -84,14 +84,10 @@
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
 
-struct OpMeta
-    kind::Tokens.Kind
-    dotted::Bool
+struct Metadata
+    op_kind::Tokens.Kind
+    op_dotted::Bool
 end
-
-# struct OpCallMeta
-#     lazy_circuit
-# end
 
 """
 Formatted Syntax Tree
@@ -119,7 +115,7 @@ mutable struct FST
     extra_margin::Int
     line_offset::Int
 
-    opmeta::Union{Nothing,OpMeta}
+    metadata::Union{Nothing,Metadata}
 end
 
 FST(typ::FNode, cst::CSTParser.EXPR, indent::Int) =
@@ -1001,11 +997,11 @@ end
 
 function op_kind(fst::FST)
     if fst.typ === OPERATOR
-        return fst.opmeta.kind
+        return fst.metadata.op_kind
     elseif is_opcall(fst)
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
         idx === nothing && return nothing
-        return fst[idx].opmeta.kind
+        return fst[idx].metadata.op_kind
     end
     return nothing
 end

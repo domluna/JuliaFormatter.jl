@@ -45,6 +45,14 @@ function run_nest(text::String; opts = Options(), style = DefaultStyle())
 end
 run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = margin))
 
+function run_format(text::String; style = DefaultStyle(), opts = Options())
+    d = JuliaFormatter.Document(text)
+    s = JuliaFormatter.State(d, opts)
+    cst = CSTParser.parse(text, true)
+    JuliaFormatter.format_text(cst, style, s)
+    s
+end
+
 @testset "JuliaFormatter" begin
     include("default_style.jl")
     include("yas_style.jl")
