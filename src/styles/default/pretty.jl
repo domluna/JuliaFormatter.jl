@@ -193,7 +193,7 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     s.offset += length(cst.val) + (cst.fullspan - cst.span)
 
     t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val)
-    t.opmeta = OpMeta(tokenize(cst.val), CSTParser.isdotted(cst))
+    t.metadata = Metadata(tokenize(cst.val), CSTParser.isdotted(cst))
     return t
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

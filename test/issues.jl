@@ -930,6 +930,14 @@
         @test bluefmt(str_) == str
     end
 
+    @testset "issue 473" begin
+        str_ = "[1.0, 2.0, 3.0] .|> Int"
+        str = "Int.([1.0, 2.0, 3.0])"
+        @test fmt(str_, pipe_to_function_call = true) == str
+        st = run_format(str_, opts=Options(pipe_to_function_call = true))
+        @test st.line_offset == length(str)
+    end
+
     @testset "issue 475" begin
         str_ = """
         @deprecate(

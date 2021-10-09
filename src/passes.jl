@@ -108,8 +108,15 @@ function pipe_to_function_call_pass!(fst::FST)
 end
 
 function pipe_to_function_call(fst::FST)
+    dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
     nodes = FST[]
     arg2 = fst[end]
+
+    if dot && arg2.typ === IDENTIFIER
+        arg2.val *= "."
+        arg2.len += 1
+    end
+
     push!(nodes, arg2)
     paren = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
     push!(nodes, paren)
@@ -142,7 +149,7 @@ function import_to_usings(fst::FST, s::State)
 
         add_node!(use, n, s, join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
-        colon.opmeta = OpMeta(Tokens.COLON, false)
+        colon.metadata = Metadata(Tokens.COLON, false)
         add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
         add_node!(use, n[end], s, join_lines = true)
@@ -169,7 +176,7 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             add_node!(nn, n, s)
             line_offset = n.line_offset + length(n)
             op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
-            op.opmeta = OpMeta(Tokens.DECLARATION, false)
+            op.metadata = Metadata(Tokens.DECLARATION, false)
             add_node!(nn, op, s, join_lines = true)
             line_offset += 2
             add_node!(
