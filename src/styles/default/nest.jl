@@ -640,7 +640,7 @@ function no_unnest(fst::FST)
     return false
 end
 
-function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
+function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int=-1)
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = line_offset + length(fst) + fst.extra_margin
@@ -679,7 +679,11 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
             end
             add_indent!(fst[end], s, s.opts.indent)
         else
-            fst.indent = s.line_offset
+            if indent >= 0
+                fst.indent = indent
+            else
+                fst.indent = s.line_offset
+            end
         end
 
         # rhs
@@ -756,8 +760,8 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State)
         end
     end
 end
-n_binaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_binaryopcall!(DefaultStyle(style), fst, s)
+n_binaryopcall!(style::S, fst::FST, s::State; indent=-1) where {S<:AbstractStyle} =
+    n_binaryopcall!(DefaultStyle(style), fst, s; indent=indent)
 
 function n_for!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)

@@ -953,4 +953,61 @@
         """
         @test bluefmt(str_, 4, 100, whitespace_in_kwargs = false) == str
     end
+
+    @testset "485" begin
+        str = """
+        if primal_name isa Symbol ||
+            Meta.isexpr(primal_name, :(.)) ||
+            Meta.isexpr(primal_name, :curly)
+            foo()
+        end
+        """
+        @test bluefmt(str, 4, 80) == str
+
+        str_ = """
+        if a && b
+        end
+        """
+        str = """
+        if a &&
+            b
+        end
+        """
+        @test bluefmt(str_, 4, 1) == str
+
+        str_ = """
+        @test foo == bar == baz
+        """
+        str = """
+        @test foo ==
+            bar ==
+            baz
+        """
+        @test bluefmt(str_, 4, 1) == str
+
+        str_ = """
+        @test foo == bar
+        """
+        str = """
+        @test foo ==
+            bar
+        """
+        @test bluefmt(str_, 4, 1) == str
+
+
+        str = """
+        const a =
+            arg1 +
+            arg2 +
+            arg3
+        """
+        @test bluefmt(str, 4, 1) == str
+
+        str = """
+        const a =
+            arg1 +
+            arg2
+        """
+        @test bluefmt(str, 4, 1) == str
+    end
 end
