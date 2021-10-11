@@ -10,7 +10,7 @@ Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, black, and p
 
 - Sane defaults out of the box with options to customize.
 - Supports [YAS](https://github.com/jrevels/YASGuide) and [Blue](https://github.com/invenia/BlueStyle) style guides.
-- `JuliaFormatter.toml` configuration file to store options.
+- `.JuliaFormatter.toml` configuration file to store options.
 
 ![](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
 
