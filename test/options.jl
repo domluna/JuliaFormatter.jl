@@ -1910,7 +1910,7 @@
         end
     end
 
-    @testset "`indent_inner_module`" begin
+    @testset "`indent_submodule`" begin
         str_ = """
         module Foo
 
@@ -1949,7 +1949,7 @@
 
         end
         """
-        @test fmt(str_, 2, 22, indent_inner_module = true) == str
+        @test fmt(str_, 2, 22, indent_submodule = true) == str
 
         str = """
         module Foo
@@ -1971,6 +1971,6 @@
 
         end
         """
-        @test fmt(str_, 2, 21, indent_inner_module = true) == str
+        @test fmt(str_, 2, 21, indent_submodule = true) == str
     end
 end

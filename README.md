@@ -363,11 +363,11 @@ end
 
     The maximum margin still applies even when this option is set to `true`.
 
-### `indent_inner_module`
+### `indent_submodule`
 
 > default: `false`
 
-When set to `true` inner modules will be indented.
+When set to `true`, submodule(s) appearing in the same file will be indented.
 
 ```julia
 module A
