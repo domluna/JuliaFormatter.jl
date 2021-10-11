@@ -920,7 +920,13 @@ function p_module(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
     else
-        add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
+        if s.opts.indent_inner_module && !parent_is(cst, n -> n.head === :file)
+            s.indent += s.opts.indent
+            add_node!(t, pretty(style, cst[4], s), s, max_padding = s.opts.indent)
+            s.indent -= s.opts.indent
+        else
+            add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
+        end
         add_node!(t, pretty(style, cst[5], s), s)
     end
     t

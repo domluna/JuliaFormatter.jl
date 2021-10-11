@@ -38,6 +38,7 @@ function options(style::BlueStyle)
         whitespace_in_kwargs = false,
         annotate_untyped_fields_with_any = false,
         conditional_to_if = true,
+        indent_inner_module = true,
     )
 end
 

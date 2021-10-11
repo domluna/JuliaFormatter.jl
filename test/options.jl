@@ -1909,4 +1909,68 @@
             @test fmt(str_, join_lines_based_on_source = true) == str
         end
     end
+
+    @testset "`indent_inner_module`" begin
+        str_ = """
+        module Foo
+
+        function foo(arg)
+        body
+        end
+
+        module Bar
+        x = 2
+        y = 4
+        baremodule C
+                     foo = (arg1, arg2)
+            end
+        end
+
+        z = 5
+
+        end
+        """
+        str = """
+        module Foo
+
+        function foo(arg)
+          body
+        end
+
+        module Bar
+          x = 2
+          y = 4
+          baremodule C
+            foo = (arg1, arg2)
+          end
+        end
+
+        z = 5
+
+        end
+        """
+        @test fmt(str_, 2, 22, indent_inner_module = true) == str
+
+        str = """
+        module Foo
+
+        function foo(arg)
+          body
+        end
+
+        module Bar
+          x = 2
+          y = 4
+          baremodule C
+            foo =
+              (arg1, arg2)
+          end
+        end
+
+        z = 5
+
+        end
+        """
+        @test fmt(str_, 2, 21, indent_inner_module = true) == str
+    end
 end
