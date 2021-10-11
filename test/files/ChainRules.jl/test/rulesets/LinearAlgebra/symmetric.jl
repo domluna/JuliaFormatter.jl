@@ -419,14 +419,14 @@
                     ΔA = TA(randn(T, n, n))
                     _, ∂Y = frule((ZeroTangent(), ΔA), f, A)
                     @test parent(∂Y) ≈
-                          jvp(_fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A.data, ΔA.data))
+                        jvp(_fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A.data, ΔA.data))
 
                     λ[1:m] .= λ[(m + 1):(2m)]
                     A2 = TA(U * Diagonal(λ) * U')
                     ΔA2 = TA(randn(T, n, n))
                     _, ∂Y2 = frule((ZeroTangent(), ΔA2), f, A2)
                     @test parent(∂Y2) ≈
-                          jvp(_fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A2.data, ΔA2.data))
+                        jvp(_fdm, x -> Matrix{TC}(parent(f(TA(x)))), (A2.data, ΔA2.data))
                 end
 
                 f ∉ (log, sqrt, acosh) && @testset "low-rank matrix" begin

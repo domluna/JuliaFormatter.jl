@@ -198,6 +198,6 @@ end
         x = randn(T, 3)
         test_rrule(normalize, x, p)
         @test rrule(normalize, x, p)[2](ZeroTangent()) ===
-              (NoTangent(), ZeroTangent(), ZeroTangent())
+            (NoTangent(), ZeroTangent(), ZeroTangent())
     end
 end

@@ -154,6 +154,7 @@ function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State)
     else
         n_binaryopcall!(YASStyle(style), fst, s)
     end
+    return
 end
 
 function n_chainopcall!(bs::BlueStyle, fst::FST, s::State)

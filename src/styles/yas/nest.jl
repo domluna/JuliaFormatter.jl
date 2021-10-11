@@ -162,10 +162,10 @@ function n_comparison!(ys::YASStyle, fst::FST, s::State)
     n_block!(DefaultStyle(style), fst, s, indent = s.line_offset)
 end
 
-function n_binaryopcall!(ys::YASStyle, fst::FST, s::State)
+function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1)
     style = getstyle(ys)
     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
-        n_binaryopcall!(DefaultStyle(style), fst, s)
+        n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent)
         return
     end
 

@@ -169,12 +169,12 @@ struct SumRuleConfig <: RuleConfig{Union{HasReverseMode}} end
                     unthunk(rrule(prod, UpperTriangular(rand(T, 3, 3)))[2](1.0)[2])
                 )
                 @test unthunk(rrule(prod, UpperTriangular(ones(T, 2, 2)))[2](1.0)[2]) ==
-                      UpperTriangular([0.0 0; 1 0])
+                    UpperTriangular([0.0 0; 1 0])
 
                 # Symmetric -- at least this doesn't have zeros, still an unlikely combination
                 xs = Symmetric(rand(T, 4, 4))
                 @test unthunk(rrule(prod, Symmetric(T[1 2; -333 4]))[2](1.0)[2]) ==
-                      [16 8; 8 4]
+                    [16 8; 8 4]
                 # TODO debug why these fail  https://github.com/JuliaDiff/ChainRules.jl/issues/475
                 @test_skip test_rrule(prod, xs)
                 @test_skip test_rrule(prod, xs; fkwargs=(dims=2,))
