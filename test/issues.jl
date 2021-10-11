@@ -994,7 +994,6 @@
         """
         @test bluefmt(str_, 4, 1) == str
 
-
         str = """
         const a =
             arg1 +

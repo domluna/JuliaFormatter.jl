@@ -149,28 +149,21 @@ end
 
 function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)
-    if fst.ref !== nothing && parent_is(
-            fst.ref[],
-        n -> is_if(n) || n.head === :macrocall,
-    )
-    n_binaryopcall!(YASStyle(style), fst, s; indent= fst.indent + s.opts.indent)
-else
-    n_binaryopcall!(YASStyle(style), fst, s)
-end
+    if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
+        n_binaryopcall!(YASStyle(style), fst, s; indent = fst.indent + s.opts.indent)
+    else
+        n_binaryopcall!(YASStyle(style), fst, s)
+    end
 end
 
 function n_chainopcall!(bs::BlueStyle, fst::FST, s::State)
     style = getstyle(bs)
-    if fst.ref !== nothing && parent_is(
-            fst.ref[],
-        n -> is_if(n) || n.head === :macrocall,
-    )
-    n_block!(DefaultStyle(style), fst, s; indent= fst.indent + s.opts.indent)
-else
-    n_block!(DefaultStyle(style), fst, s; indent= s.line_offset)
-end
-return
+    if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
+        n_block!(DefaultStyle(style), fst, s; indent = fst.indent + s.opts.indent)
+    else
+        n_block!(DefaultStyle(style), fst, s; indent = s.line_offset)
+    end
+    return
 end
 
 n_comparison!(bs::BlueStyle, fst::FST, s::State) = n_chainopcall!(bs, fst, s)
-
