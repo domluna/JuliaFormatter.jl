@@ -470,6 +470,46 @@ end
 !!! warning
 
     The maximum margin still applies even when this option is set to `true`.
+
+### `indent_inner_module`
+
+> default: `false`
+
+When set to `true` inner modules will be indented.
+
+```julia
+module A
+a = 1
+
+module B
+b = 2
+module C
+c = 3
+end
+end
+
+d = 4
+
+end
+```
+
+will be formatted to:
+
+```julia
+module A
+a = 1
+
+module B
+    b = 2
+    module C
+        c = 3
+    end
+end
+
+d = 4
+
+end
+```
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
