@@ -21,6 +21,7 @@ Base.@kwdef struct Options
     align_matrix::Bool = false
     join_lines_based_on_source::Bool = false
     trailing_comma::Union{Bool,Nothing} = true
+    indent_submodule::Bool = false
 end
 
 function needs_alignment(opts::Options)

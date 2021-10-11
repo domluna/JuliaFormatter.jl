@@ -363,6 +363,46 @@ end
 
     The maximum margin still applies even when this option is set to `true`.
 
+### `indent_submodule`
+
+> default: `false`
+
+When set to `true`, submodule(s) appearing in the same file will be indented.
+
+```julia
+module A
+a = 1
+
+module B
+b = 2
+module C
+c = 3
+end
+end
+
+d = 4
+
+end
+```
+
+will be formatted to:
+
+```julia
+module A
+a = 1
+
+module B
+    b = 2
+    module C
+        c = 3
+    end
+end
+
+d = 4
+
+end
+```
+
 ### File Options
 
 ### `overwrite`
