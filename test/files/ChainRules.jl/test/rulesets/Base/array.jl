@@ -96,7 +96,7 @@ end
     # test_rrule(reduce, hcat, adjs ⊢ map(m -> rand(size(m)), adjs))
     dy = 1 ./ reduce(hcat, adjs)
     @test rrule(reduce, hcat, adjs)[2](dy)[3] ≈
-          rrule(reduce, hcat, collect.(adjs))[2](dy)[3]
+        rrule(reduce, hcat, collect.(adjs))[2](dy)[3]
 
     # mix types
     mats = [randn(2, 2), rand(2, 2)']
