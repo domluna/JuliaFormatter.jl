@@ -1912,6 +1912,7 @@
 
     @testset "`indent_submodule`" begin
         str_ = """
+        "doc"
         module Foo
 
         function foo(arg)
@@ -1931,6 +1932,7 @@
         end
         """
         str = """
+        "doc"
         module Foo
 
         function foo(arg)
@@ -1952,6 +1954,7 @@
         @test fmt(str_, 2, 22, indent_submodule = true) == str
 
         str = """
+        "doc"
         module Foo
 
         function foo(arg)

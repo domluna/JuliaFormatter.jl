@@ -358,7 +358,12 @@ function is_nothing(cst::CSTParser.EXPR)
     return false
 end
 
-# f a function which returns a bool
+
+"""
+Returns whether the first unignored parent of `cst` matches the criteria determined by
+`valid`, which is a function that returns a boolean. `ignore` can be used to ignore certain
+parent nodes if desired, also a function which returns a boolean.
+"""
 function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     p = cst.parent
     p === nothing && return false
