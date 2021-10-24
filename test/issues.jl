@@ -940,7 +940,7 @@
 
     @testset "issue 475" begin
         # with the fix for #494 the keyword arguments transform is no longer applied
-        # for macro calls.
+        # to macro calls.
         str = """
         @deprecate(
             presign(path::AWSS3.S3Path, duration::Period=Hour(1); config::AWSConfig=aws_config()),
