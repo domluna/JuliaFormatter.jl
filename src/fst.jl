@@ -358,7 +358,6 @@ function is_nothing(cst::CSTParser.EXPR)
     return false
 end
 
-
 """
 Returns whether the first unignored parent of `cst` matches the criteria determined by
 `valid`, which is a function that returns a boolean. `ignore` can be used to ignore certain
