@@ -50,7 +50,7 @@ end
 function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(bs)
     t = p_call(DefaultStyle(style), cst, s)
-    if !parent_is(cst, is_function_or_macro_def)
+    if !parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall)
         separate_kwargs_with_semicolon!(t)
     end
     t

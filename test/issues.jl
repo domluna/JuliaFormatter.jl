@@ -939,19 +939,22 @@
     end
 
     @testset "issue 475" begin
-        str_ = """
+        # with the fix for #494 the keyword arguments transform is no longer applied
+        # to macro calls.
+        str = """
         @deprecate(
             presign(path::AWSS3.S3Path, duration::Period=Hour(1); config::AWSConfig=aws_config()),
             AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
         )
         """
+        @test bluefmt(str, 4, 100, whitespace_in_kwargs = false) == str
         str = """
         @deprecate(
             presign(path::AWSS3.S3Path; duration::Period=Hour(1), config::AWSConfig=aws_config()),
             AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
         )
         """
-        @test bluefmt(str_, 4, 100, whitespace_in_kwargs = false) == str
+        @test bluefmt(str, 4, 100, whitespace_in_kwargs = false) == str
     end
 
     @testset "485" begin
@@ -1008,5 +1011,13 @@
             arg2
         """
         @test bluefmt(str, 4, 1) == str
+    end
+
+    @testset "494" begin
+        str = "Base.@deprecate f(x, y = x) g(x, y)\n"
+        @test bluefmt(str) == str
+
+        str = "Base.@deprecate f(x, y) g(x, y = y)\n"
+        @test bluefmt(str) == str
     end
 end
