@@ -4,8 +4,6 @@ CurrentModule = JuliaFormatter
 
 # JuliaFormatter.jl
 
-[![Build Status](https://travis-ci.org/domluna/JuliaFormatter.jl.svg?branch=master)](https://travis-ci.org/domluna/JuliaFormatter.jl)
-
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, black, and prettier. Built with [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
 - Sane defaults out of the box with options to customize.
