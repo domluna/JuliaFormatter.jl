@@ -2090,6 +2090,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, Placeholder(0), s)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
+
             if i != length(cst) - 1
                 if has_semicolon(s.doc, n.startline)
                     semicolons = s.doc.semicolons[n.startline]
