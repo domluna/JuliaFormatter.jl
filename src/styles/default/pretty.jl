@@ -2095,7 +2095,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     semicolons = s.doc.semicolons[n.startline]
                     count = popfirst!(semicolons)
                     if count > 1
-                        for _ in 1:count
+                        for _ = 1:count
                             add_node!(t, Semicolon(), s)
                         end
                     else
