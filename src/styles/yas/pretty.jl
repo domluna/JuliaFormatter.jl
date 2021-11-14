@@ -293,9 +293,22 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 join_lines = join_lines,
                 override_join_lines_based_on_source = i == st + 1,
             )
-            if i != length(cst) - 1
-                has_semicolon(s.doc, n.startline) &&
-                    add_node!(t, InverseTrailingSemicolon(), s)
+            if has_semicolon(s.doc, n.startline)
+                semicolons = s.doc.semicolons[n.startline]
+                count = popfirst!(semicolons)
+                if i != length(cst) - 1
+                    if count > 1
+                        for _ = 1:count
+                            add_node!(t, Semicolon(), s)
+                        end
+                    else
+                        add_node!(t, InverseTrailingSemicolon(), s)
+                    end
+                elseif count > 1
+                    for _ = 1:count
+                        add_node!(t, Semicolon(), s)
+                    end
+                end
             end
         else
             add_node!(t, n, s, join_lines = true)

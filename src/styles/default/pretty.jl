@@ -119,6 +119,10 @@ function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         return p_using(style, cst, s)
     elseif cst.head === :row
         return p_row(style, cst, s)
+    elseif cst.head === :ncat
+        return p_vcat(style, cst, s)
+    elseif cst.head === :typed_ncat
+        return p_typedvcat(style, cst, s)
     elseif cst.head === :vcat
         return p_vcat(style, cst, s)
     elseif cst.head === :typed_vcat
@@ -2086,13 +2090,27 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, Placeholder(0), s)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
+
             if i != length(cst) - 1
-                has_semicolon(s.doc, n.startline) &&
-                    add_node!(t, InverseTrailingSemicolon(), s)
+                if has_semicolon(s.doc, n.startline)
+                    semicolons = s.doc.semicolons[n.startline]
+                    count = popfirst!(semicolons)
+                    if count > 1
+                        for _ = 1:count
+                            add_node!(t, Semicolon(), s)
+                        end
+                    else
+                        add_node!(t, InverseTrailingSemicolon(), s)
+                    end
+                end
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
-            elseif length(args) == 1
-                add_node!(t, Semicolon(), s)
+            elseif length(args) == 1 && has_semicolon(s.doc, n.startline)
+                semicolons = s.doc.semicolons[n.startline]
+                count = popfirst!(semicolons)
+                for _ = 1:count
+                    add_node!(t, Semicolon(), s)
+                end
                 add_node!(t, Placeholder(0), s)
             else
                 add_node!(t, Placeholder(0), s)
