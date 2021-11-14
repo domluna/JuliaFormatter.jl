@@ -34,9 +34,13 @@ struct Document
     comments::Dict{Int,Tuple{Int,String}}
 
     # CSTParser does not detect semicolons.
-    # It's useful to know where these are for
-    # a few node types.
-    semicolons::Set{Int}
+    # It's useful to know where these are for a few node types.
+    # The key is the line number and the value is list of semicolon counts.
+    # Each count indicates a different collection of semicolons.
+    #
+    # These counts are used for the multi-dimensional arrays syntax introduced inline
+    # v1.7. For other purposes simply checking if the line has a semicolon is sufficient.
+    semicolons::Dict{Int,Vector{Int}}
 
     # List of tuples where a tuple contains
     # the start and end lines of regions in the
@@ -48,7 +52,7 @@ function Document(text::AbstractString)
     ranges = UnitRange{Int}[]
     lit_strings = Dict{Int,Tuple{Int,Int,String}}()
     comments = Dict{Int,Tuple{Int,String}}()
-    semicolons = Set{Int}()
+    semicolons = Dict{Int,Vector{Int}}()
     format_skips = Tuple{Int,Int,String}[]
     prev_tok = Tokens.Token() # dummy initial token
     stack = Int[]
@@ -82,7 +86,6 @@ function Document(text::AbstractString)
                     # newline position in character length instead
                     # of byte length.
                     nl2 = cidx + length(t.val[bidx:nl]) - 1
-                    # @info "" bidx cidx nl nl2
                     push!(ranges, s:offset+nl2)
 
                     bidx = nl + 1
@@ -145,7 +148,15 @@ function Document(text::AbstractString)
                 format_on = true
             end
         elseif t.kind === Tokens.SEMICOLON
-            push!(semicolons, t.startpos[1])
+            if haskey(semicolons, t.startpos[1])
+                if prev_tok.kind === Tokens.SEMICOLON
+                    semicolons[t.startpos[1]][end] += 1
+                else
+                    push!(semicolons[t.startpos[1]], 1)
+                end
+            else
+                semicolons[t.startpos[1]] = Int[1]
+            end
         end
         prev_tok = t
 

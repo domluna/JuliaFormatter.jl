@@ -13,7 +13,7 @@ State(doc, opts) = State(doc, 0, 1, 0, true, opts)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
-@inline has_semicolon(d::Document, line::Integer) = line in d.semicolons
+@inline has_semicolon(d::Document, line::Integer) = haskey(d.semicolons, line)
 
 @inline function cursor_loc(s::State, offset::Integer)
     l = s.doc.range_to_line[offset:offset]

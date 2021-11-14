@@ -1013,11 +1013,50 @@
         @test bluefmt(str, 4, 1) == str
     end
 
+
+    @testset "490" begin
+        str = "[1;; 2]"
+        @test fmt(str) == str
+
+        str_ = """
+        [
+            1;;
+            2
+        ]"""
+        @test fmt(str, 4, 1) == str_
+
+        str = "T[1;; 2]"
+        @test fmt(str) == str
+
+        str_ = """
+        T[
+            1;;
+            2
+        ]"""
+        @test fmt(str, 4, 1) == str_
+
+        str = "[1;; 2]"
+        @test yasfmt(str) == str
+
+        str_ = """
+        [1;;
+         2]"""
+        @test yasfmt(str, 4, 1) == str_
+
+        str = "T[1;; 2]"
+        @test yasfmt(str) == str
+
+        str_ = """
+        T[1;;
+          2]"""
+        @test yasfmt(str, 4, 1) == str_
+    end
+
     @testset "494" begin
         str = "Base.@deprecate f(x, y = x) g(x, y)\n"
         @test bluefmt(str) == str
 
         str = "Base.@deprecate f(x, y) g(x, y = y)\n"
         @test bluefmt(str) == str
-    end
+		end
 end
