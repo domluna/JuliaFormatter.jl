@@ -14,13 +14,12 @@ State(doc, opts) = State(doc, 0, 1, 0, true, opts)
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)
 
-
 """
     has_semicolon(d::Document, line::Integer)
 
 Returns whether `d` has a valid semicolon grouping on `line`.
 """
-function has_semicolon(d::Document, line::Integer) 
+function has_semicolon(d::Document, line::Integer)
     !haskey(d.semicolons, line) && return false
     return length(d.semicolons[line]) > 0
 end
