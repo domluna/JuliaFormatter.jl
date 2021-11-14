@@ -1015,41 +1015,57 @@
 
 
     @testset "490" begin
-        str = "[1;; 2]"
-        @test fmt(str) == str
+        @testset "DefaultStyle" begin
+            str = "[1;; 2]"
+            @test fmt(str) == str
 
-        str_ = """
-        [
-            1;;
-            2
-        ]"""
-        @test fmt(str, 4, 1) == str_
+            str_ = """
+            [
+                1;;
+                2
+            ]"""
+            @test fmt(str, 4, 1) == str_
 
-        str = "T[1;; 2]"
-        @test fmt(str) == str
+            str = "T[1;; 2]"
+            @test fmt(str) == str
 
-        str_ = """
-        T[
-            1;;
-            2
-        ]"""
-        @test fmt(str, 4, 1) == str_
+            str_ = """
+            T[
+                1;;
+                2
+            ]"""
+            @test fmt(str, 4, 1) == str_
 
-        str = "[1;; 2]"
-        @test yasfmt(str) == str
+            str = "[v1 v2;;]"
+            @test fmt(str) == str
 
-        str_ = """
-        [1;;
-         2]"""
-        @test yasfmt(str, 4, 1) == str_
+            str = "T[v1 v2;;]"
+            @test fmt(str) == str
+        end
 
-        str = "T[1;; 2]"
-        @test yasfmt(str) == str
+        @testset "YASStyle" begin
+            str = "[1;; 2]"
+            @test yasfmt(str) == str
 
-        str_ = """
-        T[1;;
-          2]"""
-        @test yasfmt(str, 4, 1) == str_
+            str_ = """
+            [1;;
+             2]"""
+            @test yasfmt(str, 4, 1) == str_
+
+            str = "T[1;; 2]"
+            @test yasfmt(str) == str
+
+            str_ = """
+            T[1;;
+              2]"""
+            @test yasfmt(str, 4, 1) == str_
+
+            str = "[v1 v2;;]"
+            @test yasfmt(str) == str
+
+            str = "T[v1 v2;;]"
+            @test yasfmt(str) == str
+        end
     end
 
     @testset "494" begin
