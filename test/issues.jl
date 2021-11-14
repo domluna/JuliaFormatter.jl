@@ -1013,7 +1013,6 @@
         @test bluefmt(str, 4, 1) == str
     end
 
-
     @testset "490" begin
         @testset "DefaultStyle" begin
             str = "[1;; 2]"
@@ -1088,5 +1087,5 @@
 
         str = "Base.@deprecate f(x, y) g(x, y = y)\n"
         @test bluefmt(str) == str
-		end
+    end
 end
