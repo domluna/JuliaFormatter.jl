@@ -373,7 +373,9 @@ end
             end
 
             dotidx = findlast(c -> c == '.', val)
-            if dotidx === nothing
+
+            if fidx !== nothing && dotidx === nothing
+                # append a trailing zero prior to the float suffix
                 val *= ".0"
             elseif dotidx == length(val)
                 # If a floating point ends in `.`, add trailing zero.
