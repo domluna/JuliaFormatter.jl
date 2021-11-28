@@ -1089,6 +1089,28 @@
         @test bluefmt(str) == str
     end
 
+    @testset "500 - leading zeros with '-.'" begin
+        s0 = """
+        a = -.2
+        b = - .2
+        """
+        s1 = """
+        a = -0.2
+        b = -0.2
+        """
+        @test fmt(s0) == s1
+
+        s0 = """
+        a = -.2f32
+        b = - .2f32
+        """
+        s1 = """
+        a = -0.2f32
+        b = -0.2f32
+        """
+        @test fmt(s0) == s1
+    end
+
     @testset "509" begin
         code = """M.var"@f";"""
         @test fmt(code) == code
