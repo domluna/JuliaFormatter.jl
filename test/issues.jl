@@ -1088,4 +1088,14 @@
         str = "Base.@deprecate f(x, y) g(x, y = y)\n"
         @test bluefmt(str) == str
     end
+
+    @testset "509" begin
+        code = """M.var"@f";"""
+        @test fmt(code) == code
+
+        code = """
+        const var"@_assert" = Base.var"@assert"
+        """
+        @test fmt(code) == code
+    end
 end

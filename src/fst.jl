@@ -304,6 +304,8 @@ end
 
 function is_macrostr_identifier(cst::CSTParser.EXPR)
     CSTParser.isidentifier(cst) || return false
+    # handles odd cases like """M.var"@f";"""
+    cst.val !== nothing || return false
 
     m = match(r"@(.*)_(str|cmd)", cst.val)
     m !== nothing || return false
