@@ -25,8 +25,8 @@
             F in (adjoint, permuteddimsarray)
 
             A = F(rand(T, 4, 3)) ⊢ F(rand(T, 4, 3))
-            test_frule(dot, rand(T, 3), A, rand(T, 4); rtol=1f-3)
-            test_rrule(dot, rand(T, 3), A, rand(T, 4); rtol=1f-3)
+            test_frule(dot, rand(T, 3), A, rand(T, 4); rtol=1.0f-3)
+            test_rrule(dot, rand(T, 3), A, rand(T, 4); rtol=1.0f-3)
         end
         @testset "different types" begin
             test_rrule(dot, rand(2), rand(2, 2), rand(ComplexF64, 2))

@@ -563,6 +563,38 @@
         f = 0.123f0
         """
         @test fmt(str_) == str
+
+        @testset "500 - leading zeros with '-.'" begin
+            s0 = """
+            a = -.2
+            b = - .2
+            """
+            s1 = """
+            a = -0.2
+            b = -0.2
+            """
+            @test fmt(s0) == s1
+
+            s0 = """
+            a = -.2f32
+            b = - .2f32
+            """
+            s1 = """
+            a = -0.2f32
+            b = -0.2f32
+            """
+            @test fmt(s0) == s1
+
+            s0 = """
+            a = -.2f-5
+            b = - .2f-5
+            """
+            s1 = """
+            a = -0.2f-5
+            b = -0.2f-5
+            """
+            @test fmt(s0) == s1
+        end
     end
 
     @testset "issue 289 - no spaces/nesting for matrix elements" begin

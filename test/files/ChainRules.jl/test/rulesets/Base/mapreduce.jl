@@ -181,7 +181,7 @@ struct SumRuleConfig <: RuleConfig{Union{HasReverseMode}} end
             end
         end
         @testset "Array{Float32}, no zero entries" begin
-            v = [1f-5, 1f-10, 1f-15, 1f-20]
+            v = [1.0f-5, 1.0f-10, 1.0f-15, 1.0f-20]
             @test prod(v) == 0
             @test unthunk(rrule(prod, v)[2](1.0f0)[2]) == zeros(4)
             test_rrule(prod, v)

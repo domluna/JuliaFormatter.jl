@@ -364,25 +364,28 @@ end
             return FST(LITERAL, loc[2], loc[1], loc[1], "")
         end
 
-        if cst.head === :FLOAT && endswith(cst.val, "f0")
-            # Float32
-            val = val[1:end-2]
+        if cst.head === :FLOAT
+            fidx = findlast(c -> c == 'f', val)
+            float_suffix = ""
+            if fidx !== nothing
+                float_suffix = val[fidx:end]
+                val = val[1:fidx-1]
+            end
+
             dotidx = findlast(c -> c == '.', val)
-            if dotidx === nothing
+
+            if fidx !== nothing && dotidx === nothing
+                # append a trailing zero prior to the float suffix
                 val *= ".0"
             elseif dotidx == length(val)
+                # If a floating point ends in `.`, add trailing zero.
                 val *= '0'
             elseif dotidx == 1
                 val = '0' * val
+            elseif dotidx == 2 && val[1] == '-'
+                val = val[1] * '0' * val[2:end]
             end
-            val *= "f0"
-        elseif cst.head === :FLOAT
-            if endswith(cst.val, ".")
-                # If a floating point ends in `.`, add trailing zero.
-                val *= '0'
-            elseif startswith(cst.val, ".")
-                val = '0' * val
-            end
+            val *= float_suffix
         end
 
         s.offset += length(cst.val) + (cst.fullspan - cst.span)
