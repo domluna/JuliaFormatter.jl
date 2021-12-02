@@ -1074,6 +1074,7 @@ end
 
 """
     eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+    eq_to_in_normalization!(fst::FST, always_for_in::Nothing)
 
 Transforms
 
@@ -1094,6 +1095,8 @@ for i in 1:10 body end
 
 for i = 1:10 body end
 ```
+
+`always_for_in=nothing` disables this normalization behavior.
 
 - https://github.com/domluna/JuliaFormatter.jl/issues/34
 """
@@ -1122,3 +1125,5 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
         end
     end
 end
+
+eq_to_in_normalization!(::FST, ::Nothing) = nothing

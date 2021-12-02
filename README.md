@@ -53,7 +53,8 @@ be formatted across multiple lines.
 > default: `false`
 
 If true, `=` is always replaced with `in` if part of a `for` loop condition.
-For example, `for i = 1:10` will be transformed to `for i in 1:10`.
+For example, `for i = 1:10` will be transformed to `for i in 1:10`. Set
+this to `nothing` to leave the choice to the user.
 
 ### `whitespace_typedefs`
 
