@@ -230,6 +230,8 @@
         end"""
         @test fmt(str_, always_for_in = true) == str
         @test fmt(str, always_for_in = true) == str
+        @test fmt(str_, always_for_in = nothing) == str_
+        @test fmt(str, always_for_in = nothing) == str
 
         str_ = "[(i,j) for i=I1,j=I2]"
         str = "[(i, j) for i in I1, j in I2]"

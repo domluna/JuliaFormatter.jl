@@ -117,7 +117,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         style::AbstractStyle = DefaultStyle(),
         indent::Int = 4,
         margin::Int = 92,
-        always_for_in::Bool = false,
+        always_for_in::Union{Bool,Nothing} = false,
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
