@@ -369,6 +369,21 @@ function prepend_return!(fst::FST, s::State)
         # fst[end-1] is a newline
         return
     end
+    # fix #426
+    # don't add return if the last node is a throw call. throw is a built-in function
+    # that shouldn't be overwritten for over purposes so this should be fine.
+    ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw" && return
+
+    # check to see if the last node already has a return
+    found_return = false
+    f = (fst::FST, ::State) -> begin
+        if fst.typ === Return
+            found_return = true
+        end
+        return
+    end
+    walk(f, ln, s)
+    found_return && return
 
     ret = FST(Return, fst.indent)
     kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "return")

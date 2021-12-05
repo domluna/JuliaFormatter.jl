@@ -363,6 +363,28 @@
             end
         end"""
         @test fmt(str, 4, 92, always_use_return = true) == str
+
+        @testset "426" begin
+            # throw function heuristic
+            str = """
+            function f(x)
+                x == 1 && return "a"
+                x == 2 && return "b"
+                throw(ArgumentError("x must be 1 or 2"))
+            end
+            """
+            @test fmt(str, always_use_return = true) == str
+        end
+
+        @testset "507" begin
+            # detect return
+            str = """
+            function f()
+                (1 + 1; return 2)
+            end
+            """
+            @test fmt(str, always_use_return = true) == str
+        end
     end
 
     @testset "whitespace in keyword arguments" begin
