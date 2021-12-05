@@ -120,8 +120,13 @@ function Document(text::AbstractString)
                         s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
                         push!(ranges, s:offset+1)
                         fc = findfirst(c -> !isspace(c), cs)
-                        idx = fc === nothing ? 1 : min(fc, ws + 1)
-                        comments[line] = (ws, cs[idx:end])
+                        if fc === nothing
+                            # comment is all whitespace
+                            comments[line] = (ws, cs[end:end])
+                        else
+                            idx = min(fc, ws + 1)
+                            comments[line] = (ws, cs[idx:end])
+                        end
                         line += 1
                         cs = ""
                     end
