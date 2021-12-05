@@ -1149,4 +1149,91 @@
         ans = "function make_router()\n    function get_sesh()\n        #= \n        x\n\n        x=#\n    end\nend\n"
         @test fmt(str) == ans
     end
+
+    @testset "513" begin
+        # The first 2 tests handle the case presented in the issue.
+        # However, during the fix I encountered a separate problem where
+        # if there was an inline comment followed 1 or more standalone newlines,
+        # such as:
+        #
+        # ```
+        # a * # inline
+        #
+        # b
+        # ```
+        #
+        # then the inline comment would be removed since removing extra newlines
+        # exited the routine before inline comments were handled. To be fair this is
+        # quite a far case and has not been reported as of yet.
+        str_ = """
+        (
+            10 # i got removed!
+            *
+            10 # me too!
+            +
+            10 # hello
+        )
+        """
+        str = """
+        (
+            10 # i got removed!
+            * 10 # me too!
+            + 10 # hello
+        )
+        """
+        @test fmt(str_) == str
+
+        str_ = """
+        (
+            10 # i got removed!
+            * # omg
+            10 # me too!
+            + # more
+            10 # hello
+        )
+        """
+        str = """
+        (
+            10 # i got removed!
+            * # omg
+            10 # me too!
+            + # more
+            10 # hello
+        )
+        """
+        @test fmt(str_) == str
+
+        str_ = """
+        (
+            10 * # i got removed!
+
+            10 + # me too!
+
+            10 # hello
+        )
+        """
+        str = """
+        (
+            10 * # i got removed!
+            10 + # me too!
+            10 # hello
+        )
+        """
+        @test fmt(str_) == str
+
+        # before this would format to f(a, b)
+        str_ = """
+        f(a, # comment
+
+            b
+        )
+        """
+        str = """
+        f(
+            a, # comment
+            b,
+        )
+        """
+        @test fmt(str_) == str
+    end
 end
