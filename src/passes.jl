@@ -115,6 +115,12 @@ function pipe_to_function_call(fst::FST)
     if dot && arg2.typ === IDENTIFIER
         arg2.val *= "."
         arg2.len += 1
+    elseif arg2.typ === Binary &&
+           arg2[end].typ === Quotenode &&
+           arg2[end][end].typ === IDENTIFIER
+        iden = arg2[end][end]
+        iden.val *= "."
+        iden.len += 1
     end
 
     push!(nodes, arg2)
