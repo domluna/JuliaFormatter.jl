@@ -599,6 +599,7 @@ function add_node!(
                 t.typ !== ModuleN &&
                 (n.typ === Block || is_end(n))
 
+            nest = true
             if remove_empty_notcode(t) || rm_block_nl
                 nest = false
                 for l = notcode_startline:notcode_endline
@@ -606,12 +607,6 @@ function add_node!(
                         nest = true
                         break
                     end
-                end
-                if !nest
-                    if rm_block_nl
-                        add_node!(t, Newline(), s)
-                    end
-                    @goto add_node_end
                 end
             end
 
@@ -621,17 +616,22 @@ function add_node!(
             # This fixes cases similar to the one shown in issue #51.
             nt === WHITESPACE && (t.nodes[end] = Whitespace(0))
 
-            hs = hascomment(s.doc, current_line)
-            hs && add_node!(t, InlineComment(current_line), s)
+            if hascomment(s.doc, current_line)
+                add_node!(t, InlineComment(current_line), s)
+            end
+
             if nt !== PLACEHOLDER
                 add_node!(t, Newline(nest_behavior = AlwaysNest), s)
-            elseif hs && nt === PLACEHOLDER
+            elseif hascomment(s.doc, current_line) && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(t.nodes)
                 t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
             end
-            add_node!(t, Notcode(notcode_startline, notcode_endline), s)
-            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+
+            if nest
+                add_node!(t, Notcode(notcode_startline, notcode_endline), s)
+                add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+            end
         elseif !join_lines
             if hascomment(s.doc, current_line) && current_line != n.startline
                 add_node!(t, InlineComment(current_line), s)
@@ -645,10 +645,15 @@ function add_node!(
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
             idx = length(t.nodes)
             t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
+        elseif nt === WHITESPACE &&
+               hascomment(s.doc, current_line) &&
+               current_line != n.startline
+            # rely on the whitespace tracked for the inline comment
+            t.nodes[end] = Whitespace(0)
+            add_node!(t, InlineComment(current_line), s)
+            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         end
     end
-
-    @label add_node_end
 
     if n.startline < t.startline || t.startline == -1
         t.startline = n.startline
