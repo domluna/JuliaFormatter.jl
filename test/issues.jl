@@ -1236,4 +1236,14 @@
         """
         @test fmt(str_) == str
     end
+
+    @testset "514" begin
+        str_ = "output = input .|> f.g"
+        str = "output = f.g.(input)"
+        fmt(str_, pipe_to_function_call = true) == str
+
+        str_ = "output = input .|> f.g.h"
+        str = "output = f.g.h.(input)"
+        fmt(str_, pipe_to_function_call = true) == str
+    end
 end
