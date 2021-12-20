@@ -232,7 +232,12 @@
         @test s.line_offset == 1
     end
 
-    @testset "issue #183" begin
+    @testset "issue 183 & 525" begin
+        # fixing 525 caused the previous test to fail since it
+        # exchanged the semicolon to a trailing comma, which isn't exactly
+        # what we wanted and it turns out sometimes the comma was
+        # added in addition to the semicolon. Now, if the semicolon
+        # is there the trailing comma is not added.
         str_ = """
         function f(args...)
 
@@ -245,7 +250,7 @@
         function f(args...)
 
             next!(
-                s.progress,
+                s.progress;
                 # comment
             )
             nothing
