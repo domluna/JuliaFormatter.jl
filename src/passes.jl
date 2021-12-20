@@ -89,16 +89,16 @@ Rewrites `x |> f` to `f(x)`.
 function pipe_to_function_call_pass!(fst::FST)
     is_leaf(fst) && return
 
-    if op_kind(fst) === Tokens.RPIPE
+    # the RHS must be a valid type to apply a function call.
+    if op_kind(fst) === Tokens.RPIPE && (fst[end].typ !== PUNCTUATION)
         fst.nodes = pipe_to_function_call(fst)
         fst.typ = Call
         return
     end
-
     for n in fst.nodes
         if is_leaf(n)
             continue
-        elseif op_kind(n) === Tokens.RPIPE
+        elseif op_kind(n) === Tokens.RPIPE && (n[end].typ !== PUNCTUATION)
             n.nodes = pipe_to_function_call(n)
             n.typ = Call
         else
@@ -108,8 +108,8 @@ function pipe_to_function_call_pass!(fst::FST)
 end
 
 function pipe_to_function_call(fst::FST)
-    dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
     nodes = FST[]
+    dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
     arg2 = fst[end]
 
     if dot && arg2.typ === IDENTIFIER
@@ -121,9 +121,6 @@ function pipe_to_function_call(fst::FST)
         iden = arg2[end][end]
         iden.val *= "."
         iden.len += 1
-    else
-        # RHS is not valid keep everything as is.
-        return fst.nodes
     end
 
     push!(nodes, arg2)
