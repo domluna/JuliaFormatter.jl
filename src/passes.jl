@@ -122,6 +122,7 @@ function pipe_to_function_call(fst::FST)
         iden.val *= "."
         iden.len += 1
     else
+        # RHS is not valid keep everything as is.
         return fst.nodes
     end
 

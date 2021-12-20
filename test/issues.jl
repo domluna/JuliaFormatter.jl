@@ -1247,7 +1247,7 @@
         @test fmt(str_, pipe_to_function_call = true) == str
     end
 
-    @testset "528" begin
+    @testset "526" begin
         str = "Base.:(|>)(r::AbstractRegister, blk::AbstractBlock) = apply!(r, blk)"
         @test fmt(str, pipe_to_function_call = true) == str
     end
