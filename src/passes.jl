@@ -121,6 +121,8 @@ function pipe_to_function_call(fst::FST)
         iden = arg2[end][end]
         iden.val *= "."
         iden.len += 1
+    else
+        return fst.nodes
     end
 
     push!(nodes, arg2)
