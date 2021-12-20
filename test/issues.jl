@@ -1240,10 +1240,15 @@
     @testset "514" begin
         str_ = "output = input .|> f.g"
         str = "output = f.g.(input)"
-        fmt(str_, pipe_to_function_call = true) == str
+        @test fmt(str_, pipe_to_function_call = true) == str
 
         str_ = "output = input .|> f.g.h"
         str = "output = f.g.h.(input)"
-        fmt(str_, pipe_to_function_call = true) == str
+        @test fmt(str_, pipe_to_function_call = true) == str
+    end
+
+    @testset "526" begin
+        str = "Base.:(|>)(r::AbstractRegister, blk::AbstractBlock) = apply!(r, blk)"
+        @test fmt(str, pipe_to_function_call = true) == str
     end
 end
