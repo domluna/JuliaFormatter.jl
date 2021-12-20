@@ -484,7 +484,8 @@ function add_node!(
            en.typ === Filter ||
            en.typ === Flatten ||
            en.typ === MacroCall ||
-           en.typ === MacroBlock
+           en.typ === MacroBlock ||
+           en.typ === SEMICOLON
             # don't add trailing comma in these cases
         elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
             # preserve comma
