@@ -641,11 +641,12 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
         n = pretty(style, a, s)
         if CSTParser.ismacroname(a)
-            if has_closer || length(args) == 0
-                add_node!(t, n, s, join_lines = true)
-            else
-                add_node!(t, n, s, join_lines = true)
-                add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+            if length(args) > 0
+                loc = cursor_loc(s)
+                if t[end].line_offset + length(t[end]) < loc[2]
+                    add_node!(t, Whitespace(1), s)
+                end
             end
         elseif is_opener(n) && nest
             add_node!(t, n, s, join_lines = true)
@@ -676,6 +677,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             end
         end
     end
+
     # move placement of @ to the end
     #
     # @Module.macro -> Module.@macro

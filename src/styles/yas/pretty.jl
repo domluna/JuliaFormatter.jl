@@ -422,11 +422,12 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
         n = pretty(style, a, s)
         if CSTParser.ismacroname(a)
-            if has_closer || length(args) == 0
-                add_node!(t, n, s, join_lines = true)
-            else
-                add_node!(t, n, s, join_lines = true)
-                add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+            if length(args) > 0
+                loc = cursor_loc(s)
+                if t[end].line_offset + length(t[end]) < loc[2]
+                    add_node!(t, Whitespace(1), s)
+                end
             end
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)

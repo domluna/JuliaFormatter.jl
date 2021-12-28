@@ -1256,4 +1256,26 @@
         str = "Base.:(|>)(r::AbstractRegister, blk::AbstractBlock) = apply!(r, blk)"
         @test fmt(str, pipe_to_function_call = true) == str
     end
+
+    @testset "480" begin
+        str = "@show (1,)"
+        @test fmt(str) == str
+
+        str = "@show(1,)"
+        @test fmt(str) == str
+
+        str = """
+        @NamedTuple{a::Int, b::Int}[]
+
+        @SVector[@SVector[1, 2], @SVector[1, 2]]
+        """
+        @test fmt(str) == str
+
+        str = """
+        @NamedTuple {a::Int, b::Int}[]
+
+        @SVector[@SVector[1, 2], @SVector [1, 2]]
+        """
+        @test fmt(str) == str
+    end
 end
