@@ -147,6 +147,8 @@ function p_binaryopcall(
         )
     )
         add_node!(t, pretty(style, op, s), s, join_lines = true)
+    elseif op.val in RADICAL_OPS
+        add_node!(t, pretty(style, op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
