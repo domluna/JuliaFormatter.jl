@@ -1278,4 +1278,20 @@
         """
         @test fmt(str) == str
     end
+
+    @testset "530" begin
+        @testset "DefaultStyle" begin
+            for op in JuliaFormatter.RADICAL_OPS
+                s = "3$(op)2"
+                @test fmt(s) == s
+            end
+        end
+
+        @testset "DefaultStyle" begin
+            for op in JuliaFormatter.RADICAL_OPS
+                s = "3$(op)2"
+                @test bluefmt(s) == s
+            end
+        end
+    end
 end

@@ -1498,6 +1498,10 @@ end
 p_kw(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_kw(DefaultStyle(style), cst, s)
 
+# Radical operators were introduced in 1.7 which require no surrounding whitespace.
+# https://github.com/domluna/JuliaFormatter.jl/issues/530
+const RADICAL_OPS = Set(["√", "∛", "∜"])
+
 function p_binaryopcall(
     ds::DefaultStyle,
     cst::CSTParser.EXPR,
@@ -1559,6 +1563,8 @@ function p_binaryopcall(
             precedence(op) in (CSTParser.PowerOp, CSTParser.DeclarationOp, CSTParser.DotOp)
         )
     )
+        add_node!(t, pretty(style, op, s), s, join_lines = true)
+    elseif op.val in RADICAL_OPS
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
