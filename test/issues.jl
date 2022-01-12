@@ -1294,4 +1294,11 @@
             end
         end
     end
+
+    @testset "533" begin
+        # semicolon should not be added prior to `extrap` since it's a function definition.
+        s = "function linterp(x0::T, y0::T, x1::T, y1::T, x::T, extrap::Bool = false)::T where {T<:AbstractFloat} end"
+        @test bluefmt(s, m=200) == s
+        @test yasfmt(s, m=200) == s
+    end
 end
