@@ -936,7 +936,7 @@ function is_function_or_macro_def(cst::CSTParser.EXPR)
     CSTParser.isoperator(cst.head) &&
         cst.head.val == "::" &&
         cst.parent !== nothing &&
-        cst.parent.head == :where &&
+        (cst.parent.head == :where || cst.parent.head === :function) &&
         return true
     return false
 end
