@@ -182,7 +182,7 @@
         foo(arg1, arg2, arg3) ==
         bar(arg1, arg2, arg3)"""
         # change in default behavior
-        @test yasfmt(str, 2, length(str_); join_lines_based_on_source=false) == str_
+        @test yasfmt(str, 2, length(str_), join_lines_based_on_source=false) == str_
         @test yasfmt(str_, 2, length(str_) - 1) == str
         @test yasfmt(str_, 2, 24) == str
 
@@ -277,15 +277,15 @@
         str = """
         var = fcall(arg1, arg2, arg3, # comment
                     arg4, arg5)"""
-        @test yasfmt(str_, 4, 80; join_lines_based_on_source=false) == str
-        @test yasfmt(str_, 4, 29; join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 4, 80, join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 4, 29, join_lines_based_on_source=false) == str
 
         str = """
         var = fcall(arg1, arg2,
                     arg3, # comment
                     arg4, arg5)"""
-        @test yasfmt(str_, 4, 28; join_lines_based_on_source=false) == str
-        @test yasfmt(str_, 4, 23; join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 4, 28, join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 4, 23, join_lines_based_on_source=false) == str
 
         str = """
         var = fcall(arg1,
@@ -313,8 +313,8 @@
                 end
                 for a = 1:10,  # comment 2
                     b = 11:20, c = 300:400]"""
-        @test yasfmt(str_, 2, 80; join_lines_based_on_source=false) == str
-        @test yasfmt(str_, 2, 35; join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 2, 80, join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 2, 35, join_lines_based_on_source=false) == str
 
         str = """
         comp = [begin
@@ -423,7 +423,7 @@
               (b_hat - y_hat) * delta[i] +
               (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
               for i = 1:8]"""
-        @test yasfmt(str_, 2, 60; join_lines_based_on_source=false) == str
+        @test yasfmt(str_, 2, 60, join_lines_based_on_source=false) == str
     end
 
     @testset "issue 237" begin
