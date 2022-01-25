@@ -690,7 +690,7 @@
 
             a = f + m + l + k
         end"""
-        @test yasfmt(str_, always_for_in = true) == str
+        @test yasfmt(str_, always_for_in = true, join_lines_based_on_source = false) == str
 
         str_ = """
         using Test
