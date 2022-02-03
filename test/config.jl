@@ -201,4 +201,62 @@
     finally
         rm(sandbox_dir; recursive = true)
     end
+
+    config_trailing_comma_nothing = """
+    trailing_comma = "nothing"
+    """
+
+    code_trailing_comma = """
+    const A_SET_OF_SYMBOLS_WITH_TRAILING_COMMA = Set([
+        :accesses, :allowedtypes, :connector, :digits, :equals, :expand,
+        :ignores, :sigdigits, :sort, :val_to_string,
+    ])
+    const A_SET_OF_SYMBOLS_WITHOUT_TRAILING_COMMA = Set([
+        :accesses, :allowedtypes, :connector, :digits, :equals, :expand,
+        :ignores, :sigdigits, :sort, :val_to_string
+    ])
+    """
+    code_trailing_comma_after = """
+    const A_SET_OF_SYMBOLS_WITH_TRAILING_COMMA = Set([
+        :accesses,
+        :allowedtypes,
+        :connector,
+        :digits,
+        :equals,
+        :expand,
+        :ignores,
+        :sigdigits,
+        :sort,
+        :val_to_string,
+    ])
+    const A_SET_OF_SYMBOLS_WITHOUT_TRAILING_COMMA = Set([
+        :accesses,
+        :allowedtypes,
+        :connector,
+        :digits,
+        :equals,
+        :expand,
+        :ignores,
+        :sigdigits,
+        :sort,
+        :val_to_string
+    ])
+    """
+    # test `trailing_comma = "nothing"` in config (#539)
+    # test_trailing_comma_nothing_config
+    # ├─ .JuliaFormatter.toml (config_trailing_comma_nothing)
+    # └─ code.jl (code_trailing_comma -> code_trailing_comma_after)
+    sandbox_dir = joinpath(tempdir(), "test_trailing_comma_nothing_config")
+    mkdir(sandbox_dir)
+    try
+        config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
+        code_path = joinpath(sandbox_dir, "code.jl")
+        open(io -> write(io, config_trailing_comma_nothing), config_path, "w")
+        open(io -> write(io, code_trailing_comma), code_path, "w")
+
+        @test format(code_path) == false
+        @test read(code_path, String) == code_trailing_comma_after
+    finally
+        rm(sandbox_dir; recursive = true)
+    end
 end
