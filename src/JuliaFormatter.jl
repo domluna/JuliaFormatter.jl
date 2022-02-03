@@ -417,6 +417,13 @@ funccall(
 * When set to `false`, the trailing comma is always removed during nesting.
 * When set to `nothing`, the trailing comma appears as it does in the original source.
 
+In the [Configuration File](@ref), a `nothing` value can be set as the string
+value `"nothing"`:
+
+```toml
+trailing_comma = "nothing"
+```
+
 ### `join_lines_based_on_source`
 
 > default: `false`
@@ -757,6 +764,9 @@ end
 
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)
+    if get(config_dict, "trailing_comma", "") == "nothing"
+        config_dict["trailing_comma"] = nothing
+    end
     if (style = get(config_dict, "style", nothing)) !== nothing
         @assert (style == "default" || style == "yas" || style == "blue") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" or \"blue\" for the style configuration"
         config_dict["style"] = if (style == "yas" && @isdefined(YASStyle))
