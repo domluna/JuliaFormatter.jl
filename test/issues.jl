@@ -1305,4 +1305,15 @@
         @test bluefmt(s, m = 200) == s
         @test yasfmt(s, m = 200) == s
     end
+
+    @testset "541" begin
+        str = """
+        [10;]
+        """
+        @test fmt(str, align_matrix = true) == str
+        str = """
+        [0:0.2:50;]
+        """
+        @test fmt(str, align_matrix = true) == str
+    end
 end

@@ -264,6 +264,7 @@ Adjust whitespace in between matrix elements such that it's the same as the orig
 """
 function align_matrix!(fst::FST)
     rows = filter(n -> n.typ === Row, fst.nodes)
+    length(rows) == 0 && return
 
     min_offset = minimum(map(rows) do r
         r[1].line_offset
