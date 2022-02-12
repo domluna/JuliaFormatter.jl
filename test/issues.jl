@@ -1344,7 +1344,7 @@
             92,
             join_lines_based_on_source = true,
             always_use_return = true,
-            whitespace_in_kwargs = true,
+            whitespace_in_kwargs = false,
         ) == str_
     end
 end
