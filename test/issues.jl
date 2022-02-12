@@ -1316,4 +1316,35 @@
         """
         @test fmt(str, align_matrix = true) == str
     end
+
+    @testset "546" begin
+        str = """
+        function _plot_augmented_roc(inference_signals::DataFrame, per_threshold_sensitivity,
+                                     thresholds; save_dir=nothing, save_prefix="", title_suffix="",
+                                     xaxis_prefix="Control dataset: ")
+            plot_data = augment_roc_data(inference_signals, thresholds)
+            _plot_augmented_roc(plot_data, per_threshold_sensitivity;
+                                       save_dir=save_dir, save_prefix=save_prefix,
+                                       title_suffix=title_suffix, xaxis_prefix=xaxis_prefix)
+        end
+        """
+        str_ = """
+        function _plot_augmented_roc(inference_signals::DataFrame, per_threshold_sensitivity,
+                                     thresholds; save_dir=nothing, save_prefix="", title_suffix="",
+                                     xaxis_prefix="Control dataset: ")
+            plot_data = augment_roc_data(inference_signals, thresholds)
+            return _plot_augmented_roc(plot_data, per_threshold_sensitivity;
+                                       save_dir=save_dir, save_prefix=save_prefix,
+                                       title_suffix=title_suffix, xaxis_prefix=xaxis_prefix)
+        end
+        """
+        @test yasfmt(
+            str,
+            4,
+            92,
+            join_lines_based_on_source = true,
+            always_use_return = true,
+            whitespace_in_kwargs = false,
+        ) == str_
+    end
 end

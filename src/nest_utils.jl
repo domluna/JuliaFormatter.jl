@@ -28,6 +28,10 @@ Walks `fst` calling `f` on each node.
 
 In situations where descending further into a subtree is not desirable `f`
 should return a value other than `nothing`.
+
+!!! note
+    This function mutates the State's (`s`) `line_offset`. If this is not desired
+    you should save the value before calling this function and restore it after.
 """
 function walk(f, fst::FST, s::State)
     stop = f(fst, s)
