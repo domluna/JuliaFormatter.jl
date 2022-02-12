@@ -382,11 +382,13 @@ function prepend_return!(fst::FST, s::State)
         end
         return
     end
+    lo = s.line_offset
     walk(f, ln, s)
+    s.line_offset = lo
     found_return && return
 
     ret = FST(Return, fst.indent)
-    kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "return")
+    kw = FST(KEYWORD, -1, ln.startline, ln.startline, "return")
     add_node!(ret, kw, s)
     add_node!(ret, Whitespace(1), s)
     add_node!(ret, ln, s, join_lines = true)
