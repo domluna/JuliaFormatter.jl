@@ -270,13 +270,15 @@ function align_matrix!(fst::FST)
         r[1].line_offset
     end)
 
-    # add whitespace prior to initial element
-    # if elements are aligned to the right
+    line = 0
+    # add whitespace prior to initial element if elements are aligned to the right and
+    # it's the first row on that line.
     for r in rows
-        if r[1].line_offset > min_offset
+        if r[1].line_offset > min_offset && line != r.startline
             diff = r[1].line_offset - min_offset
             insert!(r.nodes, 1, Whitespace(diff))
         end
+        line = r.startline
     end
 
     for r in rows

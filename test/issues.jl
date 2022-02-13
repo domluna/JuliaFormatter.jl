@@ -1317,6 +1317,66 @@
         @test fmt(str, align_matrix = true) == str
     end
 
+    @testset "543" begin
+        str_ = """
+        G4 = [ H    Zero  H; Zero    H   H
+              Zero  Zero  H]
+        """
+        str = """
+        G4 = [
+             H    Zero  H
+            Zero    H   H
+            Zero  Zero  H
+        ]
+        """
+        @test fmt(str_, align_matrix = true) == str
+
+        str_ = """
+        H = [1 1; 1 1]
+        Zero = [0 0; 0 0]
+
+        G1 = vcat(hcat(H,    Zero, H),
+                  hcat(Zero, H,    H),
+                  hcat(Zero, Zero, H))
+
+        G2 = [ H    Zero  H
+              Zero    H   H
+              Zero  Zero  H]
+
+        G3 = [ H    Zero  H;
+              Zero    H   H
+              Zero  Zero  H]
+
+        G4 = [ H    Zero  H; Zero    H   H
+              Zero  Zero  H]
+        """
+        str = """
+        H = [1 1; 1 1]
+        Zero = [0 0; 0 0]
+
+        G1 = vcat(hcat(H, Zero, H), hcat(Zero, H, H), hcat(Zero, Zero, H))
+
+        G2 = [
+             H    Zero  H
+            Zero    H   H
+            Zero  Zero  H
+        ]
+
+        G3 = [
+             H    Zero  H
+            Zero    H   H
+            Zero  Zero  H
+        ]
+
+        G4 = [
+             H    Zero  H
+            Zero    H   H
+            Zero  Zero  H
+        ]
+        """
+        @test fmt(str_, align_matrix = true) == str
+    end
+
     @testset "546" begin
         str = """
         function _plot_augmented_roc(inference_signals::DataFrame, per_threshold_sensitivity,
