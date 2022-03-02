@@ -765,7 +765,7 @@ end
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)
     for (field, type) in zip(fieldnames(Options), fieldtypes(Options))
-        if type == Union{Bool, Nothing}
+        if type == Union{Bool,Nothing}
             field = string(field)
             if get(config_dict, field, "") == "nothing"
                 config_dict[field] = nothing
