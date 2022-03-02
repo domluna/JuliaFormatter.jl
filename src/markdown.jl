@@ -24,6 +24,7 @@ function format_md(text::AbstractString, style::AbstractStyle, opts::Options)
                 FootnoteRule(),
                 MathRule(),
                 TableRule(),
+                FrontMatterRule(),
                 FormatRule(style, opts),
             ],
         )(

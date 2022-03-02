@@ -14,7 +14,8 @@ using CommonMark:
     MathRule,
     Parser,
     Rule,
-    TableRule
+    TableRule,
+    FrontMatterRule
 
 export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle
 
@@ -642,7 +643,7 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if ext == ".md"
+    formatted_str = if ext == ".md" || ext == ".jmd"
         format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
