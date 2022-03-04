@@ -763,7 +763,7 @@ function kwargs(dict)
     return pairs(NamedTuple{ns}(vs))
 end
 
-fieldnts(T::Type) = ((fieldname(T, i), fieldtype(T, i)) for i in 1:fieldcount(T))
+fieldnts(T::Type) = ((fieldname(T, i), fieldtype(T, i)) for i = 1:fieldcount(T))
 
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)
