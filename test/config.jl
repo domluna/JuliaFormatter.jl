@@ -225,7 +225,9 @@
         title: Test file
         author: JuliaFormatter
         ---
+
         # hello world
+
         ```julia
         begin body end
         ```
@@ -237,12 +239,15 @@
         title: Test file
         author: JuliaFormatter
         ---
+
         # hello world
+
         ```julia
         begin
           body
         end
         ```
+
           - a
           -             b
         """
