@@ -14,7 +14,8 @@ using CommonMark:
     MathRule,
     Parser,
     Rule,
-    TableRule
+    TableRule,
+    FrontMatterRule
 
 export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle
 
@@ -601,7 +602,7 @@ end
         format_options...,
     )::Bool
 
-Formats the contents of `filename` assuming it's a `.jl` or `.md` file.
+Formats the contents of `filename` assuming it's a `.jl`, `.md` or `.jmd` file.
 
 ## File Options
 
@@ -642,7 +643,7 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if ext == ".md"
+    formatted_str = if ext == ".md" || ext == ".jmd"
         format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
@@ -652,7 +653,7 @@ function format_file(
         str = String(read(filename))
         format_text(str; format_options...)
     else
-        error("$filename must be a Julia (.jl) or Markdown (.md) source file")
+        error("$filename must be a Julia (.jl) or Markdown (.md or .jmd) source file")
     end
     formatted_str = replace(formatted_str, r"\n*$" => "\n")
     already_formatted = (formatted_str == str)
@@ -726,7 +727,7 @@ function format(paths; options...)::Bool
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext in (".jl", ".md") &&
+                    if ext in (".jl", ".md", ".jmd") &&
                        !(".git" in split(full_path, Base.Filesystem.path_separator))
                         dir = abspath(root)
                         opts = if (config = find_config_file(dir)) !== nothing

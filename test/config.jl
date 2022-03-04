@@ -199,11 +199,62 @@
         # test_basic_markdown_format
         # ├─ .JuliaFormatter.toml (config2)
         # └─ file.md (before -> after2)
-        sandbox_dir = joinpath(tempdir(), "test_basic_config")
+        sandbox_dir = joinpath(tempdir(), "test_basic_markdown_format")
         mkdir(sandbox_dir)
         try
             config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
             md_path = joinpath(sandbox_dir, "file.md")
+            open(io -> write(io, config2), config_path, "w")
+            open(io -> write(io, before), md_path, "w")
+
+            @test format(md_path) == false
+            @test read(md_path, String) == after2
+        finally
+            rm(sandbox_dir; recursive = true)
+        end
+    end
+
+    @testset "jmd formatting" begin
+        config2 = """
+        indent = 2
+        format_markdown = true
+        """
+
+        before = """
+        ---
+        title: Test file
+        author: JuliaFormatter
+        ---
+        # hello world
+        ```julia
+        begin body end
+        ```
+        - a
+        -             b
+        """
+        after2 = """
+        ---
+        title: Test file
+        author: JuliaFormatter
+        ---
+        # hello world
+        ```julia
+        begin
+          body
+        end
+        ```
+          - a
+          -             b
+        """
+        # test formatting a Julia markdown file
+        # test_basic_juliamarkdown_format
+        # ├─ .JuliaFormatter.toml (config2)
+        # └─ file.jmd (before -> after2)
+        sandbox_dir = joinpath(tempdir(), "test_basic_juliamarkdown_format")
+        mkdir(sandbox_dir)
+        try
+            config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
+            md_path = joinpath(sandbox_dir, "file.jmd")
             open(io -> write(io, config2), config_path, "w")
             open(io -> write(io, before), md_path, "w")
 
