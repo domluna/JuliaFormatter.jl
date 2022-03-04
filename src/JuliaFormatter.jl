@@ -763,10 +763,17 @@ function kwargs(dict)
     return pairs(NamedTuple{ns}(vs))
 end
 
+fieldnts(T::Type) = ((fieldname(T, i), fieldtype(T, i)) for i = 1:fieldcount(T))
+
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)
-    if get(config_dict, "trailing_comma", "") == "nothing"
-        config_dict["trailing_comma"] = nothing
+    for (field, type) in fieldnts(Options)
+        if type == Union{Bool,Nothing}
+            field = string(field)
+            if get(config_dict, field, "") == "nothing"
+                config_dict[field] = nothing
+            end
+        end
     end
     if (style = get(config_dict, "style", nothing)) !== nothing
         @assert (style == "default" || style == "yas" || style == "blue") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" or \"blue\" for the style configuration"
