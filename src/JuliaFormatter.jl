@@ -186,7 +186,7 @@ Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
 > default: `false`
 
-If true, superflous newlines will be removed. For example:
+If true, superfluous newlines will be removed. For example:
 
 ```julia
 module M
@@ -226,7 +226,7 @@ end
 ```
 
 Modules are the only type of code block allowed to keep a single newline
-prior to the intial or after the final piece of code.
+prior to the initial or after the final piece of code.
 
 ### `import_to_using`
 
@@ -410,7 +410,7 @@ it turns into:
 funccall(
     arg1,
     arg2,
-    arg3, # trailing comma added after `arg3` (final arugment) !!!
+    arg3, # trailing comma added after `arg3` (final argument) !!!
 )
 ```
 
@@ -543,7 +543,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         pretty(style, cst, s)
     catch e
         loc = cursor_loc(s, s.offset - 1)
-        @warn "Error occured during prettification" line = loc[1] offset = loc[2]
+        @warn "Error occurred during prettification" line = loc[1] offset = loc[2]
         rethrow()
     end
     hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))
@@ -558,7 +558,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     # ignore maximum width can be extra whitespace at the end of lines
     # remove it all before we print.
-    s.opts.join_lines_based_on_source && remove_superflous_whitespace!(fst)
+    s.opts.join_lines_based_on_source && remove_superfluous_whitespace!(fst)
 
     s.line_offset = 0
     io = IOBuffer()
@@ -588,7 +588,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
     ps.errored && error(
-        "Parsing error for formatted text:\n\n$text\n\n Error occured on line $line, offset $offset.",
+        "Parsing error for formatted text:\n\n$text\n\n Error occurred on line $line, offset $offset.",
     )
     return text
 end

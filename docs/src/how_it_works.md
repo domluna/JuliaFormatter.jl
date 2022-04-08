@@ -47,7 +47,7 @@ a = foo(a, b, c, d)
 So what does a typical `FST` look like?
 
 Code and comments are indented to match surrounding code blocks.
-Uncessary whitespace is removed. Newlines in between code blocks are untouched.
+Unnecessary whitespace is removed. Newlines in between code blocks are untouched.
 
 If the expression can be put on a single line it will be. It doesn't matter
 it's a function call which 120 arguments, making it 1000 characters long.
