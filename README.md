@@ -1,8 +1,8 @@
 # JuliaFormatter.jl
 
-[![Documenter: stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable)
-[![Documenter: dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev)
-![Build Status](https://github.com/domluna/Juliaformatter.jl/actions/workflows/ci.yml/badge.svg)
+[![Documenter: stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable/)
+[![Documenter: dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev/)
+![Build Status](https://github.com/domluna/JuliaFormatter.jl/actions/workflows/ci.yml/badge.svg)
 
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 
@@ -77,7 +77,7 @@ Example: `arr[(i1 + i2):(i3 + i4)]` instead of `arr[i1+i2:i3+i4]`.
 
 > default: `false`
 
-If true, superflous newlines will be removed. For example:
+If true, superfluous newlines will be removed. For example:
 
 ```julia
 module M
@@ -117,7 +117,7 @@ end
 ```
 
 Modules are the only type of code block allowed to keep a single newline
-prior to the intial or after the final piece of code.
+prior to the initial or after the final piece of code.
 
 ### `import_to_using`
 
@@ -301,7 +301,7 @@ it turns into:
 funccall(
     arg1,
     arg2,
-    arg3, # trailing comma added after `arg3` (final arugment) !!!
+    arg3, # trailing comma added after `arg3` (final argument) !!!
 )
 ```
 

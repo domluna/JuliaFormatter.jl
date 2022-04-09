@@ -402,7 +402,7 @@ end
 NOTE: Assumes `fst` is the caller name of a macrocall such as
 `@macro` or `Module.@macro`.
 
-Moves `@` to the last indentifier.
+Moves `@` to the last identifier.
 
 Example:
 
@@ -570,11 +570,11 @@ function separate_kwargs_with_semicolon!(fst::FST)
 end
 
 """
-    remove_superflous_whitespace!(fst::FST)
+    remove_superfluous_whitespace!(fst::FST)
 
 Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
 """
-function remove_superflous_whitespace!(fst::FST)
+function remove_superfluous_whitespace!(fst::FST)
     is_leaf(fst) && return
     for (i, n) in enumerate(fst.nodes)
         if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
@@ -582,7 +582,7 @@ function remove_superflous_whitespace!(fst::FST)
            (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
             fst[i] = Whitespace(0)
         else
-            remove_superflous_whitespace!(n)
+            remove_superfluous_whitespace!(n)
         end
     end
     return
