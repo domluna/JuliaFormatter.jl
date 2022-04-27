@@ -238,7 +238,8 @@ block_modifier(rule::FormatRule) =
         if startswith(language, "@example") ||
            startswith(language, "@repl") ||
            startswith(language, "@eval") ||
-           startswith(language, "julia")
+           startswith(language, "julia") ||
+           startswith(language, "{julia}")
             block.literal = format_text(code, rule)
         elseif startswith(language, "jldoctest")
             block.literal = if occursin(r"^julia> "m, code)

@@ -602,7 +602,7 @@ end
         format_options...,
     )::Bool
 
-Formats the contents of `filename` assuming it's a `.jl`, `.md` or `.jmd` file.
+Formats the contents of `filename` assuming it's a `.jl`, `.md`, `.jmd` or `.qmd` file.
 
 ## File Options
 
@@ -643,7 +643,7 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if ext == ".md" || ext == ".jmd"
+    formatted_str = if !isnothing(match(r"^\.[jq]*md$", ext))
         format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
@@ -653,7 +653,7 @@ function format_file(
         str = String(read(filename))
         format_text(str; format_options...)
     else
-        error("$filename must be a Julia (.jl) or Markdown (.md or .jmd) source file")
+        error("$filename must be a Julia (.jl) or Markdown (.md, .jmd or .qmd) source file")
     end
     formatted_str = replace(formatted_str, r"\n*$" => "\n")
     already_formatted = (formatted_str == str)
@@ -727,7 +727,7 @@ function format(paths; options...)::Bool
                     _, ext = splitext(file)
                     full_path = joinpath(root, file)
                     formatted_file &
-                    if ext in (".jl", ".md", ".jmd") &&
+                    if ext in (".jl", ".md", ".jmd", ".qmd") &&
                        !(".git" in split(full_path, Base.Filesystem.path_separator))
                         dir = abspath(root)
                         opts = if (config = find_config_file(dir)) !== nothing
