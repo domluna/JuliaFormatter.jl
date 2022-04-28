@@ -643,7 +643,7 @@ function format_file(
 )::Bool
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if !isnothing(match(r"^\.[jq]*md$", ext))
+    formatted_str = if match(r"^\.[jq]*md$", ext) ≠ nothing
         format_markdown || return true
         verbose && println("Formatting $filename")
         str = String(read(filename))
