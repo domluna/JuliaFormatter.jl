@@ -2561,7 +2561,7 @@
 
         str = """
         @somemacro function (
-            fcall_ | fcall_,
+            fcall_ | fcall_
         )
             body_
         end"""
@@ -2571,7 +2571,7 @@
         str = """
         @somemacro function (
             fcall_ |
-            fcall_,
+            fcall_
         )
             body_
         end"""

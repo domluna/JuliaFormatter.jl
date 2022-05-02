@@ -1408,6 +1408,23 @@
         ) == str_
     end
 
+    @testset "568" begin
+        s = """
+        function (func(arg))
+            body
+        end
+        """
+        # no trailing comma since (arg) is semantically different from (arg,) !!!
+        s_ = """
+        function (
+            func(arg)
+        )
+            body
+        end
+        """
+        @test fmt(s, 4, 19) == s_
+    end
+
     @testset "571" begin
         s = """
         arraycopy_common(false#=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)

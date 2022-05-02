@@ -1841,7 +1841,9 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif is_closer(n) && nest
             # An odd case but this could occur if there are no keyword arguments.
             # In which case ";," is invalid syntax.
-            if t[end].typ !== SEMICOLON
+            #
+            # no trailing comma since (arg) is semantically different from (arg,) !!!
+            if t[end].typ !== SEMICOLON && length(args) > 1
                 add_node!(t, TrailingComma(), s)
             end
             add_node!(t, Placeholder(0), s)
