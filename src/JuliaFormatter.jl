@@ -586,10 +586,26 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     text = normalize_line_ending(text, replacer)
 
     _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    line, offset = ps.lt.endpos
-    ps.errored && error(
-        "Parsing error for formatted text:\n\n$text\n\n Error occurred on line $line, offset $offset.",
-    )
+    # TODO: This line info is not correct since it doesn't stop at the error.
+    # At the moment it doesn't seem there's a way to get the error line info.
+    # https://github.com/julia-vscode/CSTParser.jl/issues/335
+    line, offset = ps.lt.startpos
+    if ps.errored
+        buf = IOBuffer()
+        lines = split(text, '\n')
+        padding = ndigits(length(lines))
+        for (i, l) in enumerate(lines)
+            write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
+            if i == line
+                write(buf, "\n...")
+                break
+            end
+        end
+        error_text = String(take!(buf))
+        error(
+            "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
+        )
+    end
     return text
 end
 
