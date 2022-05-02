@@ -1407,4 +1407,16 @@
             whitespace_in_kwargs = false,
         ) == str_
     end
+
+    @testset "571" begin
+        s = """
+        arraycopy_common(false#=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
+        return nothing
+        """
+        s_ = """
+        arraycopy_common(false, LLVM.Builder(B), orig, origops[1], gutils) #=fwd=#
+        return nothing
+        """
+        @test format_text(s) == s_
+    end
 end

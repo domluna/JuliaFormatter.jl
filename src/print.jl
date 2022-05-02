@@ -144,6 +144,12 @@ function print_inlinecomment(io::IOBuffer, fst::FST, s::State)
     ws, v = get(s.doc.comments, fst.startline, (0, ""))
     isempty(v) && return
     v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
-    ws > 0 && write(io, repeat(" ", ws))
+    if ws > 0
+        write(io, repeat(" ", ws))
+    elseif startswith(v, "#=") && endswith(v, "=#")
+        # hack to overcome the bug noticed in https://github.com/domluna/JuliaFormatter.jl/issues/571#issuecomment-1114446297
+        # until multiline comments aren't moved to the end of the line.
+        write(io, " ")
+    end
     write(io, v)
 end
