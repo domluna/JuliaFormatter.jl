@@ -172,7 +172,7 @@ Transforms a *short* function definition
 f(arg1, arg2) = body
 ```
 
-to a *long* function definition
+to a *long* function definition if the short function definition exceeds the maximum margin.
 
 ```julia
 function f(arg2, arg2)
