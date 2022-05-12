@@ -14,8 +14,8 @@ jobs:
       matrix:
         version:
           - '1.6'
-        arch: [x64]
-        os: [ubuntu-latest]
+        arch: [x64, x86]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         exclude:
           - os: macos-latest
             arch: x86
