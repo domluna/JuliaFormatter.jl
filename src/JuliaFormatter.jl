@@ -811,4 +811,9 @@ if Base.VERSION >= v"1.5"
     _precompile_()
 end
 
+function julia_main()::Cint
+    format(ARGS[1])
+    return 0
+end
+
 end
