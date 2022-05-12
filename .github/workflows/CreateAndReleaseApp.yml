@@ -19,6 +19,7 @@ jobs:
         exclude:
           - os: macos-latest
             arch: x86
+      fail-fast: false
     steps:
       - uses: actions/checkout@v3
         with:
