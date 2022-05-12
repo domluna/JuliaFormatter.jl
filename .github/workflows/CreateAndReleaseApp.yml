@@ -32,9 +32,9 @@ jobs:
         with:
           project: compiler
       - name: Compile App
-        run: julia --project=compiler -e 'include("compiler/runcompiler.jl"); compile_app()'
+        run: julia --project=compiler -e 'include(joinpath("compiler", "runcompiler.jl")); compile_app()'
       - name: Test App
-        run: julia --project=compiler -e 'include("compiler/runcompiler.jl"); test_app()'
+        run: julia --project=compiler -e 'include(joinpath("compiler", "runcompiler.jl")); test_app()'
       - name: Upload Binary
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
