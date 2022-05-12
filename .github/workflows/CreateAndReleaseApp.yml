@@ -1,0 +1,42 @@
+name: Create and Release App
+on:
+  push:
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - 'master'
+jobs:
+  create_and_release_app:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version:
+          - '1.6'
+        arch: [x64]
+        os: [ubuntu-latest]
+        exclude:
+          - os: macos-latest
+            arch: x86
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v1
+        with:
+          show-versioninfo: true
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/julia-buildpkg@latest
+        with:
+          project: compiler
+      - name: Compile App
+        run: julia --project=compiler -e 'include("compiler/runcompiler.jl"); compile_app()'
+      - name: Test App
+        run: julia --project=compiler -e 'include("compiler/runcompiler.jl"); test_app()'
+      - name: Upload Binary
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: compiler/JuliaFormatter-*
