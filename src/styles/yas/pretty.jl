@@ -271,6 +271,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     st = cst.head === :vcat ? 1 : 2
+    n_semicolons = 0
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -296,6 +297,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 override_join_lines_based_on_source = i == st + 1,
             )
             if has_semicolon(s.doc, n.startline)
+                n_semicolons += 1
                 semicolons = s.doc.semicolons[n.startline]
                 count = popfirst!(semicolons)
                 if i != length(cst) - 1
@@ -306,7 +308,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                     else
                         add_node!(t, InverseTrailingSemicolon(), s)
                     end
-                elseif count > 1
+                elseif count > 1 || n_semicolons == 1
                     for _ = 1:count
                         add_node!(t, Semicolon(), s)
                     end
