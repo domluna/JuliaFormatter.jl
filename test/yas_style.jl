@@ -576,4 +576,10 @@
         str = "using A"
         @test yasfmt(str) == str
     end
+
+    @testset "issue 582 - vcat" begin
+        @test format_text("[sts...;]", YASStyle()) == "[sts...;]"
+        @test format_text("[a;b;]", YASStyle()) == "[a; b]"
+        @test format_text("[a;b;;]", YASStyle()) == "[a; b;;]"
+    end
 end
