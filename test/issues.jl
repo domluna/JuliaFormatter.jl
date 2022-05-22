@@ -984,27 +984,52 @@
             AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
         )
         """
-        @test fmt(str, 4, 100, whitespace_in_kwargs = false, separate_kwargs_with_semicolon=true) == str
+        @test fmt(
+            str,
+            4,
+            100,
+            whitespace_in_kwargs = false,
+            separate_kwargs_with_semicolon = true,
+        ) == str
         str = """
         @deprecate(
             presign(path::AWSS3.S3Path; duration::Period=Hour(1), config::AWSConfig=aws_config()),
             AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),
         )
         """
-        @test fmt(str, 4, 100, whitespace_in_kwargs = false, separate_kwargs_with_semicolon=true) == str
+        @test fmt(
+            str,
+            4,
+            100,
+            whitespace_in_kwargs = false,
+            separate_kwargs_with_semicolon = true,
+        ) == str
 
         str = """
         @deprecate(presign(path::AWSS3.S3Path, duration::Period=Hour(1); config::AWSConfig=aws_config()),
                    AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),)
         """
-        @test yasfmt(str, 4, 100, margin=100, whitespace_in_kwargs=false, separate_kwargs_with_semicolon=true) == str
+        @test yasfmt(
+            str,
+            4,
+            100,
+            margin = 100,
+            whitespace_in_kwargs = false,
+            separate_kwargs_with_semicolon = true,
+        ) == str
 
         str = """
         @deprecate(presign(path::AWSS3.S3Path, duration::Period=Hour(1), config::AWSConfig=aws_config()),
                    AWSS3.s3_sign_url(config, path.bucket, path.key, Dates.value(Second(duration))),)
         """
-        @test yasfmt(str, 4, 100, margin=100, whitespace_in_kwargs=false, separate_kwargs_with_semicolon=true) == str
-
+        @test yasfmt(
+            str,
+            4,
+            100,
+            margin = 100,
+            whitespace_in_kwargs = false,
+            separate_kwargs_with_semicolon = true,
+        ) == str
     end
 
     @testset "485" begin

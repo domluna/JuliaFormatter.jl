@@ -259,7 +259,8 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         end
     end
 
-    if s.opts.separate_kwargs_with_semicolon && (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
+    if s.opts.separate_kwargs_with_semicolon &&
+       (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
         separate_kwargs_with_semicolon!(t)
     end
 
