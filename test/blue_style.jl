@@ -264,46 +264,6 @@
         @test bluefmt(str_, 4, 27) == str
     end
 
-    @testset "separate kw args with semicolon" begin
-        str_ = "xy = f(x, y=3)"
-        str = "xy = f(x; y = 3)"
-        @test bluefmt(str_) == str
-
-        str_ = "xy = f(x=1, y=2)"
-        str = "xy = f(; x = 1, y = 2)"
-        @test bluefmt1(str_) == str
-        @test bluefmt(str_) == str
-        @test bluefmt(str) == str
-
-        str_ = "xy = f(x=1; y=2)"
-        @test bluefmt1(str_) == str
-        @test bluefmt(str_) == str
-
-        str_ = """
-        x = foo(var = "some really really really really really really really really really really long string")
-        """
-        str = """
-        x = foo(;
-            var = "some really really really really really really really really really really long string",
-        )
-        """
-        @test bluefmt1(str_) == str
-        @test bluefmt(str_) == str
-
-        str = """
-        function g(x, y = 1)
-            return x + y
-        end
-        macro h(x, y = 1)
-            nothing
-        end
-        shortdef1(MatrixT, VectorT = nothing) = nothing
-        shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
-        """
-        @test bluefmt1(str) == str
-        @test bluefmt(str) == str
-    end
-
     @testset "no chained ternary allowed !!!" begin
         str = """
         E1 ? A : B

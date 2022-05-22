@@ -60,6 +60,8 @@ function options(s::DefaultStyle)
         normalize_line_endings = "auto",
         align_matrix = false,
         trailing_comma = true,
+        indent_submodule = false,
+        separate_kwargs_with_semicolon = false,
     )
 end
 
@@ -137,6 +139,8 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         normalize_line_endings = "auto",
         align_matrix::Bool = false,
         trailing_comma::Bool = false,
+        indent_submodule::Bool = false,
+        separate_kwargs_with_semicolon::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
