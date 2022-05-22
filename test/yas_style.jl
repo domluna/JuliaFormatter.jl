@@ -578,8 +578,8 @@
     end
 
     @testset "issue 582 - vcat" begin
-        @test format_text("[sts...;]", YASStyle()) == "[sts...;]"
-        @test format_text("[a;b;]", YASStyle()) == "[a; b]"
-        @test format_text("[a;b;;]", YASStyle()) == "[a; b;;]"
+        @test yasfmt("[sts...;]") == "[sts...;]"
+        @test yasfmt("[a;b;]") == "[a; b]"
+        @test yasfmt("[a;b;;]") == "[a; b;;]"
     end
 end
