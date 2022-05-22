@@ -18,6 +18,7 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `pipe_to_function_call` = true
 - `whitespace_in_kwargs` = false
 - `annotate_untyped_fields_with_any` = false
+- `separate_kwargs_with_semicolon` = true
 """
 struct BlueStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -39,21 +40,13 @@ function options(style::BlueStyle)
         annotate_untyped_fields_with_any = false,
         conditional_to_if = true,
         indent_submodule = true,
+        separate_kwargs_with_semicolon = true,
     )
 end
 
 function is_binaryop_nestable(::BlueStyle, cst::CSTParser.EXPR)
     is_assignment(cst) && is_iterable(cst[end]) && return false
     return is_binaryop_nestable(DefaultStyle(), cst)
-end
-
-function p_call(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(bs)
-    t = p_call(DefaultStyle(style), cst, s)
-    if !parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall)
-        separate_kwargs_with_semicolon!(t)
-    end
-    t
 end
 
 function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
