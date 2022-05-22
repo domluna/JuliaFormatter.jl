@@ -2000,4 +2000,22 @@
         """
         @test fmt(str_, 2, 21, indent_submodule = true) == str
     end
+
+    @testset "`separate_kwargs_with_semicolon`" begin
+        str_ = """
+        f(a, b = 10)
+        """
+        str = """
+        f(a; b = 10)
+        """
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+
+        str_ = """
+        f(a, b = 10)
+        """
+        str = """
+        f(a; b = 10)
+        """
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+    end
 end
