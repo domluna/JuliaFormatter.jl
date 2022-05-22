@@ -16,7 +16,8 @@ function fmt(s; i = 4, m = 80, kwargs...)
 end
 fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
-yasfmt1(str) = fmt1(str; style = YASStyle(), options(DefaultStyle())...)
+yasfmt1(str; kwargs...) =
+    fmt1(str; style = YASStyle(), options(DefaultStyle())..., kwargs...)
 yasfmt(str; i = 4, m = 80, kwargs...) =
     fmt(str; i = i, m = m, style = YASStyle(), kwargs...)
 yasfmt(str, i::Int, m::Int; kwargs...) = yasfmt(str; i = i, m = m, kwargs...)
