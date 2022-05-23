@@ -1,4 +1,4 @@
-@testset "YAS Style" begin
+@testset "SciML Style" begin
     str = raw"""
        @noinline require_complete(m::Matching) =
            m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
