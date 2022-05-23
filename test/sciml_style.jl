@@ -54,4 +54,22 @@
     @parameters a = b
     """
     @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = raw"""
+    function my_large_function(argument1, argument2,
+                               argument3, argument4,
+                               argument5, x, y, z)
+        foo(x) + goo(y)
+    end
+    """
+
+    formatted_str = raw"""
+    function my_large_function(argument1, argument2,
+                               argument3, argument4,
+                               argument5, x, y, z)
+        foo(x) + goo(y)
+    end
+    """
+
+    @test format_text(str, SciMLStyle()) == formatted_str
 end
