@@ -404,6 +404,20 @@ d = 4
 end
 ```
 
+### `separate_kwargs_with_semicolon`
+
+> default: `false`
+
+When set to `true`, keyword arguments in a function call will be separated with a semicolon.
+
+```julia
+f(a, b=1)
+
+->
+
+f(a; b=1)
+```
+
 ### File Options
 
 ### `overwrite`

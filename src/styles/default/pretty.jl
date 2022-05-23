@@ -1775,6 +1775,12 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
     end
+
+    if s.opts.separate_kwargs_with_semicolon &&
+       (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
+        separate_kwargs_with_semicolon!(t)
+    end
+
     t
 end
 p_call(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

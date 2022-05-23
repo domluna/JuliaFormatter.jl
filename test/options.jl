@@ -2000,4 +2000,71 @@
         """
         @test fmt(str_, 2, 21, indent_submodule = true) == str
     end
+
+    @testset "`separate_kwargs_with_semicolon`" begin
+        str_ = """
+        f(a, b = 10)
+        """
+        str = """
+        f(a; b = 10)
+        """
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+
+        str_ = "xy = f(x, y=3)"
+        str = "xy = f(x; y = 3)"
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+
+        str_ = "xy = f(x=1, y=2)"
+        str = "xy = f(; x = 1, y = 2)"
+        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str, separate_kwargs_with_semicolon = true) == str
+
+        str_ = "xy = f(x = 1; y = 2)"
+        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+
+        str = """
+        function g(x, y = 1)
+            return x + y
+        end
+        macro h(x, y = 1)
+            nothing
+        end
+        shortdef1(MatrixT, VectorT = nothing) = nothing
+        shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
+        """
+        @test fmt1(str, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str, separate_kwargs_with_semicolon = true) == str
+
+        str_ = """
+        x = foo(var = "some really really really really really really really really really really long string")
+        """
+        str = """
+        x = foo(;
+            var = "some really really really really really really really really really really long string",
+        )
+        """
+        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+
+        str_ = """
+        x = foo(var = "some really really really really really really really really really really long string")
+        """
+        str = """
+        x = foo(;
+                var = "some really really really really really really really really really really long string")
+        """
+        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+    end
 end

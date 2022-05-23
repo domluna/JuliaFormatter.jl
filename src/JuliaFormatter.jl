@@ -61,6 +61,8 @@ function options(s::DefaultStyle)
         normalize_line_endings = "auto",
         align_matrix = false,
         trailing_comma = true,
+        indent_submodule = false,
+        separate_kwargs_with_semicolon = false,
     )
 end
 
@@ -140,6 +142,8 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         normalize_line_endings = "auto",
         align_matrix::Bool = false,
         trailing_comma::Bool = false,
+        indent_submodule::Bool = false,
+        separate_kwargs_with_semicolon::Bool = false,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -522,6 +526,21 @@ d = 4
 
 end
 ```
+
+### `separate_kwargs_with_semicolon`
+
+> default: `false`
+
+When set to `true`, keyword arguments in a function call will be separated with a semicolon.
+
+```julia
+f(a, b=1)
+
+->
+
+f(a; b=1)
+```
+
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)

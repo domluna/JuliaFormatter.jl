@@ -14,6 +14,7 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `always_use_return` = true
 - `whitespace_in_kwargs` = false
 - `join_lines_based_on_source` = true
+- `separate_kwargs_with_semicolon` = true
 """
 struct YASStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -32,6 +33,7 @@ function options(style::YASStyle)
         always_use_return = true,
         whitespace_in_kwargs = false,
         join_lines_based_on_source = true,
+        separate_kwargs_with_semicolon = true,
     )
 end
 
@@ -256,9 +258,12 @@ function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         end
     end
-    if !parent_is(cst, is_function_or_macro_def)
+
+    if s.opts.separate_kwargs_with_semicolon &&
+       (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
         separate_kwargs_with_semicolon!(t)
     end
+
     t
 end
 function p_vect(ys::YASStyle, cst::CSTParser.EXPR, s::State)
@@ -271,6 +276,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     st = cst.head === :vcat ? 1 : 2
+    n_semicolons = 0
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -296,8 +302,10 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 override_join_lines_based_on_source = i == st + 1,
             )
             if has_semicolon(s.doc, n.startline)
+                n_semicolons += 1
                 semicolons = s.doc.semicolons[n.startline]
                 count = popfirst!(semicolons)
+                # @info "" count n_semicolons
                 if i != length(cst) - 1
                     if count > 1
                         for _ = 1:count
@@ -306,7 +314,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                     else
                         add_node!(t, InverseTrailingSemicolon(), s)
                     end
-                elseif count > 1
+                elseif count > 1 || n_semicolons == 1
                     for _ = 1:count
                         add_node!(t, Semicolon(), s)
                     end

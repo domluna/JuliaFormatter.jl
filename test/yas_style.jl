@@ -451,45 +451,6 @@
         @test yasfmt(str, 4, 92, whitespace_in_kwargs = false) == str
     end
 
-    @testset "separate kw args with semicolon" begin
-        str_ = "xy = f(x, y=3)"
-        str = "xy = f(x; y = 3)"
-        @test yasfmt(str_) == str
-
-        str_ = "xy = f(x=1, y=2)"
-        str = "xy = f(; x = 1, y = 2)"
-        @test yasfmt1(str_) == str
-        @test yasfmt(str_) == str
-        @test yasfmt(str) == str
-
-        str_ = "xy = f(x = 1; y = 2)"
-        @test yasfmt1(str_) == str
-        @test yasfmt(str_) == str
-
-        str_ = """
-        x = foo(var = "some really really really really really really really really really really long string")
-        """
-        str = """
-        x = foo(;
-                var = "some really really really really really really really really really really long string")
-        """
-        @test yasfmt1(str_) == str
-        @test yasfmt(str_) == str
-
-        str = """
-        function g(x, y = 1)
-            return x + y
-        end
-        macro h(x, y = 1)
-            nothing
-        end
-        shortdef1(MatrixT, VectorT = nothing) = nothing
-        shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
-        """
-        @test yasfmt1(str) == str
-        @test yasfmt(str) == str
-    end
-
     @testset "issue 355 - vcat/typedvcat" begin
         str = """
         mpoly_rules = T[@rule(~x::ismpoly - ~y::ismpoly => ~x + -1 * (~y))
@@ -575,5 +536,11 @@
 
         str = "using A"
         @test yasfmt(str) == str
+    end
+
+    @testset "issue 582 - vcat" begin
+        @test yasfmt("[sts...;]") == "[sts...;]"
+        @test yasfmt("[a;b;]") == "[a; b]"
+        @test yasfmt("[a;b;;]") == "[a; b;;]"
     end
 end
