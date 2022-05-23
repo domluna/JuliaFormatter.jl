@@ -17,7 +17,8 @@ using CommonMark:
     TableRule,
     FrontMatterRule
 
-export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle
+export format,
+    format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle
 
 abstract type AbstractStyle end
 
@@ -540,7 +541,8 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
     formatted_text = format_text(text, style, opts)
     iter = 1
     while formatted_text != text
-        iter > maxiters && error("formatted_text hasn't reached to a fixpoint in $iter iterations")
+        iter > maxiters &&
+            error("formatted_text hasn't reached to a fixpoint in $iter iterations")
         text = formatted_text
         formatted_text = format_text(text, style, opts)
         iter += 1
@@ -810,7 +812,9 @@ function parse_config(tomlfile)
         end
     end
     if (style = get(config_dict, "style", nothing)) !== nothing
-        @assert (style == "default" || style == "yas" || style == "blue" || style == "sciml") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", or \"sciml\" for the style configuration"
+        @assert (
+            style == "default" || style == "yas" || style == "blue" || style == "sciml"
+        ) "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", or \"sciml\" for the style configuration"
         config_dict["style"] = if (style == "yas" && @isdefined(YASStyle))
             YASStyle()
         elseif (style == "blue" && @isdefined(BlueStyle))

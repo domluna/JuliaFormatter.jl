@@ -22,20 +22,20 @@ SciMLStyle() = SciMLStyle(nothing)
 
 function options(style::SciMLStyle)
     return (;
-            always_for_in = true,
-            always_use_return = false,
-            annotate_untyped_fields_with_any = true,
-            conditional_to_if = false,
-            import_to_using = false,
-            join_lines_based_on_source = true,
-            normalize_line_endings = "unix",
-            pipe_to_function_call = false,
-            remove_extra_newlines = true,
-            short_to_long_function_def = false,
-            whitespace_in_kwargs = true,
-            whitespace_ops_in_indices = true,
-            whitespace_typedefs = true,
-           )
+        always_for_in = true,
+        always_use_return = false,
+        annotate_untyped_fields_with_any = true,
+        conditional_to_if = false,
+        import_to_using = false,
+        join_lines_based_on_source = true,
+        normalize_line_endings = "unix",
+        pipe_to_function_call = false,
+        remove_extra_newlines = true,
+        short_to_long_function_def = false,
+        whitespace_in_kwargs = true,
+        whitespace_ops_in_indices = true,
+        whitespace_typedefs = true,
+    )
 end
 
 function is_binaryop_nestable(::SciMLStyle, cst::CSTParser.EXPR)
@@ -46,11 +46,22 @@ end
 
 const CST_T = [CSTParser.EXPR]
 const TUPLE_T = [CSTParser.EXPR, Vector{CSTParser.EXPR}]
-for f in [:p_import, :p_using, :p_export, :p_invisbrackets, #:p_curly, :p_braces,
-          :p_call, :p_tuple, :p_vcat, :p_typedvcat, :p_ref,
-          :p_comprehension, :p_typedcomprehension, #:p_whereopcall,
-          :p_generator, :p_filter, :p_flatten, #:p_vect
-         ]
+for f in [
+    :p_import,
+    :p_using,
+    :p_export,
+    :p_invisbrackets, #:p_curly, :p_braces,
+    :p_call,
+    :p_tuple,
+    :p_vcat,
+    :p_typedvcat,
+    :p_ref,
+    :p_comprehension,
+    :p_typedcomprehension, #:p_whereopcall,
+    :p_generator,
+    :p_filter,
+    :p_flatten, #:p_vect
+]
     Ts = f === :p_tuple ? TUPLE_T : CST_T
     for T in Ts
         @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
