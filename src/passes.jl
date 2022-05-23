@@ -216,7 +216,7 @@ end
 ```
 """
 function short_to_long_function_def!(fst::FST, s::State)
-    (fst[1].typ !== Call && fst[1].typ !== Where) && return
+    (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
     # 3 cases
     #
@@ -266,6 +266,7 @@ function short_to_long_function_def!(fst::FST, s::State)
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
+    return true
 end
 
 """
