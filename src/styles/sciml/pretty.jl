@@ -40,7 +40,7 @@ end
 
 function is_binaryop_nestable(::SciMLStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || is_assignment(cst)) && return false
-    (cst[2].val == "=>" || cst[2].val == "->") && return false
+    (cst[2].val in ("=>", "->", "in")) && return false
     return true
 end
 
