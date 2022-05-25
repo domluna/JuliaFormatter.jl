@@ -17,7 +17,8 @@ using CommonMark:
     TableRule,
     FrontMatterRule
 
-export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle
+export format,
+    format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle
 
 abstract type AbstractStyle end
 
@@ -96,6 +97,8 @@ include("styles/yas/pretty.jl")
 include("styles/yas/nest.jl")
 include("styles/blue/pretty.jl")
 include("styles/blue/nest.jl")
+include("styles/sciml/pretty.jl")
+include("styles/sciml/nest.jl")
 
 include("nest_utils.jl")
 
@@ -549,6 +552,23 @@ function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     return format_text(text, style, opts)
 end
 
+function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwargs...)
+    isempty(text) && return text
+    opts = Options(; merge(options(style), kwargs)...)
+    # We need to iterate to a fixpoint because the result of short to long
+    # form isn't properly formatted
+    formatted_text = format_text(text, style, opts)
+    iter = 1
+    while formatted_text != text
+        iter > maxiters &&
+            error("formatted_text hasn't reached to a fixpoint in $iter iterations")
+        text = formatted_text
+        formatted_text = format_text(text, style, opts)
+        iter += 1
+    end
+    return formatted_text
+end
+
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
@@ -811,11 +831,15 @@ function parse_config(tomlfile)
         end
     end
     if (style = get(config_dict, "style", nothing)) !== nothing
-        @assert (style == "default" || style == "yas" || style == "blue") "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\" or \"blue\" for the style configuration"
+        @assert (
+            style == "default" || style == "yas" || style == "blue" || style == "sciml"
+        ) "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", or \"sciml\" for the style configuration"
         config_dict["style"] = if (style == "yas" && @isdefined(YASStyle))
             YASStyle()
         elseif (style == "blue" && @isdefined(BlueStyle))
             BlueStyle()
+        elseif (style == "sciml" && @isdefined(SciMLStyle))
+            SciMLStyle()
         else
             DefaultStyle()
         end
