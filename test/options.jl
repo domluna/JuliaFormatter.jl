@@ -851,6 +851,21 @@
             foo() = println("hello world")
             """
             @test fmt(str_, format_docstrings = true) == str
+
+            s = """
+            \"\"\"
+            ```jldoctest
+            foo()
+
+            # output
+
+            1-element Vector{Int64}:
+             1
+            ```
+            \"\"\"
+            foo() = [1]
+            """
+            @test fmt(str, format_docstrings = true) == str
         end
     end
 
