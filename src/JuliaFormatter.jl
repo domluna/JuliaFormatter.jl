@@ -16,6 +16,7 @@ using CommonMark:
     Rule,
     TableRule,
     FrontMatterRule
+import ArgParse
 
 export format, format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle
 
@@ -812,8 +813,31 @@ if Base.VERSION >= v"1.5"
 end
 
 function julia_main()::Cint
-    format(ARGS...)
-    return 0
+    s = ArgParse.ArgParseSettings()
+    ArgParse.@add_arg_table! s begin
+        "--format_markdown"
+            help = "Also format Markdown files."
+            action = :store_true
+        "--no-overwrite"
+            help = "By default, the file will be reformatted in place, overwriting the existing file. Set this so that the formatted version of foo.jl will not be written anywhere."
+            action = :store_true
+        "--no-error"
+            help = "By default, the exit code will be nonzero if the input files were not formatted. Set this so that the exit code is always zero."
+            action = :store_true
+        "--verbose", "-v"
+            help = "Details related to formatting the file will be printed to `stdout`."
+            action = :store_true
+        "PATH"
+            nargs = '+'
+    end
+    parsed_args = ArgParse.parse_args(s)
+    already_formatted = format(
+        parsed_args["PATH"];
+        overwrite=!parsed_args["no-overwrite"],
+        verbose=parsed_args["verbose"],
+        format_markdown=parsed_args["format_markdown"],
+    )
+    return already_formatted || parsed_args["no-error"] ? 0 : 1
 end
 
 end
