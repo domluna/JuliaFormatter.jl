@@ -14,7 +14,6 @@ function compile_app()
     )
 end
 
-
 "Tests the binary inside `./JuliaFormatter-x.x.x` against a simple regression suite."
 function test_app()
     sandbox = mkpath(mktempdir())
@@ -23,9 +22,11 @@ function test_app()
         testfile = abspath(joinpath(sandbox, "test_app.jl"))
         cp(joinpath(@__DIR__, "test_app.jl"), testfile)
         cp(joinpath(@__DIR__, get_build_name()), sandbox_build_path)
-        
+
         # The exit code should be 1 as the code is not formatted
-        @test_throws ProcessFailedException run(`$(joinpath(sandbox_build_path, "bin", "JuliaFormatter")) $testfile`)
+        @test_throws ProcessFailedException run(
+            `$(joinpath(sandbox_build_path, "bin", "JuliaFormatter")) $testfile`,
+        )
 
         expected = """
         a = 10
