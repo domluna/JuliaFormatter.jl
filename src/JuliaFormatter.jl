@@ -814,6 +814,9 @@ end
 
 function julia_main()::Cint
     s = ArgParse.ArgParseSettings()
+
+    # Use manual formatting for the arg table to make it more readable
+    #! format: off
     ArgParse.@add_arg_table! s begin
         "--format_markdown"
             help = "Also format Markdown files."
@@ -830,12 +833,14 @@ function julia_main()::Cint
         "PATH"
             nargs = '+'
     end
+    #! format: on
+
     parsed_args = ArgParse.parse_args(s)
     already_formatted = format(
         parsed_args["PATH"];
-        overwrite=!parsed_args["no-overwrite"],
-        verbose=parsed_args["verbose"],
-        format_markdown=parsed_args["format_markdown"],
+        overwrite = !parsed_args["no-overwrite"],
+        verbose = parsed_args["verbose"],
+        format_markdown = parsed_args["format_markdown"],
     )
     return already_formatted || parsed_args["no-error"] ? 0 : 1
 end
