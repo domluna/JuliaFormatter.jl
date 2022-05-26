@@ -58,6 +58,7 @@ end
     include("default_style.jl")
     include("yas_style.jl")
     include("blue_style.jl")
+    include("sciml_style.jl")
     include("issues.jl")
     include("options.jl")
     include("document.jl")
