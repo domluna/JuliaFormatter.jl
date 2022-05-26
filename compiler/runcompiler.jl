@@ -2,7 +2,6 @@ using PackageCompiler, Test, TOML
 
 "Compiles JuliaFormatter into a relocatable binary inside `./JuliaFormatter-x.x.x`. Removes any existing build."
 function compile_app()
-    # Pkg.dev(dirname(@__DIR__))
     create_app(
         dirname(@__DIR__),
         joinpath(@__DIR__, get_build_name());
