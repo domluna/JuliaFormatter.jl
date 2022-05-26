@@ -812,7 +812,7 @@ if Base.VERSION >= v"1.5"
 end
 
 function julia_main()::Cint
-    format(ARGS[1])
+    format(ARGS...)
     return 0
 end
 
