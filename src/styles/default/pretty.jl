@@ -237,9 +237,7 @@ block_modifier(rule::FormatRule) =
         code = block.literal
 
         if startswith(language, r"@example|@repl|@eval|julia|{julia}|jldoctest")
-            block.literal = if !occursin(r"^julia> "m, code)
-                format_text(code, rule)
-            else
+            block.literal = if occursin(r"^julia> "m, code)
                 doctests = IOBuffer()
                 first_test = true
                 for (an_input, output) in repl_splitter(code)
@@ -263,6 +261,15 @@ block_modifier(rule::FormatRule) =
                 end
                 write(doctests, '\n')
                 String(take!(doctests))
+            elseif occursin(r"\n+# output\n+", code)
+                an_input, output = split(code, r"\n+# output\n+", limit = 2)
+                string(
+                    format_text(format_text(String(an_input), rule), rule),
+                    "\n\n# output\n\n",
+                    output,
+                )
+            else
+                format_text(code, rule)
             end
         end
     end
