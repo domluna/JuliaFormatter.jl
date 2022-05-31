@@ -34,6 +34,20 @@ function options(style::YASStyle)
         whitespace_in_kwargs = false,
         join_lines_based_on_source = true,
         separate_kwargs_with_semicolon = true,
+        indent = 4,
+        margin = 92,
+        whitespace_typedefs = false,
+        annotate_untyped_fields_with_any = true,
+        format_docstrings = false,
+        align_struct_field = false,
+        align_assignment = false,
+        align_conditional = false,
+        align_pair_arrow = false,
+        conditional_to_if = false,
+        normalize_line_endings = "auto",
+        align_matrix = false,
+        trailing_comma = true,
+        indent_submodule = false,
     )
 end
 

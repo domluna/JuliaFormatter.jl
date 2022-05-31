@@ -41,6 +41,18 @@ function options(style::BlueStyle)
         conditional_to_if = true,
         indent_submodule = true,
         separate_kwargs_with_semicolon = true,
+        indent = 4,
+        margin = 92,
+        whitespace_typedefs = false,
+        format_docstrings = false,
+        align_struct_field = false,
+        align_assignment = false,
+        align_conditional = false,
+        align_pair_arrow = false,
+        normalize_line_endings = "auto",
+        align_matrix = false,
+        join_lines_based_on_source = false,
+        trailing_comma = true,       
     )
 end
 

@@ -35,6 +35,17 @@ function options(style::SciMLStyle)
         whitespace_in_kwargs = true,
         whitespace_ops_in_indices = true,
         whitespace_typedefs = true,
+        indent = 4,
+        margin = 92,
+        format_docstrings = false,
+        align_struct_field = false,
+        align_assignment = false,
+        align_conditional = false,
+        align_pair_arrow = false,
+        align_matrix = false,
+        trailing_comma = true,
+        indent_submodule = false,
+        separate_kwargs_with_semicolon = false,
     )
 end
 
