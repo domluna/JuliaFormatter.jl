@@ -99,6 +99,7 @@ include("styles/blue/pretty.jl")
 include("styles/blue/nest.jl")
 include("styles/sciml/pretty.jl")
 include("styles/sciml/nest.jl")
+include("styles/minimal/pretty.jl")
 
 include("nest_utils.jl")
 
@@ -832,14 +833,20 @@ function parse_config(tomlfile)
     end
     if (style = get(config_dict, "style", nothing)) !== nothing
         @assert (
-            style == "default" || style == "yas" || style == "blue" || style == "sciml"
-        ) "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", or \"sciml\" for the style configuration"
+            style == "default" ||
+            style == "yas" ||
+            style == "blue" ||
+            style == "sciml" ||
+            style == "minimal"
+        ) "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", \"sciml\", or \"minimal\" for the style configuration"
         config_dict["style"] = if (style == "yas" && @isdefined(YASStyle))
             YASStyle()
         elseif (style == "blue" && @isdefined(BlueStyle))
             BlueStyle()
         elseif (style == "sciml" && @isdefined(SciMLStyle))
             SciMLStyle()
+        elseif (style == "minimal" && @isdefined(MinimalStyle))
+            MinimalStyle()
         else
             DefaultStyle()
         end
