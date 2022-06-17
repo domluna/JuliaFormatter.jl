@@ -60,6 +60,7 @@ function options(s::DefaultStyle)
         conditional_to_if = false,
         normalize_line_endings = "auto",
         align_matrix = false,
+        join_lines_based_on_source = false,
         trailing_comma = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
