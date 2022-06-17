@@ -52,7 +52,7 @@ function options(style::BlueStyle)
         normalize_line_endings = "auto",
         align_matrix = false,
         join_lines_based_on_source = false,
-        trailing_comma = true,       
+        trailing_comma = true,
     )
 end
 
