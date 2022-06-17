@@ -33,6 +33,6 @@ function options(style::MinimalStyle)
         normalize_line_endings = "auto",
         align_matrix = false,
         indent_submodule = false,
-        separate_kwargs_with_semicolon = false,        
+        separate_kwargs_with_semicolon = false,
     )
 end
