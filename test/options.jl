@@ -744,7 +744,6 @@
 
             julia> b = 2;
 
-
             julia> a + b
             3
 
@@ -759,6 +758,21 @@
                 x
             end"""
             @test fmt(unformatted, format_docstrings = true) == formatted
+        end
+
+        @testset "issue 602" begin
+            s = """
+            \"""
+            ```jldoctest
+            julia> foo()
+
+            julia> 1
+            1
+            ```
+            \"""
+            foo() = nothing
+            """
+            @test fmt(s, format_docstrings = true) == s
         end
 
         @testset "Multi-line indented code-blocks" begin
