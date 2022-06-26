@@ -230,7 +230,7 @@ struct FormatRule{T<:AbstractStyle}
 end
 format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, fr.opts)
 
-block_modifier(rule::FormatRule) =
+function block_modifier(rule::FormatRule)
     Rule(1) do parser, block
         block.t isa CodeBlock || return
         language = block.t.info
@@ -239,25 +239,25 @@ block_modifier(rule::FormatRule) =
         if startswith(language, r"@example|@repl|@eval|julia|{julia}|jldoctest")
             block.literal = if occursin(r"^julia> "m, code)
                 doctests = IOBuffer()
-                first_test = true
-                for (an_input, output) in repl_splitter(code)
-                    if first_test
-                        first_test = false
-                    else
-                        write(doctests, "\n\n")
-                    end
+                chunks = repl_splitter(code)
+                for (i, (an_input, output)) in enumerate(chunks)
                     write(doctests, "julia> ")
-                    first_line = true
-                    for line in split(format_text(an_input, rule), '\n')
-                        if first_line
-                            first_line = false
-                        else
+                    for (j, line) in enumerate(split(format_text(an_input, rule), '\n'))
+                        if j > 1
                             write(doctests, "\n       ")
                         end
                         write(doctests, line)
                     end
                     write(doctests, '\n')
                     write(doctests, output)
+
+                    if i < length(chunks)
+                        if output == ""
+                            write(doctests, "\n")
+                        else
+                            write(doctests, "\n\n")
+                        end
+                    end
                 end
                 write(doctests, '\n')
                 String(take!(doctests))
@@ -273,6 +273,7 @@ block_modifier(rule::FormatRule) =
             end
         end
     end
+end
 
 function format_docstring(style::AbstractStyle, state::State, text::AbstractString)
     state_indent = state.indent
@@ -318,6 +319,7 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
             end
             String(take!(deindented))
         end
+
     # then, we format
     formatted = markdown(
         enable!(
@@ -327,6 +329,7 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
                 FootnoteRule(),
                 MathRule(),
                 TableRule(),
+                FrontMatterRule(),
                 FormatRule(style, state.opts),
             ],
         )(
