@@ -319,7 +319,6 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 n_semicolons += 1
                 semicolons = s.doc.semicolons[n.startline]
                 count = popfirst!(semicolons)
-                # @info "" count n_semicolons
                 if i != length(cst) - 1
                     if count > 1
                         for _ = 1:count

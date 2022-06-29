@@ -14,7 +14,9 @@ function is_str_or_cmd(t::Tokens.Kind)
 end
 
 function is_str_or_cmd(cst::CSTParser.EXPR)
-    CSTParser.isstring(cst) || CSTParser.iscmd(cst)
+    CSTParser.isstring(cst) ||
+        CSTParser.iscmd(cst) ||
+        (cst.head === :macrocall && cst[1].head === :globalrefcmd)
 end
 
 function tokenize(val::AbstractString)::Tokens.Kind
