@@ -40,9 +40,12 @@
     Kw,
     Vcat,
     Hcat,
+    Ncat,
     TypedVcat,
+    TypedNcat,
     TypedHcat,
     Row,
+    NRow,
     BracesCat,
     TypedComprehension,
     Comprehension,
@@ -249,16 +252,15 @@ end
 
 # TODO: fix this
 function is_multiline(fst::FST)
-    if fst.typ === StringN && fst.endline > fst.startline
-        return true
-    elseif fst.typ === Vcat && fst.endline > fst.startline
-        return true
-    elseif fst.typ === TypedVcat && fst.endline > fst.startline
-        return true
-    elseif fst.typ === MacroStr && fst.endline > fst.startline
-        return true
-    end
-    false
+    fst.endline > fst.startline &&
+    (
+        fst.typ === StringN ||
+        fst.typ === Vcat ||
+        fst.typ === TypedVcat ||
+        fst.typ === Ncat ||
+        fst.typ === TypedNcat ||
+        fst.typ === MacroStr
+    )
 end
 
 @inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
@@ -409,7 +411,7 @@ end
 function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
     args0 = CSTParser.EXPR[]
     for a in args
-        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a)
+        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a) || haskey(SEMICOLON_LOOKUP, a.head)
             continue
         end
         if a.head === :parameters
@@ -749,6 +751,7 @@ function is_unnamed_iterable(x::FST)
     x.typ === TupleN && return true
     x.typ === Vect && return true
     x.typ === Vcat && return true
+    x.typ === Ncat && return true
     x.typ === Braces && return true
     x.typ === Comprehension && return true
     x.typ === Brackets && return true
@@ -762,6 +765,7 @@ function is_named_iterable(x::FST)
     x.typ === MacroCall && return true
     x.typ === RefN && return true
     x.typ === TypedVcat && return true
+    x.typ === TypedNcat && return true
     return false
 end
 

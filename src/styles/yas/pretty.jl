@@ -346,6 +346,66 @@ function p_typedvcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
+function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
+    t = FST(Ncat, nspaces(s))
+    st = cst.head === :ncat ? 2 : 3
+    n_semicolons = 0
+
+    for (i, a) in enumerate(cst)
+        n = pretty(style, a, s)
+        n.typ === Unknown && continue
+        if is_closer(n)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
+        elseif !is_closer(a) && i > st
+            join_lines = i == st + 1 ? true : t.endline == n.startline
+            if join_lines && i != st + 1
+                add_node!(t, Placeholder(1), s)
+            end
+
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = join_lines,
+                override_join_lines_based_on_source = i == st + 1,
+            )
+            if has_semicolon(s.doc, n.startline)
+                n_semicolons += 1
+                semicolons = s.doc.semicolons[n.startline]
+                count = popfirst!(semicolons)
+                if i != length(cst) - 1
+                    if count > 1
+                        for _ = 1:count
+                            add_node!(t, Semicolon(), s)
+                        end
+                    else
+                        add_node!(t, InverseTrailingSemicolon(), s)
+                    end
+                elseif count > 1 || n_semicolons == 1
+                    for _ = 1:count
+                        add_node!(t, Semicolon(), s)
+                    end
+                end
+            end
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
+function p_typedncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = p_ncat(ys, cst, s)
+    t.typ = TypedNcat
+    t
+end
+
 function p_ref(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(RefN, cst, nspaces(s))

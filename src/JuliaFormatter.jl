@@ -93,6 +93,10 @@ if VERSION < v"1.3"
 end
 count(args...; kwargs...) = Base.count(args...; kwargs...)
 
+# multidimensional array syntax has nodes that appear as
+# Symbol("integer_value"), i.e. Symbol("2") for ";;"
+SEMICOLON_LOOKUP = Dict(Symbol(n) => n for n in 2:10)
+
 include("document.jl")
 include("options.jl")
 include("state.jl")
