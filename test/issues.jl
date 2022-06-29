@@ -1474,4 +1474,13 @@
         """
         @test format_text(s) == s_
     end
+
+    @testset "613" begin
+        s = """
+        x = ```
+        my_cmd very_long command that really should be multi-line but isn't, and exceeds the character limit, will be indented forever by repeated calls to format
+        ```
+        """
+        @test format_text(s) == s
+    end
 end
