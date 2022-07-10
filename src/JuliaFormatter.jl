@@ -18,7 +18,14 @@ using CommonMark:
     FrontMatterRule
 
 export format,
-    format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle, MinimalStyle
+    format_text,
+    format_file,
+    format_md,
+    DefaultStyle,
+    YASStyle,
+    BlueStyle,
+    SciMLStyle,
+    MinimalStyle
 
 abstract type AbstractStyle end
 
@@ -64,7 +71,7 @@ function options(s::DefaultStyle)
         trailing_comma = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
-    surround_whereop_typeparameters= true,
+        surround_whereop_typeparameters = true,
     )
 end
 

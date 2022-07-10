@@ -53,7 +53,7 @@ function options(style::BlueStyle)
         align_matrix = false,
         join_lines_based_on_source = false,
         trailing_comma = true,
-    surround_whereop_typeparameters= true,
+        surround_whereop_typeparameters = true,
     )
 end
 

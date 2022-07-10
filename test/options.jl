@@ -2135,7 +2135,7 @@
             foo
         end
         """
-        @test fmt(s, surround_whereop_typeparameters = false, m=100) == s
+        @test fmt(s, surround_whereop_typeparameters = false, m = 100) == s
 
         s = """
         NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM = foo
