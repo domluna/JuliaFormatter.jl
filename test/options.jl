@@ -2121,4 +2121,30 @@
         @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
         @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
     end
+
+    @testset "`surround_whereop_typeparameters`" begin
+        s = """
+        function NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM
+            foo
+        end
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
+
+        s = """
+        function NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM
+            foo
+        end
+        """
+        @test fmt(s, surround_whereop_typeparameters = false, m=100) == s
+
+        s = """
+        NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM = foo
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
+
+        s = """
+        NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM = foo
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
+    end
 end

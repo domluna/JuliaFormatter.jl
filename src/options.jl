@@ -23,6 +23,7 @@ Base.@kwdef struct Options
     trailing_comma::Union{Bool,Nothing} = true
     indent_submodule::Bool = false
     separate_kwargs_with_semicolon::Bool = false
+    surround_whereop_typeparameters::Bool = true
 end
 
 function needs_alignment(opts::Options)

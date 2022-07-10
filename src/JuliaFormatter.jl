@@ -18,7 +18,7 @@ using CommonMark:
     FrontMatterRule
 
 export format,
-    format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle
+    format_text, format_file, format_md, DefaultStyle, YASStyle, BlueStyle, SciMLStyle, MinimalStyle
 
 abstract type AbstractStyle end
 
@@ -30,7 +30,7 @@ abstract type AbstractStyle end
 The default formatting style. See the [Style](@ref) section of the documentation
 for more details.
 
-See also: [`BlueStyle`](@ref), [`YASStyle`](@ref)
+See also: [`BlueStyle`](@ref), [`YASStyle`](@ref), [`SciMLStyle`](@ref), [`MinimalStyle`](@ref)
 """
 struct DefaultStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
@@ -64,6 +64,7 @@ function options(s::DefaultStyle)
         trailing_comma = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
+    surround_whereop_typeparameters= true,
     )
 end
 
@@ -146,6 +147,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         trailing_comma::Bool = false,
         indent_submodule::Bool = false,
         separate_kwargs_with_semicolon::Bool = false,
+        surround_whereop_typeparameters::Bool = true,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted
@@ -541,6 +543,22 @@ f(a, b=1)
 ->
 
 f(a; b=1)
+```
+
+### `surround_whereop_typeparameters`
+
+> default: `true`
+
+Surrounds type parameters with curly brackets when set to `true`.
+
+```julia
+function func(...) where TPARAM
+end
+
+->
+
+function func(...) where {TPARAM}
+end
 ```
 
 """
