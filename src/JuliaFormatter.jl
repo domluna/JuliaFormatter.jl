@@ -549,7 +549,8 @@ f(a; b=1)
 
 > default: `true`
 
-Surrounds type parameters with curly brackets when set to `true`.
+Surrounds type parameters with curly brackets when set to `true` if the brackets are not
+already present.
 
 ```julia
 function func(...) where TPARAM
