@@ -1992,13 +1992,13 @@
             function foo()
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
 
             s = """
             function foo
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
         end
 
         @testset "macro defs" begin
@@ -2006,13 +2006,13 @@
             macro foo()
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
 
             s = """
             macro foo
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
         end
 
         @testset "typedefs" begin
@@ -2020,13 +2020,13 @@
             struct S
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
 
             s = """
             mutable struct S
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
         end
 
         @testset "modules" begin
@@ -2034,13 +2034,13 @@
             module M
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
 
             s = """
             baremodule BM
             end
             """
-            @test fmt(s, join_lines_based_on_source=true) == s
+            @test fmt(s, join_lines_based_on_source = true) == s
         end
     end
 

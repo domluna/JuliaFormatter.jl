@@ -1,3 +1,1 @@
-@testset "Minimal Style" begin
-end
-
+@testset "Minimal Style" begin end
