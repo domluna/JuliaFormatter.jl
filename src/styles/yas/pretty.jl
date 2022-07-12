@@ -350,11 +350,12 @@ function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(Ncat, nspaces(s))
     st = cst.head === :ncat ? 2 : 3
-    n_semicolons = 0
+    args = get_args(cst)
+    n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        n.typ === Unknown && continue
+        i == st && continue
         if is_closer(n)
             add_node!(
                 t,
@@ -376,23 +377,12 @@ function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 join_lines = join_lines,
                 override_join_lines_based_on_source = i == st + 1,
             )
-            if has_semicolon(s.doc, n.startline)
-                n_semicolons += 1
-                semicolons = s.doc.semicolons[n.startline]
-                count = popfirst!(semicolons)
-                if i != length(cst) - 1
-                    if count > 1
-                        for _ = 1:count
-                            add_node!(t, Semicolon(), s)
-                        end
-                    else
-                        add_node!(t, InverseTrailingSemicolon(), s)
-                    end
-                elseif count > 1 || n_semicolons == 1
-                    for _ = 1:count
-                        add_node!(t, Semicolon(), s)
-                    end
+            if n_semicolons > 1
+                for _ = 1:n_semicolons
+                    add_node!(t, Semicolon(), s)
                 end
+            elseif n_semicolons == 1
+                add_node!(t, InverseTrailingSemicolon(), s)
             end
         else
             add_node!(t, n, s, join_lines = true)
@@ -403,6 +393,35 @@ end
 function p_typedncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = p_ncat(ys, cst, s)
     t.typ = TypedNcat
+    t
+end
+
+function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
+    t = FST(NRow, cst, nspaces(s))
+
+    n_semicolons = SEMICOLON_LOOKUP[cst[1].head]
+
+    args = cst[2:end]
+    for (i, a) in enumerate(args)
+        if is_opcall(a)
+            add_node!(
+                t,
+                pretty(style, a, s, nospace = true, nonest = true),
+                s,
+                join_lines = true,
+            )
+        else
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        end
+        if i < length(args)
+            for _ in n_semicolons
+                add_node!(t, Semicolon(), s)
+            end
+            add_node!(t, Whitespace(1), s)
+        end
+    end
+    t.nest_behavior = NeverNest
     t
 end
 

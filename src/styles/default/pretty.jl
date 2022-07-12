@@ -2140,8 +2140,6 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
-    @info "" length(args)
-
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         diff_line = t.endline != t.startline
@@ -2226,15 +2224,13 @@ function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     st = cst.head === :ncat ? 2 : 3
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
-
-    @info "" length(args)
-    
     n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
+
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         diff_line = t.endline != t.startline
-        n.typ == Unknown && continue
+        i == st && continue
         if is_opener(a) && nest
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)

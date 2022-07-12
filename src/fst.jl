@@ -387,6 +387,7 @@ end
 function get_args(cst::CSTParser.EXPR)
     if cst.head === :macrocall ||
        cst.head === :typed_vcat ||
+       cst.head === :typed_ncat ||
        cst.head === :ref ||
        cst.head === :curly ||
        is_call(cst) ||
@@ -397,6 +398,7 @@ function get_args(cst::CSTParser.EXPR)
         return get_args(collect(cst)[3:end])
     elseif cst.head === :braces ||
            cst.head === :vcat ||
+           cst.head === :ncat ||
            cst.head === :bracescat ||
            cst.head === :tuple ||
            cst.head === :vect ||
