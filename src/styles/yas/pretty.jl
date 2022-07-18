@@ -48,6 +48,7 @@ function options(style::YASStyle)
         align_matrix = false,
         trailing_comma = true,
         indent_submodule = false,
+        surround_whereop_typeparameters = true,
     )
 end
 
@@ -513,7 +514,8 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         cst[3].head === :bracescat ||
         cst[3].head === :parameters
 
-    add_braces = !curly_ctx && !CSTParser.is_lbrace(cst[3])
+    add_braces =
+        s.opts.surround_whereop_typeparameters && !curly_ctx && !CSTParser.is_lbrace(cst[3])
 
     bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
 

@@ -838,8 +838,15 @@ function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     if length(cst) > 3
         if cst[3].fullspan == 0
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
+            n = pretty(style, cst[4], s)
+            if s.opts.join_lines_based_on_source
+                join_lines = t.endline == n.startline
+                join_lines && (add_node!(t, Whitespace(1), s))
+                add_node!(t, n, s, join_lines = join_lines)
+            else
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
+            end
         else
             s.indent += s.opts.indent
             n = pretty(style, cst[3], s, ignore_single_line = true)
@@ -849,10 +856,16 @@ function p_functiondef(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, cst[4], s), s)
         end
     else
-        # function stub, i.e. "function foo end"
-        # this should be on one line
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+        # function stub `function foo end`
+        n = pretty(style, cst[3], s)
+        if s.opts.join_lines_based_on_source
+            join_lines = t.endline == n.startline
+            join_lines && (add_node!(t, Whitespace(1), s))
+            add_node!(t, n, s, join_lines = join_lines)
+        else
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+        end
     end
     t
 end
@@ -875,8 +888,15 @@ function p_struct(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     if cst[4].fullspan == 0
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
+        n = pretty(style, cst[5], s)
+        if s.opts.join_lines_based_on_source
+            join_lines = t.endline == n.startline
+            join_lines && (add_node!(t, Whitespace(1), s))
+            add_node!(t, n, s, join_lines = join_lines)
+        else
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+        end
     else
         s.indent += s.opts.indent
         n = pretty(style, cst[4], s, ignore_single_line = true)
@@ -902,8 +922,15 @@ function p_mutable(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
     if cst[5].fullspan == 0
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[6], s), s, join_lines = true)
+        n = pretty(style, cst[6], s)
+        if s.opts.join_lines_based_on_source
+            join_lines = t.endline == n.startline
+            join_lines && (add_node!(t, Whitespace(1), s))
+            add_node!(t, n, s, join_lines = join_lines)
+        else
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+        end
     else
         s.indent += s.opts.indent
         n = pretty(style, cst[5], s, ignore_single_line = true)
@@ -927,8 +954,15 @@ function p_module(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, Whitespace(1), s)
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
     if cst[4].fullspan == 0
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
+        n = pretty(style, cst[5], s)
+        if s.opts.join_lines_based_on_source
+            join_lines = t.endline == n.startline
+            join_lines && (add_node!(t, Whitespace(1), s))
+            add_node!(t, n, s, join_lines = join_lines)
+        else
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+        end
     else
         if s.opts.indent_submodule && parent_is(
             cst,
@@ -1626,7 +1660,8 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         cst[3].head === :bracescat ||
         cst[3].head === :parameters
 
-    add_braces = !curly_ctx && !CSTParser.is_lbrace(cst[3])
+    add_braces =
+        s.opts.surround_whereop_typeparameters && !curly_ctx && !CSTParser.is_lbrace(cst[3])
 
     bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
 

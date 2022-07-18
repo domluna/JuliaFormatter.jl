@@ -1986,6 +1986,62 @@
                 d e Expr()]"""
             @test fmt(str_, join_lines_based_on_source = true) == str
         end
+
+        @testset "function defs" begin
+            s = """
+            function foo()
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+
+            s = """
+            function foo
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+        end
+
+        @testset "macro defs" begin
+            s = """
+            macro foo()
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+
+            s = """
+            macro foo
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+        end
+
+        @testset "typedefs" begin
+            s = """
+            struct S
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+
+            s = """
+            mutable struct S
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+        end
+
+        @testset "modules" begin
+            s = """
+            module M
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+
+            s = """
+            baremodule BM
+            end
+            """
+            @test fmt(s, join_lines_based_on_source = true) == s
+        end
     end
 
     @testset "`indent_submodule`" begin
@@ -2120,5 +2176,31 @@
         """
         @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
         @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+    end
+
+    @testset "`surround_whereop_typeparameters`" begin
+        s = """
+        function NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM
+            foo
+        end
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
+
+        s = """
+        function NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM
+            foo
+        end
+        """
+        @test fmt(s, surround_whereop_typeparameters = false, m = 100) == s
+
+        s = """
+        NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM = foo
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
+
+        s = """
+        NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM = foo
+        """
+        @test fmt(s, surround_whereop_typeparameters = false) == s
     end
 end

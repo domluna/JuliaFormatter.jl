@@ -567,7 +567,7 @@ function add_node!(
     end
 
     # if `max_padding` >= 0 `n` should appear on the next line
-    # even if it's contrary on the original source.
+    # even if it's contrary to the original source.
     if s.opts.join_lines_based_on_source &&
        !override_join_lines_based_on_source &&
        max_padding == -1 &&

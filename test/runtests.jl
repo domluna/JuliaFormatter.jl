@@ -27,6 +27,11 @@ bluefmt(str; i = 4, m = 80, kwargs...) =
     fmt(str; i = i, m = m, style = BlueStyle(), kwargs...)
 bluefmt(str, i::Int, m::Int; kwargs...) = bluefmt(str; i = i, m = m, kwargs...)
 
+minimalfmt1(str) = fmt1(str; style = MinimalStyle(), options(DefaultStyle())...)
+minimalfmt(str; i = 4, m = 92, kwargs...) =
+    fmt(str; i = i, m = m, style = MinimalStyle(), kwargs...)
+minimalfmt(str, i::Int, m::Int; kwargs...) = minimalfmt(str; i = i, m = m, kwargs...)
+
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)

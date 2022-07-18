@@ -418,6 +418,24 @@ f(a, b=1)
 f(a; b=1)
 ```
 
+### `surround_whereop_typeparameters`
+
+> default: `true`
+
+Surrounds type parameters with curly brackets when set to `true` if the brackets are not
+already present.
+
+```julia
+function func(...) where TPARAM
+end
+
+->
+
+function func(...) where {TPARAM}
+end
+```
+
+
 ### File Options
 
 ### `overwrite`
