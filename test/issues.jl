@@ -1483,4 +1483,10 @@
         """
         @test format_text(s) == s
     end
+
+    @testset "620" begin
+        s = "[1; 0;;]"
+        @test fmt(s) == s
+        @test yasfmt(s) == s
+    end
 end

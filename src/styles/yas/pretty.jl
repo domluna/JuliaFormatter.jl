@@ -402,8 +402,8 @@ function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
     n_semicolons = SEMICOLON_LOOKUP[cst[1].head]
 
-    args = cst[2:end]
-    for (i, a) in enumerate(args)
+    for (i, a) in enumerate(cst)
+        i == 1 && continue
         if is_opcall(a)
             add_node!(
                 t,
@@ -414,8 +414,8 @@ function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-        if i < length(args)
-            for _ in n_semicolons
+        if i < length(cst) 
+            for _ in 1:n_semicolons
                 add_node!(t, Semicolon(), s)
             end
             add_node!(t, Whitespace(1), s)
