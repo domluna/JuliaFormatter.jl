@@ -59,7 +59,7 @@
         @test yasfmt("[a;b;;]") == "[a; b;;]"
     end
 
-    @testset "#582" begin
+    @testset "#608" begin
         s1 = """
         hcat([zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)], [zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)])
         """
@@ -68,5 +68,14 @@
              [zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)])
         """
         @test yasfmt(s1) == s2
+    end
+
+    @testset "#532" begin
+        s = "(; a = [1;;], b = cos[2;;])"
+        @test fmt(s) == s
+        @test bluefmt(s) == s
+        @test yasfmt(s) == s
+        @test format_text(s, SciMLStyle()) == s
+        @test minimalfmt(s) == s
     end
 end
