@@ -58,4 +58,15 @@
     @testset "#582" begin
         @test yasfmt("[a;b;;]") == "[a; b;;]"
     end
+
+    @testset "#582" begin
+        s1 = """
+        hcat([zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)], [zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)])
+        """
+        s2 = """
+        hcat([zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)],
+             [zeros(1); ones(3)], [zeros(2); ones(2)], [zeros(3); ones(1)])
+        """
+        @test yasfmt(s1) == s2
+    end
 end
