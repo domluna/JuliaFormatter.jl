@@ -1,7 +1,7 @@
 name = "JuliaFormatter"
 uuid = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 authors = ["Dominique Luna <dluna132@gmail.com>"]
-version = "1.0.6"
+version = "1.0.7"
 
 [deps]
 CSTParser = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
