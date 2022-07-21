@@ -193,7 +193,7 @@ function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Return, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
-        for i = 2:length(cst)
+        for i in 2:length(cst)
             a = cst[i]
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)

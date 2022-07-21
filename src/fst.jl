@@ -463,10 +463,12 @@ function add_node!(
 )
     if n.typ === SEMICOLON
         join_lines = true
-        loc =
-            s.offset > length(s.doc.text) && t.typ === TopLevel ?
-            cursor_loc(s, s.offset - 1) : cursor_loc(s)
-        for l = t.endline:loc[1]
+        loc = if s.offset > length(s.doc.text) && t.typ === TopLevel
+            cursor_loc(s, s.offset - 1)
+        else
+            cursor_loc(s)
+        end
+        for l in t.endline:loc[1]
             if has_semicolon(s.doc, l)
                 n.startline = l
                 n.endline = l
@@ -608,7 +610,7 @@ function add_node!(
             nest = true
             if remove_empty_notcode(t) || rm_block_nl
                 nest = false
-                for l = notcode_startline:notcode_endline
+                for l in notcode_startline:notcode_endline
                     if hascomment(s.doc, l)
                         nest = true
                         break
@@ -706,7 +708,7 @@ Returns the length to any node type in `ntyps` based off the `start` index.
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
-    for i = start:length(fst.nodes)
+    for i in start:length(fst.nodes)
         l, found = length_to(fst.nodes[i], ntyps)
         len += l
         found && return len, found

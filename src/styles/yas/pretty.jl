@@ -322,14 +322,14 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 count = popfirst!(semicolons)
                 if i != length(cst) - 1
                     if count > 1
-                        for _ = 1:count
+                        for _ in 1:count
                             add_node!(t, Semicolon(), s)
                         end
                     else
                         add_node!(t, InverseTrailingSemicolon(), s)
                     end
                 elseif count > 1 || n_semicolons == 1
-                    for _ = 1:count
+                    for _ in 1:count
                         add_node!(t, Semicolon(), s)
                     end
                 end
@@ -379,11 +379,11 @@ function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             )
 
             if i < length(cst) - 1
-                for _ = 1:n_semicolons
+                for _ in 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
             elseif length(args) == 1
-                for _ = 1:n_semicolons
+                for _ in 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
             end
@@ -418,7 +418,7 @@ function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
         if i < length(cst)
-            for _ = 1:n_semicolons
+            for _ in 1:n_semicolons
                 add_node!(t, Semicolon(), s)
             end
             add_node!(t, Whitespace(1), s)
@@ -606,7 +606,7 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         add_node!(bc, brace, s, join_lines = true)
     end
 
-    for i = 3:length(cst)
+    for i in 3:length(cst)
         a = cst[i]
         n = is_binary(a) ? pretty(style, a, s, nospace = true) : pretty(style, a, s)
 
@@ -673,7 +673,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
             if !is_gen(cst[i+1])
                 tupargs = CSTParser.EXPR[]
-                for j = i+1:length(cst)
+                for j in i+1:length(cst)
                     push!(tupargs, cst[j])
                 end
 

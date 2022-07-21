@@ -998,7 +998,7 @@ function p_const(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Const, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
     if cst[2].fullspan != 0
-        for i = 2:length(cst)
+        for i in 2:length(cst)
             a = cst[i]
             if !CSTParser.is_comma(a)
                 add_node!(t, Whitespace(1), s)
@@ -1070,7 +1070,7 @@ function p_begin(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     else
         s.indent += s.opts.indent
         nodes = CSTParser.EXPR[]
-        for i = 2:length(cst)-1
+        for i in 2:length(cst)-1
             push!(nodes, cst[i])
         end
         add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
@@ -1672,7 +1672,7 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
-    for i = 3:length(cst)
+    for i in 3:length(cst)
         a = cst[i]
         if is_opener(a) && nest
             add_node!(bc, pretty(style, a, s), s, join_lines = true)
@@ -1768,7 +1768,7 @@ function p_curly(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Placeholder(0), s)
     end
 
-    for i = 3:length(cst)
+    for i in 3:length(cst)
         a = cst[i]
         if i == length(cst) && nest
             add_node!(t, TrailingComma(), s)
@@ -1799,7 +1799,7 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Placeholder(0), s)
     end
 
-    for i = 3:length(cst)
+    for i in 3:length(cst)
         a = cst[i]
         if i == length(cst) && nest
             add_node!(t, TrailingComma(), s)
@@ -2045,7 +2045,7 @@ function p_import(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-    for i = 2:length(cst)
+    for i in 2:length(cst)
         a = cst[i]
         if CSTParser.is_colon(a.head) || is_binary(a)
             nodes = collect(a)
@@ -2153,7 +2153,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                     semicolons = s.doc.semicolons[n.startline]
                     count = popfirst!(semicolons)
                     if count > 1
-                        for _ = 1:count
+                        for _ in 1:count
                             add_node!(t, Semicolon(), s)
                         end
                     else
@@ -2165,7 +2165,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             elseif length(args) == 1 && has_semicolon(s.doc, n.startline)
                 semicolons = s.doc.semicolons[n.startline]
                 count = popfirst!(semicolons)
-                for _ = 1:count
+                for _ in 1:count
                     add_node!(t, Semicolon(), s)
                 end
                 add_node!(t, Placeholder(0), s)
@@ -2235,13 +2235,13 @@ function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
 
             if i != length(cst) - 1
-                for c = 1:n_semicolons
+                for c in 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif length(args) == 1
-                for _ = 1:n_semicolons
+                for _ in 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
                 add_node!(t, Placeholder(0), s)
@@ -2309,7 +2309,7 @@ function p_nrow(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
         if i < length(cst)
-            for _ = 1:n_semicolons
+            for _ in 1:n_semicolons
                 add_node!(t, Semicolon(), s)
             end
             add_node!(t, Whitespace(1), s)

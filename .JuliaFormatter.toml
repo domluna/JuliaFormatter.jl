@@ -1,1 +1,3 @@
 remove_extra_newlines = true
+always_for_in = true
+conditional_to_if = true

@@ -101,7 +101,7 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
         else
             s.indent += s.opts.indent
             nodes = CSTParser.EXPR[]
-            for i = 2:length(cst)-1
+            for i in 2:length(cst)-1
                 push!(nodes, cst[i])
             end
             add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)

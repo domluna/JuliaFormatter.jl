@@ -112,7 +112,7 @@ end
 
 function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
     s.on || return
-    for l = fst.startline:fst.endline
+    for l in fst.startline:fst.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
         !fmttag && (ws = fst.indent)
 
