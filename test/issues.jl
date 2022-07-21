@@ -1109,24 +1109,6 @@
                 2
             ]"""
             @test fmt(str, 4, 1) == str_
-
-            str = "[v1 v2;;]"
-            @test fmt(str) == str
-
-            str_ = """
-            [
-                v1 v2;;
-            ]"""
-            @test fmt(str, 4, 1) == str_
-
-            str = "T[v1 v2;;]"
-            @test fmt(str) == str
-
-            str_ = """
-            T[
-                v1 v2;;
-            ]"""
-            @test fmt(str, 4, 1) == str_
         end
 
         @testset "YASStyle" begin

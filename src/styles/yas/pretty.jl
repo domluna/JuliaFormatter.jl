@@ -377,12 +377,15 @@ function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 join_lines = join_lines,
                 override_join_lines_based_on_source = i == st + 1,
             )
-            if n_semicolons > 1
+
+            if i < length(cst) - 1
                 for _ = 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
-            elseif n_semicolons == 1
-                add_node!(t, InverseTrailingSemicolon(), s)
+            elseif length(args) == 1
+                for _ in 1:n_semicolons
+                    add_node!(t, Semicolon(), s)
+                end
             end
         else
             add_node!(t, n, s, join_lines = true)

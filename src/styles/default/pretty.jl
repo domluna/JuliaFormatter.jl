@@ -2295,6 +2295,7 @@ p_row(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_nrow(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(NRow, cst, nspaces(s))
+
     n_semicolons = SEMICOLON_LOOKUP[cst[1].head]
 
     for (i, a) in enumerate(cst)
