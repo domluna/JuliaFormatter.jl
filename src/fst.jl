@@ -40,9 +40,12 @@
     Kw,
     Vcat,
     Hcat,
+    Ncat,
     TypedVcat,
+    TypedNcat,
     TypedHcat,
     Row,
+    NRow,
     BracesCat,
     TypedComprehension,
     Comprehension,
@@ -249,16 +252,14 @@ end
 
 # TODO: fix this
 function is_multiline(fst::FST)
-    if fst.typ === StringN && fst.endline > fst.startline
-        return true
-    elseif fst.typ === Vcat && fst.endline > fst.startline
-        return true
-    elseif fst.typ === TypedVcat && fst.endline > fst.startline
-        return true
-    elseif fst.typ === MacroStr && fst.endline > fst.startline
-        return true
-    end
-    false
+    fst.endline > fst.startline && (
+        fst.typ === StringN ||
+        fst.typ === Vcat ||
+        fst.typ === TypedVcat ||
+        fst.typ === Ncat ||
+        fst.typ === TypedNcat ||
+        fst.typ === MacroStr
+    )
 end
 
 @inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
@@ -385,6 +386,7 @@ end
 function get_args(cst::CSTParser.EXPR)
     if cst.head === :macrocall ||
        cst.head === :typed_vcat ||
+       cst.head === :typed_ncat ||
        cst.head === :ref ||
        cst.head === :curly ||
        is_call(cst) ||
@@ -395,6 +397,7 @@ function get_args(cst::CSTParser.EXPR)
         return get_args(collect(cst)[3:end])
     elseif cst.head === :braces ||
            cst.head === :vcat ||
+           cst.head === :ncat ||
            cst.head === :bracescat ||
            cst.head === :tuple ||
            cst.head === :vect ||
@@ -409,7 +412,9 @@ end
 function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
     args0 = CSTParser.EXPR[]
     for a in args
-        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a)
+        if CSTParser.ispunctuation(a) ||
+           CSTParser.is_nothing(a) ||
+           haskey(SEMICOLON_LOOKUP, a.head)
             continue
         end
         if a.head === :parameters
@@ -458,10 +463,12 @@ function add_node!(
 )
     if n.typ === SEMICOLON
         join_lines = true
-        loc =
-            s.offset > length(s.doc.text) && t.typ === TopLevel ?
-            cursor_loc(s, s.offset - 1) : cursor_loc(s)
-        for l = t.endline:loc[1]
+        loc = if s.offset > length(s.doc.text) && t.typ === TopLevel
+            cursor_loc(s, s.offset - 1)
+        else
+            cursor_loc(s)
+        end
+        for l in t.endline:loc[1]
             if has_semicolon(s.doc, l)
                 n.startline = l
                 n.endline = l
@@ -603,7 +610,7 @@ function add_node!(
             nest = true
             if remove_empty_notcode(t) || rm_block_nl
                 nest = false
-                for l = notcode_startline:notcode_endline
+                for l in notcode_startline:notcode_endline
                     if hascomment(s.doc, l)
                         nest = true
                         break
@@ -701,7 +708,7 @@ Returns the length to any node type in `ntyps` based off the `start` index.
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
-    for i = start:length(fst.nodes)
+    for i in start:length(fst.nodes)
         l, found = length_to(fst.nodes[i], ntyps)
         len += l
         found && return len, found
@@ -749,6 +756,7 @@ function is_unnamed_iterable(x::FST)
     x.typ === TupleN && return true
     x.typ === Vect && return true
     x.typ === Vcat && return true
+    x.typ === Ncat && return true
     x.typ === Braces && return true
     x.typ === Comprehension && return true
     x.typ === Brackets && return true
@@ -762,6 +770,7 @@ function is_named_iterable(x::FST)
     x.typ === MacroCall && return true
     x.typ === RefN && return true
     x.typ === TypedVcat && return true
+    x.typ === TypedNcat && return true
     return false
 end
 

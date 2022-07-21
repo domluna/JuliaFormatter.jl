@@ -93,6 +93,10 @@ if VERSION < v"1.3"
 end
 count(args...; kwargs...) = Base.count(args...; kwargs...)
 
+# multidimensional array syntax has nodes that appear as
+# Symbol("integer_value"), i.e. Symbol("2") for ";;"
+SEMICOLON_LOOKUP = Dict(Symbol(n) => n for n in 1:20)
+
 include("document.jl")
 include("options.jl")
 include("state.jl")
@@ -846,7 +850,7 @@ function kwargs(dict)
     return pairs(NamedTuple{ns}(vs))
 end
 
-fieldnts(T::Type) = ((fieldname(T, i), fieldtype(T, i)) for i = 1:fieldcount(T))
+fieldnts(T::Type) = ((fieldname(T, i), fieldtype(T, i)) for i in 1:fieldcount(T))
 
 function parse_config(tomlfile)
     config_dict = parsefile(tomlfile)

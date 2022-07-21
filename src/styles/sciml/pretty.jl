@@ -66,8 +66,13 @@ for f in [
     :p_call,
     :p_tuple,
     :p_vcat,
+    :p_ncat,
     :p_typedvcat,
+    :p_typedncat,
     :p_ref,
+    :p_row,
+    :p_nrow,
+    :p_hcat,
     :p_comprehension,
     :p_typedcomprehension, #:p_whereopcall,
     :p_generator,
@@ -101,7 +106,7 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
         else
             s.indent += s.opts.indent
             nodes = CSTParser.EXPR[]
-            for i = 2:length(cst)-1
+            for i in 2:length(cst)-1
                 push!(nodes, cst[i])
             end
             add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)

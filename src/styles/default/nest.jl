@@ -95,11 +95,15 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_ref!(style, fst, s)
     elseif fst.typ === TypedVcat
         n_typedvcat!(style, fst, s)
+    elseif fst.typ === TypedNcat
+        n_typedvcat!(style, fst, s)
     elseif fst.typ === TupleN
         n_tuple!(style, fst, s)
     elseif fst.typ === Vect
         n_vect!(style, fst, s)
     elseif fst.typ === Vcat
+        n_vcat!(style, fst, s)
+    elseif fst.typ === Ncat
         n_vcat!(style, fst, s)
     elseif fst.typ === Braces
         n_braces!(style, fst, s)

@@ -291,7 +291,7 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     st = cst.head === :vcat ? 1 : 2
-    n_semicolons = 0
+    args = get_args(cst)
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -317,21 +317,8 @@ function p_vcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                 override_join_lines_based_on_source = i == st + 1,
             )
             if has_semicolon(s.doc, n.startline)
-                n_semicolons += 1
-                semicolons = s.doc.semicolons[n.startline]
-                count = popfirst!(semicolons)
-                if i != length(cst) - 1
-                    if count > 1
-                        for _ = 1:count
-                            add_node!(t, Semicolon(), s)
-                        end
-                    else
-                        add_node!(t, InverseTrailingSemicolon(), s)
-                    end
-                elseif count > 1 || n_semicolons == 1
-                    for _ = 1:count
-                        add_node!(t, Semicolon(), s)
-                    end
+                if i != length(cst) - 1 || length(args) == 1
+                    add_node!(t, InverseTrailingSemicolon(), s)
                 end
             end
         else
@@ -343,6 +330,88 @@ end
 function p_typedvcat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = p_vcat(ys, cst, s)
     t.typ = TypedVcat
+    t
+end
+
+function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
+    t = FST(Ncat, nspaces(s))
+    st = cst.head === :ncat ? 2 : 3
+    args = get_args(cst)
+    n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
+
+    for (i, a) in enumerate(cst)
+        n = pretty(style, a, s)
+        i == st && continue
+        if is_closer(n)
+            add_node!(
+                t,
+                n,
+                s,
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
+        elseif !is_closer(a) && i > st
+            join_lines = i == st + 1 ? true : t.endline == n.startline
+            if join_lines && i != st + 1
+                add_node!(t, Placeholder(1), s)
+            end
+
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = join_lines,
+                override_join_lines_based_on_source = i == st + 1,
+            )
+
+            if i < length(cst) - 1
+                for _ in 1:n_semicolons
+                    add_node!(t, Semicolon(), s)
+                end
+            elseif length(args) == 1
+                for _ in 1:n_semicolons
+                    add_node!(t, Semicolon(), s)
+                end
+            end
+        else
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
+function p_typedncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    t = p_ncat(ys, cst, s)
+    t.typ = TypedNcat
+    t
+end
+
+function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ys)
+    t = FST(NRow, cst, nspaces(s))
+
+    n_semicolons = SEMICOLON_LOOKUP[cst[1].head]
+
+    for (i, a) in enumerate(cst)
+        i == 1 && continue
+        if is_opcall(a)
+            add_node!(
+                t,
+                pretty(style, a, s, nospace = true, nonest = true),
+                s,
+                join_lines = true,
+            )
+        else
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        end
+        if i < length(cst)
+            for _ in 1:n_semicolons
+                add_node!(t, Semicolon(), s)
+            end
+            add_node!(t, Whitespace(1), s)
+        end
+    end
+    t.nest_behavior = NeverNest
     t
 end
 
@@ -524,7 +593,7 @@ function p_whereopcall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         add_node!(bc, brace, s, join_lines = true)
     end
 
-    for i = 3:length(cst)
+    for i in 3:length(cst)
         a = cst[i]
         n = is_binary(a) ? pretty(style, a, s, nospace = true) : pretty(style, a, s)
 
@@ -591,7 +660,7 @@ function p_generator(ys::YASStyle, cst::CSTParser.EXPR, s::State)
 
             if !is_gen(cst[i+1])
                 tupargs = CSTParser.EXPR[]
-                for j = i+1:length(cst)
+                for j in i+1:length(cst)
                     push!(tupargs, cst[j])
                 end
 
