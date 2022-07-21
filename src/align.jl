@@ -11,7 +11,9 @@ function align_fst!(fst::FST, opts::Options)
             align_struct!(n)
         elseif opts.align_conditional && n.typ === Conditional
             align_conditional!(n)
-        elseif opts.align_matrix && (n.typ === Vcat || n.typ === TypedVcat || n.typ === Ncat || n.typ === TypedNcat)
+        elseif opts.align_matrix && (
+            n.typ === Vcat || n.typ === TypedVcat || n.typ === Ncat || n.typ === TypedNcat
+        )
             align_matrix!(n)
         else
             align_fst!(n, opts)

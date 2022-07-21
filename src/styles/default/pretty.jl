@@ -2132,11 +2132,10 @@ end
 p_ref(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_ref(DefaultStyle(style), cst, s)
 
-
 function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Vcat, cst, nspaces(s))
-    st = cst.head === :vcat  ? 1 : 2
+    st = cst.head === :vcat ? 1 : 2
     args = get_args(cst)
     nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
 
@@ -2217,7 +2216,6 @@ end
 p_typedhcat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_typedhcat(DefaultStyle(style), cst, s)
 
-
 function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Ncat, cst, nspaces(s))
@@ -2237,13 +2235,13 @@ function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
 
             if i != length(cst) - 1
-                for c in 1:n_semicolons
+                for c = 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif length(args) == 1
-                for _ in 1:n_semicolons
+                for _ = 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
                 add_node!(t, Placeholder(0), s)
@@ -2310,8 +2308,8 @@ function p_nrow(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-        if i < length(cst) 
-            for _ in 1:n_semicolons
+        if i < length(cst)
+            for _ = 1:n_semicolons
                 add_node!(t, Semicolon(), s)
             end
             add_node!(t, Whitespace(1), s)

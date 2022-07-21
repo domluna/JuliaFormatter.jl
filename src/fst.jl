@@ -252,8 +252,7 @@ end
 
 # TODO: fix this
 function is_multiline(fst::FST)
-    fst.endline > fst.startline &&
-    (
+    fst.endline > fst.startline && (
         fst.typ === StringN ||
         fst.typ === Vcat ||
         fst.typ === TypedVcat ||
@@ -413,7 +412,9 @@ end
 function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
     args0 = CSTParser.EXPR[]
     for a in args
-        if CSTParser.ispunctuation(a) || CSTParser.is_nothing(a) || haskey(SEMICOLON_LOOKUP, a.head)
+        if CSTParser.ispunctuation(a) ||
+           CSTParser.is_nothing(a) ||
+           haskey(SEMICOLON_LOOKUP, a.head)
             continue
         end
         if a.head === :parameters

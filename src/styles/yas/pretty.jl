@@ -383,7 +383,7 @@ function p_ncat(ys::YASStyle, cst::CSTParser.EXPR, s::State)
                     add_node!(t, Semicolon(), s)
                 end
             elseif length(args) == 1
-                for _ in 1:n_semicolons
+                for _ = 1:n_semicolons
                     add_node!(t, Semicolon(), s)
                 end
             end
@@ -417,8 +417,8 @@ function p_nrow(ys::YASStyle, cst::CSTParser.EXPR, s::State)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-        if i < length(cst) 
-            for _ in 1:n_semicolons
+        if i < length(cst)
+            for _ = 1:n_semicolons
                 add_node!(t, Semicolon(), s)
             end
             add_node!(t, Whitespace(1), s)
