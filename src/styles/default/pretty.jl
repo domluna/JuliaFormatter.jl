@@ -2148,26 +2148,12 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         elseif !is_closer(a) && i > st
             add_node!(t, n, s, join_lines = true)
 
-            if i != length(cst) - 1
-                if has_semicolon(s.doc, n.startline)
-                    semicolons = s.doc.semicolons[n.startline]
-                    count = popfirst!(semicolons)
-                    if count > 1
-                        for _ in 1:count
-                            add_node!(t, Semicolon(), s)
-                        end
-                    else
-                        add_node!(t, InverseTrailingSemicolon(), s)
-                    end
-                end
+            if i != length(cst) - 1 && has_semicolon(s.doc, n.startline)
+                add_node!(t, InverseTrailingSemicolon(), s)
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif length(args) == 1 && has_semicolon(s.doc, n.startline)
-                semicolons = s.doc.semicolons[n.startline]
-                count = popfirst!(semicolons)
-                for _ in 1:count
-                    add_node!(t, Semicolon(), s)
-                end
+                add_node!(t, InverseTrailingSemicolon(), s)
                 add_node!(t, Placeholder(0), s)
             else
                 add_node!(t, Placeholder(0), s)
