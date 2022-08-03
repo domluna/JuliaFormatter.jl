@@ -772,6 +772,10 @@ function format_file(
     )
 end
 
+function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
+    return format_file(filename; style = style, kwargs...)
+end
+
 """
     format(
         paths; # a path or collection of paths
