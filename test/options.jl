@@ -284,6 +284,63 @@
         @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
     end
 
+    @testset "function longdef to shortdef" begin
+        str_ = """
+        function foo(a)
+            bodybodybody
+        end"""
+        str = "foo(a) = bodybodybody"
+        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+
+        str_ = """
+        function foo(a::T) where {T}
+            bodybodybodybodybodybodyb
+        end"""
+        str = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
+        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+
+        str_ = """
+        function foo(a::T)::R where {T}
+            bodybodybodybodybodybodybody
+        end"""
+        str = "foo(a::T)::R where {T} = bodybodybodybodybodybodybody"
+        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+
+        str_ = """
+        function foo(a)
+            return a + 1
+        end"""
+        str = "foo(a) = a + 1"
+        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+
+        str = """
+        function foo()
+            expr1
+            expr2
+        end"""
+        @test fmt(str, 4, length(str), long_to_short_function_def = true) == str
+
+        str_ = """
+        function foo(a)
+            return if a > 1
+                2
+            else
+                nothing
+            end
+        end"""
+        str = """
+        foo(a) =
+            if a > 1
+                2
+            else
+                nothing
+            end"""
+        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+    end
+
     @testset "always use return" begin
         str_ = "foo(a) = bodybodybody"
         str = """

@@ -311,6 +311,12 @@ function f(arg2, arg2)
 end
 ```
 
+### `long_to_short_function_def`
+
+> default: `false`
+
+Transforms a *long* function definition to a *short* function definition if the short function definition does not exceed the maximum margin.
+
 ### `always_use_return`
 
 > default: `false`

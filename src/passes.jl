@@ -270,6 +270,63 @@ function short_to_long_function_def!(fst::FST, s::State)
 end
 
 """
+    long_to_short_function_def!(fst::FST, s::State)
+
+Transforms a *long* function definition
+
+```julia
+function f(arg2, arg2)
+    body
+end
+```
+
+to a *short* function definition
+
+```julia
+f(arg1, arg2) = body
+```
+"""
+function long_to_short_function_def!(fst::FST, s::State)
+    any(is_comment, fst.nodes) && return false
+
+    I = findall(n -> n.typ === Block, fst.nodes)
+    length(I) == 1 || return false  # function must have a single block
+
+    block = fst.nodes[first(I)]
+    length(block.nodes) == 1 || return false  # block must have a single statement
+
+    I = findfirst(n -> n.typ === Call || n.typ === Where, fst.nodes)
+    I === nothing && return false
+    lhs = fst.nodes[I]
+
+    rhs = first(block.nodes)
+
+    if rhs.typ === Return
+        I = findall(!is_custom_leaf, fst.nodes)
+        length(I) < 2 && return false
+        popfirst!(I)  # remove leading `return` keyword
+        rhs = rhs.nodes[first(I)]
+    end
+
+    # length(Whitespace(1) * "=" * Whitespace(1)) = 3
+    line_margin = s.line_offset + length(lhs) + 3 + length(rhs) + fst.extra_margin
+    line_margin > s.opts.margin && return false
+
+    funcdef = FST(Binary, fst.indent)
+    kw = (join_lines = true, override_join_lines_based_on_source = true)
+    add_node!(funcdef, lhs, s; kw...)
+    add_node!(funcdef, Whitespace(1), s; kw...)
+    add_node!(funcdef, FST(OPERATOR, 0, -1, -1, "="), s; kw...)
+    add_node!(funcdef, Whitespace(1), s; kw...)
+    add_node!(funcdef, rhs, s; kw...)
+
+    fst.typ = funcdef.typ
+    fst.nodes = funcdef.nodes
+    fst.len = funcdef.len
+    return true
+end
+
+"""
     binaryop_to_whereop(fst::FST, s::State)
 
 Handles the case of a function def defined
