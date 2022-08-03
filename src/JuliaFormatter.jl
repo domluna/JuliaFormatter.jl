@@ -680,6 +680,41 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     return text
 end
 
+function _format_file(
+    filename::AbstractString;
+    overwrite::Bool = true,
+    verbose::Bool = false,
+    format_markdown::Bool = false,
+    format_options...,
+)::Bool
+    path, ext = splitext(filename)
+    shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
+    formatted_str = if match(r"^\.[jq]*md$", ext) ≠ nothing
+        format_markdown || return true
+        verbose && println("Formatting $filename")
+        str = String(read(filename))
+        format_md(str; format_options...)
+    elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
+        verbose && println("Formatting $filename")
+        str = String(read(filename))
+        format_text(str; format_options...)
+    else
+        error("$filename must be a Julia (.jl) or Markdown (.md, .jmd or .qmd) source file")
+    end
+    formatted_str = replace(formatted_str, r"\n*$" => "\n")
+    already_formatted = (formatted_str == str)
+    if overwrite && !already_formatted
+        write(filename, formatted_str)
+    end
+    return already_formatted
+end
+
+function _format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
+    return _format_file(filename; style = style, kwargs...)
+end
+
+const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
+
 """
     format_file(
         filename::AbstractString;
@@ -727,37 +762,19 @@ function format_file(
     verbose::Bool = false,
     format_markdown::Bool = false,
     format_options...,
-)::Bool
-    path, ext = splitext(filename)
-    shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
-    formatted_str = if match(r"^\.[jq]*md$", ext) ≠ nothing
-        format_markdown || return true
-        verbose && println("Formatting $filename")
-        str = String(read(filename))
-        format_md(str; format_options...)
-    elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
-        verbose && println("Formatting $filename")
-        str = String(read(filename))
-        format_text(str; format_options...)
-    else
-        error("$filename must be a Julia (.jl) or Markdown (.md, .jmd or .qmd) source file")
-    end
-    formatted_str = replace(formatted_str, r"\n*$" => "\n")
-    already_formatted = (formatted_str == str)
-    if overwrite && !already_formatted
-        write(filename, formatted_str)
-    end
-    return already_formatted
+)
+    format(
+        filename;
+        overwrite = overwrite,
+        verbose = verbose,
+        format_markdown = format_markdown,
+        format_options...,
+    )
 end
 
-"""
-    format_file(filename::AbstractString, style::AbstractStyle; kwargs...)::Bool
-"""
 function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
     return format_file(filename; style = style, kwargs...)
 end
-
-const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
 
 """
     format(
@@ -765,8 +782,7 @@ const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
         options...,
     )::Bool
 
-Recursively descend into files and directories, formatting any `.jl` files by calling
-`format_file` on them.
+Recursively descend into files and directories, formatting any `.jl` files.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
@@ -805,7 +821,7 @@ function format(paths; options...)::Bool
             else
                 options
             end
-            format_file(path; opts...)
+            _format_file(path; opts...)
         else
             reduce(walkdir(path), init = true) do formatted_path, dir_branch
                 root, dirs, files = dir_branch
@@ -822,7 +838,7 @@ function format(paths; options...)::Bool
                         else
                             options
                         end
-                        format_file(full_path; opts...)
+                        _format_file(full_path; opts...)
                     else
                         true
                     end
