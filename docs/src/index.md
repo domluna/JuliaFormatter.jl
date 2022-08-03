@@ -7,7 +7,7 @@ CurrentModule = JuliaFormatter
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, black, and prettier. Built with [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
 
 - Sane defaults out of the box with options to customize.
-- Supports [YAS](https://github.com/jrevels/YASGuide) and [Blue](https://github.com/invenia/BlueStyle) style guides.
+- Supports [YAS](https://github.com/jrevels/YASGuide), [Blue](https://github.com/invenia/BlueStyle) and [SciML](https://github.com/SciML/SciMLStyle) style guides.
 - `.JuliaFormatter.toml` configuration file to store options.
 
 ![](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
