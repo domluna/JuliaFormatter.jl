@@ -30,6 +30,7 @@ function options(style::YASStyle)
         import_to_using = true,
         pipe_to_function_call = true,
         short_to_long_function_def = true,
+        long_to_short_function_def = false,
         always_use_return = true,
         whitespace_in_kwargs = false,
         join_lines_based_on_source = true,

@@ -23,6 +23,7 @@ function options(style::MinimalStyle)
         import_to_using = false,
         pipe_to_function_call = false,
         short_to_long_function_def = false,
+        long_to_short_function_def = false,
         always_use_return = false,
         format_docstrings = false,
         align_struct_field = false,
