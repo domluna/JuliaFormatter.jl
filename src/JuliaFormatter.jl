@@ -633,6 +633,10 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     needs_alignment(s.opts) && align_fst!(fst, s.opts)
 
+    if s.opts.long_to_short_function_def && s.opts.short_to_long_function_def
+        @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
+    end
+
     nest!(style, fst, s)
 
     # ignore maximum width can be extra whitespace at the end of lines

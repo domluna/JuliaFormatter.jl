@@ -339,6 +339,14 @@
                 nothing
             end"""
         @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+
+        @test_logs (:warn, r"Both `long_to_short_function_def`.*") match_mode = :any fmt(
+            "foo",
+            4,
+            1,
+            long_to_short_function_def = true,
+            short_to_long_function_def = true,
+        )
     end
 
     @testset "always use return" begin
