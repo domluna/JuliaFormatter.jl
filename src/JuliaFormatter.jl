@@ -610,6 +610,9 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
 end
 
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
+    if opts.long_to_short_function_def && opts.short_to_long_function_def
+        @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
+    end
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
     ps.errored && error("Parsing error for input occurred on line $line, offset: $offset")
@@ -632,10 +635,6 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     flatten_fst!(fst)
 
     needs_alignment(s.opts) && align_fst!(fst, s.opts)
-
-    if s.opts.long_to_short_function_def && s.opts.short_to_long_function_def
-        @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
-    end
 
     nest!(style, fst, s)
 
