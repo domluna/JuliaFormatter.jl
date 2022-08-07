@@ -180,6 +180,24 @@ function f(arg2, arg2)
 end
 ```
 
+### `long_to_short_function_def`
+
+> default: `false`
+
+Transforms a *long* function definition
+
+```julia
+function f(arg2, arg2)
+    body
+end
+```
+
+to a *short* function definition if the short function definition does not exceed the maximum margin.
+
+```julia
+f(arg1, arg2) = body
+```
+
 ### `always_use_return`
 
 > default: `false`
