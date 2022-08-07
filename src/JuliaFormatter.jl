@@ -96,7 +96,7 @@ count(args...; kwargs...) = Base.count(args...; kwargs...)
 
 # multidimensional array syntax has nodes that appear as
 # Symbol("integer_value"), i.e. Symbol("2") for ";;"
-SEMICOLON_LOOKUP = Dict(Symbol(n) => n for n in 1:20)
+const SEMICOLON_LOOKUP = Dict(Symbol(n) => n for n in 1:20)
 
 include("document.jl")
 include("options.jl")
