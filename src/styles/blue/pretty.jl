@@ -31,6 +31,7 @@ function options(style::BlueStyle)
     return (;
         always_use_return = true,
         short_to_long_function_def = true,
+        long_to_short_function_def = false,
         whitespace_ops_in_indices = true,
         remove_extra_newlines = true,
         always_for_in = true,

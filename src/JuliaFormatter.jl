@@ -56,6 +56,7 @@ function options(s::DefaultStyle)
         import_to_using = false,
         pipe_to_function_call = false,
         short_to_long_function_def = false,
+        long_to_short_function_def = false,
         always_use_return = false,
         whitespace_in_kwargs = true,
         annotate_untyped_fields_with_any = true,
@@ -144,6 +145,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         import_to_using::Bool = false,
         pipe_to_function_call::Bool = false,
         short_to_long_function_def::Bool = false,
+        long_to_short_function_def::Bool = false,
         always_use_return::Bool = false,
         whitespace_in_kwargs::Bool = true,
         annotate_untyped_fields_with_any::Bool = true,
@@ -310,6 +312,12 @@ function f(arg2, arg2)
     body
 end
 ```
+
+### `long_to_short_function_def`
+
+> default: `false`
+
+Transforms a *long* function definition to a *short* function definition if the short function definition does not exceed the maximum margin.
 
 ### `always_use_return`
 
@@ -602,6 +610,9 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
 end
 
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
+    if opts.long_to_short_function_def && opts.short_to_long_function_def
+        @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
+    end
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos
     ps.errored && error("Parsing error for input occurred on line $line, offset: $offset")

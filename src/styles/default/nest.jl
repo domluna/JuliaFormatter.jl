@@ -56,6 +56,13 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         return
     end
 
+    if fst.typ === FunctionN &&
+       s.opts.long_to_short_function_def &&
+       fst.ref !== nothing &&
+       CSTParser.defines_function(fst.ref[])
+        long_to_short_function_def!(fst, s)
+    end
+
     if fst.typ === Import
         n_import!(style, fst, s)
     elseif fst.typ === Export

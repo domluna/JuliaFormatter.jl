@@ -32,6 +32,7 @@ function options(style::SciMLStyle)
         pipe_to_function_call = false,
         remove_extra_newlines = true,
         short_to_long_function_def = false,
+        long_to_short_function_def = false,
         whitespace_in_kwargs = true,
         whitespace_ops_in_indices = true,
         whitespace_typedefs = true,
