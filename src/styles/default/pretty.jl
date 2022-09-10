@@ -541,11 +541,7 @@ end
 p_globalrefdoc(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_globalrefdoc(DefaultStyle(style), cst, s)
 
-function p_globalrefcmd(
-    ds::DefaultStyle,
-    cst::CSTParser.EXPR,
-    s::State,
-) where {S<:AbstractStyle}
+function p_globalrefcmd(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     # cst[1] is :globalrefcmd
     # cst[2] is empty and fullspan is 0 so we can skip it
