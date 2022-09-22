@@ -844,7 +844,13 @@ function format(paths; options...)::Bool
             else
                 options
             end
-            _format_file(path; opts...)
+            try # log which file fails
+                # https://github.com/domluna/JuliaFormatter.jl/issues/640
+                _format_file(path; opts...)
+            catch
+                @info "Error in formatting file $path"
+                _format_file(path; opts...)
+            end
         else
             reduce(walkdir(path), init = true) do formatted_path, dir_branch
                 root, dirs, files = dir_branch
@@ -861,7 +867,13 @@ function format(paths; options...)::Bool
                         else
                             options
                         end
-                        _format_file(full_path; opts...)
+                        try # log which file fails
+                            # https://github.com/domluna/JuliaFormatter.jl/issues/640
+                            _format_file(full_path; opts...)
+                        catch
+                            @info "Error in formatting file $full_path"
+                            _format_file(full_path; opts...)
+                        end
                     else
                         true
                     end
