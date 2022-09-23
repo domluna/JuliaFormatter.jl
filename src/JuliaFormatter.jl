@@ -873,6 +873,7 @@ function format(paths; options...)::Bool
                             _format_file(full_path; opts...)
                         catch
                             @info "Error in formatting file $full_path"
+                            @debug "formatting failed due to" exception=(err, catch_backtrace()
                             _format_file(full_path; opts...)
                         end
                     else
