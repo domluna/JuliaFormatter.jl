@@ -25,6 +25,7 @@ Base.@kwdef struct Options
     indent_submodule::Bool = false
     separate_kwargs_with_semicolon::Bool = false
     surround_whereop_typeparameters::Bool = true
+    config_applied::Bool = false
 end
 
 function needs_alignment(opts::Options)

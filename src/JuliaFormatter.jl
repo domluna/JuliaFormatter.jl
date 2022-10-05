@@ -820,73 +820,43 @@ Returns a boolean indicating whether the file was already formatted (`true`)
 or not (`false`).
 """
 function format(paths; options...)::Bool
-    dir2config = Dict{String,Any}()
     already_formatted = true
-    function find_config_file(dir)
-        next_dir = dirname(dir)
-        config = if (next_dir == dir || # ensure to escape infinite recursion
-                     isempty(dir)) # reached to the system root
-            nothing
-        elseif haskey(dir2config, dir)
-            dir2config[dir]
-        else
-            path = joinpath(dir, CONFIG_FILE_NAME)
-            isfile(path) ? parse_config(path) : find_config_file(next_dir)
-        end
-        return dir2config[dir] = config
-    end
-
     for path in paths
-        already_formatted &= if isfile(path)
-            dir = dirname(realpath(path))
-            opts = if (config = find_config_file(dir)) !== nothing
-                overwrite_options(options, config)
-            else
-                options
-            end
-            try # log which file fails
-                # https://github.com/domluna/JuliaFormatter.jl/issues/640
-                _format_file(path; opts...)
-            catch
-                @info "Error in formatting file $path"
-                @debug "formatting failed due to" exception = (err, catch_backtrace())
-                _format_file(path; opts...)
-            end
-        else
-            reduce(walkdir(path), init = true) do formatted_path, dir_branch
-                root, dirs, files = dir_branch
-                root = normpath(root)
-                formatted_path & reduce(files, init = true) do formatted_file, file
-                    _, ext = splitext(file)
-                    full_path = joinpath(root, file)
-                    formatted_file &
-                    if ext in (".jl", ".md", ".jmd", ".qmd") &&
-                       !(".git" in split(full_path, Base.Filesystem.path_separator))
-                        dir = abspath(root)
-                        opts = if (config = find_config_file(dir)) !== nothing
-                            overwrite_options(options, config)
-                        else
-                            options
-                        end
-                        try # log which file fails
-                            # https://github.com/domluna/JuliaFormatter.jl/issues/640
-                            _format_file(full_path; opts...)
-                        catch
-                            @info "Error in formatting file $full_path"
-                            @debug "formatting failed due to" exception =
-                                (err, catch_backtrace())
-                            _format_file(full_path; opts...)
-                        end
-                    else
-                        true
-                    end
-                end
-            end
-        end
+        already_formatted &= format(path; options...)
     end
     return already_formatted
 end
-format(path::AbstractString; options...) = format((path,); options...)
+
+function format(path::AbstractString; options...)
+    path = realpath(path)
+    if !get(options, :config_applied, false)
+        # Run recursive search upward *once*
+        options = merge(NamedTuple(options), NamedTuple(find_config_file(path)), (config_applied=true,))
+    end
+    if isdir(path)
+        configpath = joinpath(path, CONFIG_FILE_NAME)
+        if isfile(configpath)
+            options = merge(NamedTuple(options), NamedTuple(parse_config(configpath)))
+        end
+        formatted = true
+        for subpath in readdir(path; join=true)
+            formatted &= format(subpath; options...)
+        end
+        return formatted
+    end
+    # `path` is not a directory but a file
+    _, ext = splitext(path)
+    if !in(ext, (".jl", ".md", ".jmd", ".qmd"))
+        return true
+    end
+    try
+        return _format_file(path; options...)
+    catch
+        @info "Error in formatting file $path"
+        @debug "formatting failed due to" exception = (err, catch_backtrace())
+        return _format_file(path; options...)
+    end
+end
 
 """
     format(path, style::AbstractStyle; options...)::Bool
@@ -939,7 +909,13 @@ function parse_config(tomlfile)
     return kwargs(config_dict)
 end
 
-overwrite_options(options, config) = merge(NamedTuple(options), NamedTuple(config))
+function find_config_file(path)
+    dir = dirname(path)
+    (path == dir || isempty(path)) && return (;)
+    configpath = joinpath(dir, CONFIG_FILE_NAME)
+    isfile(configpath) && return parse_config(configpath)
+    return find_config_file(dir)
+end
 
 if Base.VERSION >= v"1.5"
     include("other/precompile.jl")
