@@ -845,7 +845,8 @@ function format(path::AbstractString; options...)
             options = merge(NamedTuple(options), NamedTuple(parse_config(configpath)))
         end
         formatted = true
-        for subpath in readdir(path; join = true)
+        for subpath in readdir(path)
+            subpath = joinpath(path, subpath)
             formatted &= format(subpath; options...)
         end
         return formatted
@@ -917,7 +918,7 @@ end
 
 function find_config_file(path)
     dir = dirname(path)
-    (path == dir || isempty(path)) && return (;)
+    (path == dir || isempty(path)) && return NamedTuple()
     configpath = joinpath(dir, CONFIG_FILE_NAME)
     isfile(configpath) && return parse_config(configpath)
     return find_config_file(dir)
