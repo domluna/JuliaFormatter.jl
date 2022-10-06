@@ -421,4 +421,33 @@
             rm(sandbox_dir; recursive = true)
         end
     end
+
+    @testset "ignored" begin
+        config_ignored = """
+        ignored=["ignorethis", "als*.jl"]
+        """
+        code_ignored = """
+        poorly( formatted, code =  1)
+        """
+        sandbox_dir = joinpath(tempdir(), "test_ignored_config")
+        mkdir(sandbox_dir)
+        try
+            config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
+            open(io -> write(io, config_ignored), config_path, "w")
+            mkdir(joinpath(sandbox_dir, "ignorethis"))
+            for file in ("ignorethis/one.jl", "ignorethis/two.jl", "alsoignorethis.jl", "dontignorethis.jl")
+                code_path = joinpath(sandbox_dir, file)
+                open(io -> write(io, code_ignored), code_path, "w")
+            end
+            @test format(sandbox_dir) == false
+            for file in ("ignorethis/one.jl", "ignorethis/two.jl", "alsoignorethis.jl")
+                code_path = joinpath(sandbox_dir, file)
+                @test read(code_path, String) == code_ignored
+            end
+            code_path = joinpath(sandbox_dir, "dontignorethis.jl")
+            @test read(code_path, String) != code_ignored
+        finally
+            rm(sandbox_dir; recursive = true)
+        end
+    end
 end

@@ -26,6 +26,7 @@ Base.@kwdef struct Options
     separate_kwargs_with_semicolon::Bool = false
     surround_whereop_typeparameters::Bool = true
     config_applied::Bool = false
+    ignored::Vector{String} = String[]
 end
 
 function needs_alignment(opts::Options)

@@ -4,6 +4,7 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Glob
 import CommonMark: block_modifier
 using CommonMark:
     AdmonitionRule,
@@ -833,6 +834,7 @@ function format(path::AbstractString; options...)
         # Run recursive search upward *once*
         options = merge(NamedTuple(options), NamedTuple(find_config_file(path)), (config_applied=true,))
     end
+    isignored(path, options) && return true
     if isdir(path)
         configpath = joinpath(path, CONFIG_FILE_NAME)
         if isfile(configpath)
@@ -915,6 +917,11 @@ function find_config_file(path)
     configpath = joinpath(dir, CONFIG_FILE_NAME)
     isfile(configpath) && return parse_config(configpath)
     return find_config_file(dir)
+end
+
+function isignored(path, options)
+    ignored = get(options, :ignored, String[])
+    return any(x->occursin(Glob.FilenameMatch("*$x"), path), ignored)
 end
 
 if Base.VERSION >= v"1.5"
