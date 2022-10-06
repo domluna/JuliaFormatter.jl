@@ -832,7 +832,11 @@ function format(path::AbstractString; options...)
     path = realpath(path)
     if !get(options, :config_applied, false)
         # Run recursive search upward *once*
-        options = merge(NamedTuple(options), NamedTuple(find_config_file(path)), (config_applied=true,))
+        options = merge(
+            NamedTuple(options),
+            NamedTuple(find_config_file(path)),
+            (config_applied = true,),
+        )
     end
     isignored(path, options) && return true
     if isdir(path)
@@ -841,7 +845,7 @@ function format(path::AbstractString; options...)
             options = merge(NamedTuple(options), NamedTuple(parse_config(configpath)))
         end
         formatted = true
-        for subpath in readdir(path; join=true)
+        for subpath in readdir(path; join = true)
             formatted &= format(subpath; options...)
         end
         return formatted
@@ -921,7 +925,7 @@ end
 
 function isignored(path, options)
     ignored = get(options, :ignored, String[])
-    return any(x->occursin(Glob.FilenameMatch("*$x"), path), ignored)
+    return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignored)
 end
 
 if Base.VERSION >= v"1.5"

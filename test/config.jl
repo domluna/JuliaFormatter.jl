@@ -435,7 +435,12 @@
             config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
             open(io -> write(io, config_ignored), config_path, "w")
             mkdir(joinpath(sandbox_dir, "ignorethis"))
-            for file in ("ignorethis/one.jl", "ignorethis/two.jl", "alsoignorethis.jl", "dontignorethis.jl")
+            for file in (
+                "ignorethis/one.jl",
+                "ignorethis/two.jl",
+                "alsoignorethis.jl",
+                "dontignorethis.jl",
+            )
                 code_path = joinpath(sandbox_dir, file)
                 open(io -> write(io, code_ignored), code_path, "w")
             end
