@@ -423,34 +423,34 @@
     end
 
     @testset "ignored" begin
-        config_ignored = """
-        ignored=["ignorethis", "als*.jl"]
-        """
-        code_ignored = """
-        poorly( formatted, code =  1)
-        """
+        unformatted_text = "( )"
         sandbox_dir = joinpath(tempdir(), "test_ignored_config")
-        mkdir(sandbox_dir)
+        tobeignored = (
+            "b.jl",
+            "ignored_directory/a.jl",
+            "other_directory/ignored_directory/a.jl",
+            "other_directory/directory/b.jl",
+            "third_directory/a.jl",
+            "third_directory/ignored_directory/a.jl",
+        )
+        nottobeignored = (
+            "a.jl",
+            "other_directory/a.jl",
+            "other_directory/directory/a.jl",
+            "third_directory/b.jl",
+            "third_directory/ignored_directory/b.jl",
+        )
         try
-            config_path = joinpath(sandbox_dir, CONFIG_FILE_NAME)
-            open(io -> write(io, config_ignored), config_path, "w")
-            mkdir(joinpath(sandbox_dir, "ignorethis"))
-            for file in (
-                "ignorethis/one.jl",
-                "ignorethis/two.jl",
-                "alsoignorethis.jl",
-                "dontignorethis.jl",
-            )
-                code_path = joinpath(sandbox_dir, file)
-                open(io -> write(io, code_ignored), code_path, "w")
-            end
+            cp("files/ignore", sandbox_dir)
             @test format(sandbox_dir) == false
-            for file in ("ignorethis/one.jl", "ignorethis/two.jl", "alsoignorethis.jl")
+            for file in tobeignored
                 code_path = joinpath(sandbox_dir, file)
-                @test read(code_path, String) == code_ignored
+                @test startswith(read(code_path, String), unformatted_text)
             end
-            code_path = joinpath(sandbox_dir, "dontignorethis.jl")
-            @test read(code_path, String) != code_ignored
+            for file in nottobeignored
+                code_path = joinpath(sandbox_dir, file)
+                @test !startswith(read(code_path, String), unformatted_text)
+            end
         finally
             rm(sandbox_dir; recursive = true)
         end
