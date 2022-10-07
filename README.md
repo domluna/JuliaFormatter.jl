@@ -453,6 +453,10 @@ function func(...) where {TPARAM}
 end
 ```
 
+### `ignored`
+
+An array of paths to files and directories (with possible Glob wildcards)
+which should not be processed.
 
 ### File Options
 
