@@ -1454,4 +1454,14 @@
         """
         @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
     end
+
+    @testset "618" begin
+        s = """
+        2 |> x -> 2x
+        """
+        s_ = """
+        (x -> 2x)(2)
+        """
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
+    end
 end
