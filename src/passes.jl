@@ -112,18 +112,46 @@ function pipe_to_function_call(fst::FST)
     dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
     arg2 = fst[end]
 
-    if dot && arg2.typ === IDENTIFIER
-        arg2.val *= "."
-        arg2.len += 1
-    elseif arg2.typ === Binary &&
+    # is RHS is an anon function?
+    # need to wrap it parens, i.e. "(x -> x + 1)(arg)"
+    # and then possibly add a "." as well !
+    if op_kind(arg2) === Tokens.ANON_FUNC
+        n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
+        push!(nodes, n)
+
+        # go into anon function and convert all the pipe calls there too.
+        # The precedence of -> is greater then |> so if the anon func is of the
+        # the form `x -> x |> f`, the pipe call will not be converted unless well
+        # recurse into the anon func.
+        pipe_to_function_call_pass!(arg2)
+
+        push!(nodes, arg2)
+        n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ")")
+        push!(nodes, n)
+        if dot
+            n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+            push!(nodes, n)
+        end
+    else
+        push!(nodes, arg2)
+
+        if dot && arg2.typ === IDENTIFIER
+            n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+            push!(nodes, n)
+        elseif dot && arg2.typ === Binary &&
            arg2[end].typ === Quotenode &&
            arg2[end][end].typ === IDENTIFIER
-        iden = arg2[end][end]
-        iden.val *= "."
-        iden.len += 1
+            n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+            push!(nodes, n)
+       elseif dot && arg2.typ === Brackets 
+            idx = findfirst(n -> n.typ === Binary && op_kind(n) === Tokens.ANON_FUNC, arg2.nodes)
+            if idx !== nothing
+                n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+                push!(nodes, n)
+            end
+        end
     end
 
-    push!(nodes, arg2)
     paren = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
     push!(nodes, paren)
     pipe_to_function_call_pass!(fst[1])
