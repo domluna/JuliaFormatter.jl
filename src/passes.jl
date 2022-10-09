@@ -138,13 +138,17 @@ function pipe_to_function_call(fst::FST)
         if dot && arg2.typ === IDENTIFIER
             n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
             push!(nodes, n)
-        elseif dot && arg2.typ === Binary &&
-           arg2[end].typ === Quotenode &&
-           arg2[end][end].typ === IDENTIFIER
+        elseif dot &&
+               arg2.typ === Binary &&
+               arg2[end].typ === Quotenode &&
+               arg2[end][end].typ === IDENTIFIER
             n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
             push!(nodes, n)
-       elseif dot && arg2.typ === Brackets 
-            idx = findfirst(n -> n.typ === Binary && op_kind(n) === Tokens.ANON_FUNC, arg2.nodes)
+        elseif dot && arg2.typ === Brackets
+            idx = findfirst(
+                n -> n.typ === Binary && op_kind(n) === Tokens.ANON_FUNC,
+                arg2.nodes,
+            )
             if idx !== nothing
                 n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
                 push!(nodes, n)
