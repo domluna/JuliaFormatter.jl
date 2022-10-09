@@ -1415,4 +1415,43 @@
         """
         @test format_text(s) == s
     end
+
+    @testset "636" begin
+        s = "a |> M.f"
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == "M.f(a)"
+
+        # -> has a higher precedence than |>
+        s = """
+        coordsperm = coords .|> x -> x.I[[2, 1, 3]] |> CartesianIndex
+        """
+        s_ = """
+        coordsperm = (x -> CartesianIndex(x.I[[2, 1, 3]])).(coords)
+        """
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
+
+        # -> has a higher precedence than |>
+        s = """
+        coordsperm = coords .|> x -> x.I[[2, 1, 3]] .|> CartesianIndex
+        """
+        s_ = """
+        coordsperm = (x -> CartesianIndex.(x.I[[2, 1, 3]])).(coords)
+        """
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
+
+        s = """
+        coordsperm = coords .|> (x -> x.I[[2, 1, 3]]) .|> CartesianIndex
+        """
+        s_ = """
+        coordsperm = CartesianIndex.((x -> x.I[[2, 1, 3]]).(coords))
+        """
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
+
+        s = """
+        coordsperm = coords |> (x -> x.I[[2, 1, 3]]) |> CartesianIndex
+        """
+        s_ = """
+        coordsperm = CartesianIndex((x -> x.I[[2, 1, 3]])(coords))
+        """
+        @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
+    end
 end
