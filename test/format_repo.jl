@@ -4,11 +4,14 @@
     try
         cp(@__DIR__, sandbox_dir; force = true)
         open(joinpath(sandbox_dir, ".JuliaFormatter.toml"), "w") do io
-            write(io, """
-                  remove_extra_newlines = true
-                  always_for_in = true
-                  conditional_to_if = true
-                  """)
+            write(
+                io,
+                """
+            remove_extra_newlines = true
+            always_for_in = true
+            conditional_to_if = true
+            """,
+            )
         end
 
         # initial format
