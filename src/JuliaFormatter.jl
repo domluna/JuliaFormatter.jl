@@ -6,6 +6,7 @@ using DataStructures
 using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
+import Base: get, pairs
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -27,6 +28,21 @@ export format,
     BlueStyle,
     SciMLStyle,
     MinimalStyle
+
+struct Configuration
+    args::Dict{String,Any}
+    file::Dict{String,Any}
+end
+Configuration() = Configuration(Dict{String,Any}(), Dict{String,Any}())
+Configuration(args) = Configuration(args, Dict{String,Any}())
+function get(config::Configuration, s::String, default)
+    haskey(config.args, s) && return config.args[s]
+    haskey(config.file, s) && return config.file[s]
+    return default
+end
+function pairs(conf::Configuration)
+    pairs(merge(conf.file, conf.args))
+end
 
 abstract type AbstractStyle end
 
@@ -820,34 +836,36 @@ See [Configuration File](@ref) for more details.
 Returns a boolean indicating whether the file was already formatted (`true`)
 or not (`false`).
 """
-function format(paths; options...)::Bool
+format(paths; options...) =
+    format(paths, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(paths, options::Configuration)::Bool
     already_formatted = true
     for path in paths
-        already_formatted &= format(path; options...)
+        already_formatted &= format(path, options)
     end
     return already_formatted
 end
 
-function format(path::AbstractString; options...)
+format(path::AbstractString; options...) =
+    format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(path::AbstractString, options::Configuration)
     path = realpath(path)
-    if !get(options, :config_applied, false)
+    if !get(options, "config_applied", false)
         # Run recursive search upward *once*
-        options = merge(
-            NamedTuple(options),
-            NamedTuple(find_config_file(path)),
-            (config_applied = true,),
-        )
+        options =
+            Configuration(copy(options.args), Dict{String,Any}(find_config_file(path)))
+        options.args["config_applied"] = true
     end
     isignored(path, options) && return true
     if isdir(path)
         configpath = joinpath(path, CONFIG_FILE_NAME)
         if isfile(configpath)
-            options = merge(NamedTuple(options), NamedTuple(parse_config(configpath)))
+            options = Configuration(copy(options.args), parse_config(configpath))
         end
         formatted = true
         for subpath in readdir(path)
             subpath = joinpath(path, subpath)
-            formatted &= format(subpath; options...)
+            formatted &= format(subpath, options)
         end
         return formatted
     end
@@ -857,11 +875,11 @@ function format(path::AbstractString; options...)
         return true
     end
     try
-        return _format_file(path; options...)
+        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
     catch
         @info "Error in formatting file $path"
         @debug "formatting failed due to" exception = (err, catch_backtrace())
-        return _format_file(path; options...)
+        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
     end
 end
 
@@ -913,7 +931,7 @@ function parse_config(tomlfile)
             DefaultStyle()
         end
     end
-    return kwargs(config_dict)
+    return config_dict
 end
 
 function find_config_file(path)
@@ -925,7 +943,7 @@ function find_config_file(path)
 end
 
 function isignored(path, options)
-    ignored = get(options, :ignored, String[])
+    ignored = get(options, "ignored", String[])
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignored)
 end
 

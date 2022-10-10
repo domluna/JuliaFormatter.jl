@@ -1,1 +1,2 @@
 remove_extra_newlines = false
+ignored = ["ignore"]
