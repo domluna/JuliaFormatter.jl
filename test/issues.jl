@@ -1464,4 +1464,26 @@
         """
         @test fmt(s, 4, 92, pipe_to_function_call = true) == s_
     end
+
+    @testset "644" begin
+        s = """
+        @foo @noinline Base.@constprop :none aaaaaaaaaaaaa() = 0
+        @foo @noinline Base.@constprop :none bbbbbbbbbbbbbbbbbbb()     = 0
+        @foo @foo @ccccccccccccccccccccccccccccccccccccccccccccccccc() = 0
+        """
+        s_ = """
+        @foo @noinline Base.@constprop :none aaaaaaaaaaaaa()           = 0
+        @foo @noinline Base.@constprop :none bbbbbbbbbbbbbbbbbbb()     = 0
+        @foo @foo @ccccccccccccccccccccccccccccccccccccccccccccccccc() = 0
+        """
+        @test fmt(s, 4, 92, align_assignment = true) == s_
+
+        # no manual edit
+        s = """
+        @foo @noinline Base.@constprop :none aaaaaaaaaaaaa() = 0
+        @foo @noinline Base.@constprop :none bbbbbbbbbbbbbbbbbbbbbbb() = 0
+        @foo @foo @ccccccccccccccccccccccccccccccccccccccccccccccccc() = 0
+        """
+        @test fmt(s, 4, 92, align_assignment = true) == s
+    end
 end
