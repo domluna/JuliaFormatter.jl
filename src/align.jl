@@ -146,7 +146,7 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
         end
 
         if binop === nothing
-            @warn "Binary operator not found in node" n.typ 
+            @warn "Binary operator not found in node" n.typ
             continue
         end
 
