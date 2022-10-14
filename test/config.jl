@@ -443,6 +443,7 @@
         try
             cp("files/ignore", sandbox_dir)
             @test format(sandbox_dir) == false
+            @test format(sandbox_dir) == true
             for file in tobeignored
                 code_path = joinpath(sandbox_dir, file)
                 @test startswith(read(code_path, String), unformatted_text)
