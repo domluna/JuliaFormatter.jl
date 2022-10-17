@@ -943,8 +943,8 @@ function find_config_file(path)
 end
 
 function isignored(path, options)
-    ignored = get(options, "ignored", String[])
-    return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignored)
+    ignore = get(options, "ignore", String[])
+    return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
 if Base.VERSION >= v"1.5"

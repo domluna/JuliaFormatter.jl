@@ -83,9 +83,9 @@ and call `format("dir")`, `code.jl` and `sub_code2.jl` will be formatted accordi
 
 ## Ignoring specific files and directories
 
-If there is an entry in `.JuliaFormatter.toml` with 
+If there is an entry in `.JuliaFormatter.toml` with
 ```
-ignored = ["file.jl", "directory", "file_*.jl"]
+ignore = ["file.jl", "directory", "file_*.jl"]
 ```
 then all of these files will be reported as already formatted: `./file.jl`,
 `./directory/something.jl` `./other_directory/file.jl`, `file_1.jl`,

@@ -476,7 +476,7 @@ If `true` details related to formatting the file will be printed to `stdout`.
 If `true`, Markdown files are also formatted. Julia code blocks will be formatted in
 addition to the Markdown being normalized.
 
-### `ignored`
+### `ignore`
 
 An array of paths to files and directories (with possible Glob wildcards)
 which will not be formatted.

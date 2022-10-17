@@ -1,1 +1,1 @@
-ignored = ["b.*", "ignored_directory"]
+ignore = ["b.*", "ignored_directory"]

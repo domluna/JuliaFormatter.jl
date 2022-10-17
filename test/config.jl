@@ -422,7 +422,7 @@
         end
     end
 
-    @testset "ignored" begin
+    @testset "ignore" begin
         unformatted_text = "( )"
         sandbox_dir = joinpath(tempdir(), "test_ignored_config")
         tobeignored = (

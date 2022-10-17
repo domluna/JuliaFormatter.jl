@@ -1,1 +1,1 @@
-ignored = ["a.jl"]
+ignore = ["a.jl"]
