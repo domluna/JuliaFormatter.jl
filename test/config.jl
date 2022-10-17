@@ -421,4 +421,39 @@
             rm(sandbox_dir; recursive = true)
         end
     end
+
+    @testset "ignore" begin
+        unformatted_text = "( )"
+        sandbox_dir = joinpath(tempdir(), "test_ignored_config")
+        tobeignored = (
+            "b.jl",
+            "ignored_directory/a.jl",
+            "other_directory/ignored_directory/a.jl",
+            "other_directory/directory/b.jl",
+            "third_directory/a.jl",
+            "third_directory/ignored_directory/a.jl",
+        )
+        nottobeignored = (
+            "a.jl",
+            "other_directory/a.jl",
+            "other_directory/directory/a.jl",
+            "third_directory/b.jl",
+            "third_directory/ignored_directory/b.jl",
+        )
+        try
+            cp("files/ignore", sandbox_dir)
+            @test format(sandbox_dir) == false
+            @test format(sandbox_dir) == true
+            for file in tobeignored
+                code_path = joinpath(sandbox_dir, file)
+                @test startswith(read(code_path, String), unformatted_text)
+            end
+            for file in nottobeignored
+                code_path = joinpath(sandbox_dir, file)
+                @test !startswith(read(code_path, String), unformatted_text)
+            end
+        finally
+            rm(sandbox_dir; recursive = true)
+        end
+    end
 end

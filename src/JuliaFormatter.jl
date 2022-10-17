@@ -4,7 +4,9 @@ using CSTParser
 using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
+using Glob
 import CommonMark: block_modifier
+import Base: get, pairs
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -26,6 +28,21 @@ export format,
     BlueStyle,
     SciMLStyle,
     MinimalStyle
+
+struct Configuration
+    args::Dict{String,Any}
+    file::Dict{String,Any}
+end
+Configuration() = Configuration(Dict{String,Any}(), Dict{String,Any}())
+Configuration(args) = Configuration(args, Dict{String,Any}())
+function get(config::Configuration, s::String, default)
+    haskey(config.args, s) && return config.args[s]
+    haskey(config.file, s) && return config.file[s]
+    return default
+end
+function pairs(conf::Configuration)
+    pairs(merge(conf.file, conf.args))
+end
 
 abstract type AbstractStyle end
 
@@ -819,74 +836,52 @@ See [Configuration File](@ref) for more details.
 Returns a boolean indicating whether the file was already formatted (`true`)
 or not (`false`).
 """
-function format(paths; options...)::Bool
-    dir2config = Dict{String,Any}()
+format(paths; options...) =
+    format(paths, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(paths, options::Configuration)::Bool
     already_formatted = true
-    function find_config_file(dir)
-        next_dir = dirname(dir)
-        config = if (next_dir == dir || # ensure to escape infinite recursion
-                     isempty(dir)) # reached to the system root
-            nothing
-        elseif haskey(dir2config, dir)
-            dir2config[dir]
-        else
-            path = joinpath(dir, CONFIG_FILE_NAME)
-            isfile(path) ? parse_config(path) : find_config_file(next_dir)
-        end
-        return dir2config[dir] = config
-    end
-
     for path in paths
-        already_formatted &= if isfile(path)
-            dir = dirname(realpath(path))
-            opts = if (config = find_config_file(dir)) !== nothing
-                overwrite_options(options, config)
-            else
-                options
-            end
-            try # log which file fails
-                # https://github.com/domluna/JuliaFormatter.jl/issues/640
-                _format_file(path; opts...)
-            catch
-                @info "Error in formatting file $path"
-                @debug "formatting failed due to" exception = (err, catch_backtrace())
-                _format_file(path; opts...)
-            end
-        else
-            reduce(walkdir(path), init = true) do formatted_path, dir_branch
-                root, dirs, files = dir_branch
-                root = normpath(root)
-                formatted_path & reduce(files, init = true) do formatted_file, file
-                    _, ext = splitext(file)
-                    full_path = joinpath(root, file)
-                    formatted_file &
-                    if ext in (".jl", ".md", ".jmd", ".qmd") &&
-                       !(".git" in split(full_path, Base.Filesystem.path_separator))
-                        dir = abspath(root)
-                        opts = if (config = find_config_file(dir)) !== nothing
-                            overwrite_options(options, config)
-                        else
-                            options
-                        end
-                        try # log which file fails
-                            # https://github.com/domluna/JuliaFormatter.jl/issues/640
-                            _format_file(full_path; opts...)
-                        catch
-                            @info "Error in formatting file $full_path"
-                            @debug "formatting failed due to" exception =
-                                (err, catch_backtrace())
-                            _format_file(full_path; opts...)
-                        end
-                    else
-                        true
-                    end
-                end
-            end
-        end
+        already_formatted &= format(path, options)
     end
     return already_formatted
 end
-format(path::AbstractString; options...) = format((path,); options...)
+
+format(path::AbstractString; options...) =
+    format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(path::AbstractString, options::Configuration)
+    path = realpath(path)
+    if !get(options, "config_applied", false)
+        # Run recursive search upward *once*
+        options =
+            Configuration(copy(options.args), Dict{String,Any}(find_config_file(path)))
+        options.args["config_applied"] = true
+    end
+    isignored(path, options) && return true
+    if isdir(path)
+        configpath = joinpath(path, CONFIG_FILE_NAME)
+        if isfile(configpath)
+            options = Configuration(copy(options.args), parse_config(configpath))
+        end
+        formatted = true
+        for subpath in readdir(path)
+            subpath = joinpath(path, subpath)
+            formatted &= format(subpath, options)
+        end
+        return formatted
+    end
+    # `path` is not a directory but a file
+    _, ext = splitext(path)
+    if !in(ext, (".jl", ".md", ".jmd", ".qmd"))
+        return true
+    end
+    try
+        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+    catch
+        @info "Error in formatting file $path"
+        @debug "formatting failed due to" exception = (err, catch_backtrace())
+        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+    end
+end
 
 """
     format(path, style::AbstractStyle; options...)::Bool
@@ -936,10 +931,21 @@ function parse_config(tomlfile)
             DefaultStyle()
         end
     end
-    return kwargs(config_dict)
+    return config_dict
 end
 
-overwrite_options(options, config) = merge(NamedTuple(options), NamedTuple(config))
+function find_config_file(path)
+    dir = dirname(path)
+    (path == dir || isempty(path)) && return NamedTuple()
+    configpath = joinpath(dir, CONFIG_FILE_NAME)
+    isfile(configpath) && return parse_config(configpath)
+    return find_config_file(dir)
+end
+
+function isignored(path, options)
+    ignore = get(options, "ignore", String[])
+    return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
+end
 
 if Base.VERSION >= v"1.5"
     include("other/precompile.jl")
