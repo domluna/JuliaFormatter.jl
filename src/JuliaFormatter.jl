@@ -840,6 +840,8 @@ format(paths; options...) =
     format(paths, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
 function format(paths, options::Configuration)::Bool
     already_formatted = true
+    # Don't parallelize this, since there could be a race condition on a
+    # subdirectory that is included in both paths
     for path in paths
         already_formatted &= format(path, options)
     end
@@ -862,12 +864,13 @@ function format(path::AbstractString, options::Configuration)
         if isfile(configpath)
             options = Configuration(copy(options.args), parse_config(configpath))
         end
-        formatted = true
-        for subpath in readdir(path)
+        formatted = Threads.Atomic{Bool}(true)
+        Threads.@threads for subpath in readdir(path)
             subpath = joinpath(path, subpath)
-            formatted &= format(subpath, options)
+            is_formatted = format(subpath, options)
+            Threads.atomic_and!(formatted, is_formatted)
         end
-        return formatted
+        return formatted.value
     end
     # `path` is not a directory but a file
     _, ext = splitext(path)
