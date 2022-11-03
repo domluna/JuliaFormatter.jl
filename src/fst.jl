@@ -1093,8 +1093,8 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
 end
 
 """
-    eq_to_in_normalization!(fst::FST, always_for_in::Bool)
-    eq_to_in_normalization!(fst::FST, always_for_in::Nothing)
+    eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
+    eq_to_in_normalization!(fst::FST, always_for_in::Nothing, for_in_replacement::String)
 
 Transforms
 
@@ -1120,14 +1120,14 @@ for i = 1:10 body end
 
 - https://github.com/domluna/JuliaFormatter.jl/issues/34
 """
-function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
         idx === nothing && return
         op = fst[idx]
 
-        if always_for_in
-            op.val = "in"
+        if always_for_in && valid_for_in_op(op.val)
+            op.val = for_in_replacement
             op.len = length(op.val)
             return
         end
@@ -1139,11 +1139,11 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
             op.val = "="
             op.len = length(op.val)
         end
-    elseif fst.typ === Block || fst.typ === Brackets
+    elseif !is_leaf(fst)
         for n in fst.nodes
-            eq_to_in_normalization!(n, always_for_in)
+            eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
     end
 end
 
-eq_to_in_normalization!(::FST, ::Nothing) = nothing
+eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing

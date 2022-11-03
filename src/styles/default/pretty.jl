@@ -1177,49 +1177,6 @@ end
 p_let(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_let(DefaultStyle(style), cst, s)
 
-# Transforms
-#
-# for i = iter body end
-#
-# =>
-#
-# for i in iter body end
-#
-# AND
-#
-# for i in 1:10 body end
-#
-# =>
-#
-# for i = 1:10 body end
-#
-# https://github.com/domluna/JuliaFormatter.jl/issues/34
-function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
-    if fst.typ === CSTParser.BinaryOpCall
-        idx = findfirst(n -> n.typ === CSTParser.OPERATOR, fst.nodes)
-        idx === nothing && return
-        op = fst[idx]
-
-        if always_for_in && valid_for_in_op(op.val)
-            op.val = for_in_replacement
-            op.len = length(op.val)
-            return
-        end
-
-        if op.val == "=" && !is_colon_op(fst[end])
-            op.val = "in"
-            op.len = length(op.val)
-        elseif op.val == "in" && is_colon_op(fst[end])
-            op.val = "="
-            op.len = length(op.val)
-        end
-    elseif !is_leaf(fst)
-        for n in fst.nodes
-            eq_to_in_normalization!(n, always_for_in, for_in_replacement)
-        end
-    end
-end
-
 # For/While
 function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
