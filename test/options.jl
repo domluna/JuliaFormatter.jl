@@ -2311,5 +2311,11 @@
         str_ = "[i for i = 1:10 if i == 2]"
         str = "[i for i ∈ 1:10 if i == 2]"
         @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        @test_throws AssertionError fmt(
+            str_,
+            always_for_in = true,
+            for_in_replacement = "ni!",
+        )
     end
 end

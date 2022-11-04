@@ -156,6 +156,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         indent::Int = 4,
         margin::Int = 92,
         always_for_in::Union{Bool,Nothing} = false,
+        for_in_replacement::String = "in",
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
@@ -611,7 +612,8 @@ end
 
 ### `for_in_replacement`
 
-Can be used when `always_for_in` is `true` to replace `in` with ∈ (\\in), or `=` instead:
+Can be used when `always_for_in` is `true` to replace the default `in` with `∈` (`\\in`),
+or `=` instead:
 
 ```julia
 for a = 1:10

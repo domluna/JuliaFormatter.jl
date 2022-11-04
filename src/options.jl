@@ -2,6 +2,7 @@ Base.@kwdef struct Options
     indent::Int = 4
     margin::Int = 92
     always_for_in::Union{Bool,Nothing} = false
+    for_in_replacement::String = "in"
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
     remove_extra_newlines::Bool = false
@@ -26,7 +27,6 @@ Base.@kwdef struct Options
     separate_kwargs_with_semicolon::Bool = false
     surround_whereop_typeparameters::Bool = true
     config_applied::Bool = false
-    for_in_replacement::String = "in"
     ignore::Vector{String} = String[]
 end
 
@@ -39,3 +39,8 @@ function needs_alignment(opts::Options)
 end
 
 valid_for_in_op(s::String) = s in ("in", "=", "∈")
+
+function validate_options(opts::Options)
+    @assert valid_for_in_op(opts.for_in_replacement)
+    opts
+end

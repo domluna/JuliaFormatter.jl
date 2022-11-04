@@ -1126,7 +1126,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         idx === nothing && return
         op = fst[idx]
 
-        if always_for_in && valid_for_in_op(op.val)
+        if always_for_in
             op.val = for_in_replacement
             op.len = length(op.val)
             return
