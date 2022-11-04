@@ -607,6 +607,7 @@ end
 ->
 
 function func(...) where {TPARAM}
+end
 
 ### `for_in_replacement`
 
