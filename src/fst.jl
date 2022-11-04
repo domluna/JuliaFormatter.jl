@@ -1129,10 +1129,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         if always_for_in
             op.val = for_in_replacement
             op.len = length(op.val)
-            return
-        end
-
-        if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
+        elseif op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)
         elseif op.val == "in" && op_kind(fst[end]) === Tokens.COLON
