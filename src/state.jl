@@ -9,7 +9,7 @@ mutable struct State
     on::Bool
     opts::Options
 end
-State(doc, opts) = State(doc, 0, 1, 0, true, validate_options(opts))
+State(doc, opts) = State(doc, 0, 1, 0, true, opts)
 
 @inline nspaces(s::State) = s.indent
 @inline hascomment(d::Document, line::Integer) = haskey(d.comments, line)

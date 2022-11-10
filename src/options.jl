@@ -1,3 +1,5 @@
+const VALID_FOR_IN_OPERATORS = ("in", "=", "∈")
+
 Base.@kwdef struct Options
     indent::Int = 4
     margin::Int = 92
@@ -38,10 +40,5 @@ function needs_alignment(opts::Options)
         opts.align_matrix
 end
 
-valid_for_in_op(s::String) = s in ("in", "=", "∈")
+valid_for_in_op(s::String) = s in VALID_FOR_IN_OPERATORS
 valid_for_in_op(_) = false
-
-function validate_options(opts::Options)
-    @assert valid_for_in_op(opts.for_in_replacement)
-    opts
-end
