@@ -613,7 +613,7 @@ end
 ### `for_in_replacement`
 
 Can be used when `always_for_in` is `true` to replace the default `in` with `∈` (`\\in`),
-or `=` instead:
+or `=` instead. The replacement options are `("in", "=", "∈")`.
 
 ```julia
 for a = 1:10
