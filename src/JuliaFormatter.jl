@@ -657,7 +657,7 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
         @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
     end
     if opts.always_for_in && !valid_for_in_op(opts.for_in_replacement)
-        @warn "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators then reformat."
+        @warn "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
         return text
     end
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
