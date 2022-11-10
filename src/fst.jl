@@ -1126,6 +1126,8 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         idx === nothing && return
         op = fst[idx]
 
+        !valid_for_in_op(op.val) && return
+
         if always_for_in
             op.val = for_in_replacement
             op.len = length(op.val)
@@ -1136,8 +1138,8 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
             op.val = "="
             op.len = length(op.val)
         end
-    elseif !is_leaf(fst)
-        for n in fst.nodes
+    elseif fst.typ === Block || fst.typ === Brackets || fst.typ === Filter
+        for (i, n) in enumerate(fst.nodes)
             eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
     end

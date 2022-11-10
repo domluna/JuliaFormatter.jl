@@ -39,6 +39,7 @@ function needs_alignment(opts::Options)
 end
 
 valid_for_in_op(s::String) = s in ("in", "=", "∈")
+valid_for_in_op(_) = false
 
 function validate_options(opts::Options)
     @assert valid_for_in_op(opts.for_in_replacement)
