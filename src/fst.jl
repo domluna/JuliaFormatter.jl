@@ -1093,8 +1093,8 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
 end
 
 """
-    eq_to_in_normalization!(fst::FST, always_for_in::Bool)
-    eq_to_in_normalization!(fst::FST, always_for_in::Nothing)
+    eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
+    eq_to_in_normalization!(fst::FST, always_for_in::Nothing, for_in_replacement::String)
 
 Transforms
 
@@ -1120,30 +1120,29 @@ for i = 1:10 body end
 
 - https://github.com/domluna/JuliaFormatter.jl/issues/34
 """
-function eq_to_in_normalization!(fst::FST, always_for_in::Bool)
+function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
         idx === nothing && return
         op = fst[idx]
 
-        if always_for_in
-            op.val = "in"
-            op.len = length(op.val)
-            return
-        end
+        !valid_for_in_op(op.val) && return
 
-        if op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
+        if always_for_in
+            op.val = for_in_replacement
+            op.len = length(op.val)
+        elseif op.val == "=" && op_kind(fst[end]) !== Tokens.COLON
             op.val = "in"
             op.len = length(op.val)
         elseif op.val == "in" && op_kind(fst[end]) === Tokens.COLON
             op.val = "="
             op.len = length(op.val)
         end
-    elseif fst.typ === Block || fst.typ === Brackets
-        for n in fst.nodes
-            eq_to_in_normalization!(n, always_for_in)
+    elseif fst.typ === Block || fst.typ === Brackets || fst.typ === Filter
+        for (i, n) in enumerate(fst.nodes)
+            eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
     end
 end
 
-eq_to_in_normalization!(::FST, ::Nothing) = nothing
+eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing

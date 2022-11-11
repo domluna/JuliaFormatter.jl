@@ -1,7 +1,10 @@
+const VALID_FOR_IN_OPERATORS = ("in", "=", "∈")
+
 Base.@kwdef struct Options
     indent::Int = 4
     margin::Int = 92
     always_for_in::Union{Bool,Nothing} = false
+    for_in_replacement::String = "in"
     whitespace_typedefs::Bool = false
     whitespace_ops_in_indices::Bool = false
     remove_extra_newlines::Bool = false
@@ -36,3 +39,6 @@ function needs_alignment(opts::Options)
         opts.align_pair_arrow ||
         opts.align_matrix
 end
+
+valid_for_in_op(s::String) = s in VALID_FOR_IN_OPERATORS
+valid_for_in_op(_) = false

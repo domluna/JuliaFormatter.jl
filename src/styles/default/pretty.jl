@@ -1193,7 +1193,8 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         pretty(style, cst[2], s)
     end
 
-    cst[1].head === :FOR && eq_to_in_normalization!(n, s.opts.always_for_in)
+    cst[1].head === :FOR &&
+        eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     add_node!(t, n, s, join_lines = true)
 
     idx = length(t.nodes)
@@ -2332,7 +2333,8 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
         end
 
-        has_for_kw && eq_to_in_normalization!(n, s.opts.always_for_in)
+        has_for_kw &&
+            eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     end
     t
 end

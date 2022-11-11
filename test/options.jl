@@ -247,6 +247,21 @@
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
         @test fmt(str_, always_for_in = true) == str
         @test fmt(str, always_for_in = true) == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i in 1:10 if i == 2]"
+        @test fmt(str_, always_for_in = true) == str
+        @test fmt(str, always_for_in = true) == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
+        @test yasfmt(str_, always_for_in = true) == str
+        @test yasfmt(str, always_for_in = true) == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i in 1:10 if i == 2]"
+        @test yasfmt(str_, always_for_in = true) == str
+        @test yasfmt(str, always_for_in = true) == str
     end
 
     @testset "rewrite x |> f to f(x)" begin
@@ -2267,5 +2282,40 @@
         NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM = foo
         """
         @test fmt(s, surround_whereop_typeparameters = false) == s
+    end
+
+    @testset "for_in_replacement" begin
+        str_ = """
+        for a = b
+        end
+        """
+        str = """
+        for a ∈ b
+        end
+        """
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        # generator
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i ∈ 1:10 if i == 2]"
+        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
+        str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
+        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        str_ = "[i for i = 1:10 if i == 2]"
+        str = "[i for i ∈ 1:10 if i == 2]"
+        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+
+        @test_throws AssertionError fmt(
+            str_,
+            always_for_in = true,
+            for_in_replacement = "ni!",
+        )
     end
 end

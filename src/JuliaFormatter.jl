@@ -156,6 +156,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         indent::Int = 4,
         margin::Int = 92,
         always_for_in::Union{Bool,Nothing} = false,
+        for_in_replacement::String = "in",
         whitespace_typedefs::Bool = false,
         whitespace_ops_in_indices::Bool = false,
         remove_extra_newlines::Bool = false,
@@ -608,6 +609,19 @@ end
 
 function func(...) where {TPARAM}
 end
+
+### `for_in_replacement`
+
+Can be used when `always_for_in` is `true` to replace the default `in` with `∈` (`\\in`),
+or `=` instead. The replacement options are `("in", "=", "∈")`.
+
+```julia
+for a = 1:10
+end
+
+# formatted with always_for_in = true, for_in_replacement = "∈"
+for a ∈ 1:10
+end
 ```
 
 """
@@ -641,6 +655,9 @@ end
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     if opts.long_to_short_function_def && opts.short_to_long_function_def
         @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
+    end
+    if opts.always_for_in == true
+        @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
     cst, ps = CSTParser.parse(CSTParser.ParseState(text), true)
     line, offset = ps.lt.endpos

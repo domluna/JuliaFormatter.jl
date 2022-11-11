@@ -453,6 +453,19 @@ function func(...) where {TPARAM}
 end
 ```
 
+### `for_in_replacement`
+
+Can be used when `always_for_in` is `true` to replace the default `in` with `∈` (`\\in`),
+or `=` instead. The replacement options are `("in", "=", "∈")`.
+
+```julia
+for a = 1:10
+end
+
+# formatted with always_for_in = true, for_in_replacement = "∈"
+for a ∈ 1:10
+end
+```
 
 ### File Options
 
