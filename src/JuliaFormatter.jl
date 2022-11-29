@@ -653,9 +653,6 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
 end
 
 function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
-    if opts.long_to_short_function_def && opts.short_to_long_function_def
-        @warn "Both `long_to_short_function_def` and `short_to_long_function_def` are set"
-    end
     if opts.always_for_in == true
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
