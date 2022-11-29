@@ -1504,4 +1504,9 @@
               s
         @test fmt(s, 2, 1, trailing_comma = nothing) == s
     end
+
+    @testset "656" begin
+        s = "[x for x in xs if x in 1:length(ys)]"
+        @test fmt(s, 4, 92) == s
+    end
 end

@@ -1139,7 +1139,14 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
             op.len = length(op.val)
         end
     elseif fst.typ === Block || fst.typ === Brackets || fst.typ === Filter
+        past_if = false
         for (i, n) in enumerate(fst.nodes)
+            if n.typ === KEYWORD && n.val == "if"
+                # [x for x in xs if x in 1:length(ys)]
+                # we do not want to convert the binary operations after an "if" keyword.
+                past_if = true
+            end
+            past_if && break
             eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
     end
