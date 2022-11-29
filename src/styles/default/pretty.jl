@@ -2150,7 +2150,7 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
                 add_node!(t, Placeholder(1), s)
                 # Keep trailing semicolon if there's only one arg
             elseif length(args) == 1 && has_semicolon(s.doc, n.startline)
-                add_node!(t, InverseTrailingSemicolon(), s)
+                add_node!(t, Semicolon(), s)
                 add_node!(t, Placeholder(0), s)
             else
                 add_node!(t, Placeholder(0), s)
