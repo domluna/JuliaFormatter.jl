@@ -1486,4 +1486,9 @@
         """
         @test fmt(s, 4, 92, align_assignment = true) == s
     end
+
+    @testset "656" begin
+        s = "[x for x in xs if x in 1:length(ys)]"
+        @test fmt(s, 4, 92) == s
+    end
 end
