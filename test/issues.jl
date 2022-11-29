@@ -1494,5 +1494,14 @@
         ]
         """
         @test fmt(s, 2, 92, join_lines_based_on_source = true) == s
+        @test fmt(s, 2, 1) == s
+        s = """
+        [
+          a
+        ]
+        """
+        @test fmt(s, 2, 92, join_lines_based_on_source = true, trailing_comma = nothing) ==
+              s
+        @test fmt(s, 2, 1, trailing_comma = nothing) == s
     end
 end
