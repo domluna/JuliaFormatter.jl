@@ -1486,4 +1486,13 @@
         """
         @test fmt(s, 4, 92, align_assignment = true) == s
     end
+
+    @testset "655" begin
+        s = """
+        [
+          a;
+        ]
+        """
+        @test fmt(s, 2, 92, join_lines_based_on_source = true) == s
+    end
 end
