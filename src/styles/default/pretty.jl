@@ -246,7 +246,11 @@ function block_modifier(rule::FormatRule)
                     write(doctests, "julia> ")
                     for (j, line) in enumerate(split(format_text(an_input, rule), '\n'))
                         if j > 1
-                            write(doctests, "\n       ")
+                            if line == ""
+                                write(doctests, "\n")
+                            else
+                                write(doctests, "\n       ")
+                            end
                         end
                         write(doctests, line)
                     end
@@ -346,9 +350,13 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
     for line in split(formatted, '\n')
         # The last line will be empty and will turn into an indent, so no need to indent the last line below
         write(buf, '\n')
-        write(buf, indent)
-        write(buf, line)
+        # don't write empty lines #667
+        if !all(isspace, line)
+            write(buf, indent)
+            write(buf, line)
+        end
     end
+    write(buf, indent)
     write(buf, "\"\"\"")
     String(take!(buf))
 end
