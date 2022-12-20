@@ -1509,4 +1509,20 @@
         s = "[x for x in xs if x in 1:length(ys)]"
         @test fmt(s, 4, 92) == s
     end
+
+    @testset "667" begin
+        s = raw"""
+        \"""
+            𝐀
+
+        A dimension representing Angle.
+
+        !!! note "Not SI"
+
+            *Angle* is not an SI base dimension.
+        \"""
+        @dimension 𝐀 "𝐀" Angle true
+        """
+        @test fmt(s, format_docstrings = true) == s
+    end
 end
