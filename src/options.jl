@@ -25,6 +25,7 @@ Base.@kwdef struct Options
     align_matrix::Bool = false
     join_lines_based_on_source::Bool = false
     trailing_comma::Union{Bool,Nothing} = true
+    trailing_zero::Bool = true
     indent_submodule::Bool = false
     separate_kwargs_with_semicolon::Bool = false
     surround_whereop_typeparameters::Bool = true

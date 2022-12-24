@@ -45,6 +45,7 @@ function options(style::SciMLStyle)
         align_pair_arrow = false,
         align_matrix = false,
         trailing_comma = true,
+        trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = true,

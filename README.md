@@ -327,6 +327,12 @@ funccall(
 * When set to `false`, the trailing comma is always removed during nesting.
 * When set to `nothing`, the trailing comma appears as it does in the original source.
 
+### `trailing_zero`
+
+> default: `true`
+
+Add a trailing zero, if needed.
+
 ### `join_lines_based_on_source`
 
 > default: `false`

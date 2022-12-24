@@ -2310,4 +2310,14 @@
             for_in_replacement = "ni!",
         )
     end
+
+    @testset "trailing zero" begin
+        @test fmt("1e-2", trailing_zero = true) == "1e-2"
+        @test fmt("1f0", trailing_zero = true) == "1.0f0"
+        @test fmt("1.", trailing_zero = true) == "1.0"
+
+        @test fmt("1e-2", trailing_zero = false) == "1e-2"
+        @test fmt("1f0", trailing_zero = false) == "1f0"
+        @test fmt("1.", trailing_zero = false) == "1."
+    end
 end

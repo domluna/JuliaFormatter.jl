@@ -48,6 +48,7 @@ function options(style::YASStyle)
         normalize_line_endings = "auto",
         align_matrix = false,
         trailing_comma = true,
+        trailing_zero = true,
         indent_submodule = false,
         surround_whereop_typeparameters = true,
     )
