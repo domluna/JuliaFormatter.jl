@@ -87,6 +87,7 @@ function options(s::DefaultStyle)
         align_matrix = false,
         join_lines_based_on_source = false,
         trailing_comma = true,
+        trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = true,
@@ -176,6 +177,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         normalize_line_endings = "auto",
         align_matrix::Bool = false,
         trailing_comma::Bool = false,
+        trailing_zero::Bool = true,
         indent_submodule::Bool = false,
         separate_kwargs_with_semicolon::Bool = false,
         surround_whereop_typeparameters::Bool = true,
@@ -484,6 +486,12 @@ value `"nothing"`:
 ```toml
 trailing_comma = "nothing"
 ```
+
+### `trailing_zero`
+
+> default: `true`
+
+Add a trailing zero, if needed.
 
 ### `join_lines_based_on_source`
 

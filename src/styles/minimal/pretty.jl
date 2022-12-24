@@ -14,6 +14,7 @@ function options(style::MinimalStyle)
         annotate_untyped_fields_with_any = false,
         join_lines_based_on_source = true,
         trailing_comma = nothing,
+        trailing_zero = false,
         margin = 10_000,
         always_for_in = nothing,
         whitespace_in_kwargs = false,

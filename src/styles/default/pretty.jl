@@ -369,32 +369,25 @@ end
 )
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst)
-        val = cst.val
-
-        if val === nothing
-            return FST(LITERAL, loc[2], loc[1], loc[1], "")
-        end
+        (val = cst.val) === nothing && return FST(LITERAL, loc[2], loc[1], loc[1], "")
 
         if cst.head === :FLOAT
-            fidx = findlast(c -> c == 'f', val)
-            float_suffix = ""
-            if fidx !== nothing
+            if (fidx = findlast(==('f'), val)) === nothing
+                float_suffix = ""
+            else
                 float_suffix = val[fidx:end]
                 val = val[1:fidx-1]
             end
-
-            dotidx = findlast(c -> c == '.', val)
-
-            if fidx !== nothing && dotidx === nothing
-                # append a trailing zero prior to the float suffix
-                val *= ".0"
-            elseif dotidx == length(val)
-                # If a floating point ends in `.`, add trailing zero.
-                val *= '0'
-            elseif dotidx == 1
-                val = '0' * val
-            elseif dotidx == 2 && val[1] == '-'
-                val = val[1] * '0' * val[2:end]
+            if findfirst(c -> c == 'e' || c == 'E', val) === nothing
+                if (dotidx = findlast(==('.'), val)) === nothing
+                    val *= s.opts.trailing_zero ? ".0" : ""  # append a trailing zero prior to the suffix
+                elseif dotidx == length(val)
+                    val *= s.opts.trailing_zero ? "0" : ""  # if a float literal ends in `.`, add trailing zero.
+                elseif dotidx == 1
+                    val = '0' * val  # leading zero
+                elseif dotidx == 2 && (val[1] == '-' || val[1] == '+')
+                    val = val[1] * '0' * val[2:end]  # leading zero on signed numbers
+                end
             end
             val *= float_suffix
         end
