@@ -100,7 +100,8 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
     else
         stmts_idxs = 2:length(cst)-1
         # Don't nest into multiple lines when there's only one statement
-        if length(stmts_idxs) == 1
+        # and it's not a macroblock.
+        if length(stmts_idxs) == 1 && !(cst[2].head === :macrocall && !is_closer(cst[2][end]))
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)

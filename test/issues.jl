@@ -1407,6 +1407,23 @@
         @test format_text(s) == s_
     end
 
+    @testset "604" begin
+        str = raw"""
+        begin @foo a end
+        """
+        str_ = raw"""
+        begin
+            @foo a
+        end
+        """
+        @test format_text(str, SciMLStyle()) == str_
+
+        str = raw"""
+        begin @foo(a) end
+        """
+        @test format_text(str, SciMLStyle()) == str
+    end
+
     @testset "613" begin
         s = """
         x = ```
