@@ -1,7 +1,7 @@
 - id: julia-formatter
   name: "Julia Formatter"
-  entry: "./bin/hook.jl"
-  pass_filenames: true 
-  # always_run: true
+  entry: "julia -e 'import JuliaFormatter: format; format(\".\")'"
+  pass_filenames: false
+  always_run: true
   language: "system"
   description: "An opinionated code formatter for Julia. Plot twist - the opinion is your own."
