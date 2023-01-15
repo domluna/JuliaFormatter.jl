@@ -46,7 +46,7 @@ end
 
 abstract type AbstractStyle end
 
-@inline options(s::AbstractStyle) = NamedTuple()
+options(s::AbstractStyle) = NamedTuple()
 
 """
     DefaultStyle
@@ -61,7 +61,7 @@ struct DefaultStyle <: AbstractStyle
 end
 DefaultStyle() = DefaultStyle(nothing)
 
-@inline getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
+getstyle(s::DefaultStyle) = s.innerstyle === nothing ? s : s.innerstyle
 function options(s::DefaultStyle)
     return (;
         indent = 4,
@@ -972,9 +972,9 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-if Base.VERSION >= v"1.5"
-    include("other/precompile.jl")
-    _precompile_()
-end
+# if Base.VERSION >= v"1.5"
+#     include("other/precompile.jl")
+#     _precompile_()
+# end
 
 end

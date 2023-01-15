@@ -24,8 +24,7 @@ struct BlueStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
 BlueStyle() = BlueStyle(nothing)
-
-@inline getstyle(s::BlueStyle) = s.innerstyle === nothing ? s : s.innerstyle
+getstyle(s::BlueStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 function options(style::BlueStyle)
     return (;
@@ -92,8 +91,8 @@ function p_binaryopcall(
     bs::BlueStyle,
     cst::CSTParser.EXPR,
     s::State;
-    nonest = false,
-    nospace = false,
+    nonest::Bool = false,
+    nospace::Bool = false,
 )
     style = getstyle(bs)
     t = FST(Binary, cst, nspaces(s))

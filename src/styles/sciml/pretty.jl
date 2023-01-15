@@ -18,7 +18,7 @@ struct SciMLStyle <: AbstractStyle
 end
 SciMLStyle() = SciMLStyle(nothing)
 
-@inline getstyle(s::SciMLStyle) = s.innerstyle === nothing ? s : s.innerstyle
+getstyle(s::SciMLStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 function options(style::SciMLStyle)
     return (;
