@@ -2,14 +2,19 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
 
     # With `variable_dict_indent`, check if this is a (non-empty) `Dict` definition
-    if s.opts.variable_dict_indent && is_dict_call(fst) && length(fst.nodes) > 4
+    if s.opts.variable_dict_indent && is_dict_call(fst) && length(fst.nodes) > 5
         # Check if the `Dict` definition is of the form `Dict(something,...)`
         # or of the form `Dict(\n...)`.
-        # In the latter case, don't align with the opening parenthesis.
-        # There may be a comment before the first argument, so check for that as well.
-        comment(n) = n.typ === NOTCODE || n.typ === INLINECOMMENT
-        if fst[4].typ === NEWLINE || comment(fst[4]) && fst[5].typ === NEWLINE
-            # Call `n_call!` from `DefaultStyle` to avoid aligning with opening parenthesis
+        # There may be a comment or both an inline comment and a comment in a separate line
+        # before the first argument, so check for that as well.
+        notcode(n) = n.typ === NOTCODE || n.typ === INLINECOMMENT || n.typ === PLACEHOLDER
+        linebreak_definition =
+            fst[4].typ === NEWLINE ||
+            notcode(fst[4]) && fst[5].typ === NEWLINE ||
+            notcode(fst[4]) && notcode(fst[5]) && fst[6].typ === NEWLINE
+
+        if linebreak_definition
+            # With a line break in the definition, don't align with the opening parenthesis
             return n_call!(DefaultStyle(ys), fst, s)
         end
     end
