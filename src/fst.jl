@@ -1153,3 +1153,15 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
 end
 
 eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing
+
+# Check if a call is a `Dict` definition
+# Note that this also works for CSTParser.EXPR
+function is_dict_call(fst)
+    if is_leaf(fst[1]) && fst[1].val == "Dict"
+        return true
+    elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && fst[1][1].val == "Dict"
+        return true
+    end
+
+    return false
+end

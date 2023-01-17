@@ -51,6 +51,7 @@ function options(style::YASStyle)
         trailing_zero = true,
         indent_submodule = false,
         surround_whereop_typeparameters = true,
+        variable_dict_indent = false,
     )
 end
 
@@ -247,6 +248,14 @@ end
 
 function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
+
+    # With `variable_dict_indent`, check if this is a `Dict` definition
+    # and use `p_call` from `DefaultStyle` instead to allow both
+    # `Dict(something,...)` and `Dict(\n,...)`.
+    if s.opts.variable_dict_indent && is_dict_call(cst)
+        return p_call(DefaultStyle(style), cst, s)
+    end
+
     t = FST(Call, cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)

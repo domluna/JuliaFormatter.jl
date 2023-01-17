@@ -37,5 +37,6 @@ function options(style::MinimalStyle)
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = false,
+        variable_dict_indent = false,
     )
 end
