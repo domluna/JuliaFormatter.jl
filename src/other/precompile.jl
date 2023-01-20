@@ -9,7 +9,7 @@ function _precompile_()
 end
 using SnoopPrecompile
 @precompile_setup begin
-    dir = joinpath(@__DIR__,"../..")
+    dir = joinpath(@__DIR__,"..", "..")
     @precompile_all_calls begin
         format(dir)
     end
