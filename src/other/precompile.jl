@@ -8,7 +8,7 @@ using SnoopPrecompile
     """
     @precompile_all_calls begin
         format(dir)
-        for style = [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle()]
+        for style = [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
           format_text(str, style)
         end
     end
