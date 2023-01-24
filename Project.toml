@@ -9,6 +9,7 @@ CommonMark = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
