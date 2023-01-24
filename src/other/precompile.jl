@@ -1,16 +1,15 @@
 #! format: off
-function _precompile_()
-    ccall(:jl_generating_output, Cint, ()) == 1 || return nothing
-    # pretty
-    Base.precompile(Tuple{typeof(pretty),DefaultStyle,CSTParser.EXPR,State})
-    Base.precompile(Tuple{typeof(pretty),YASStyle,CSTParser.EXPR,State})
-    Base.precompile(Tuple{typeof(pretty),BlueStyle,CSTParser.EXPR,State})
-    Base.precompile(Tuple{typeof(pretty),MinimalStyle,CSTParser.EXPR,State})
-end
 using SnoopPrecompile
 @precompile_setup begin
     dir = joinpath(@__DIR__,"..", "..")
+    str = raw"""
+       @noinline require_complete(m::Matching) =
+           m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
+    """
     @precompile_all_calls begin
         format(dir)
+        for style = [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle()]
+          format_text(str, style)
+        end
     end
 end
