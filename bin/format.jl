@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia --compile=min -O0
 using JuliaFormatter
 
 help = """
