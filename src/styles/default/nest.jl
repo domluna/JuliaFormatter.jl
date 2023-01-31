@@ -84,7 +84,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         if s.opts.short_to_long_function_def &&
            line_margin > s.opts.margin &&
            fst.ref !== nothing &&
-           CSTParser.defines_function(fst.ref[])
+           CSTParser.defines_function(fst.ref[]) &&
+           !parent_is(fst.ref[], is_macroblock)
             short_to_long_function_def!(fst, s)
         end
         if fst.typ === Binary

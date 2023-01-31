@@ -264,6 +264,8 @@ end
 
 @inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
+is_macroblock(cst::CSTParser.EXPR) = cst.head === :macrocall && !is_closer(cst[end])
+
 function is_macrodoc(cst::CSTParser.EXPR)
     cst.head === :macrocall &&
         length(cst) == 4 &&
