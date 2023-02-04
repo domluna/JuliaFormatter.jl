@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia --startup-file=no -O1
 using JuliaFormatter
 
 help = """
