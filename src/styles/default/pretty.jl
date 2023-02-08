@@ -1734,8 +1734,9 @@ function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace 
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
     if length(cst) == 1
-        if cst.head.fullspan != 0
-            add_node!(t, pretty(style, cst.head, s), s, join_lines = true)
+        head = cst.head::CSTParser.EXPR
+        if head.fullspan != 0
+            add_node!(t, pretty(style, head, s), s, join_lines = true)
         end
         add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     else
