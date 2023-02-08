@@ -78,9 +78,18 @@
                    3 => 4)
     """
 
-    # This should be valid with and without `variable_dict_indent`
+    # This should be valid with and without `Dict` in `variable_call_indent`
     @test format_text(str, SciMLStyle()) == str
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
+
+    str = raw"""
+    SVector(1.0,
+            2.0)
+    """
+
+    # Test the same with different callers
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test2"]) == str
 
     str = raw"""
     Dict{Int, Int}(
@@ -99,9 +108,31 @@
         3 => 4)
     """
 
-    # `variable_dict_indent` keeps the line break and doesn't align
+    # `variable_call_indent` keeps the line break and doesn't align
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == formatted_str2
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+
+    str = raw"""
+    SVector(
+    1.0,
+               2.0)
+    """
+
+    formatted_str1 = raw"""
+    SVector(1.0,
+            2.0)
+    """
+
+    formatted_str2 = raw"""
+    SVector(
+        1.0,
+        2.0)
+    """
+
+    # Test the same with different callers
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str1
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["test", "SVector"]) ==
+          formatted_str2
 
     str = raw"""
     Dict{Int, Int}(
@@ -115,9 +146,9 @@
                    3 => 4)
     """
 
-    # This is already valid with `variable_dict_indent`
+    # This is already valid with `variable_call_indent`
     @test format_text(str, SciMLStyle()) == formatted_str
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
 
     str = raw"""
     SomeLongerTypeThanJustString = String
@@ -139,9 +170,9 @@
     )
     """
 
-    # Here, `variable_dict_indent` forces the line break because the line is too long
+    # Here, `variable_call_indent` forces the line break because the line is too long
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == formatted_str2
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
 
     str = raw"""
     Dict{Int, Int}(
@@ -157,9 +188,28 @@
         3 => 4)
     """
 
-    # Test `variable_dict_indent` with a comment in a separate line
+    # Test `variable_call_indent` with a comment in a separate line
     @test format_text(str, SciMLStyle()) == str
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == formatted_str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
+
+    str = raw"""
+    SVector(
+            # Comment
+            1.0,
+            2.0)
+    """
+
+    formatted_str = raw"""
+    SVector(
+        # Comment
+        1.0,
+        2.0)
+    """
+
+    # Test the same with different callers
+    @test format_text(str, SciMLStyle()) == str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector"]) ==
+          formatted_str
 
     str = raw"""
     Dict{Int, Int}(# Comment
@@ -178,11 +228,11 @@
         3 => 4)
     """
 
-    # Test `variable_dict_indent` with an inline comment after the opening parenthesis
-    # With `variable_dict_indent = false`, the comment will be eaten,
+    # Test `variable_call_indent` with an inline comment after the opening parenthesis
+    # With `variable_call_indent = false`, the comment will be eaten,
     # see https://github.com/domluna/JuliaFormatter.jl/issues/609
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == formatted_str2
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
 
     str = raw"""
     Dict{Int, Int}( # Comment
@@ -208,8 +258,37 @@
         3 => 4)
     """
 
-    # Test `variable_dict_indent` with both an inline comment after the opening parenthesis
+    # Test `variable_call_indent` with both an inline comment after the opening parenthesis
     # and a comment in a separate line.
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_dict_indent=true) == formatted_str2
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+
+    str = raw"""
+    SVector( # Comment
+                # Comment
+                1.0,
+                # Another comment
+                2.0)
+    """
+
+    formatted_str1 = raw"""
+    SVector( # Comment
+            # Comment
+            1.0,
+            # Another comment
+            2.0)
+    """
+
+    formatted_str2 = raw"""
+    SVector( # Comment
+        # Comment
+        1.0,
+        # Another comment
+        2.0)
+    """
+
+    # Test the same with different callers
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str1
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test"]) ==
+          formatted_str2
 end

@@ -31,7 +31,7 @@ Base.@kwdef struct Options
     surround_whereop_typeparameters::Bool = true
     config_applied::Bool = false
     ignore::Vector{String} = String[]
-    variable_dict_indent::Bool = false
+    variable_call_indent::Vector{String} = []
 end
 
 function needs_alignment(opts::Options)

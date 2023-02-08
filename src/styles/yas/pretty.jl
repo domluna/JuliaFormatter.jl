@@ -51,7 +51,7 @@ function options(style::YASStyle)
         trailing_zero = true,
         indent_submodule = false,
         surround_whereop_typeparameters = true,
-        variable_dict_indent = false,
+        variable_call_indent = [],
     )
 end
 
@@ -249,10 +249,10 @@ end
 function p_call(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
 
-    # With `variable_dict_indent`, check if this is a `Dict` definition
+    # # With `variable_call_indent`, check if the caller is in the list
     # and use `p_call` from `DefaultStyle` instead to allow both
-    # `Dict(something,...)` and `Dict(\n,...)`.
-    if s.opts.variable_dict_indent && is_dict_call(cst)
+    # `caller(something,...)` and `caller(\n,...)`.
+    if caller_in_list(cst, s.opts.variable_call_indent)
         return p_call(DefaultStyle(style), cst, s)
     end
 

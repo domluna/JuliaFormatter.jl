@@ -56,7 +56,7 @@ function options(style::BlueStyle)
         trailing_comma = true,
         trailing_zero = true,
         surround_whereop_typeparameters = true,
-        variable_dict_indent = false,
+        variable_call_indent = [],
     )
 end
 

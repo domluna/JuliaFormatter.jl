@@ -1,10 +1,10 @@
 function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
 
-    # With `variable_dict_indent`, check if this is a (non-empty) `Dict` definition
-    if s.opts.variable_dict_indent && is_dict_call(fst) && length(fst.nodes) > 5
-        # Check if the `Dict` definition is of the form `Dict(something,...)`
-        # or of the form `Dict(\n...)`.
+    # With `variable_call_indent`, check if the caller is in the list
+    if caller_in_list(fst, s.opts.variable_call_indent) && length(fst.nodes) > 5
+        # Check if the call is of the form `caller(something,...)`
+        # or of the form `caller(\n...)`.
         # There may be a comment or both an inline comment and a comment in a separate line
         # before the first argument, so check for that as well.
         notcode(n) = n.typ === NOTCODE || n.typ === INLINECOMMENT || n.typ === PLACEHOLDER
