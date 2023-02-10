@@ -905,7 +905,7 @@ function format(path::AbstractString, options::Configuration)
     end
     try
         return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
-    catch
+    catch err
         @info "Error in formatting file $path"
         @debug "formatting failed due to" exception = (err, catch_backtrace())
         return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
@@ -920,7 +920,11 @@ format(path, style::AbstractStyle; options...) = format(path; style = style, opt
 """
     format(mod::Module, args...; options...)
 """
-format(mod::Module, args...; options...) = format(pkgdir(mod), args...; options...)
+function format(mod::Module, args...; options...)
+    path = pkgdir(mod)
+    path === nothing && throw(ArgumentError("couldn't find a directory of module `$mod`"))
+    format(path, args...; options...)
+end
 
 function kwargs(dict)
     ns = (Symbol.(keys(dict))...,)

@@ -262,7 +262,7 @@ function align_conditional!(fst::FST)
 
     for (i, ind) in enumerate(colon_group.node_inds)
         # the placeholder would be i+1 if not for a possible inline comment
-        nind = findnext(n -> n.typ === PLACEHOLDER, nodes, ind + 1)
+        nind = findnext(n -> n.typ === PLACEHOLDER, nodes, ind + 1)::Int
         if nodes[nind+1].startline != nodes[nind].startline
             nodes[nind] = Newline(nest_behavior = AlwaysNest)
         end
@@ -284,7 +284,7 @@ end
 Adjust whitespace in between matrix elements such that it's the same as the original source file.
 """
 function align_matrix!(fst::FST)
-    rows = filter(n -> n.typ === Row, fst.nodes)
+    rows = filter(n -> n.typ === Row, fst.nodes::Vector{FST})
     length(rows) == 0 && return
 
     min_offset = minimum(map(rows) do r
@@ -297,7 +297,7 @@ function align_matrix!(fst::FST)
     for r in rows
         if r[1].line_offset > min_offset && line != r.startline
             diff = r[1].line_offset - min_offset
-            insert!(r.nodes, 1, Whitespace(diff))
+            insert!(r.nodes::Vector{FST}, 1, Whitespace(diff))
         end
         line = r.startline
     end
