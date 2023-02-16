@@ -134,9 +134,9 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
                 binop_ind = findfirst(nn -> nn.typ === Binary, sn.nodes)
                 nlen += sum(length.(sn[1:end-1]))
                 if binop_ind === nothing
-                    sn = sn.nodes[end]
+                    sn = (sn.nodes::Vector{FST})[end]
                 else
-                    binop = sn.nodes[binop_ind]
+                    binop = (sn.nodes::Vector{FST})[binop_ind]
                     nlen += length(binop[1])
                     ws = (binop[3].line_offset - n.line_offset) - nlen
                     break
