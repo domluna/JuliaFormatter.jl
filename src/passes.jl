@@ -327,7 +327,7 @@ function long_to_short_function_def!(fst::FST, s::State)
     length(I) == 1 || return false  # function must have a single block
 
     block = nodes[first(I)]
-    length(block.nodes) == 1 || return false  # block must have a single statement
+    length(block.nodes::Vector{FST}) == 1 || return false  # block must have a single statement
 
     I = findfirst(n -> n.typ === Call || n.typ === Where, nodes)
     I === nothing && return false
@@ -339,7 +339,7 @@ function long_to_short_function_def!(fst::FST, s::State)
         I = findall(!is_custom_leaf, nodes)
         length(I) < 2 && return false
         popfirst!(I)  # remove leading `return` keyword
-        rhs = rhs.nodes[first(I)]
+        rhs = (rhs.nodes::Vector{FST})[first(I)]
     end
 
     # length(Whitespace(1) * "=" * Whitespace(1)) = 3
@@ -536,7 +536,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
             add_node!(macroname, n, s, join_lines = true)
         else
             if n.typ === IDENTIFIER && n.val[1] != '@'
-                n.val = "@" * n.val
+                n.val = "@" * n.val::AbstractString
                 n.len += 1
                 add_node!(macroname, n, s, join_lines = true)
             else
@@ -556,8 +556,8 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     add_node!(t, fst[1], s, join_lines = true)
 
     nodes = fst.nodes::Vector
-    idx1 = findfirst(n -> n.typ === OPERATOR && n.val == "?", nodes)
-    idx2 = findfirst(n -> n.typ === OPERATOR && n.val == ":", nodes)
+    idx1 = findfirst(n -> n.typ === OPERATOR && n.val == "?", nodes)::Int
+    idx2 = findfirst(n -> n.typ === OPERATOR && n.val == ":", nodes)::Int
 
     block1 = FST(Block, fst.indent + s.opts.indent)
     for n in nodes[idx1+1:idx2-1]
