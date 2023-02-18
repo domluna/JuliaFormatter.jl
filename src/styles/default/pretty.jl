@@ -659,6 +659,9 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif t.typ === MacroBlock
+            if n.typ === MacroBlock && t[end].typ === WHITESPACE
+                t[end] = Placeholder(length(t[end].val))
+            end
             if has_closer
                 add_node!(t, n, s, join_lines = true)
                 if i < length(cst) - 1 && cst[i+1].head != :parameters
