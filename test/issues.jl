@@ -1543,6 +1543,18 @@
         @test fmt(s, format_docstrings = true) == s
     end
 
+    @testset "682" begin
+        str_ = """
+        var = call(a; arg=@macrocall b)"""
+        str = """
+        var =
+            call(
+                a;
+                arg = @macrocall b
+            )"""
+        @test fmt(str_, 4, 1) == str
+    end
+
     @testset "686" begin
         s1 = """
         abc() = begin
