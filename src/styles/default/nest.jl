@@ -98,6 +98,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_call!(style, fst, s)
     elseif fst.typ === MacroCall
         n_macrocall!(style, fst, s)
+    elseif fst.typ === MacroBlock
+        n_block!(style, fst, s)
     elseif fst.typ === RefN
         n_ref!(style, fst, s)
     elseif fst.typ === TypedVcat
@@ -249,7 +251,6 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     has_closer = is_closer(fst[end])
 
-    line_offset = s.line_offset
     if has_closer
         fst[end].indent = fst.indent
     end
@@ -796,7 +797,6 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
     idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
-    line_offset = s.line_offset
     has_nl = false
     indent >= 0 && (fst.indent = indent)
 

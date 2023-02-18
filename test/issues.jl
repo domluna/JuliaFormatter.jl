@@ -316,16 +316,26 @@
         end"""
 
         # NOTE: this looks slightly off because we're compensating for escaping quotes
+        # NOTE: updated test in light of fixing #663 which allows breaking on consecutive macrocalls
+        # Meaning "@macro1 @macro2"
+        #
+        # can be
+        #
+        # """
+        # @macro1
+        # @macro2
+        # """
         str = """
         begin
             f() do
-                @info @sprintf \"\"\"
-                Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) /
-                                   weightedsum(Qe)
+                @info
+                @sprintf \"\"\"
+          Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) / weightedsum(Qe)
             end
         end"""
         @test fmt(str_, m = 81) == str
-        @test fmt(str, m = 82) == str_
+        @test fmt(str_, m = 82) == str_
+        @test fmt(str, m = 200) == str
     end
 
     @testset "issue #202" begin
@@ -1527,6 +1537,17 @@
         @test fmt(s, 4, 92) == s
     end
 
+    @testset "663" begin
+        s1 = """
+        @macro1 foo @macro2 bar(a=10)
+        """
+        s2 = """
+        @macro1 foo
+        @macro2 bar(a = 10)
+        """
+        @test fmt(s1, 4, 19) == s2
+    end
+
     @testset "667" begin
         s = raw"""
         \"""
@@ -1541,6 +1562,18 @@
         @dimension 𝐀 "𝐀" Angle true
         """
         @test fmt(s, format_docstrings = true) == s
+    end
+
+    @testset "682" begin
+        str_ = """
+        var = call(a; arg=@macrocall b)"""
+        str = """
+        var =
+            call(
+                a;
+                arg = @macrocall b
+            )"""
+        @test fmt(str_, 4, 1) == str
     end
 
     @testset "686" begin
