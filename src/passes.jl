@@ -277,6 +277,22 @@ function short_to_long_function_def!(fst::FST, s::State)
     s.opts.always_use_return && prepend_return!(fst[end], s)
     if fst[end].typ === Block
         add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
+    elseif fst[end].typ === Begin
+        # case where body is wrapped in a `begin` block
+        # which becomes superfluous when converted to a
+        # long function definition
+        #
+        # abc() = begin
+        #    body
+        # end
+        #
+        #
+        # find Block node in fs[tend]
+        idx = findfirst(n -> n.typ === Block, fst[end].nodes)
+        idx === nothing && return false
+        bnode = fst[end][idx]
+        add_indent!(bnode, s, -s.opts.indent)
+        add_node!(funcdef, bnode, s, max_padding = s.opts.indent)
     else
         # ```
         # function

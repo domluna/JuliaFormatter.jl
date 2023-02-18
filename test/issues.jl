@@ -1542,4 +1542,18 @@
         """
         @test fmt(s, format_docstrings = true) == s
     end
+
+    @testset "686" begin
+        s1 = """
+        abc() = begin
+          1
+        end
+        """
+        s2 = """
+        function abc()
+          1
+        end
+        """
+        @test fmt(s1, 2, 5, short_to_long_function_def = true) == s2
+    end
 end
