@@ -316,16 +316,26 @@
         end"""
 
         # NOTE: this looks slightly off because we're compensating for escaping quotes
+        # NOTE: updated test in light of fixing #663 which allows breaking on consecutive macrocalls
+        # Meaning "@macro1 @macro2"
+        #
+        # can be
+        #
+        # """
+        # @macro1
+        # @macro2
+        # """
         str = """
         begin
             f() do
-                @info @sprintf \"\"\"
-                Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) /
-                                   weightedsum(Qe)
+                @info
+                @sprintf \"\"\"
+          Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) / weightedsum(Qe)
             end
         end"""
         @test fmt(str_, m = 81) == str
-        @test fmt(str, m = 82) == str_
+        @test fmt(str_, m = 82) == str_
+        @test fmt(str, m = 200) == str
     end
 
     @testset "issue #202" begin
