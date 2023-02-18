@@ -1527,6 +1527,17 @@
         @test fmt(s, 4, 92) == s
     end
 
+    @testset "663" begin
+        s1 = """
+        @macro1 foo @macro2 bar(a=10)
+        """
+        s2 = """
+        @macro1 foo
+        @macro2 bar(a = 10)
+        """
+        @test fmt(s1, 4, 19) == s2
+    end
+
     @testset "667" begin
         s = raw"""
         \"""
@@ -1567,16 +1578,5 @@
         end
         """
         @test fmt(s1, 2, 5, short_to_long_function_def = true) == s2
-    end
-
-    @testset "663" begin
-        s1 = """
-        @macro1 foo @macro2 bar(a=10)
-        """
-        s2 = """
-        @macro1 foo
-        @macro2 bar(a = 10)
-        """
-        @test fmt(s1, 4, 19) == s2
     end
 end
