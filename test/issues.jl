@@ -316,26 +316,16 @@
         end"""
 
         # NOTE: this looks slightly off because we're compensating for escaping quotes
-        # NOTE: updated test in light of fixing #663 which allows breaking on consecutive macrocalls
-        # Meaning "@macro1 @macro2"
-        #
-        # can be
-        #
-        # """
-        # @macro1
-        # @macro2
-        # """
         str = """
         begin
             f() do
-                @info
-                @sprintf \"\"\"
-          Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) / weightedsum(Qe)
+                @info @sprintf \"\"\"
+                Δmass   = %.16e\"\"\" abs(weightedsum(Q) - weightedsum(Qe)) /
+                                   weightedsum(Qe)
             end
         end"""
         @test fmt(str_, m = 81) == str
-        @test fmt(str_, m = 82) == str_
-        @test fmt(str, m = 200) == str
+        @test fmt(str, m = 82) == str_
     end
 
     @testset "issue #202" begin
@@ -1535,17 +1525,6 @@
     @testset "656" begin
         s = "[x for x in xs if x in 1:length(ys)]"
         @test fmt(s, 4, 92) == s
-    end
-
-    @testset "663" begin
-        s1 = """
-        @macro1 foo @macro2 bar(a=10)
-        """
-        s2 = """
-        @macro1 foo
-        @macro2 bar(a = 10)
-        """
-        @test fmt(s1, 4, 19) == s2
     end
 
     @testset "667" begin
