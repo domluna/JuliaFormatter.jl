@@ -98,8 +98,6 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_call!(style, fst, s)
     elseif fst.typ === MacroCall
         n_macrocall!(style, fst, s)
-    elseif fst.typ === MacroBlock
-        n_block!(style, fst, s)
     elseif fst.typ === RefN
         n_ref!(style, fst, s)
     elseif fst.typ === TypedVcat
