@@ -1568,4 +1568,36 @@
         """
         @test fmt(s1, 2, 5, short_to_long_function_def = true) == s2
     end
+
+    @testset "698" begin
+        s1 = """
+        let hello() = begin
+                print("ok")
+            end
+            hello()
+        end
+
+        let hello() = print("ok");
+            hello()
+        end
+        """
+        s2 = """
+        let hello() =
+                begin
+                    print(
+                        "ok",
+                    )
+                end
+            hello()
+        end
+
+        let hello() =
+                print(
+                    "ok",
+                )
+            hello()
+        end
+        """
+        @test fmt(s1, 4, 10, short_to_long_function_def = true) == s2
+    end
 end
