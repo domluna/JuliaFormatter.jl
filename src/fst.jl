@@ -175,23 +175,25 @@ function FST(
 end
 
 @inline function Base.setindex!(fst::FST, node::FST, ind::Int)
-    fst.len -= fst.nodes[ind].len
-    fst.nodes[ind] = node
+    nodes = fst.nodes::Vector{FST}
+    fst.len -= nodes[ind].len
+    nodes[ind] = node
     fst.len += node.len
 end
-@inline Base.getindex(fst::FST, inds...) = fst.nodes[inds...]
-@inline Base.lastindex(fst::FST) = length(fst.nodes)
+@inline Base.getindex(fst::FST, inds...) = (fst.nodes::Vector{FST})[inds...]
+@inline Base.lastindex(fst::FST) = length(fst.nodes::Vector{FST})
 @inline Base.firstindex(fst::FST) = 1
 @inline Base.length(fst::FST) = fst.len
 @inline function Base.iterate(fst::FST, state = 1)
-    if state > length(fst.nodes)
+    nodes = fst.nodes::Vector{FST}
+    if state > length(nodes::Vector{FST})
         return nothing
     end
-    return fst.nodes[state], state + 1
+    return nodes[state], state + 1
 end
 
 @inline function Base.insert!(fst::FST, ind::Int, node::FST)
-    insert!(fst.nodes, ind, node)
+    insert!(fst.nodes::Vector{FST}, ind, node)
     fst.len += node.len
     return
 end
@@ -246,9 +248,9 @@ end
 @inline is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
 @inline is_circumflex_accent(x::CSTParser.EXPR) =
-    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "^")
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x)::String, "^")
 @inline is_fwdfwd_slash(x::CSTParser.EXPR) =
-    CSTParser.isoperator(x) && endswith(CSTParser.valof(x), "//")
+    CSTParser.isoperator(x) && endswith(CSTParser.valof(x)::String, "//")
 
 # TODO: fix this
 function is_multiline(fst::FST)
@@ -305,12 +307,14 @@ end
 
 function is_macrostr_identifier(cst::CSTParser.EXPR)
     CSTParser.isidentifier(cst) || return false
-    # handles odd cases like """M.var"@f";"""
-    cst.val !== nothing || return false
+    val = cst.val
 
-    m = match(r"@(.*)_(str|cmd)", cst.val)
+    # handles odd cases like """M.var"@f";"""
+    val !== nothing || return false
+
+    m = match(r"@(.*)_(str|cmd)", val)
     m !== nothing || return false
-    val = m.captures[1]
+    val = m.captures[1]::AbstractString
 
     # r"hello" is parsed as @r_str"hello"
     # if it was originally r"hello" then
@@ -333,13 +337,9 @@ function is_if(cst::CSTParser.EXPR)
     return false
 end
 
-function is_conditional(cst::CSTParser.EXPR)
-    CSTParser.isconditional(x)
-end
-
 function is_colon_call(cst::CSTParser.EXPR)
     CSTParser.isoperator(cst) && cst.val == ":" && return true
-    cst.head == :call && is_colon_call(cst.args[1]) && return true
+    cst.head == :call && is_colon_call((cst.args::Vector{CSTParser.EXPR})[1]) && return true
     return false
 end
 
@@ -372,13 +372,13 @@ function parent_is(cst::CSTParser.EXPR, valid; ignore = _ -> false)
     while p !== nothing && ignore(p)
         p = p.parent
     end
-    valid(p)
+    valid(p::Union{Nothing,CSTParser.EXPR})
 end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
     is_leaf(fst) && return false
-    contains_comment(fst.nodes)
+    contains_comment(fst.nodes::Vector)
 end
 
 # TODO: Remove once this is fixed in CSTParser.
@@ -461,6 +461,7 @@ function add_node!(
     max_padding::Int = -1,
     override_join_lines_based_on_source::Bool = false,
 )
+    tnodes = t.nodes::Vector{FST}
     if n.typ === SEMICOLON
         join_lines = true
         loc = if s.offset > length(s.doc.text) && t.typ === TopLevel
@@ -482,22 +483,24 @@ function add_node!(
             t.len += length(n)
             n.startline = t.endline
             n.endline = t.endline
-            push!(t.nodes, n)
+            push!(tnodes::Vector{FST}, n)
             return
         end
     elseif n.typ === TRAILINGCOMMA
-        en = t.nodes[end]
+        en = (tnodes::Vector{FST})[end]
         if en.typ === Generator ||
            en.typ === Filter ||
            en.typ === Flatten ||
            en.typ === MacroCall ||
            en.typ === MacroBlock ||
-           en.typ === SEMICOLON
+           en.typ === SEMICOLON ||
+           # arg = @macro foo
+           en.typ === Kw && (en[end].typ === MacroCall || en[end].typ === MacroBlock)
             # don't add trailing comma in these cases
         elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
             # preserve comma
         elseif s.opts.trailing_comma === nothing
-        elseif !s.opts.trailing_comma
+        elseif !s.opts.trailing_comma::Bool
             if is_comma(en)
                 t[end] = Whitespace(0)
             end
@@ -507,38 +510,38 @@ function add_node!(
             t.len += length(n)
             n.startline = t.endline
             n.endline = t.endline
-            push!(t.nodes, n)
+            push!(tnodes::Vector{FST}, n)
         end
         return
     elseif n.typ === NOTCODE
         n.indent = s.indent
-        push!(t.nodes, n)
+        push!(tnodes::Vector{FST}, n)
         return
     elseif n.typ === INLINECOMMENT
-        push!(t.nodes, n)
+        push!(tnodes::Vector{FST}, n)
         return
     elseif is_custom_leaf(n)
         t.len += length(n)
         n.startline = t.endline
         n.endline = t.endline
-        push!(t.nodes, n)
+        push!(tnodes::Vector{FST}, n)
         return
     end
 
     if n.typ === Block && length(n) == 0
-        push!(t.nodes, n)
+        push!(tnodes::Vector{FST}, n)
         return
     elseif n.typ === Parameters
         # unpack Parameters arguments into the parent node
         if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
             # There are no arguments prior to params
             # so we can remove the initial placeholder.
-            idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
+            idx = findfirst(n -> n.typ === PLACEHOLDER, tnodes)
             idx !== nothing && (t[idx] = Whitespace(0))
         end
         add_node!(t, Semicolon(), s)
 
-        if length(n.nodes) > 0
+        if length(n.nodes::Vector{FST}) > 0
             nws = 1
             if (t.typ === Curly || t.typ === Where || t.typ === BracesCat) &&
                !s.opts.whitespace_typedefs
@@ -547,7 +550,7 @@ function add_node!(
             multi_arg = t.ref !== nothing && n_args(t.ref[]) > 0
             multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
         end
-        for nn in n.nodes
+        for nn in n.nodes::Vector{FST}
             add_node!(t, nn, s, join_lines = true)
         end
         return
@@ -564,12 +567,12 @@ function add_node!(
         binaryop_to_whereop!(n, s)
     end
 
-    if length(t.nodes) == 0
+    if length(tnodes::Vector{FST}) == 0
         t.startline = n.startline
         t.endline = n.endline
         t.len += length(n)
         t.line_offset = n.line_offset
-        push!(t.nodes, n)
+        push!(tnodes, n)
         return
     end
 
@@ -592,11 +595,11 @@ function add_node!(
         join_lines = t.endline == n.startline
     end
 
-    if !is_prev_newline(t.nodes[end])
+    if !is_prev_newline(tnodes[end]::FST)
         current_line = t.endline
         notcode_startline = current_line + 1
         notcode_endline = n.startline - 1
-        nt = t.nodes[end].typ
+        nt = (tnodes[end]::FST).typ
 
         if notcode_startline <= notcode_endline
             # If there are comments in between node elements
@@ -622,7 +625,7 @@ function add_node!(
 
             # If the previous node type is WHITESPACE - reset it.
             # This fixes cases similar to the one shown in issue #51.
-            nt === WHITESPACE && (t.nodes[end] = Whitespace(0))
+            nt === WHITESPACE && (tnodes[end]::FST = Whitespace(0))
 
             if hascomment(s.doc, current_line)
                 add_node!(t, InlineComment(current_line), s)
@@ -632,8 +635,8 @@ function add_node!(
                 add_node!(t, Newline(nest_behavior = AlwaysNest), s)
             elseif hascomment(s.doc, current_line) && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
-                idx = length(t.nodes)
-                t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
+                idx = length(tnodes::Vector{FST})
+                tnodes[idx-1], tnodes[idx] = tnodes[idx], tnodes[idx-1]
             end
 
             if nest
@@ -651,13 +654,13 @@ function add_node!(
             t.nest_behavior = AlwaysNest
             add_node!(t, InlineComment(current_line), s)
             # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
-            idx = length(t.nodes)
-            t.nodes[idx-1], t.nodes[idx] = t.nodes[idx], t.nodes[idx-1]
+            idx = length(tnodes)
+            tnodes[idx-1], tnodes[idx] = tnodes[idx], tnodes[idx-1]
         elseif nt === WHITESPACE &&
                hascomment(s.doc, current_line) &&
                current_line != n.startline
             # rely on the whitespace tracked for the inline comment
-            t.nodes[end] = Whitespace(0)
+            tnodes[end] = Whitespace(0)
             add_node!(t, InlineComment(current_line), s)
             add_node!(t, Newline(nest_behavior = AlwaysNest), s)
         end
@@ -686,14 +689,14 @@ function add_node!(
     else
         t.len += length(n)
     end
-    push!(t.nodes, n)
+    push!(tnodes, n)
     nothing
 end
 
 @inline function is_prev_newline(fst::FST)
     if fst.typ === NEWLINE
         return true
-    elseif is_leaf(fst) || length(fst.nodes) == 0
+    elseif is_leaf(fst) || length(fst.nodes::Vector) == 0
         return false
     end
     is_prev_newline(fst[end])
@@ -708,8 +711,9 @@ Returns the length to any node type in `ntyps` based off the `start` index.
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
-    for i in start:length(fst.nodes)
-        l, found = length_to(fst.nodes[i], ntyps)
+    nodes = fst.nodes::Vector
+    for i in start:length(nodes)
+        l, found = length_to(nodes[i], ntyps)
         len += l
         found && return len, found
     end
@@ -751,6 +755,7 @@ function is_iterable(x::FST)
     is_import_expr(x) && return true
     return false
 end
+is_iterable(::Nothing) = false
 
 function is_unnamed_iterable(x::FST)
     x.typ === TupleN && return true
@@ -934,7 +939,7 @@ end
 
 function precedence(cst::CSTParser.EXPR)
     CSTParser.isoperator(cst) || return 0
-    val = CSTParser.isdotted(cst) ? cst.val[2:end] : cst.val
+    val = CSTParser.isdotted(cst) ? (cst.val::AbstractString)[2:end] : cst.val
     CSTParser.get_prec(val)
 end
 
@@ -971,7 +976,7 @@ end
 
 function get_binary_op(cst::CSTParser.EXPR)
     if cst.head == :call
-        return cst.args[1]
+        return (cst.args::Vector{CSTParser.EXPR})[1]
     elseif length(cst) == 3 && CSTParser.isoperator(cst[2])
         return cst[2]
     elseif CSTParser.isoperator(cst.head)
@@ -1025,7 +1030,7 @@ function op_kind(fst::FST)
     if fst.typ === OPERATOR
         return fst.metadata.op_kind
     elseif is_opcall(fst)
-        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
         idx === nothing && return nothing
         return fst[idx].metadata.op_kind
     end
@@ -1122,7 +1127,7 @@ for i = 1:10 body end
 """
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
-        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes)
+        idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
         idx === nothing && return
         op = fst[idx]
 
@@ -1140,7 +1145,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         end
     elseif fst.typ === Block || fst.typ === Brackets || fst.typ === Filter
         past_if = false
-        for (i, n) in enumerate(fst.nodes)
+        for (i, n) in enumerate(fst.nodes::Vector)
             if n.typ === KEYWORD && n.val == "if"
                 # [x for x in xs if x in 1:length(ys)]
                 # we do not want to convert the binary operations after an "if" keyword.

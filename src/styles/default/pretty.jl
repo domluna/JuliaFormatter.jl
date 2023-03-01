@@ -178,7 +178,7 @@ p_file(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_nonstdidentifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(NonStdIdentifier, cst, nspaces(s))
-    for a in cst.args
+    for a in cst.args::Vector{CSTParser.EXPR}
         add_node!(t, pretty(style, a, s), s, join_lines = true)
     end
     t
@@ -188,18 +188,18 @@ p_nonstdidentifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractSt
 
 @inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += length(cst.val) + (cst.fullspan - cst.span)
-    FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val)
+    s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
+    FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val::AbstractString)
 end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
 @inline function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += length(cst.val) + (cst.fullspan - cst.span)
+    s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
 
-    t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val)
-    t.metadata = Metadata(tokenize(cst.val), CSTParser.isdotted(cst))
+    t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val::AbstractString)
+    t.metadata = Metadata(tokenize(cst.val::AbstractString), CSTParser.isdotted(cst))
     return t
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -208,7 +208,7 @@ p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 @inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
-    FST(KEYWORD, loc[2], loc[1], loc[1], cst.val)
+    FST(KEYWORD, loc[2], loc[1], loc[1], cst.val::AbstractString)
 end
 p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
@@ -221,7 +221,7 @@ p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     else
         cst.val
     end
-    FST(PUNCTUATION, loc[2], loc[1], loc[1], val)
+    FST(PUNCTUATION, loc[2], loc[1], loc[1], val::AbstractString)
 end
 p_punctuation(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_punctuation(DefaultStyle(style), cst, s)
@@ -392,7 +392,7 @@ end
             val *= float_suffix
         end
 
-        s.offset += length(cst.val) + (cst.fullspan - cst.span)
+        s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], val)
     end
 
@@ -406,8 +406,8 @@ end
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
     if str_info === nothing
-        s.offset += length(cst.val) + (cst.fullspan - cst.span)
-        return FST(LITERAL, loc[2], loc[1], loc[1], cst.val)
+        s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
+        return FST(LITERAL, loc[2], loc[1], loc[1], cst.val::AbstractString)
     end
 
     startline, endline, str = str_info
@@ -614,7 +614,8 @@ This creates problems when we format without intervention:
 function p_macrostr_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     idx = findfirst(==('_'), cst.val)
-    val = cst.val[2:prevind(cst.val, idx)]
+    val = cst.val::AbstractString
+    val = val[2:prevind(val, idx::Int)]
     s.offset += length(val) + (cst.fullspan - cst.span)
     return FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
 end
@@ -658,6 +659,9 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif t.typ === MacroBlock
+            if n.typ === MacroBlock && t[end].typ === WHITESPACE
+                t[end] = Placeholder(length(t[end].val))
+            end
             if has_closer
                 add_node!(t, n, s, join_lines = true)
                 if i < length(cst) - 1 && cst[i+1].head != :parameters
@@ -1157,7 +1161,7 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         end
         s.indent -= s.opts.indent
 
-        idx = length(t.nodes)
+        idx = length(t.nodes::Vector{FST})
         s.indent += s.opts.indent
         add_node!(
             t,
@@ -1168,8 +1172,8 @@ function p_let(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         s.indent -= s.opts.indent
         # Possible newline after args if nested to act as a separator
         # to the block body.
-        if cst[2].head === :block && t.nodes[end-2].typ !== NOTCODE
-            add_node!(t.nodes[idx], Placeholder(0), s)
+        if cst[2].head === :block && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
+            add_node!((t.nodes::Vector{FST})[idx], Placeholder(0), s)
         end
         add_node!(t, pretty(style, cst[end], s), s)
     end
@@ -1198,7 +1202,7 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     add_node!(t, n, s, join_lines = true)
 
-    idx = length(t.nodes)
+    idx = length(t.nodes::Vector{FST})
     s.indent += s.opts.indent
     add_node!(
         t,
@@ -1210,8 +1214,8 @@ function p_for(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     # Possible newline after args if nested to act as a separator
     # to the block body.
-    if cst[2].head === :block && t.nodes[end-2].typ !== NOTCODE
-        add_node!(t.nodes[idx], Placeholder(0), s)
+    if cst[2].head === :block && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
+        add_node!((t.nodes::Vector{FST})[idx], Placeholder(0), s)
     end
     add_node!(t, pretty(style, cst[4], s), s)
     t
@@ -1550,7 +1554,7 @@ function p_binaryopcall(
 
     nonest = nonest || CSTParser.is_colon(op)
 
-    if CSTParser.iscurly(cst.parent) &&
+    if CSTParser.iscurly(cst.parent::CSTParser.EXPR) &&
        (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
         nospace = true
@@ -1628,7 +1632,7 @@ function p_binaryopcall(
 
     if nest
         # for indent, will be converted to `indent` if needed
-        insert!(t.nodes, length(t.nodes), Placeholder(0))
+        insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
     end
 
     t
@@ -1734,8 +1738,9 @@ function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace 
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
     if length(cst) == 1
-        if cst.head.fullspan != 0
-            add_node!(t, pretty(style, cst.head, s), s, join_lines = true)
+        head = cst.head::CSTParser.EXPR
+        if head.fullspan != 0
+            add_node!(t, pretty(style, head, s), s, join_lines = true)
         end
         add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     else
@@ -2026,10 +2031,10 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
         if i == length(cst) && CSTParser.is_comma(a)
             # do nothing
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
-            push!(t.nodes, n)
-            push!(t.nodes, Placeholder(1))
+            push!(t.nodes::Vector{FST}, n)
+            push!(t.nodes::Vector{FST}, Placeholder(1))
         else
-            push!(t.nodes, n)
+            push!(t.nodes::Vector{FST}, n)
         end
     end
     t
@@ -2319,7 +2324,7 @@ function p_generator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
             # for keyword can only be on the following line
             # if this expression is within an iterable expression
             if a.head === :FOR &&
-               parent_is(a, is_iterable, ignore = n -> is_gen(n) || n.head === :brackets)
+               parent_is(a, is_iterable; ignore = n -> is_gen(n) || n.head === :brackets)
                 add_node!(t, Placeholder(1), s)
             else
                 add_node!(t, Whitespace(1), s)

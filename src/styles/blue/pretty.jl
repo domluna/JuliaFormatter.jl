@@ -102,7 +102,7 @@ function p_binaryopcall(
 
     nonest = nonest || CSTParser.is_colon(op)
 
-    if CSTParser.iscurly(cst.parent) &&
+    if CSTParser.iscurly(cst.parent::CSTParser.EXPR) &&
        (op.val == "<:" || op.val == ">:") &&
        !s.opts.whitespace_typedefs
         nospace = true
@@ -185,7 +185,8 @@ function p_binaryopcall(
 
     if nest
         # for indent, will be converted to `indent` if needed
-        insert!(t.nodes, length(t.nodes), Placeholder(0))
+        nodes = t.nodes::Vector
+        insert!(nodes, length(nodes), Placeholder(0))
     end
 
     t

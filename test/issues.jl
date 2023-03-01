@@ -1542,4 +1542,62 @@
         """
         @test fmt(s, format_docstrings = true) == s
     end
+
+    @testset "682" begin
+        str_ = """
+        var = call(a; arg=@macrocall b)"""
+        str = """
+        var =
+            call(
+                a;
+                arg = @macrocall b
+            )"""
+        @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "686" begin
+        s1 = """
+        abc() = begin
+          1
+        end
+        """
+        s2 = """
+        function abc()
+          1
+        end
+        """
+        @test fmt(s1, 2, 5, short_to_long_function_def = true) == s2
+    end
+
+    @testset "698" begin
+        s1 = """
+        let hello() = begin
+                print("ok")
+            end
+            hello()
+        end
+
+        let hello() = print("ok");
+            hello()
+        end
+        """
+        s2 = """
+        let hello() =
+                begin
+                    print(
+                        "ok",
+                    )
+                end
+            hello()
+        end
+
+        let hello() =
+                print(
+                    "ok",
+                )
+            hello()
+        end
+        """
+        @test fmt(s1, 4, 10, short_to_long_function_def = true) == s2
+    end
 end

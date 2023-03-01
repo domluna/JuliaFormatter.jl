@@ -36,7 +36,7 @@ should return a value other than `nothing`.
 function walk(f, fst::FST, s::State)
     stop = f(fst, s)
     (stop !== nothing || is_leaf(fst)) && return
-    walk(f, fst.nodes, s, fst.indent)
+    walk(f, fst.nodes::Vector, s, fst.indent)
 end
 
 function increment_line_offset!(fst::FST, s::State)
@@ -164,7 +164,7 @@ function nest_if_over_margin!(
     end
 
     if margin > s.opts.margin ||
-       (idx < length(fst.nodes) && is_comment(fst[idx+1])) ||
+       (idx < length(fst.nodes::Vector) && is_comment(fst[idx+1])) ||
        (idx > 1 && is_comment(fst[idx-1]))
         fst[idx] = Newline(length = fst[idx].len)
         s.line_offset = fst.indent

@@ -45,6 +45,6 @@ function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
     end
 
     start_line_offset = s.line_offset
-    walk(increment_line_offset!, fst.nodes[1:end-1], s, fst.indent)
+    walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
     nest!(style, fst[end], s)
 end

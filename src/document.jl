@@ -135,7 +135,7 @@ function Document(text::AbstractString)
                     offset += 1
                 end
                 # last comment
-                idx = min(findfirst(c -> !isspace(c), cs), ws + 1)
+                idx = min(findfirst(c -> !isspace(c), cs)::Int, ws + 1)
                 comments[line] = (ws, cs[idx:end])
             end
 
@@ -147,8 +147,8 @@ function Document(text::AbstractString)
             elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
                 # If "#! format: off" has not been seen
                 # "#! format: on" is treated as a normal comment.
-                idx1 = findfirst(c -> c == '\n', str)
-                idx2 = findlast(c -> c == '\n', str)
+                idx1 = findfirst(c -> c == '\n', str)::Int
+                idx2 = findlast(c -> c == '\n', str)::Int
                 str = str[idx1:idx2]
                 push!(format_skips, (pop!(stack), t.startpos[1], str))
                 str = ""
@@ -192,7 +192,7 @@ function Document(text::AbstractString)
     if length(stack) == 1 && length(format_skips) == 0
         # -1 signifies everything afterwards "#! format: off"
         # will not formatted.
-        idx1 = findfirst(c -> c == '\n', str)
+        idx1 = findfirst(c -> c == '\n', str)::Int
         str = str[idx1:end]
         push!(format_skips, (stack[1], -1, str))
     end
