@@ -31,16 +31,16 @@ function flatten_binaryopcall(fst::FST; top = true)
     end
 
     if lhs_same_op
-        push!(nodes, flatten_binaryopcall(lhs, top = false)...)
+        append!(nodes, flatten_binaryopcall(lhs, top = false))
     else
         flatten_fst!(lhs)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
-    push!(nodes, fst[2:idx-1]...)
+    append!(nodes, fst[2:idx-1])
 
     if rhs_same_op
-        push!(nodes, flatten_binaryopcall(rhs, top = false)...)
+        append!(nodes, flatten_binaryopcall(rhs, top = false))
     else
         flatten_fst!(rhs)
         push!(nodes, rhs)
@@ -53,7 +53,7 @@ function flatten_conditionalopcall(fst::FST)
     nodes = FST[]
     for n in fst.nodes::Vector
         if n.typ === Conditional
-            push!(nodes, flatten_conditionalopcall(n)...)
+            append!(nodes, flatten_conditionalopcall(n))
         else
             push!(nodes, n)
         end
