@@ -418,7 +418,7 @@ function get_args(args::Union{Vector{Any},Vector{CSTParser.EXPR}})
             continue
         end
         if a.head === :parameters
-            push!(args0, get_args(a)...)
+            append!(args0, get_args(a))
         else
             push!(args0, a)
         end
