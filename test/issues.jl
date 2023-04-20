@@ -1600,4 +1600,14 @@
         """
         @test fmt(s1, 4, 10, short_to_long_function_def = true) == s2
     end
+
+    @testset "703" begin
+        s = """
+        mutable struct A
+            const a :: Int
+            bcd     :: String
+        end
+        """
+        @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
 end
