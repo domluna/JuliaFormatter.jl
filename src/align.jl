@@ -1,6 +1,5 @@
 function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
-    const_inds = Int[]
     assignment_inds = Int[]
     pair_arrow_inds = Int[]
 
@@ -63,6 +62,14 @@ function Base.push!(g::AlignGroup, n::FST, ind::Int, line_offset::Int, len::Int,
     push!(g.lens, len)
     push!(g.whitespaces, ws)
     return
+end
+
+function Base.show(io::IO, g::AlignGroup)
+    println(io, "AlignGroup:")
+    println(io, "  node_inds: ", g.node_inds)
+    println(io, "  line_offsets: ", g.line_offsets)
+    println(io, "  lens: ", g.lens)
+    println(io, "  whitespaces: ", g.whitespaces)
 end
 
 function align_to(g::AlignGroup)::Union{Nothing,Int}
@@ -198,6 +205,20 @@ function align_struct!(fst::FST)
             ws = n[ind].line_offset - (n.line_offset + nlen)
 
             push!(g, n, i, n[ind].line_offset, nlen, ws)
+            prev_endline = n.endline
+        elseif n.typ === Const
+            if n.startline - prev_endline > 1
+                push!(groups, g)
+                g = AlignGroup()
+            end
+
+            nlen = length(n[1]) + length(n[2])
+            binop = n[end]
+            nlen += length(binop[1])
+            ind = findfirst(x -> x.typ === OPERATOR, binop.nodes)
+            ws = binop[ind].line_offset - (n.line_offset + nlen)
+
+            push!(g, binop, i, binop[ind].line_offset, nlen, ws)
             prev_endline = n.endline
         end
     end
