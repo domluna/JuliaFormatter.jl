@@ -368,7 +368,7 @@
         @test yasfmt(str_, 2, 1) == str
 
         str_ = """
-        fooooooooooooooooooo(arg1, arg2, 
+        fooooooooooooooooooo(arg1, arg2,
         x -> begin
         body
         end
@@ -541,5 +541,235 @@
     @testset "issue 582 - vcat" begin
         @test yasfmt("[sts...;]") == "[sts...;]"
         @test yasfmt("[a;b;]") == "[a; b]"
+    end
+
+    @testset "variable_call_indent" begin
+        str = raw"""
+        Dict{Int,Int}(1 => 2,
+                      3 => 4)
+        """
+
+        # This should be valid with and without `Dict` in `variable_call_indent`
+        @test format_text(str, YASStyle()) == str
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
+
+        str = raw"""
+        SVector(1.0,
+                2.0)
+        """
+
+        # Test the same with different callers
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
+        @test format_text(str, YASStyle(), variable_call_indent = ["SVector", "test2"]) ==
+              str
+
+        str = raw"""
+        Dict{Int,Int}(
+        1 => 2,
+                3 => 4)
+        """
+
+        formatted_str1 = raw"""
+        Dict{Int,Int}(1 => 2,
+                      3 => 4)
+        """
+
+        formatted_str2 = raw"""
+        Dict{Int,Int}(
+            1 => 2,
+            3 => 4)
+        """
+
+        # `variable_call_indent` keeps the line break and doesn't align
+        @test format_text(str, YASStyle()) == formatted_str1
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+              formatted_str2
+
+        str = raw"""
+        SVector(
+        1.0,
+                2.0)
+        """
+
+        formatted_str1 = raw"""
+        SVector(1.0,
+                2.0)
+        """
+
+        formatted_str2 = raw"""
+        SVector(
+            1.0,
+            2.0)
+        """
+
+        # Test the same with different callers
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+              formatted_str1
+        @test format_text(str, YASStyle(), variable_call_indent = ["test", "SVector"]) ==
+              formatted_str2
+
+        str = raw"""
+        Dict{Int,Int}(
+            1 => 2,
+            3 => 4,
+        )
+        """
+
+        formatted_str = raw"""
+        Dict{Int,Int}(1 => 2,
+                      3 => 4)
+        """
+
+        # This is already valid with `variable_call_indent`
+        @test format_text(str, YASStyle()) == formatted_str
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
+
+        str = raw"""
+        SomeLongerTypeThanJustString = String
+        y = Dict{Int,SomeLongerTypeThanJustString}(1 => "some arbitrary string bla bla bla bla bla bla",
+            2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
+        """
+
+        formatted_str1 = raw"""
+        SomeLongerTypeThanJustString = String
+        y = Dict{Int,SomeLongerTypeThanJustString}(1 => "some arbitrary string bla bla bla bla bla bla",
+                                                   2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
+        """
+
+        formatted_str2 = raw"""
+        SomeLongerTypeThanJustString = String
+        y = Dict{Int,SomeLongerTypeThanJustString}(
+            1 => "some arbitrary string bla bla bla bla bla bla",
+            2 => "another longer arbitrary string bla bla bla bla bla bla bla bla",
+        )
+        """
+
+        # Here, `variable_call_indent` forces the line break because the line is too long.
+        # For some reason, this has to be formatted twice.
+        @test format_text(str, YASStyle()) == formatted_str1
+        intermediate_str = format_text(str, YASStyle(), variable_call_indent = ["Dict"])
+        @test format_text(intermediate_str, YASStyle(), variable_call_indent = ["Dict"]) ==
+              formatted_str2
+
+        str = raw"""
+        Dict{Int,Int}(
+                      # Comment
+                      1 => 2,
+                      3 => 4)
+        """
+
+        formatted_str = raw"""
+        Dict{Int,Int}(
+            # Comment
+            1 => 2,
+            3 => 4)
+        """
+
+        # Test `variable_call_indent` with a comment in a separate line
+        @test format_text(str, YASStyle()) == str
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == formatted_str
+
+        str = raw"""
+        SVector(
+                # Comment
+                1.0,
+                2.0)
+        """
+
+        formatted_str = raw"""
+        SVector(
+            # Comment
+            1.0,
+            2.0)
+        """
+
+        # Test the same with different callers
+        @test format_text(str, YASStyle()) == str
+        @test format_text(str, YASStyle(), variable_call_indent = ["SVector"]) ==
+              formatted_str
+
+        str = raw"""
+        Dict{Int,Int}(# Comment
+                    1 => 2,
+                    3 => 4)
+        """
+
+        formatted_str1 = raw"""
+        Dict{Int,Int}(1 => 2,
+                      3 => 4)
+        """
+
+        formatted_str2 = raw"""
+        Dict{Int,Int}(# Comment
+            1 => 2,
+            3 => 4)
+        """
+
+        # Test `variable_call_indent` with an inline comment after the opening parenthesis
+        # With `variable_call_indent = false`, the comment will be eaten,
+        # see https://github.com/domluna/JuliaFormatter.jl/issues/609
+        @test format_text(str, YASStyle()) == formatted_str1
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+              formatted_str2
+
+        str = raw"""
+        Dict{Int,Int}( # Comment
+                # Comment
+                1 => 2,
+                # Another comment
+                3 => 4)
+        """
+
+        formatted_str1 = raw"""
+        Dict{Int,Int}( # Comment
+                      # Comment
+                      1 => 2,
+                      # Another comment
+                      3 => 4)
+        """
+
+        formatted_str2 = raw"""
+        Dict{Int,Int}( # Comment
+            # Comment
+            1 => 2,
+            # Another comment
+            3 => 4)
+        """
+
+        # Test `variable_call_indent` with both an inline comment after the opening parenthesis
+        # and a comment in a separate line.
+        @test format_text(str, YASStyle()) == formatted_str1
+        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+              formatted_str2
+
+        str = raw"""
+        SVector( # Comment
+                    # Comment
+                    1.0,
+                    # Another comment
+                    2.0)
+        """
+
+        formatted_str1 = raw"""
+        SVector( # Comment
+                # Comment
+                1.0,
+                # Another comment
+                2.0)
+        """
+
+        formatted_str2 = raw"""
+        SVector( # Comment
+            # Comment
+            1.0,
+            # Another comment
+            2.0)
+        """
+
+        # Test the same with different callers
+        @test format_text(str, YASStyle(), variable_call_indent = ["test"]) ==
+              formatted_str1
+        @test format_text(str, YASStyle(), variable_call_indent = ["SVector", "test"]) ==
+              formatted_str2
     end
 end

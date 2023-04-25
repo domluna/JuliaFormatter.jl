@@ -95,6 +95,7 @@ function options(s::DefaultStyle)
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = true,
+        variable_call_indent = [],
     )
 end
 
@@ -185,6 +186,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         indent_submodule::Bool = false,
         separate_kwargs_with_semicolon::Bool = false,
         surround_whereop_typeparameters::Bool = true,
+        variable_call_indent::Vector{String} = []
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted

@@ -1158,3 +1158,15 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
 end
 
 eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing
+
+# Check if the caller of a call is in `list`
+# Note that this also works for CSTParser.EXPR
+function caller_in_list(fst, list)
+    if is_leaf(fst[1]) && fst[1].val in list
+        return true
+    elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && fst[1][1].val in list
+        return true
+    end
+
+    return false
+end
