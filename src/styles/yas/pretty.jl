@@ -20,7 +20,6 @@ struct YASStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
 YASStyle() = YASStyle(nothing)
-@inline getstyle(s::YASStyle) = s.innerstyle === nothing ? s : s.innerstyle
 
 function options(style::YASStyle)
     return (;

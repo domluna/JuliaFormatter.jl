@@ -18,8 +18,6 @@ struct SciMLStyle <: AbstractStyle
 end
 SciMLStyle() = SciMLStyle(nothing)
 
-@inline getstyle(s::SciMLStyle) = s.innerstyle === nothing ? s : s.innerstyle
-
 function options(style::SciMLStyle)
     return (;
         always_for_in = true,

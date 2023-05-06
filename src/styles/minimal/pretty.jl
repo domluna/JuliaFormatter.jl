@@ -6,8 +6,6 @@ struct MinimalStyle <: AbstractStyle
 end
 MinimalStyle() = MinimalStyle(nothing)
 
-@inline getstyle(s::MinimalStyle) = s.innerstyle === nothing ? s : s.innerstyle
-
 function options(style::MinimalStyle)
     return (;
         indent = 4,

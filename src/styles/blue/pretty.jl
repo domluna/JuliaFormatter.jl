@@ -25,8 +25,6 @@ struct BlueStyle <: AbstractStyle
 end
 BlueStyle() = BlueStyle(nothing)
 
-@inline getstyle(s::BlueStyle) = s.innerstyle === nothing ? s : s.innerstyle
-
 function options(style::BlueStyle)
     return (;
         always_use_return = true,

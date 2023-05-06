@@ -2,7 +2,8 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
 
     # With `variable_call_indent`, check if the caller is in the list
-    if caller_in_list(fst, s.opts.variable_call_indent) && length(fst.nodes) > 5
+    if caller_in_list(fst, s.opts.variable_call_indent) &&
+       length(fst.nodes::Vector{FST}) > 5
         # Check if the call is of the form `caller(something,...)`
         # or of the form `caller(\n...)`.
         # There may be a comment or both an inline comment and a comment in a separate line

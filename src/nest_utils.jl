@@ -149,12 +149,12 @@ If `stop_idx == nothing` the range is `fst[idx:end]`.
 Returns whether nesting occurred.
 """
 function nest_if_over_margin!(
-    style,
+    style::S,
     fst::FST,
     s::State,
     idx::Int;
     stop_idx::Union{Int,Nothing} = nothing,
-)::Bool
+)::Bool where {S<:AbstractStyle}
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing
