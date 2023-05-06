@@ -1170,3 +1170,12 @@ function caller_in_list(fst, list)
 
     return false
 end
+
+"""
+    is_dot_op(x::CSTParser.EXPR)
+
+Checks if the binary operation is a dot operation (e.g. `x.y`, `x..z`, `x...z`). This is different from a dot or broadcast operation.
+"""
+function is_dot_op(x::CSTParser.EXPR)
+    op_kind(x) in (Tokens.DDDOT, Tokens.DDOT, Tokens.DDOTS)
+end

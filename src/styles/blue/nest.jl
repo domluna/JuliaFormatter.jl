@@ -94,7 +94,10 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                     nest!(style, n, s)
                 end
             elseif n.typ === TRAILINGCOMMA
-                if add_trailing_comma
+                if add_trailing_comma ||
+                   nodes[i-1].typ === OPERATOR &&
+                   nodes[i-1].metadata.op_kind === Tokens.COLON
+                    # if add_trailing_comma  || nodes[i-1].typ === OPERATOR && nodes[i-1].val == ":"
                     n.val = ","
                     n.len = 1
                 end

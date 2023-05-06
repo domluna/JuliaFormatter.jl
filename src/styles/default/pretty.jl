@@ -1591,8 +1591,11 @@ function p_binaryopcall(
         # For example: `2a`, which is equivalent to `2 * a`.
     elseif CSTParser.is_exor(op)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
-    elseif (CSTParser.isnumber(cst[1]) || is_circumflex_accent(op)) &&
-           CSTParser.isdotted(op)
+    elseif (
+        (CSTParser.isnumber(cst[1]) || is_circumflex_accent(op)) && CSTParser.isdotted(op)
+    ) ||
+           # 1 .. -2 (can be ., .., ..., etc)
+           (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && is_dot_op(cst))
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)

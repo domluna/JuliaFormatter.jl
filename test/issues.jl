@@ -1601,6 +1601,22 @@
         @test fmt(s1, 4, 10, short_to_long_function_def = true) == s2
     end
 
+    @testset "700" begin
+        s1 = """
+        a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name = [1 1; 1 1]
+
+        x = a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name[sum(a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name[:, 1]), :]
+        """
+        s2 = """
+        a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name = [1 1; 1 1]
+
+        x = a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name[
+            sum(a_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_array_name[:, 1]), :,
+        ]
+        """
+        @test bluefmt(s1, 4, 92) == s2
+    end
+
     @testset "703" begin
         s = """
         mutable struct A
@@ -1609,5 +1625,35 @@
         end
         """
         @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
+
+    @testset "713" begin
+        s1 = """
+        [1. 1; 1 -1]
+        """
+        s2 = """
+        [1.0 1; 1 -1]
+        """
+        @test fmt(s1, 4, 92, align_matrix = true) == s2
+    end
+
+    @testset "714" begin
+        s1 = """
+        A = [-2.. -1 3..4; 5..6 7..8]
+        """
+        s2 = """
+        A = [-2 .. -1 3..4; 5..6 7..8]
+        """
+        @test fmt(s1, 4, 92) == s2
+    end
+
+    @testset "715" begin
+        s = """
+        map(1:10) do x
+            # empty
+        end
+        """
+        @test fmt(s, 4, 92) == s
+        @test bluefmt(s, 4, 92) == s
     end
 end
