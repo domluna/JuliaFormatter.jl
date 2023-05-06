@@ -332,7 +332,10 @@ function align_matrix!(fst::FST)
 
                 diff = n2.line_offset - n1.line_offset - length(n1)
 
-                r[i] = Whitespace(diff)
+                # fix #694 and #713
+                if diff > 0
+                    r[i] = Whitespace(diff)
+                end
             end
         end
     end
