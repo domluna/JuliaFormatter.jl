@@ -1653,7 +1653,6 @@
             # empty
         end
         """
-        @test fmt(s, 4, 92) == s
-        @test bluefmt(s, 4, 92) == s
+        @test fmt(s, 4, 92, always_use_return = true) == s
     end
 end
