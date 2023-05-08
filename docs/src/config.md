@@ -8,7 +8,7 @@ From v0.4.3, JuliaFormatter offers [`.prettierrc` style](https://prettier.io/doc
 configuration file support.
 This means you can specify formatting options shown in [`format_text`](@ref) in `.JuliaFormatter.toml` file and share that with others.
 
-When [`format`](@ref) called, it will look for `.JuliaFormatter.toml` in the location of the file being formatted,
+When [`format`](@ref) is called, it will look for `.JuliaFormatter.toml` in the location of the file being formatted,
 and searching _up_ the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given options.
 
