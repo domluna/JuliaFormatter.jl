@@ -466,7 +466,7 @@ end
 """
 function prepend_return!(fst::FST, s::State)
     fst.typ === Block || return
-    length(fst.nodes) == 0 && return
+    length(fst.nodes::Vector{FST}) == 0 && return
     ln = fst[end]
     is_block(ln) && return
     ln.typ === Return && return

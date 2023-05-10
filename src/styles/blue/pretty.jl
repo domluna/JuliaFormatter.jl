@@ -21,11 +21,9 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `separate_kwargs_with_semicolon` = true
 """
 struct BlueStyle <: AbstractStyle
-    innerstyle::Union{Nothing,AbstractStyle}
+    innerstyle::AbstractStyle
 end
-BlueStyle() = BlueStyle(nothing)
-
-@inline getstyle(s::BlueStyle) = s.innerstyle === nothing ? s : s.innerstyle
+BlueStyle() = BlueStyle(NoopStyle())
 
 function options(style::BlueStyle)
     return (;

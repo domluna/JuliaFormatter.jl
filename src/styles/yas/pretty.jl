@@ -17,10 +17,9 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `separate_kwargs_with_semicolon` = true
 """
 struct YASStyle <: AbstractStyle
-    innerstyle::Union{Nothing,AbstractStyle}
+    innerstyle::AbstractStyle
 end
-YASStyle() = YASStyle(nothing)
-@inline getstyle(s::YASStyle) = s.innerstyle === nothing ? s : s.innerstyle
+YASStyle() = YASStyle(NoopStyle())
 
 function options(style::YASStyle)
     return (;
