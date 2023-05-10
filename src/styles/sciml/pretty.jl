@@ -14,9 +14,9 @@ Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 - `normalize_line_endings` = "unix"
 """
 struct SciMLStyle <: AbstractStyle
-    innerstyle::Union{Nothing,AbstractStyle}
+    innerstyle::AbstractStyle
 end
-SciMLStyle() = SciMLStyle(nothing)
+SciMLStyle() = SciMLStyle(NoopStyle())
 
 function options(style::SciMLStyle)
     return (;

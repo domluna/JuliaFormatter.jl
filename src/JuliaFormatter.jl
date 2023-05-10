@@ -52,6 +52,8 @@ abstract type AbstractStyle end
 
 @inline options(s::AbstractStyle) = NamedTuple()
 
+struct NoopStyle <: AbstractStyle end
+
 """
     DefaultStyle
 
@@ -61,12 +63,16 @@ for more details.
 See also: [`BlueStyle`](@ref), [`YASStyle`](@ref), [`SciMLStyle`](@ref), [`MinimalStyle`](@ref)
 """
 struct DefaultStyle <: AbstractStyle
-    innerstyle::Union{Nothing,AbstractStyle}
+    innerstyle::AbstractStyle
 end
-DefaultStyle() = DefaultStyle(nothing)
 
-function getstyle(s::S1)::S2 where {S1<:AbstractStyle,S2<:AbstractStyle}
-    s.innerstyle === nothing ? s : s.innerstyle
+DefaultStyle() = DefaultStyle(NoopStyle())
+
+function getstyle(s::AbstractStyle)::AbstractStyle
+    s.innerstyle isa NoopStyle ? s : s.innerstyle
+end
+function getstyle(s::NoopStyle)
+    return s
 end
 
 function options(s::DefaultStyle)

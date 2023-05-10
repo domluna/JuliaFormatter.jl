@@ -4,7 +4,7 @@
 struct MinimalStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
-MinimalStyle() = MinimalStyle(nothing)
+MinimalStyle() = MinimalStyle(NoopStyle())
 
 function options(style::MinimalStyle)
     return (;
