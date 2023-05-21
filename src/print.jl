@@ -64,14 +64,21 @@ function print_tree(
     ws = repeat(" ", max(indent, 0))
     for (i, n) in enumerate(nodes)
         if n.typ === NOTCODE
+            noindent = has_noindent_block(s.doc, (n.startline, n.endline))
             if notcode_indent > -1
                 n.indent = notcode_indent
             elseif i + 1 < length(nodes) && is_end(nodes[i+2])
                 n.indent += s.opts.indent
             elseif i + 1 < length(nodes) &&
                    (nodes[i+2].typ === Block || nodes[i+2].typ === Begin)
+                if noindent
+                    add_indent!(nodes[i+2], s, -s.opts.indent)
+                end
                 n.indent = nodes[i+2].indent
             elseif i > 2 && (nodes[i-2].typ === Block || nodes[i-2].typ === Begin)
+                if noindent
+                    add_indent!(nodes[i+2], s, -s.opts.indent)
+                end
                 n.indent = nodes[i-2].indent
             end
         end
