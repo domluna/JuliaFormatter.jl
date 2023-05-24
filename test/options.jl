@@ -2384,5 +2384,48 @@
         end
         """
         @test fmt(s) == s_
+
+        # recursive
+        s = raw"""
+        begin
+        @muladd begin
+            #! format: noindent
+            # dawdawdaw comment
+            a = 10
+            b = 20
+            begin
+               # another inent
+                z = 33
+                        begin
+                #! format: noindent
+                        s = "oh shit here we go again"
+                end
+            end
+
+            a * b
+        end
+                end
+        """
+        s_ = raw"""
+        begin
+            @muladd begin
+            #! format: noindent
+            # dawdawdaw comment
+            a = 10
+            b = 20
+            begin
+                # another inent
+                z = 33
+                begin
+                #! format: noindent
+                s = "oh shit here we go again"
+                end
+            end
+
+            a * b
+            end
+        end
+        """
+        @test fmt(s) == s_
     end
 end
