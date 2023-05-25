@@ -195,6 +195,9 @@
 
         str = """import A.b.c: d"""
         @test fmt(str, import_to_using = true) == str
+
+        str = "import ..A"
+        @test fmt(str, import_to_using = true) == str
     end
 
     @testset "always convert `=` to `in` (for loops)" begin
