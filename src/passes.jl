@@ -172,6 +172,7 @@ function import_to_usings(fst::FST, s::State)
     findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
         return FST[]
 
+    # handle #723 "import ..f" should not become "using ..f: f"
     if length(nodes) == 3 && !is_leaf(nodes[3]) && nodes[3].nodes[1].val == "."
         return FST[]
     end
