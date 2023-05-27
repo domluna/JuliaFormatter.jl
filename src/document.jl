@@ -48,6 +48,10 @@ struct Document
     # the start and end lines of regions in the
     # file formatting should be skipped.
     format_skips::Vector{Tuple{Int,Int,String}}
+
+    # Line where there's a noindent comment. "#! format: noindent". This is checked during
+    # the print stage to know if the contents of the block (recursive) should not be indented.
+    noindent_blocks::Vector{Int}
 end
 
 function Document(text::AbstractString)
@@ -56,6 +60,7 @@ function Document(text::AbstractString)
     comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Dict{Int,Vector{Int}}()
     format_skips = Tuple{Int,Int,String}[]
+    noindent_blocks = Int[]
     prev_tok = Tokens.Token() # dummy initial token
     stack = Int[]
     format_on = true
@@ -139,12 +144,12 @@ function Document(text::AbstractString)
                 comments[line] = (ws, cs[idx:end])
             end
 
-            if occursin(r"^#!\s*format\s*:\s*off\s*$", t.val) && length(stack) == 0
+            if length(stack) == 0 && occursin(r"^#!\s*format\s*:\s*off\s*$", t.val)
                 # There should not be more than 1
                 # "off" tag on the stack at a time.
                 push!(stack, t.startpos[1])
                 format_on = false
-            elseif occursin(r"^#!\s*format\s*:\s*on\s*$", t.val) && length(stack) > 0
+            elseif length(stack) > 0 && occursin(r"^#!\s*format\s*:\s*on\s*$", t.val)
                 # If "#! format: off" has not been seen
                 # "#! format: on" is treated as a normal comment.
                 idx1 = findfirst(c -> c == '\n', str)::Int
@@ -153,6 +158,10 @@ function Document(text::AbstractString)
                 push!(format_skips, (pop!(stack), t.startpos[1], str))
                 str = ""
                 format_on = true
+            end
+
+            if occursin(r"^#!\s*format\s*:\s*noindent\s*$", t.val)
+                push!(noindent_blocks, t.startpos[1])
             end
         elseif t.kind === Tokens.SEMICOLON
             if haskey(semicolons, t.startpos[1])
@@ -205,5 +214,13 @@ function Document(text::AbstractString)
         comments,
         semicolons,
         format_skips,
+        noindent_blocks,
     )
+end
+
+function has_noindent_block(d::Document, r::Tuple{Int,Int})
+    for b in d.noindent_blocks
+        b in r && return true
+    end
+    return false
 end
