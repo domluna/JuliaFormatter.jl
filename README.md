@@ -1,5 +1,7 @@
 # JuliaFormatter.jl
 
+> The most up to date documentation is in this README.
+
 [![Documenter: stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/stable/)
 [![Documenter: dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev/)
 ![Build Status](https://github.com/domluna/JuliaFormatter.jl/actions/workflows/ci.yml/badge.svg)
