@@ -473,7 +473,7 @@ for a ∈ 1:10
 end
 ```
 
-### File Options
+## File Options
 
 ### `overwrite`
 
@@ -499,6 +499,80 @@ addition to the Markdown being normalized.
 
 An array of paths to files and directories (with possible Glob wildcards)
 which will not be formatted.
+
+## Special Format Comments
+
+### Turn off/on formatting
+
+You can skip sections of code by using the `#! format: off` and `#! format: on` comments.
+
+```julia
+
+# this should be formatted
+a = f(aaa, bbb, ccc)
+
+# this should not be formatted
+#! format: off
+a = f(aaa,
+    bbb,ccc)
+
+c = 102000
+
+d = @foo 10 20
+
+e = "what the foocho"
+#! format: on
+
+# this should be formatted
+a = f(aaa, bbb, ccc)
+
+# ok
+```
+
+If you wish to not format an entire file just add `#!: format: off` to the top of the file.
+
+### Stopping a block of code from indenting
+
+Sometimes you may wish for a block of code to not be indented. You can achieve this with `#!: format: noindent`.
+
+```julia
+begin
+@muladd begin
+    #! format: noindent
+    a = 10
+    b = 20
+    begin
+       # another inent
+        z = 33
+    end
+
+    a * b
+end
+        end
+```
+
+is formatted to
+
+
+```julia
+begin
+    @muladd begin
+    #! format: noindent
+    a = 10
+    b = 20
+    begin
+        # another inent
+        z = 33
+    end
+
+    a * b
+    end
+end
+```
+
+Notice the contents of `@muladd begin` is not indented.
+
+`#!: format: noindent` can also be nested.
 
 ## Editor Plugins
 
