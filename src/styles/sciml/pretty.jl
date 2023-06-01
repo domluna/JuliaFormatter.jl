@@ -98,24 +98,14 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
     else
         stmts_idxs = 2:length(cst)-1
-        # Don't nest into multiple lines when there's only one statement
-        # and it's not a macroblock.
-        if length(stmts_idxs) == 1 &&
-           !(cst[2].head === :macrocall && !is_closer(cst[2][end]))
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
-        else
-            s.indent += s.opts.indent
-            nodes = CSTParser.EXPR[]
-            for i in 2:length(cst)-1
-                push!(nodes, cst[i])
-            end
-            add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
-            s.indent -= s.opts.indent
-            add_node!(t, pretty(style, cst[end], s), s)
+        s.indent += s.opts.indent
+        nodes = CSTParser.EXPR[]
+        for i in 2:length(cst)-1
+            push!(nodes, cst[i])
         end
+        add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
+        s.indent -= s.opts.indent
+        add_node!(t, pretty(style, cst[end], s), s)
     end
     t
 end

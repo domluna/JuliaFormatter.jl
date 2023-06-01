@@ -1421,7 +1421,12 @@
         str = raw"""
         begin @foo(a) end
         """
-        @test format_text(str, SciMLStyle()) == str
+        str_ = raw"""
+        begin
+            @foo(a)
+        end
+        """
+        @test format_text(str, SciMLStyle()) == str_
     end
 
     @testset "613" begin

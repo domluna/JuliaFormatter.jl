@@ -14,7 +14,12 @@
     str = raw"""
     begin include("hi") end
     """
-    @test format_text(str, SciMLStyle()) == str
+    formatted_str = raw"""
+    begin
+        include("hi")
+    end
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
 
     str = raw"""
     begin include("hi"); 1 end
