@@ -37,8 +37,8 @@
     """
     formatted_str = raw"""
     function BipartiteGraph(fadj::AbstractVector,
-                            badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
-                            metadata = nothing)
+        badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
+        metadata = nothing)
         BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
     end
     """
@@ -70,8 +70,8 @@
 
     formatted_str = raw"""
     function my_large_function(argument1, argument2,
-                               argument3, argument4,
-                               argument5, x, y, z)
+        argument3, argument4,
+        argument5, x, y, z)
         foo(x) + goo(y)
     end
     """
@@ -80,7 +80,7 @@
 
     str = raw"""
     Dict{Int, Int}(1 => 2,
-                   3 => 4)
+        3 => 4)
     """
 
     # This should be valid with and without `Dict` in `variable_call_indent`
@@ -89,7 +89,7 @@
 
     str = raw"""
     SVector(1.0,
-            2.0)
+        2.0)
     """
 
     # Test the same with different callers
@@ -104,7 +104,7 @@
 
     formatted_str1 = raw"""
     Dict{Int, Int}(1 => 2,
-                   3 => 4)
+        3 => 4)
     """
 
     formatted_str2 = raw"""
@@ -125,7 +125,7 @@
 
     formatted_str1 = raw"""
     SVector(1.0,
-            2.0)
+        2.0)
     """
 
     formatted_str2 = raw"""
@@ -148,7 +148,7 @@
 
     formatted_str = raw"""
     Dict{Int, Int}(1 => 2,
-                   3 => 4)
+        3 => 4)
     """
 
     # This is already valid with `variable_call_indent`
@@ -164,15 +164,14 @@
     formatted_str1 = raw"""
     SomeLongerTypeThanJustString = String
     y = Dict{Int, SomeLongerTypeThanJustString}(1 => "some arbitrary string bla bla bla bla bla bla",
-                                                2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
+        2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
     """
 
     formatted_str2 = raw"""
     SomeLongerTypeThanJustString = String
     y = Dict{Int, SomeLongerTypeThanJustString}(
         1 => "some arbitrary string bla bla bla bla bla bla",
-        2 => "another longer arbitrary string bla bla bla bla bla bla bla bla",
-    )
+        2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
     """
 
     # Here, `variable_call_indent` forces the line break because the line is too long
@@ -194,7 +193,7 @@
     """
 
     # Test `variable_call_indent` with a comment in a separate line
-    @test format_text(str, SciMLStyle()) == str
+    @test format_text(str, SciMLStyle()) == formatted_str
     @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
@@ -212,7 +211,7 @@
     """
 
     # Test the same with different callers
-    @test format_text(str, SciMLStyle()) == str
+    @test format_text(str, SciMLStyle()) == formatted_str
     @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector"]) ==
           formatted_str
 
@@ -224,7 +223,7 @@
 
     formatted_str1 = raw"""
     Dict{Int, Int}(1 => 2,
-                   3 => 4)
+        3 => 4)
     """
 
     formatted_str2 = raw"""
@@ -247,15 +246,7 @@
             3 => 4)
     """
 
-    formatted_str1 = raw"""
-    Dict{Int, Int}( # Comment
-                   # Comment
-                   1 => 2,
-                   # Another comment
-                   3 => 4)
-    """
-
-    formatted_str2 = raw"""
+    formatted_str = raw"""
     Dict{Int, Int}( # Comment
         # Comment
         1 => 2,
@@ -265,8 +256,8 @@
 
     # Test `variable_call_indent` with both an inline comment after the opening parenthesis
     # and a comment in a separate line.
-    @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+    @test format_text(str, SciMLStyle()) == formatted_str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
     SVector( # Comment
@@ -276,15 +267,7 @@
                 2.0)
     """
 
-    formatted_str1 = raw"""
-    SVector( # Comment
-            # Comment
-            1.0,
-            # Another comment
-            2.0)
-    """
-
-    formatted_str2 = raw"""
+    formatted_str = raw"""
     SVector( # Comment
         # Comment
         1.0,
@@ -293,7 +276,7 @@
     """
 
     # Test the same with different callers
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str1
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str
     @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test"]) ==
-          formatted_str2
+          formatted_str
 end
