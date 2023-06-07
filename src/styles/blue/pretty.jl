@@ -55,6 +55,7 @@ function options(style::BlueStyle)
         trailing_zero = true,
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
+        yas_style_nesting = false,
     )
 end
 

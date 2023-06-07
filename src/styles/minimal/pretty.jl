@@ -36,5 +36,6 @@ function options(style::MinimalStyle)
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = false,
         variable_call_indent = [],
+        yas_style_nesting = false,
     )
 end
