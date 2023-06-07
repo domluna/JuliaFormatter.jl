@@ -1660,4 +1660,26 @@
         """
         @test fmt(s, 4, 92, always_use_return = true) == s
     end
+    @testset "728" begin
+        s = """
+        begin
+        #! format: noindent
+
+        # This is OK
+        function foo end
+
+        # This is not
+
+        end
+        """
+        @test fmt(s, 4, 92) == s
+
+        s = """
+        begin
+        #! format: noindent
+
+        end
+        """
+        @test fmt(s, 4, 92) == s
+    end
 end
