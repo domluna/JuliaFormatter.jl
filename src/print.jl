@@ -73,13 +73,23 @@ function print_tree(
                    (nodes[i+2].typ === Block || nodes[i+2].typ === Begin)
                 if noindent
                     add_indent!(nodes[i+2], s, -s.opts.indent)
+                    # this captures the trailing comment is not captured as being part of the block
+                    if i + 4 <= length(nodes) && nodes[i+4].typ === NOTCODE
+                        nodes[i+4].indent -= s.opts.indent
+                    end
+                else
+                    n.indent = nodes[i+2].indent
                 end
-                n.indent = nodes[i+2].indent
             elseif i > 2 && (nodes[i-2].typ === Block || nodes[i-2].typ === Begin)
                 if noindent
-                    add_indent!(nodes[i+2], s, -s.opts.indent)
+                    add_indent!(nodes[i-2], s, -s.opts.indent)
+                else
+                    n.indent = nodes[i-2].indent
                 end
-                n.indent = nodes[i-2].indent
+            end
+
+            if noindent
+                n.indent -= s.opts.indent
             end
         end
 
