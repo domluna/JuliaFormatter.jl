@@ -31,24 +31,11 @@ julia> format_file("foo.jl")
 
 # Formats a string (contents of a Julia file)
 julia> format_text(str)
-
-# Formats all files in the package directory of a `Module`
-julia> format(FooPackage)
 ```
 
-## Usage
+Check out the docs for further description of the formatter and its options.
 
-`JuliaFormatter` exports [`format`](@ref), [`format_file`](@ref), [`format_text`](@ref), and [`format_md`](@ref).
-
-`format_md` has the same API as `format_text` but differ in that `format_md` expects the text content to be a Markdown document.
-
-See [`format_text`](@ref) docstring for formatting options at the text level and [`format_file`](@ref) docstring
-for formatting options at the file level.
-
-`JuliaFormatter` should work on any valid Julia and Markdown files.  If `JuliaFormatter` cannot parse
-the code for any reason, it will throw an error pointing to the line that could not be parsed. If running
-[`format`](@ref) on multiple files, you may want to set `verbose = true` to print information about which
-file is being formatted.
+[Use With Github Actions](https://github.com/julia-actions/julia-format)
 
 ## Formatting Options
 
@@ -344,6 +331,12 @@ funccall(
 * When set to `false`, the trailing comma is always removed during nesting.
 * When set to `nothing`, the trailing comma appears as it does in the original source.
 
+### `trailing_zero`
+
+> default: `true`
+
+Add a trailing zero, if needed.
+
 ### `join_lines_based_on_source`
 
 > default: `false`
@@ -470,8 +463,59 @@ function func(...) where {TPARAM}
 end
 ```
 
+### `for_in_replacement`
 
-### File Options
+Can be used when `always_for_in` is `true` to replace the default `in` with `∈` (`\\in`),
+or `=` instead. The replacement options are `("in", "=", "∈")`.
+
+```julia
+for a = 1:10
+end
+
+# formatted with always_for_in = true, for_in_replacement = "∈"
+for a ∈ 1:10
+end
+```
+
+### `variable_call_indent` && `yas_style_nesting`
+
+The `SciMLStyle` supports the additional options `variable_call_indent` and `yas_style_nesting`.
+
+The option `variable_call_indent` is set to `[]` by default.
+It allows calls without aligning to the opening parenthesis:
+
+```julia
+# Allowed with and without `Dict in variable_call_indent`
+Dict{Int, Int}(1 => 2,
+    3 => 4)
+
+# Allowed when `Dict in variable_call_indent`, but
+# will be changed to the first example when `Dict ∉ variable_call_indent`.
+Dict{Int, Int}(
+    1 => 2,
+    3 => 4)
+```
+
+The option `yas_style_nesting` is set to `false` by default.
+Setting it to `true` makes the `SciMLStyle` use the `YASStyle` nesting rules:
+
+```julia
+# With `yas_style_nesting = false`
+function my_large_function(argument1, argument2,
+    argument3, argument4,
+    argument5, x, y, z)
+    foo(x) + goo(y)
+end
+
+# With `yas_style_nesting = true`
+function my_large_function(argument1, argument2,
+                           argument3, argument4,
+                           argument5, x, y, z)
+    foo(x) + goo(y)
+end
+```
+
+## File Options
 
 ### `overwrite`
 
@@ -492,6 +536,85 @@ If `true` details related to formatting the file will be printed to `stdout`.
 
 If `true`, Markdown files are also formatted. Julia code blocks will be formatted in
 addition to the Markdown being normalized.
+
+### `ignore`
+
+An array of paths to files and directories (with possible Glob wildcards)
+which will not be formatted.
+
+## Special Format Comments
+
+### Turn off/on formatting
+
+You can skip sections of code by using the `#! format: off` and `#! format: on` comments.
+
+```julia
+
+# this should be formatted
+a = f(aaa, bbb, ccc)
+
+# this should not be formatted
+#! format: off
+a = f(aaa,
+    bbb,ccc)
+
+c = 102000
+
+d = @foo 10 20
+
+e = "what the foocho"
+#! format: on
+
+# this should be formatted
+a = f(aaa, bbb, ccc)
+
+# ok
+```
+
+If you wish to not format an entire file just add `#!: format: off` to the top of the file.
+
+### Stopping a block of code from indenting
+
+Sometimes you may wish for a block of code to not be indented. You can achieve this with `#!: format: noindent`.
+
+```julia
+begin
+@muladd begin
+    #! format: noindent
+    a = 10
+    b = 20
+    begin
+       # another inent
+        z = 33
+    end
+
+    a * b
+end
+        end
+```
+
+is formatted to
+
+
+```julia
+begin
+    @muladd begin
+    #! format: noindent
+    a = 10
+    b = 20
+    begin
+        # another inent
+        z = 33
+    end
+
+    a * b
+    end
+end
+```
+
+Notice the contents of `@muladd begin` is not indented.
+
+`#!: format: noindent` can also be nested.
 
 ## Editor Plugins
 
