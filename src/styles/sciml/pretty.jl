@@ -48,6 +48,7 @@ function options(style::SciMLStyle)
         separate_kwargs_with_semicolon = false,
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
+        yas_style_nesting = false,
     )
 end
 

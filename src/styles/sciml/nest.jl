@@ -1,3 +1,38 @@
+for f in [
+    :n_call!,
+    :n_curly!,
+    :n_ref!,
+    :n_macrocall!,
+    :n_typedcomprehension!,
+    :n_typedvcat!,
+    :n_tuple!,
+    :n_braces!,
+    :n_parameters!,
+    :n_invisbrackets!,
+    :n_comprehension!,
+    :n_vcat!,
+    :n_bracescat!,
+    :n_generator!,
+    :n_filter!,
+    :n_flatten!,
+    :n_using!,
+    :n_export!,
+    :n_import!,
+    :n_chainopcall!,
+    :n_comparison!,
+    :n_for!,
+    #:n_vect!
+]
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+        style = getstyle(ss)
+        if s.opts.yas_style_nesting
+            $f(YASStyle(style), fst, s)
+        else
+            $f(DefaultStyle(style), fst, s)
+        end
+    end
+end
+
 function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin

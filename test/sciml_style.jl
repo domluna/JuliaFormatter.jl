@@ -76,7 +76,16 @@
     end
     """
 
-    @test format_text(str, SciMLStyle()) == formatted_str
+    formatted_str_yas_nesting = raw"""
+    function my_large_function(argument1, argument2,
+                               argument3, argument4,
+                               argument5, x, y, z)
+        foo(x) + goo(y)
+    end
+    """
+
+    @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
+          formatted_str_yas_nesting
 
     str = raw"""
     Dict{Int, Int}(1 => 2,
@@ -151,8 +160,15 @@
         3 => 4)
     """
 
+    formatted_str_yas_nesting = raw"""
+    Dict{Int, Int}(1 => 2,
+                   3 => 4)
+    """
+
     # This is already valid with `variable_call_indent`
     @test format_text(str, SciMLStyle()) == formatted_str
+    @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
+          formatted_str_yas_nesting
     @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
 
     str = raw"""

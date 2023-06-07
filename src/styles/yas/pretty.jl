@@ -51,6 +51,7 @@ function options(style::YASStyle)
         indent_submodule = false,
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
+        yas_style_nesting = false,
     )
 end
 
