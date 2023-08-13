@@ -1682,4 +1682,12 @@
         """
         @test fmt(s, 4, 92) == s
     end
+
+    @testset "743" begin
+        s = """
+        foo(ᶜa) = - ᶜa
+        """
+        @test fmt(s, 4, 92) == s
+        @test format_text(s, SciMLStyle()) == s
+    end
 end
