@@ -1746,6 +1746,10 @@ function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace 
             add_node!(t, pretty(style, head, s), s, join_lines = true)
         end
         add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    elseif CSTParser.isidentifier(cst[2]) && startswith(cst[2].val, "ᶜ")
+        add_node!(t, pretty(style, cst[1], s), s)
+        add_node!(t, Whitespace(1), s)
+        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     else
         add_node!(t, pretty(style, cst[1], s), s)
         !nospace && add_node!(t, Whitespace(1), s)
