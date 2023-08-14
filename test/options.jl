@@ -2052,6 +2052,10 @@
             @test yasfmt(str_, 4, 50, join_lines_based_on_source = true) == str
         end
 
+        # NOTE: not sure since test makes sense anymore.
+        # It is generally not a great idea to remove the semicolons here since
+        # it can be potentially change the semantics or lead to code errors.
+        # https://github.com/domluna/JuliaFormatter.jl/issues/745
         @testset "matrices" begin
             str_ = """
             T[ a b Expr();
@@ -2059,7 +2063,7 @@
             str = """
             T[a b Expr()
                 d e Expr()]"""
-            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test_broken fmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "function defs" begin
