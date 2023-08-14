@@ -300,7 +300,10 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
                 n.val = ";"
                 n.len = 1
                 nest!(style, n, s)
-            elseif n.typ === INVERSETRAILINGSEMICOLON
+            elseif n.typ === INVERSETRAILINGSEMICOLON && !(
+                s.opts.join_lines_based_on_source &&
+                (fst.typ === Vcat || fst.typ === TypedVcat)
+            )
                 n.val = ""
                 n.len = 0
                 nest!(style, n, s)

@@ -1690,4 +1690,20 @@
         @test fmt(s, 4, 92) == s
         @test format_text(s, SciMLStyle()) == s
     end
+
+    @testset "748" begin
+        # this started out as an error with SciMLStyle but I narrowed it down to an edge case
+        # with the `join_lines_based_on_source` option with vcat types
+        str_ = """
+        [0.128483; 1.256853; 0.0030203; 0.0027977; 0.0101511; 0.0422942; 0.2391346;
+                  0.0008014; 0.0001464; 2.67e-05; 4.8e-6; 9e-7; 0.0619917; 1.2444292; 0.0486676;
+                  199.9383546; 137.4267984; 1.5180203; 1.5180203]
+        """
+        str = """
+        [0.128483; 1.256853; 0.0030203; 0.0027977; 0.0101511; 0.0422942; 0.2391346;
+            0.0008014; 0.0001464; 2.67e-05; 4.8e-6; 9e-7; 0.0619917; 1.2444292; 0.0486676;
+            199.9383546; 137.4267984; 1.5180203; 1.5180203]
+        """
+        @test fmt(str_, 4, 92, join_lines_based_on_source=true) == str
+    end
 end
