@@ -4,10 +4,8 @@
            m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     formatted_str = raw"""
-    @noinline function require_complete(m::Matching)
-        m.inv_match === nothing &&
-            throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
-    end
+    @noinline require_complete(m::Matching) = m.inv_match === nothing &&
+                                              throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     @test format_text(str, SciMLStyle()) == formatted_str
 
