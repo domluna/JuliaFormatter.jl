@@ -1704,6 +1704,6 @@
             0.0008014; 0.0001464; 2.67e-05; 4.8e-6; 9e-7; 0.0619917; 1.2444292; 0.0486676;
             199.9383546; 137.4267984; 1.5180203; 1.5180203]
         """
-        @test fmt(str_, 4, 92, join_lines_based_on_source=true) == str
+        @test fmt(str_, 4, 92, join_lines_based_on_source = true) == str
     end
 end
