@@ -256,6 +256,13 @@ end
 function short_to_long_function_def!(fst::FST, s::State)
     (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
+    # do not apply if parent is a function or macro definition
+    parent_is(
+        fst.ref[],
+        n -> is_function_or_macro_def(n) || n.head == :macrocall;
+        ignore = n -> is_block(n),
+    ) && return false
+
     # 3 cases
     #
     # case 1

@@ -1706,4 +1706,25 @@
         """
         @test fmt(str_, 4, 92, join_lines_based_on_source = true) == str
     end
+
+    @testset "753" begin
+        str_ = """
+        using ModelingToolkit
+        @mtkmodel A begin
+                @variables begin
+                        i(t) = 0.0, [description = "Line longer than the char limit of 94 characters", unit = u"A"]
+                end
+        end
+        """
+        str = """
+        using ModelingToolkit
+        @mtkmodel A begin
+            @variables begin
+                i(t) = 0.0,
+                [description = "Line longer than the char limit of 94 characters", unit = u"A"]
+            end
+        end
+        """
+        @test format_text(str_, SciMLStyle()) == str
+    end
 end
