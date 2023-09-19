@@ -202,6 +202,14 @@ function align_struct!(fst::FST)
 
             nlen = length(n[1])
             ind = findfirst(x -> x.typ === OPERATOR, n.nodes)
+            # issue 757
+            # "foo
+            # """
+            # a::B
+            #
+            # This is parsed as a concatenated string of "foo" and ""
+            ind === nothing && continue
+
             ws = n[ind].line_offset - (n.line_offset + nlen)
 
             push!(g, n, i, n[ind].line_offset, nlen, ws)
@@ -216,6 +224,7 @@ function align_struct!(fst::FST)
             binop = n[end]
             nlen += length(binop[1])
             ind = findfirst(x -> x.typ === OPERATOR, binop.nodes)
+            ind === nothing && continue
             ws = binop[ind].line_offset - (n.line_offset + nlen)
 
             push!(g, binop, i, binop[ind].line_offset, nlen, ws)
