@@ -1727,4 +1727,15 @@
         """
         @test format_text(str_, SciMLStyle()) == str
     end
+
+    @testset "757" begin
+        str = """
+        struct Foo
+            \"foo
+            \"\"\"
+            foo::String
+        end
+        """
+        @test fmt(str, 4, 92, align_struct_field = true) == str
+    end
 end
