@@ -35,7 +35,7 @@ then files under `somedir` will be formatted with 2 spaces indentation and the m
 !!! warning "Custom Style"
 
     Currently the configuration file doesn't support user-defined [Custom Styles](@ref).
-    For the time being, we only provide specs for [YAS Style](@ref), [Blue Style](@ref) and [SciML](@ref) in configuration file.
+    For the time being, we only provide specs for [YAS Style](@ref), [Blue Style](@ref) and [SciML Stylel](@ref) in configuration file.
     In order to use YAS style instead of the default style, you can just specify:
 
     > .JuliaFormatter.toml
