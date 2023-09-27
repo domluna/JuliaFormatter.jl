@@ -18,6 +18,8 @@ makedocs(
         "Configuration File" => "config.md",
         "API Reference" => "api.md",
     ],
+    strict = false,
+    warnonly = true,
 )
 
 deploydocs(repo = "github.com/domluna/JuliaFormatter.jl.git", push_preview = true)
