@@ -18,7 +18,6 @@ makedocs(
         "Configuration File" => "config.md",
         "API Reference" => "api.md",
     ],
-    strict = false,
     warnonly = true,
 )
 
