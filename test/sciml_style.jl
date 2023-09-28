@@ -37,7 +37,7 @@
     function BipartiteGraph(fadj::AbstractVector,
         badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
         metadata = nothing)
-        BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
+            BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
     end
     """
     @test format_text(str, SciMLStyle()) == formatted_str
@@ -78,7 +78,7 @@
     function my_large_function(argument1, argument2,
                                argument3, argument4,
                                argument5, x, y, z)
-        foo(x) + goo(y)
+            foo(x) + goo(y)
     end
     """
 

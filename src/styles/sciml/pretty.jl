@@ -18,7 +18,7 @@ struct SciMLStyle <: AbstractStyle
 end
 SciMLStyle() = SciMLStyle(NoopStyle())
 
-function options(style::SciMLStyle)
+function options(::SciMLStyle)
     return (;
         always_for_in = true,
         always_use_return = false,
@@ -98,7 +98,6 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
     else
-        stmts_idxs = 2:length(cst)-1
         s.indent += s.opts.indent
         nodes = CSTParser.EXPR[]
         for i in 2:length(cst)-1
@@ -116,7 +115,6 @@ function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
     t = FST(MacroCall, cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
     has_closer = is_closer(cst[end])
 
     !has_closer && (t.typ = MacroBlock)
@@ -205,5 +203,52 @@ function p_unaryopcall(ds::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
+    t
+end
+
+function p_functiondef(ds::SciMLStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ds)
+    t = FST(FunctionN, cst, nspaces(s))
+    add_node!(t, pretty(style, cst[1], s), s)
+    add_node!(t, Whitespace(1), s)
+    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    if length(cst) > 3
+        if cst[3].fullspan == 0
+            n = pretty(style, cst[4], s)
+            if s.opts.join_lines_based_on_source
+                join_lines = t.endline == n.startline
+                join_lines && (add_node!(t, Whitespace(1), s))
+                add_node!(t, n, s, join_lines = join_lines)
+            else
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
+            end
+        else
+            indent = s.opts.indent * 2
+            s.indent += indent
+            n = pretty(style, cst[3], s, ignore_single_line = true)
+            s.opts.always_use_return && prepend_return!(n, s)
+            add_node!(t, n, s, max_padding = indent)
+            s.indent -= indent
+            add_node!(t, pretty(style, cst[4], s), s)
+        end
+    else
+        # function stub `function foo end`
+        n = pretty(style, cst[3], s)
+        if s.opts.join_lines_based_on_source
+            join_lines = t.endline == n.startline
+            join_lines && (add_node!(t, Whitespace(1), s))
+            add_node!(t, n, s, join_lines = join_lines)
+        else
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, n, s, join_lines = true)
+        end
+    end
+    t
+end
+
+function p_macro(ds::SciMLStyle, cst::CSTParser.EXPR, s::State)
+    t = p_functiondef(ds, cst, s)
+    t.typ = Macro
     t
 end
