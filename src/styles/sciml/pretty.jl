@@ -85,7 +85,11 @@ for f in [
     for T in Ts
         @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
             style = getstyle(ss)
-            $f(YASStyle(style), cst, s; kwargs...)
+            if s.opts.yas_style_nesting
+                $f(YASStyle(style), cst, s)
+            else
+                $f(DefaultStyle(style), cst, s)
+            end
         end
     end
 end
