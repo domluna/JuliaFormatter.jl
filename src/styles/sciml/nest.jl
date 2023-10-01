@@ -1,10 +1,10 @@
 for f in [
-    :n_call!,
+    # :n_call!,
     :n_curly!,
     :n_ref!,
     :n_macrocall!,
     :n_typedcomprehension!,
-    :n_tuple!,
+    # :n_tuple!,
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,
@@ -50,4 +50,15 @@ function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
 
     walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
     nest!(style, fst[end], s)
+end
+
+n_call!(ds::SciMLStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+function n_tuple!(ds::SciMLStyle, fst::FST, s::State)
+    style = getstyle(ds)
+    n_tuple!(DefaultStyle(style), fst, s)
+        if fst.ref !== nothing &&
+           parent_is(fst.ref[], n -> is_function_or_macro_def(n) || n.head == :macrocall)
+            add_indent!(fst, s, s.opts.indent)
+        end
+        return
 end
