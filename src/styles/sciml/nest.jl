@@ -59,6 +59,9 @@ function n_tuple!(ds::SciMLStyle, fst::FST, s::State)
         if fst.ref !== nothing &&
            parent_is(fst.ref[], n -> is_function_or_macro_def(n) || n.head == :macrocall)
             add_indent!(fst, s, s.opts.indent)
+            if is_closer(fst[end])
+            fst[end].indent -= s.opts.indent
+            end
         end
         return
 end
