@@ -1,10 +1,8 @@
 for f in [
-    # :n_call!,
     :n_curly!,
     :n_ref!,
     :n_macrocall!,
     :n_typedcomprehension!,
-    # :n_tuple!,
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,
@@ -21,6 +19,8 @@ for f in [
     :n_chainopcall!,
     :n_comparison!,
     :n_for!,
+    # :n_tuple!,
+    # :n_call!,
     #:n_vect!
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State)
@@ -52,16 +52,28 @@ function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
     nest!(style, fst[end], s)
 end
 
-n_call!(ds::SciMLStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+function n_call!(ds::SciMLStyle, fst::FST, s::State)
+    style = getstyle(ds)
+    if s.opts.yas_style_nesting
+        n_call!(YASStyle(style), fst, s)
+        return
+    end
+    n_tuple!(ds, fst, s)
+end
+
 function n_tuple!(ds::SciMLStyle, fst::FST, s::State)
     style = getstyle(ds)
-    n_tuple!(DefaultStyle(style), fst, s)
-        if fst.ref !== nothing &&
-           parent_is(fst.ref[], n -> is_function_or_macro_def(n) || n.head == :macrocall)
-            add_indent!(fst, s, s.opts.indent)
-            if is_closer(fst[end])
-            fst[end].indent -= s.opts.indent
-            end
-        end
+    if s.opts.yas_style_nesting
+        n_tuple!(YASStyle(style), fst, s)
         return
+    end
+
+    n_tuple!(DefaultStyle(style), fst, s)
+    if fst.ref !== nothing &&
+       parent_is(fst.ref[], n -> is_function_or_macro_def(n) || n.head == :macrocall)
+        add_indent!(fst, s, s.opts.indent)
+        if is_closer(fst[end])
+            fst[end].indent -= s.opts.indent
+        end
+    end
 end

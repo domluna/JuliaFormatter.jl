@@ -36,11 +36,11 @@
     """
     formatted_str = raw"""
     function BipartiteGraph(
-        fadj::AbstractVector,
-        badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
-        metadata = nothing,
+            fadj::AbstractVector,
+            badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
+            metadata = nothing,
     )
-            BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
+        BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
     end
     """
     @test format_text(str, SciMLStyle()) == formatted_str
@@ -71,8 +71,8 @@
 
     formatted_str = raw"""
     function my_large_function(argument1, argument2,
-        argument3, argument4,
-        argument5, x, y, z)
+            argument3, argument4,
+            argument5, x, y, z)
         foo(x) + goo(y)
     end
     """
@@ -81,7 +81,7 @@
     function my_large_function(argument1, argument2,
                                argument3, argument4,
                                argument5, x, y, z)
-            foo(x) + goo(y)
+        foo(x) + goo(y)
     end
     """
 
@@ -302,4 +302,34 @@
     @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str
     @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test"]) ==
           formatted_str
+
+    @testset "741" begin
+        s = """
+        function get_num_majumps(smaj::SpatialMassActionJump{Nothing,B,S,U,V}) where {B,S,U,V}
+            return size(smaj.spatial_rates, 1)
+        end
+        """
+        fs = """
+        function get_num_majumps(
+                smaj::SpatialMassActionJump{Nothing, B, S, U, V},
+        ) where {B, S, U, V}
+            return size(smaj.spatial_rates, 1)
+        end
+        """
+        @test format_text(s, SciMLStyle()) == fs
+
+        s = """
+        macro get_num_majumps(smaj::SpatialMassActionJump{Nothing,B,S,U,V}) where {B,S,U,V}
+            return size(smaj.spatial_rates, 1)
+        end
+        """
+        fs = """
+        macro get_num_majumps(
+                smaj::SpatialMassActionJump{Nothing, B, S, U, V},
+        ) where {B, S, U, V}
+            return size(smaj.spatial_rates, 1)
+        end
+        """
+        @test format_text(s, SciMLStyle(), margin=89) == fs
+    end
 end
