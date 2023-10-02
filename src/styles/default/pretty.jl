@@ -2223,8 +2223,13 @@ function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
         diff_line = t.endline != t.startline
-        i == st && continue
-        if is_opener(a) && nest
+        if i == st && length(args) == 0
+            for c in 1:n_semicolons
+                add_node!(t, Semicolon(), s)
+            end
+        elseif i == st
+            continue
+        elseif is_opener(a) && nest
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif !is_closer(a) && i > st
