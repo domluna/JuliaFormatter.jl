@@ -1691,6 +1691,12 @@
         @test format_text(s, SciMLStyle()) == s
     end
 
+    @testset "745" begin
+        s = "[;;;]"
+        @test fmt(s, 4, 92) == s
+        @test fmt(s, 4, 1) == s
+    end
+
     @testset "748" begin
         # this started out as an error with SciMLStyle but I narrowed it down to an edge case
         # with the `join_lines_based_on_source` option with vcat types
