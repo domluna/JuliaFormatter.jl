@@ -1753,4 +1753,14 @@
         """
         @test_throws ErrorException format_text(s)
     end
+
+    @testset "624" begin
+        s = """
+        deploydocs(;
+            repo="github.com/julia-vscode/CSTParser.jl",
+        )
+        """
+        s1 = format_text(s, MinimalStyle())
+        @test format_text(s1, MinimalStyle()) == s
+    end
 end
