@@ -99,6 +99,14 @@ function Document(text::AbstractString)
                     cidx = nl2 + 1
                 end
             end
+        elseif t.kind === Tokens.ERROR && startswith(t.val, "#=")
+            nlidx = findfirst(x -> x == '\n', t.val)
+            nlidx = nlidx === nothing ? length(t.val) : nlidx - 1
+            throw(
+                ErrorException(
+                    """Unable to format. Multi-line comment on line $(t.startpos[1]) is not closed.""",
+                ),
+            )
         elseif t.kind === Tokens.COMMENT
             ws = 0
             if prev_tok.kind === Tokens.WHITESPACE

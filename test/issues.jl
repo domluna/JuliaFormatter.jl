@@ -1744,4 +1744,13 @@
         """
         @test fmt(str, 4, 92, align_struct_field = true) == str
     end
+
+    @testset "760" begin
+        s = """
+        foo() = nothing
+        #=
+        a = 10
+        """
+        @test_throws ErrorException format_text(s)
+    end
 end
