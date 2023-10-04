@@ -2035,9 +2035,7 @@ function p_parameters(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
-        if i == length(cst) && CSTParser.is_comma(a)
-            # do nothing
-        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+        if CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             push!(t.nodes::Vector{FST}, n)
             push!(t.nodes::Vector{FST}, Placeholder(1))
         else
