@@ -801,7 +801,7 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
                (op_kind(n) === Tokens.LAZY_AND || op_kind(n) === Tokens.LAZY_OR) &&
-                n.ref[] !== nothing &&
+               n.ref[] !== nothing &&
                is_standalone_shortcircuit(n.ref[])
             _short_circuit_to_if!(n, s)
         else
