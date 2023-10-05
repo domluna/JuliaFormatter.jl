@@ -700,6 +700,10 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
     flatten_fst!(fst)
 
+    if s.opts.short_circuit_to_if
+        short_circuit_to_if_pass!(fst, s)
+    end
+
     needs_alignment(s.opts) && align_fst!(fst, s.opts)
 
     nest!(style, fst, s)

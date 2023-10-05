@@ -687,7 +687,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
             is_assignment(cst) ||
             op_kind(fst) === Tokens.PAIR_ARROW ||
             op_kind(fst) === Tokens.ANON_FUNC ||
-            is_standalone_shortcircuit(cst)
+            (fst.ref !== nothing && is_standalone_shortcircuit(cst))
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent
@@ -802,7 +802,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     has_nl = false
     indent >= 0 && (fst.indent = indent)
 
-    if fst.typ === Chain && is_standalone_shortcircuit(fst.ref[])
+    if fst.typ === Chain && fst.ref !== nothing && is_standalone_shortcircuit(fst.ref[])
         fst.indent += s.opts.indent
     end
 
