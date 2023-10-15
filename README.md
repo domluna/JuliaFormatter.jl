@@ -33,7 +33,7 @@ julia> format_text(str)
 
 Check out the docs for further description of the formatter and its options.
 
-[Use With Github Actions](https://github.com/julia-actions/julia-format)
+[Use With GitHub Actions](https://github.com/julia-actions/julia-format)
 
 ## Formatting Options
 
