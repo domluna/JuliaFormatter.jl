@@ -1386,7 +1386,8 @@ function p_chainopcall(
 
     nws = nospace ? 0 : 1
     for (i, a) in enumerate(cst)
-        if CSTParser.isoperator(a)
+        if CSTParser.isoperator(a) && i == length(cst)
+        elseif CSTParser.isoperator(a)
             add_node!(t, Whitespace(nws), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             if nonest
