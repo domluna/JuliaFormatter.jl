@@ -4,7 +4,7 @@ CurrentModule = JuliaFormatter
 
 # JuliaFormatter.jl
 
-Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, black, and prettier. Built with [`CSTParser`](https://github.com/ZacLN/CSTParser.jl).
+Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, black, and prettier. Built with [`CSTParser.jl`](https://github.com/julia-vscode/CSTParser.jl).
 
 - Sane defaults out of the box with options to customize.
 - Supports [YAS](https://github.com/jrevels/YASGuide), [Blue](https://github.com/invenia/BlueStyle) and [SciML](https://github.com/SciML/SciMLStyle) style guides.
@@ -35,7 +35,7 @@ julia> format_text(str)
 
 Check out the docs for further description of the formatter and its options.
 
-[Use With Github Actions](https://github.com/julia-actions/julia-format)
+[Use With GitHub Actions](https://github.com/julia-actions/julia-format)
 
 ## Formatting Options
 

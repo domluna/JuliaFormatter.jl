@@ -1,4 +1,4 @@
-@testset "Github Issues" begin
+@testset "GitHub Issues" begin
     @testset "issue #137" begin
         str = """
         (
