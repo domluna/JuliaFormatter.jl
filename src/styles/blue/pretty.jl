@@ -145,7 +145,7 @@ function p_binaryopcall(
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op)) && (
+    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op) || is_isa(op)) && (
         nospace || (
             !CSTParser.is_anon_func(op) && precedence(op) in (
                 CSTParser.RationalOp,

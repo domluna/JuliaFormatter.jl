@@ -1179,3 +1179,7 @@ Checks if the binary operation is a dot operation (e.g. `x.y`, `x..z`, `x...z`).
 function is_dot_op(x::CSTParser.EXPR)
     op_kind(x) in (Tokens.DDDOT, Tokens.DDOT, Tokens.DDOTS)
 end
+
+function is_isa(x::CSTParser.EXPR)
+    CSTParser.isoperator(x) && x.val == "isa"
+end

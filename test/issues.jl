@@ -1763,4 +1763,11 @@
         s1 = format_text(s, MinimalStyle())
         @test format_text(s1, MinimalStyle()) == s
     end
+
+    @testset "769" begin
+        s = raw"""
+        @assert x isa Tuple \"msg\"
+        """
+        @test format_text(s, SciMLStyle()) == s
+    end
 end

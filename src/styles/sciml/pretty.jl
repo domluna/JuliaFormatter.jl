@@ -134,7 +134,7 @@ function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
         #
         # No:
         # `@parameters a = a b = b`
-        n = pretty(style, a, s, nospace = nospace)
+        n = pretty(style, a, s; nospace = nospace)
         if CSTParser.ismacroname(a)
             add_node!(t, n, s, join_lines = true)
             if length(args) > 0
