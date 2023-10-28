@@ -12,13 +12,6 @@ When [`format`](@ref) is called, it will look for `.JuliaFormatter.toml` in the 
 and searching _up_ the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given options.
 
-!!! note
-
-    [Juno](https://junolab.org/), a Julia IDE that offers formatting feature using this package, also respects
-    configuration file.
-    When you use `Julia-Client: Format-Code` command, Juno will automatically search for a configuration file with the
-    same rule as `format` does from the directory of current editor.
-
 ## Basic Configuration
 
 In `.JuliaFormatter.toml`, you can specify any of the formatting options shown in [`format_text`](@ref) in TOML, e.g. if you have

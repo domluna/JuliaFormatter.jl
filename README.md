@@ -37,7 +37,7 @@ Check out [the docs](https://domluna.github.io/JuliaFormatter.jl/stable/) for fu
 
 For integration with other editors:
 
-  - [Atom](https://github.com/JunoLab/Atom.jl)
-  - [Emacs](https://codeberg.org/FelipeLema/julia-formatter.el)
   - [VSCode](https://github.com/singularitti/vscode-julia-formatter/)
+  - [Emacs](https://codeberg.org/FelipeLema/julia-formatter.el)
   - [Vim](https://github.com/kdheepak/JuliaFormatter.vim)
+  - [Atom (deprecated)](https://github.com/JunoLab/Atom.jl)
