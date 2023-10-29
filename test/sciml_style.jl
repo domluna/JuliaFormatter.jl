@@ -35,8 +35,8 @@
     """
     formatted_str = raw"""
     function BipartiteGraph(fadj::AbstractVector,
-        badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
-        metadata = nothing)
+            badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
+            metadata = nothing)
         BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
     end
     """
@@ -293,4 +293,66 @@
     @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str
     @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test"]) ==
           formatted_str
+
+    str = """
+    function alg_cache(alg::FineRKN4, u, rate_prototype, ::Type{uEltypeNoUnits},
+           ::Type{uBottomEltypeNoUnits}, ::Type{tTypeNoUnits}, uprev, uprev2, f, t,
+          dt, reltol, p, calck, ::Val{true}) where {uEltypeNoUnits, 
+        uBottomEltypeNoUnits,tTypeNoUnits}
+
+        reduced_rate_prototype = rate_prototype.x[2]
+        tab = FineRKN4ConstantCache(constvalue(uBottomEltypeNoUnits), constvalue(tTypeNoUnits))
+        k1 = zero(rate_prototype)
+        k2 = zero(reduced_rate_prototype)
+        k3 = zero(reduced_rate_prototype)
+        k4 = zero(reduced_rate_prototype)
+        k5 = zero(reduced_rate_prototype)
+        k = zero(rate_prototype)
+        utilde = zero(u)
+        atmp = similar(u, uEltypeNoUnits)
+        recursivefill!(atmp, false)
+        tmp = zero(u)
+        FineRKN4Cache(u, uprev, k1, k2, k3, k4, k5, k, utilde, tmp, atmp, tab)
+    end"""
+
+    formatted_str = """
+    function alg_cache(alg::FineRKN4, u, rate_prototype, ::Type{uEltypeNoUnits},
+            ::Type{uBottomEltypeNoUnits}, ::Type{tTypeNoUnits}, uprev, uprev2, f, t,
+            dt, reltol, p, calck,
+            ::Val{true}) where {uEltypeNoUnits,
+            uBottomEltypeNoUnits, tTypeNoUnits}
+        reduced_rate_prototype = rate_prototype.x[2]
+        tab = FineRKN4ConstantCache(constvalue(uBottomEltypeNoUnits), constvalue(tTypeNoUnits))
+        k1 = zero(rate_prototype)
+        k2 = zero(reduced_rate_prototype)
+        k3 = zero(reduced_rate_prototype)
+        k4 = zero(reduced_rate_prototype)
+        k5 = zero(reduced_rate_prototype)
+        k = zero(rate_prototype)
+        utilde = zero(u)
+        atmp = similar(u, uEltypeNoUnits)
+        recursivefill!(atmp, false)
+        tmp = zero(u)
+        FineRKN4Cache(u, uprev, k1, k2, k3, k4, k5, k, utilde, tmp, atmp, tab)
+    end"""
+    @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = """
+    function SpatialMassActionJump(urates::A, srates::B, rs::S, ns::U, pmapper::V;
+                                   scale_rates = true, useiszero = true,
+                                   nocopy = false) where {A <: AVecOrNothing,
+                                                          B <: AMatOrNothing, S, U, V}
+        SpatialMassActionJump{A, B, S, U, V}(urates, srates, rs, ns, pmapper, scale_rates,
+                                             useiszero, nocopy)
+    end"""
+
+    formatted_str = """
+    function SpatialMassActionJump(urates::A, srates::B, rs::S, ns::U, pmapper::V;
+            scale_rates = true, useiszero = true,
+            nocopy = false) where {A <: AVecOrNothing,
+            B <: AMatOrNothing, S, U, V}
+        SpatialMassActionJump{A, B, S, U, V}(urates, srates, rs, ns, pmapper, scale_rates,
+            useiszero, nocopy)
+    end"""
+    @test format_text(str, SciMLStyle()) == formatted_str
 end
