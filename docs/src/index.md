@@ -515,6 +515,26 @@ function my_large_function(argument1, argument2,
 end
 ```
 
+### `short_circuit_to_if`
+
+You can convert short circuit expressions to the equivalent if expression.
+
+```julia
+b0 && foo()
+b1 || bar()
+```
+
+respectively become
+
+```julia
+if b0
+    foo()
+end
+if !b1
+    bar()
+end
+```
+
 ## File Options
 
 ### `overwrite`

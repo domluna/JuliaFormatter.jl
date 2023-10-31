@@ -712,3 +712,104 @@ function remove_superfluous_whitespace!(fst::FST)
     end
     return
 end
+
+function _short_circuit_to_if!(fst::FST, s::State)
+    # change it into an if
+    t = FST(If, fst.indent)
+    kw = FST(KEYWORD, -1, fst.startline, fst.startline, "if")
+    add_node!(t, kw, s, max_padding = 0)
+    add_node!(t, Whitespace(1), s, join_lines = true)
+
+    nodes = fst.nodes::Vector
+    idx = findlast(n -> n.typ === OPERATOR && (n.val == "||" || n.val == "&&"), nodes)::Int
+    is_or = nodes[idx].val == "||"
+
+    wrap_with_parens = !(fst.nodes[1].typ === Brackets)
+
+    if is_or
+        call = FST(Unary, fst.indent)
+        add_node!(call, FST(OPERATOR, -1, fst.startline, fst.startline, "!"), s)
+
+        if wrap_with_parens
+            brackets = FST(Brackets, fst.indent)
+            add_node!(
+                brackets,
+                FST(PUNCTUATION, -1, fst.startline, fst.startline, "("),
+                s,
+                join_lines = true,
+            )
+            add_node!(brackets, Placeholder(0), s)
+            # inner
+            lhs = FST(Chain, fst.indent)
+            for n in nodes[1:idx-1]
+                add_node!(lhs, n, s, join_lines = true)
+            end
+            # remove extra ws
+            if lhs[end].typ === WHITESPACE
+                lhs[end] = Whitespace(0)
+            end
+
+            add_node!(brackets, lhs, s, join_lines = true)
+            add_node!(brackets, Placeholder(0), s)
+            add_node!(
+                brackets,
+                FST(PUNCTUATION, -1, nodes[idx-2].startline, nodes[idx-2].startline, ")"),
+                s,
+                join_lines = true,
+            )
+            add_node!(call, brackets, s, join_lines = true)
+        else
+            add_node!(call, fst[1], s, join_lines = true)
+        end
+
+        add_node!(t, call, s, join_lines = true)
+    else
+        # from idx-1 go backwards until we find a node that's not a 
+        lhs = FST(Chain, fst.indent)
+        for n in nodes[1:idx-1]
+            add_node!(lhs, n, s, join_lines = true)
+        end
+        # remove extra ws
+        if lhs[end].typ === WHITESPACE
+            lhs[end] = Whitespace(0)
+        end
+        add_node!(t, lhs, s, join_lines = true)
+    end
+
+    block1 = FST(Block, fst.indent + s.opts.indent)
+    for n in nodes[idx+1:end]
+        if n.typ === PLACEHOLDER ||
+           n.typ === WHITESPACE ||
+           n.typ === NEWLINE ||
+           is_comment(n)
+            continue
+        end
+        add_node!(block1, n, s)
+    end
+    add_node!(t, block1, s, max_padding = s.opts.indent)
+
+    kw = FST(KEYWORD, -1, -1, -1, "end")
+    add_node!(t, kw, s, max_padding = 0)
+
+    fst.typ = t.typ
+    fst.nodes = t.nodes
+    fst.len = t.len
+
+    return nothing
+end
+
+function short_circuit_to_if_pass!(fst::FST, s::State)
+    is_leaf(fst) && return
+    for n in fst.nodes::Vector
+        if is_leaf(n)
+            continue
+        elseif (n.typ === Binary || n.typ === Chain) &&
+               (op_kind(n) === Tokens.LAZY_AND || op_kind(n) === Tokens.LAZY_OR) &&
+               n.ref[] !== nothing &&
+               is_standalone_shortcircuit(n.ref[])
+            _short_circuit_to_if!(n, s)
+        else
+            short_circuit_to_if_pass!(n, s)
+        end
+    end
+end

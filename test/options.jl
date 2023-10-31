@@ -2432,4 +2432,93 @@
         """
         @test fmt(s) == s_
     end
+
+    @testset "short/lazy circuit to if" begin
+        s_ = """
+            begin
+            a && b
+            end
+        """
+        s = """
+        begin
+            if a
+                b
+            end
+        end
+        """
+        @test fmt(s_, 4, 92, short_circuit_to_if = true) == s
+
+        s_ = """
+            begin
+            a || b
+            end
+        """
+        s = """
+        begin
+            if !(a)
+                b
+            end
+        end
+        """
+        @test fmt(s_, 4, 11, short_circuit_to_if = true) == s
+
+        s = """
+        begin
+            if !(
+                a
+            )
+                b
+            end
+        end
+        """
+        @test fmt(s_, 4, 10, short_circuit_to_if = true) == s
+
+        # > 1
+        s_ = """
+            begin
+            a && b && c && d
+            end
+        """
+        s = """
+        begin
+            if a && b && c
+                d
+            end
+        end
+        """
+        @test fmt(s_, 4, 92, short_circuit_to_if = true) == s
+
+        s_ = """
+            begin
+            a && b && c || d
+            end
+        """
+        s1 = """
+        begin
+            if !(a && b && c)
+                d
+            end
+        end
+        """
+        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
+
+        s2 = """
+        begin
+            if !(
+                a && b && c
+            )
+                d
+            end
+        end
+        """
+        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
+
+        s_ = """
+            begin
+            (a && b && c) || d
+            end
+        """
+        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
+        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
+    end
 end

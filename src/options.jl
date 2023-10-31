@@ -33,6 +33,7 @@ Base.@kwdef struct Options
     ignore::Vector{String} = String[]
     variable_call_indent::Vector{String} = []
     yas_style_nesting::Bool = false
+    short_circuit_to_if::Bool = false
 end
 
 function needs_alignment(opts::Options)

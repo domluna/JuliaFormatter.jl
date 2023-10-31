@@ -1830,7 +1830,6 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
        (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
         separate_kwargs_with_semicolon!(t)
     end
-
     t
 end
 p_call(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -1865,7 +1864,6 @@ function p_invisbrackets(
 
     nest && add_node!(t, Placeholder(0), s)
     add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-
     t
 end
 p_invisbrackets(

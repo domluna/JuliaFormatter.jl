@@ -1096,6 +1096,7 @@ function is_standalone_shortcircuit(cst::CSTParser.EXPR)
         ignore = _ignore_node_for_standalone_circuit,
     )
 end
+is_standalone_shortcircuit(::Nothing) = false
 
 """
     eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
