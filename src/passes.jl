@@ -724,40 +724,44 @@ function _short_circuit_to_if!(fst::FST, s::State)
     idx = findlast(n -> n.typ === OPERATOR && (n.val == "||" || n.val == "&&"), nodes)::Int
     is_or = nodes[idx].val == "||"
 
-    # TODO: fix off by 1
-    # surround lhs with !(...)
+    wrap_with_parens = !(fst.nodes[1].typ === Brackets)
+
     if is_or
         call = FST(Unary, fst.indent)
         add_node!(call, FST(OPERATOR, -1, fst.startline, fst.startline, "!"), s)
 
-        brackets = FST(Brackets, fst.indent)
-        add_node!(
-            brackets,
-            FST(PUNCTUATION, -1, fst.startline, fst.startline, "("),
-            s,
-            join_lines = true,
-        )
-        add_node!(brackets, Placeholder(0), s)
-        # inner
-        lhs = FST(Chain, fst.indent)
-        for n in nodes[1:idx-1]
-            add_node!(lhs, n, s, join_lines = true)
-        end
-        # remove extra ws
-        if lhs[end].typ === WHITESPACE
-            lhs[end] = Whitespace(0)
+        if wrap_with_parens
+            brackets = FST(Brackets, fst.indent)
+            add_node!(
+                brackets,
+                FST(PUNCTUATION, -1, fst.startline, fst.startline, "("),
+                s,
+                join_lines = true,
+            )
+            add_node!(brackets, Placeholder(0), s)
+            # inner
+            lhs = FST(Chain, fst.indent)
+            for n in nodes[1:idx-1]
+                add_node!(lhs, n, s, join_lines = true)
+            end
+            # remove extra ws
+            if lhs[end].typ === WHITESPACE
+                lhs[end] = Whitespace(0)
+            end
+
+            add_node!(brackets, lhs, s, join_lines = true)
+            add_node!(brackets, Placeholder(0), s)
+            add_node!(
+                brackets,
+                FST(PUNCTUATION, -1, nodes[idx-2].startline, nodes[idx-2].startline, ")"),
+                s,
+                join_lines = true,
+            )
+            add_node!(call, brackets, s, join_lines = true)
+        else
+            add_node!(call, fst[1], s, join_lines = true)
         end
 
-        add_node!(brackets, lhs, s, join_lines = true)
-        add_node!(brackets, Placeholder(0), s)
-        add_node!(
-            brackets,
-            FST(PUNCTUATION, -1, nodes[idx-2].startline, nodes[idx-2].startline, ")"),
-            s,
-            join_lines = true,
-        )
-
-        add_node!(call, brackets, s, join_lines = true)
         add_node!(t, call, s, join_lines = true)
     else
         # from idx-1 go backwards until we find a node that's not a 

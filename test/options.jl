@@ -2493,16 +2493,16 @@
             a && b && c || d
             end
         """
-        s = """
+        s1 = """
         begin
             if !(a && b && c)
                 d
             end
         end
         """
-        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
 
-        s = """
+        s2 = """
         begin
             if !(
                 a && b && c
@@ -2511,6 +2511,14 @@
             end
         end
         """
-        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
+
+        s_ = """
+            begin
+            (a && b && c) || d
+            end
+        """
+        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
+        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
     end
 end
