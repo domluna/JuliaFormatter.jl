@@ -64,7 +64,7 @@ for f in [
     :p_import,
     :p_using,
     :p_export,
-    :p_invisbrackets, #:p_curly, :p_braces,
+    :p_invisbrackets, #:p_curly, #:p_braces,
     :p_call,
     :p_tuple,
     :p_vcat,
@@ -252,4 +252,13 @@ end
 
 function p_macro(ds::SciMLStyle, cst::CSTParser.EXPR, s::State)
     p_functiondef(ds, cst, s)
+end
+
+function p_curly(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
+    style = getstyle(ss)
+    if s.opts.yas_style_nesting
+        p_curly(YASStyle(style), cst, s)
+    else
+        p_curly(DefaultStyle(style), cst, s)
+    end
 end

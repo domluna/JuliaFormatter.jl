@@ -297,7 +297,7 @@
     str = """
     function alg_cache(alg::FineRKN4, u, rate_prototype, ::Type{uEltypeNoUnits},
            ::Type{uBottomEltypeNoUnits}, ::Type{tTypeNoUnits}, uprev, uprev2, f, t,
-          dt, reltol, p, calck, ::Val{true}) where {uEltypeNoUnits, 
+          dt, reltol, p, calck, ::Val{true}) where {uEltypeNoUnits,
         uBottomEltypeNoUnits,tTypeNoUnits}
 
         reduced_rate_prototype = rate_prototype.x[2]
@@ -355,4 +355,22 @@
             useiszero, nocopy)
     end"""
     @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = """
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx::SomePrettyLongTypeName{Foo}
+    """
+
+    # The line is too long, so a line break will be inserted in the curly braces
+    formatted_str = """
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx::SomePrettyLongTypeName{
+        Foo,
+    }
+    """
+
+    @test format_text(str, SciMLStyle()) == formatted_str
+    # With `yas_style_nesting=true`, we don't want the line break, as it will look like this:
+    # xxxxx::SomePrettyLongTypeName{
+    #                               Foo
+    #                              }
+    @test format_text(str, SciMLStyle(), yas_style_nesting=true) == str
 end

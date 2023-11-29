@@ -85,6 +85,7 @@ end
 
 function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ys)
+    nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, cst, nspaces(s))
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -92,7 +93,7 @@ function p_curly(ys::YASStyle, cst::CSTParser.EXPR, s::State)
             continue
         elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            add_node!(t, Placeholder(nws), s)
         elseif is_closer(n)
             add_node!(
                 t,
