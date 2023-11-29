@@ -372,5 +372,5 @@
     # xxxxx::SomePrettyLongTypeName{
     #                               Foo
     #                              }
-    @test format_text(str, SciMLStyle(), yas_style_nesting=true) == str
+    @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
 end
