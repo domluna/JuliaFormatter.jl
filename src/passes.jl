@@ -391,8 +391,7 @@ end
 """
     binaryop_to_whereop(fst::FST, s::State)
 
-Handles the case of a function def defined
-as:
+Handles the case of a function def defined as:
 
 ```julia
 foo(a::A)::R where A = body
@@ -435,13 +434,16 @@ function binaryop_to_whereop!(fst::FST, s::State)
     # transform fst[1] to a Where
     oldbinop = fst[1]
     oldwhereop = fst[1][end]
-    binop = FST(Binary, fst[1].indent)
 
-    # foo(a::A)
-    add_node!(binop, oldbinop[1], s)
-    # foo(a::A)::
-    add_node!(binop, oldbinop[2], s, join_lines = true)
-    # foo(a::A)::R
+    # get everything up to the where
+    binop = FST(Binary, fst[1].indent)
+    for n in oldbinop.nodes
+        if n.typ === Where
+            break
+        end
+        add_node!(binop, n, s, join_lines = true)
+    end
+    # # foo(a::A)::R gets the "R"
     add_node!(binop, oldwhereop[1], s, join_lines = true)
 
     whereop = FST(Where, fst[1].indent)
