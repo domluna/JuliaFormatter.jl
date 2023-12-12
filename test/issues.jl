@@ -1770,4 +1770,9 @@
         """
         @test format_text(s, SciMLStyle()) == s
     end
+
+    @testset "779" begin
+        s = "Int <: B where {B} && Int <: C where {C}"
+        fmt(s) == s
+    end
 end
