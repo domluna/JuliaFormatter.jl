@@ -145,12 +145,26 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_unaryopcall!(style, fst, s)
     elseif fst.typ === StringN
         n_string!(style, fst, s)
+    elseif fst.typ === FunctionN
+        n_functiondef!(style, fst, s)
+    elseif fst.typ === Macro
+        n_macro!(style, fst, s)
     else
         nest!(style, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
     end
 end
 nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     nest!(DefaultStyle(style), fst, s)
+
+function n_functiondef!(ds::DefaultStyle, fst::FST, s::State)
+    nest!(ds, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
+end
+n_functiondef!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_functiondef!(DefaultStyle(style), fst, s)
+
+n_macro!(ds::DefaultStyle, fst::FST, s::State) = n_functiondef!(ds, fst, s)
+n_macro!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_macro!(DefaultStyle(style), fst, s)
 
 function n_string!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)

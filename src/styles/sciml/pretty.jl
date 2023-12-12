@@ -208,52 +208,6 @@ function p_unaryopcall(ds::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     t
 end
 
-function p_functiondef(ds::SciMLStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
-    t = FST(FunctionN, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    s.indent += s.opts.indent
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    s.indent -= s.opts.indent
-    if length(cst) > 3
-        if cst[3].fullspan == 0
-            n = pretty(style, cst[4], s)
-            if s.opts.join_lines_based_on_source
-                join_lines = t.endline == n.startline
-                join_lines && (add_node!(t, Whitespace(1), s))
-                add_node!(t, n, s, join_lines = join_lines)
-            else
-                add_node!(t, Whitespace(1), s)
-                add_node!(t, n, s, join_lines = true)
-            end
-        else
-            s.indent += s.opts.indent
-            n = pretty(style, cst[3], s, ignore_single_line = true)
-            s.opts.always_use_return && prepend_return!(n, s)
-            add_node!(t, n, s, max_padding = s.opts.indent)
-            s.indent -= s.opts.indent
-            add_node!(t, pretty(style, cst[4], s), s)
-        end
-    else
-        # function stub `function foo end`
-        n = pretty(style, cst[3], s)
-        if s.opts.join_lines_based_on_source
-            join_lines = t.endline == n.startline
-            join_lines && (add_node!(t, Whitespace(1), s))
-            add_node!(t, n, s, join_lines = join_lines)
-        else
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
-        end
-    end
-    t
-end
-
-function p_macro(ds::SciMLStyle, cst::CSTParser.EXPR, s::State)
-    p_functiondef(ds, cst, s)
-end
-
 function p_curly(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ss)
     if s.opts.yas_style_nesting
