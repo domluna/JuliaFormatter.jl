@@ -402,5 +402,34 @@
     }
         body
     end"""
-    @test format_text(str_, SciMLStyle(), margin=1) == str
+    @test format_text(str_, SciMLStyle(), margin = 1) == str
+
+    str_ = """
+    macro (p::CoevolveJumpAggregation{
+        T,
+        S,
+        F1,
+        F2,
+    })(integrator::AbstractSSAIntegrator) where {T, S, F1, F2 <: Union{Tuple, Nothing}}
+        body
+    end"""
+    str = """
+    macro (p::CoevolveJumpAggregation{
+            T,
+            S,
+            F1,
+            F2,
+    })(integrator::AbstractSSAIntegrator) where {
+            T,
+            S,
+            F1,
+            F2 <:
+            Union{
+                Tuple,
+                Nothing,
+            },
+    }
+        body
+    end"""
+    @test format_text(str_, SciMLStyle(), margin = 1) == str
 end

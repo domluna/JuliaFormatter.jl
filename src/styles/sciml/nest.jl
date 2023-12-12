@@ -89,3 +89,7 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
         end
     end
 end
+
+function n_macro!(ss::SciMLStyle, fst::FST, s::State)
+    n_functiondef!(ss, fst, s)
+end
