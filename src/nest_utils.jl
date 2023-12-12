@@ -47,11 +47,11 @@ end
 
 function add_indent!(fst::FST, s::State, indent)
     indent == 0 && return
-    lo = s.line_offset
     f = (fst::FST, s::State) -> begin
         fst.indent += indent
         return nothing
     end
+    lo = s.line_offset
     walk(f, fst, s)
     s.line_offset = lo
 end
