@@ -373,4 +373,34 @@
     #                               Foo
     #                              }
     @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
+
+    # https://github.com/SciML/JumpProcesses.jl/pull/362#discussion_r1375432275
+    str_ = """
+    function (p::CoevolveJumpAggregation{
+        T,
+        S,
+        F1,
+        F2,
+    })(integrator::AbstractSSAIntegrator) where {T, S, F1, F2 <: Union{Tuple, Nothing}}
+        body
+    end"""
+    str = """
+    function (p::CoevolveJumpAggregation{
+            T,
+            S,
+            F1,
+            F2,
+    })(integrator::AbstractSSAIntegrator) where {
+            T,
+            S,
+            F1,
+            F2 <:
+            Union{
+                Tuple,
+                Nothing,
+            },
+    }
+        body
+    end"""
+    @test format_text(str_, SciMLStyle(), margin=1) == str
 end
