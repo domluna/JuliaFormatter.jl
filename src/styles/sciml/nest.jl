@@ -60,21 +60,21 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
             extra_margin = fst.extra_margin,
         )
 
-        # base_indent = fst.indent
-        # closers = FST[]
-        # f = (fst::FST, s::State) -> begin
-        #     if is_closer(fst) && fst.indent == base_indent
-        #         push!(closers, fst)
-        #     end
-        #     fst.indent += s.opts.indent
-        #     return nothing
-        # end
-        # lo = s.line_offset
-        # walk(f, fst[3], s)
-        # s.line_offset = lo
-        # for c in closers
-        #     c.indent -= s.opts.indent
-        # end
+        base_indent = fst.indent
+        closers = FST[]
+        f = (fst::FST, s::State) -> begin
+            if is_closer(fst) && fst.indent == base_indent
+                push!(closers, fst)
+            end
+            fst.indent += s.opts.indent
+            return nothing
+        end
+        lo = s.line_offset
+        walk(f, fst[3], s)
+        s.line_offset = lo
+        for c in closers
+            c.indent -= s.opts.indent
+        end
     end
 end
 
