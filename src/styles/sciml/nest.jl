@@ -1,26 +1,23 @@
 for f in [
-    :n_typedcomprehension!,
-    :n_comprehension!,
+    :n_import!,
+    :n_using!,
+    :n_export!,
     :n_vcat!,
+    :n_ncat!,
     :n_typedvcat!,
-    :n_bracescat!,
+    :n_typedncat!,
+    :n_row!,
+    :n_nrow!,
+    :n_hcat!,
+    :n_comprehension!,
+    :n_typedcomprehension!,
     :n_generator!,
     :n_filter!,
     :n_flatten!,
-    :n_using!,
-    :n_export!,
-    :n_import!,
-    :n_chainopcall!,
-    :n_comparison!,
-    :n_for!,
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State)
         style = getstyle(ss)
-        if s.opts.yas_style_nesting
-            $f(YASStyle(style), fst, s)
-        else
-            $f(DefaultStyle(style), fst, s)
-        end
+        $f(YASStyle(style), fst, s)
     end
 end
 
@@ -63,21 +60,21 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
             extra_margin = fst.extra_margin,
         )
 
-        base_indent = fst.indent
-        closers = FST[]
-        f = (fst::FST, s::State) -> begin
-            if is_closer(fst) && fst.indent == base_indent
-                push!(closers, fst)
-            end
-            fst.indent += s.opts.indent
-            return nothing
-        end
-        lo = s.line_offset
-        walk(f, fst[3], s)
-        s.line_offset = lo
-        for c in closers
-            c.indent -= s.opts.indent
-        end
+        # base_indent = fst.indent
+        # closers = FST[]
+        # f = (fst::FST, s::State) -> begin
+        #     if is_closer(fst) && fst.indent == base_indent
+        #         push!(closers, fst)
+        #     end
+        #     fst.indent += s.opts.indent
+        #     return nothing
+        # end
+        # lo = s.line_offset
+        # walk(f, fst[3], s)
+        # s.line_offset = lo
+        # for c in closers
+        #     c.indent -= s.opts.indent
+        # end
     end
 end
 
@@ -91,7 +88,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
     nodes = fst.nodes::Vector
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     has_closer = is_closer(fst[end])
-    @info "here"
+    start_line_offset = s.line_offset
 
     if has_closer
         fst[end].indent = fst.indent
@@ -109,7 +106,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         false
     end
 
-    optimal_placeholders = find_optimal_placeholders_nest(fst, s.line_offset, s.opts.margin)
+    optimal_placeholders = find_optimal_placeholders_nest(fst, start_line_offset, s.opts.margin)
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)
@@ -175,6 +172,11 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         nest!(style, nodes, s, fst.indent, extra_margin = extra_margin)
     end
 
+    walk(unnest!(style), fst, s)
+
+    s.line_offset = start_line_offset
+    walk(increment_line_offset!, fst, s)
+
     return
 end
 
@@ -196,6 +198,21 @@ for f in [
             $f(YASStyle(style), fst, s)
         else
             _n_tuple!(style, fst, s)
+        end
+    end
+end
+
+for f in [
+    :n_chainopcall!,
+    :n_comparison!,
+    :n_for!,
+]
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+        style = getstyle(ss)
+        if s.opts.yas_style_nesting
+            $f(YASStyle(style), fst, s)
+        else
+            $f(DefaultStyle(style), fst, s)
         end
     end
 end

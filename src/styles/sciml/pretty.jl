@@ -77,11 +77,9 @@ for f in [
     :p_filter,
     :p_flatten,
 ]
-    for T in CST_T
-        @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
-            style = getstyle(ss)
-            $f(YASStyle(style), cst, s; kwargs...)
-        end
+    @eval function $f(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+        style = getstyle(ss)
+        $f(YASStyle(style), cst, s; kwargs...)
     end
 end
 

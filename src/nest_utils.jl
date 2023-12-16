@@ -241,7 +241,7 @@ function find_optimal_placeholders_nest(
     # Placeholder indices including start and end
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     fst_line_offset = fst.indent
-    @info "TYP" fst.typ start_line_offset
+    @info "TYP" fst.typ start_line_offset fst[1].val
 
     # Function to calculate the length of a segment
     segment_length =
