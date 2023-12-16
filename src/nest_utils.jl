@@ -201,22 +201,22 @@ end
 function find_all_segment_splits(n::Int, k::Int)
     res = NTuple{k,Int}[]
 
-    _bp = (t::Tuple{Vararg{Int}}, current_sum::Int) -> begin
-               if length(t) == k
-                   if current_sum == n
-                       push!(res, t)
-                   end
-                   return
-               end
+    _bp =
+        (t::Tuple{Vararg{Int}}, current_sum::Int) -> begin
+            if length(t) == k
+                if current_sum == n
+                    push!(res, t)
+                end
+                return
+            end
 
-               start_val = isempty(t) ? 1 : last(t)
-               max_val = n - current_sum - (k - length(t) - 1)
+            start_val = isempty(t) ? 1 : last(t)
+            max_val = n - current_sum - (k - length(t) - 1)
 
-               for i = start_val:min(n, max_val)
-                   _bp((t..., i), current_sum + i)
-               end
-           end
-
+            for i in start_val:min(n, max_val)
+                _bp((t..., i), current_sum + i)
+            end
+        end
 
     _bp(tuple(), 0)
 
@@ -330,7 +330,7 @@ function find_optimal_placeholders_nest(
     # Convert segments to placeholder indices
     optimal_placeholders = Int[]
     @info "old" placeholder_inds
-    for i = 1:length(segments)-1
+    for i in 1:length(segments)-1
         s2 = segments[i+1]
         i1 = first(s2)
         push!(optimal_placeholders, placeholder_inds[i1])

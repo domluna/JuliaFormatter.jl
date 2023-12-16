@@ -125,28 +125,22 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     @info "nesting placeholders" placeholder_inds
 
-
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                    si = findnext(
-                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
-                        nodes,
-                        i + 1,
-                    )
-                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
-                    if has_closer && !nested && n.startline == fst[end].startline
-                        # trailing types are automatically converted, undo this if
-                        # there is no nest and the closer is on the same in the
-                        # original source.
-                        if fst[i-1].typ === TRAILINGCOMMA ||
-                           fst[i-1].typ === TRAILINGSEMICOLON
-                            fst[i-1].val = ""
-                            fst[i-1].len = 0
-                        end
+                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                if has_closer && !nested && n.startline == fst[end].startline
+                    # trailing types are automatically converted, undo this if
+                    # there is no nest and the closer is on the same in the
+                    # original source.
+                    if fst[i-1].typ === TRAILINGCOMMA || fst[i-1].typ === TRAILINGSEMICOLON
+                        fst[i-1].val = ""
+                        fst[i-1].len = 0
                     end
+                end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
