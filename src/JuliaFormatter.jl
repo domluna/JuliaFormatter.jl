@@ -11,6 +11,7 @@ using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
 import Base: get, pairs
+using Combinatorics: permutations
 using CommonMark:
     AdmonitionRule,
     CodeBlock,

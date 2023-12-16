@@ -175,37 +175,14 @@ function nest_if_over_margin!(
     return false
 end
 
-function combos(elements::Tuple{Vararg{Int}})
-    # A helper function to generate permutations
-    function permute!(elements::Vector{Int}, start::Int, collector::Set{Vector{Int}})
-        if start == length(elements)
-            push!(collector, copy(elements))
-        else
-            seen = Set{Int}()
-            for i in start:length(elements)
-                if elements[i] ∉ seen
-                    elements[start], elements[i] = elements[i], elements[start]
-                    permute!(elements, start + 1, collector)
-                    elements[start], elements[i] = elements[i], elements[start]
-                    push!(seen, elements[i])
-                end
-            end
-        end
-    end
-
-    collector = Set{Vector{Int}}()
-    permute!(collect(elements), 1, collector)
-    return [tuple(perm...) for perm in collector]  # Convert back to tuples
-end
-
 function find_all_segment_splits(n::Int, k::Int)
-    res = NTuple{k,Int}[]
+    res = Vector{Int}[]
 
     _bp =
-        (t::Tuple{Vararg{Int}}, current_sum::Int) -> begin
+        (t::Vector{Int}, current_sum::Int) -> begin
             if length(t) == k
                 if current_sum == n
-                    push!(res, t)
+                    push!(res, copy(t))
                 end
                 return
             end
@@ -214,15 +191,17 @@ function find_all_segment_splits(n::Int, k::Int)
             max_val = n - current_sum - (k - length(t) - 1)
 
             for i in start_val:min(n, max_val)
-                _bp((t..., i), current_sum + i)
+                push!(t, i)
+                _bp(t, current_sum + i)
+                popfirst!(t)
             end
         end
 
-    _bp(tuple(), 0)
+    _bp(Int[], 0)
 
-    all_splits = NTuple{k,Int}[]
+    all_splits = Vector{Int}[]
     for r in res
-        for c in combos(r)
+        for c in unique(permutations(r))
             push!(all_splits, c)
         end
     end
@@ -273,7 +252,7 @@ function find_optimal_placeholders_nest(
             return [(i, i) for i in 1:N]
         end
 
-        f = (t::Tuple) -> begin
+        f = (t::Vector{Int}) -> begin
             local n = sum(t)
             local ranges = UnitRange{Int}[]
             local s = 1
