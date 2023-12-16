@@ -252,7 +252,7 @@ function find_optimal_placeholders_nest(
             return [(i, i) for i in 1:N]
         end
 
-        f = (t::Vector{Int}) -> begin
+        _f = (t::Vector{Int}) -> begin
             local n = sum(t)
             local ranges = UnitRange{Int}[]
             local s = 1
@@ -269,7 +269,7 @@ function find_optimal_placeholders_nest(
         min_diff = 1_000_000
         @info "all_splits" s all_splits
         for split in all_splits
-            ranges = f(split)
+            ranges = _f(split)
             lens = [dp[r[1], r[end]] for r in ranges]
             diff = maximum(lens) - minimum(lens)
             if s == 3
