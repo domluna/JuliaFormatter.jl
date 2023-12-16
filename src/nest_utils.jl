@@ -178,11 +178,17 @@ end
 function find_all_segment_splits(n::Int, k::Int)
     res = Vector{Int}[]
 
+    if n == k
+        return [fill(1, k)]
+    elseif k == 1
+        return [[n]]
+    end
+
     _bp =
         (t::Vector{Int}, current_sum::Int) -> begin
             if length(t) == k
                 if current_sum == n
-                    push!(res, copy(t))
+                    push!(res, t)
                 end
                 return
             end
@@ -191,9 +197,7 @@ function find_all_segment_splits(n::Int, k::Int)
             max_val = n - current_sum - (k - length(t) - 1)
 
             for i in start_val:min(n, max_val)
-                push!(t, i)
-                _bp(t, current_sum + i)
-                popfirst!(t)
+                _bp([t; i], current_sum + i)
             end
         end
 
@@ -270,17 +274,14 @@ function find_optimal_placeholders_nest(
         @info "all_splits" s all_splits
         for split in all_splits
             ranges = _f(split)
+            @info "" split ranges
             lens = [dp[r[1], r[end]] for r in ranges]
             diff = maximum(lens) - minimum(lens)
-            if s == 3
-                @info "debug" diff lens
-            end
             if diff < min_diff
                 min_diff = diff
                 best_split = ranges
             end
         end
-        # @info "" s best_split
         return best_split
     end
 
@@ -296,7 +297,6 @@ function find_optimal_placeholders_nest(
                 fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
             end
         end
-        # @info "" segments
         fits && break
     end
     @info "" segments
