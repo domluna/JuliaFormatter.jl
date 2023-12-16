@@ -1,13 +1,5 @@
 for f in [
-    :n_call!,
-    :n_curly!,
-    :n_ref!,
-    :n_macrocall!,
     :n_typedcomprehension!,
-    :n_tuple!,
-    :n_braces!,
-    :n_parameters!,
-    :n_invisbrackets!,
     :n_comprehension!,
     :n_vcat!,
     :n_typedvcat!,
@@ -21,7 +13,6 @@ for f in [
     :n_chainopcall!,
     :n_comparison!,
     :n_for!,
-    #:n_vect!
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State)
         style = getstyle(ss)
@@ -92,4 +83,125 @@ end
 
 function n_macro!(ss::SciMLStyle, fst::FST, s::State)
     n_functiondef!(ss, fst, s)
+end
+
+function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
+    style = getstyle(ss)
+    line_margin = s.line_offset + length(fst) + fst.extra_margin
+    nodes = fst.nodes::Vector
+    idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
+    has_closer = is_closer(fst[end])
+    @info "here"
+
+    if has_closer
+        fst[end].indent = fst.indent
+    end
+    if fst.typ !== TupleN || has_closer
+        fst.indent += s.opts.indent
+    end
+
+    # "foo(a, b, c)" is true if "foo" and "c" are on different lines
+    src_diff_line = if s.opts.join_lines_based_on_source
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    optimal_placeholders = find_optimal_placeholders_nest(fst, s.line_offset, s.opts.margin)
+
+    for i in optimal_placeholders
+        fst[i] = Newline(length = fst[i].len)
+    end
+
+    placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+    for (i, ph) in enumerate(placeholder_inds)
+        if i == 1 || i == length(placeholder_inds)
+            continue
+        end
+        fst[ph] = Whitespace(fst[ph].len)
+    end
+    placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+    @info "nesting placeholders" placeholder_inds
+
+
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+        for (i, n) in enumerate(nodes)
+            if n.typ === NEWLINE
+                s.line_offset = fst.indent
+            elseif n.typ === PLACEHOLDER
+                    si = findnext(
+                        n -> n.typ === PLACEHOLDER || n.typ === NEWLINE,
+                        nodes,
+                        i + 1,
+                    )
+                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    if has_closer && !nested && n.startline == fst[end].startline
+                        # trailing types are automatically converted, undo this if
+                        # there is no nest and the closer is on the same in the
+                        # original source.
+                        if fst[i-1].typ === TRAILINGCOMMA ||
+                           fst[i-1].typ === TRAILINGSEMICOLON
+                            fst[i-1].val = ""
+                            fst[i-1].len = 0
+                        end
+                    end
+            elseif n.typ === TRAILINGCOMMA
+                n.val = ","
+                n.len = 1
+                nest!(style, n, s)
+            elseif n.typ === TRAILINGSEMICOLON
+                n.val = ";"
+                n.len = 1
+                nest!(style, n, s)
+            elseif n.typ === INVERSETRAILINGSEMICOLON && !(
+                s.opts.join_lines_based_on_source &&
+                (fst.typ === Vcat || fst.typ === TypedVcat)
+            )
+                n.val = ""
+                n.len = 0
+                nest!(style, n, s)
+            elseif has_closer && (i == 1 || i == length(nodes))
+                nest!(style, n, s)
+            else
+                diff = fst.indent - fst[i].indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1
+                nest!(style, n, s)
+            end
+        end
+
+        if has_closer
+            s.line_offset = fst[end].indent + 1
+        end
+    else
+        extra_margin = fst.extra_margin
+        has_closer && (extra_margin += 1)
+        nest!(style, nodes, s, fst.indent, extra_margin = extra_margin)
+    end
+
+    return
+end
+
+for f in [
+    :n_tuple!,
+    :n_call!,
+    :n_curly!,
+    :n_macrocall!,
+    :n_ref!,
+    :n_vect!,
+    :n_braces!,
+    :n_parameters!,
+    :n_invisbrackets!,
+    :n_bracescat!,
+]
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+        style = getstyle(ss)
+        if s.opts.yas_style_nesting
+            $f(YASStyle(style), fst, s)
+        else
+            _n_tuple!(style, fst, s)
+        end
+    end
 end

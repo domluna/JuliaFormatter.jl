@@ -249,11 +249,11 @@ end
 n_using!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_using!(DefaultStyle(style), fst, s)
 
-@inline n_export!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
+n_export!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
 n_export!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_export!(DefaultStyle(style), fst, s)
 
-@inline n_import!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
+n_import!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
 n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_import!(DefaultStyle(style), fst, s)
 
@@ -345,47 +345,47 @@ end
 n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s)
 
-@inline n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_vect!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_vect!(DefaultStyle(style), fst, s)
 
-@inline n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_vcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_vcat!(DefaultStyle(style), fst, s)
 
-@inline n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_braces!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_braces!(DefaultStyle(style), fst, s)
 
-@inline n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_bracescat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_bracescat!(DefaultStyle(style), fst, s)
 
-@inline n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_parameters!(DefaultStyle(style), fst, s)
 
-@inline n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s)
 
-@inline n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_call!(DefaultStyle(style), fst, s)
 
-@inline n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_curly!(DefaultStyle(style), fst, s)
 
-@inline n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_macrocall!(DefaultStyle(style), fst, s)
 
-@inline n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_ref!(DefaultStyle(style), fst, s)
 
-@inline n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s)
 
@@ -449,8 +449,7 @@ end
 n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comprehension!(DefaultStyle(style), fst, s)
 
-@inline n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) =
-    n_comprehension!(ds, fst, s)
+n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) = n_comprehension!(ds, fst, s)
 n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
 
@@ -524,12 +523,12 @@ end
 n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_generator!(DefaultStyle(style), fst, s)
 
-@inline n_filter!(ds::DefaultStyle, fst::FST, s::State) =
+n_filter!(ds::DefaultStyle, fst::FST, s::State) =
     n_generator!(ds, fst, s, indent = fst.indent)
 n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_filter!(DefaultStyle(style), fst, s)
 
-@inline n_flatten!(ds::DefaultStyle, fst::FST, s::State) =
+n_flatten!(ds::DefaultStyle, fst::FST, s::State) =
     n_generator!(ds, fst, s, indent = fst.indent)
 n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_flatten!(DefaultStyle(style), fst, s)
@@ -804,7 +803,7 @@ end
 n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s)
 
-@inline n_let!(ds::DefaultStyle, fst::FST, s::State) = n_for!(ds, fst, s)
+n_let!(ds::DefaultStyle, fst::FST, s::State) = n_for!(ds, fst, s)
 n_let!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_let!(DefaultStyle(style), fst, s)
 
@@ -890,12 +889,12 @@ end
 n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s, indent = indent)
 
-@inline n_comparison!(ds::DefaultStyle, fst::FST, s::State) =
+n_comparison!(ds::DefaultStyle, fst::FST, s::State) =
     n_block!(ds, fst, s, indent = s.line_offset)
 n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_comparison!(DefaultStyle(style), fst, s)
 
-@inline n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) =
+n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) =
     n_block!(ds, fst, s, indent = s.line_offset)
 n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_chainopcall!(DefaultStyle(style), fst, s)

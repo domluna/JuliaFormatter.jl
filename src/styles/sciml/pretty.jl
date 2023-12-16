@@ -64,28 +64,47 @@ for f in [
     :p_import,
     :p_using,
     :p_export,
-    :p_invisbrackets, #:p_curly, #:p_braces,
-    :p_call,
-    :p_tuple,
     :p_vcat,
     :p_ncat,
     :p_typedvcat,
     :p_typedncat,
-    :p_ref,
     :p_row,
     :p_nrow,
     :p_hcat,
     :p_comprehension,
-    :p_typedcomprehension, #:p_whereopcall,
+    :p_typedcomprehension,
     :p_generator,
     :p_filter,
-    :p_flatten, #:p_vect
+    :p_flatten,
+]
+    for T in CST_T
+        @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
+            style = getstyle(ss)
+            $f(YASStyle(style), cst, s; kwargs...)
+        end
+    end
+end
+
+for f in [
+    :p_tuple,
+    :p_call,
+    :p_curly,
+    :p_ref,
+    :p_braces,
+    :p_vect,
+    :p_parameters,
+    :p_invisbrackets,
+    :p_bracescat,
 ]
     Ts = f === :p_tuple ? TUPLE_T : CST_T
     for T in Ts
         @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
             style = getstyle(ss)
-            $f(YASStyle(style), cst, s; kwargs...)
+            if s.opts.yas_style_nesting
+                $f(YASStyle(style), cst, s; kwargs...)
+            else
+                $f(DefaultStyle(style), cst, s; kwargs...)
+            end
         end
     end
 end
@@ -206,13 +225,4 @@ function p_unaryopcall(ds::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
         add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
     t
-end
-
-function p_curly(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ss)
-    if s.opts.yas_style_nesting
-        p_curly(YASStyle(style), cst, s)
-    else
-        p_curly(DefaultStyle(style), cst, s)
-    end
 end

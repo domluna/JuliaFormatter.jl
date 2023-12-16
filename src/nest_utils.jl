@@ -174,3 +174,167 @@ function nest_if_over_margin!(
     nest!(style, fst[idx], s)
     return false
 end
+
+function combos(elements::Tuple{Vararg{Int}})
+    # A helper function to generate permutations
+    function permute!(elements::Vector{Int}, start::Int, collector::Set{Vector{Int}})
+        if start == length(elements)
+            push!(collector, copy(elements))
+        else
+            seen = Set{Int}()
+            for i in start:length(elements)
+                if elements[i] ∉ seen
+                    elements[start], elements[i] = elements[i], elements[start]
+                    permute!(elements, start + 1, collector)
+                    elements[start], elements[i] = elements[i], elements[start]
+                    push!(seen, elements[i])
+                end
+            end
+        end
+    end
+
+    collector = Set{Vector{Int}}()
+    permute!(collect(elements), 1, collector)
+    return [tuple(perm...) for perm in collector]  # Convert back to tuples
+end
+
+function find_all_segment_splits(n::Int, k::Int)
+    res = NTuple{k,Int}[]
+
+    _bp = (t::Tuple{Vararg{Int}}, current_sum::Int) -> begin
+               if length(t) == k
+                   if current_sum == n
+                       push!(res, t)
+                   end
+                   return
+               end
+
+               start_val = isempty(t) ? 1 : last(t)
+               max_val = n - current_sum - (k - length(t) - 1)
+
+               for i = start_val:min(n, max_val)
+                   _bp((t..., i), current_sum + i)
+               end
+           end
+
+
+    _bp(tuple(), 0)
+
+    all_splits = NTuple{k,Int}[]
+    for r in res
+        for c in combos(r)
+            push!(all_splits, c)
+        end
+    end
+
+    return all_splits
+end
+
+"""
+Finds the optimal placeholders to turn into a newlines such that the length of the arguments on each line is as close as possible while following margin constraints.
+"""
+function find_optimal_placeholders_nest(
+    fst::FST,
+    start_line_offset::Int,
+    max_margin::Int,
+)::Vector{Int}
+    # Placeholder indices including start and end
+    placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+    fst_line_offset = fst.indent
+    @info "TYP" fst.typ start_line_offset
+
+    # Function to calculate the length of a segment
+    segment_length =
+        (start_idx::Int, end_idx::Int) -> begin
+            if placeholder_inds[end] == end_idx
+                sum(length.(fst[start_idx:end])) + fst.extra_margin
+            else
+                sum(length.(fst[start_idx:end_idx-1]))
+            end
+        end
+
+    n = length(placeholder_inds)
+    dp = fill(0, n - 1, n - 1)
+
+    # Initialize the lengths of segments with single placeholders
+    for i in 1:n-1
+        for j in i+1:n
+            len = segment_length(placeholder_inds[i], placeholder_inds[j])
+            dp[i, j-1] = len
+        end
+    end
+
+    N = size(dp, 1)
+
+    function find_best_segments(s::Int)
+        if s == 1
+            return [(1, N)]
+        elseif s == N
+            return [(i, i) for i in 1:N]
+        end
+
+        f = (t::Tuple) -> begin
+            local n = sum(t)
+            local ranges = UnitRange{Int}[]
+            local s = 1
+            for tt in t
+                push!(ranges, s:s+tt-1)
+                s += tt
+            end
+            ranges
+        end
+
+        all_splits = find_all_segment_splits(N, s)
+
+        best_split = UnitRange{Int}[]
+        min_diff = 1_000_000
+        @info "all_splits" s all_splits
+        for split in all_splits
+            ranges = f(split)
+            lens = [dp[r[1], r[end]] for r in ranges]
+            diff = maximum(lens) - minimum(lens)
+            if s == 3
+                @info "debug" diff lens
+            end
+            if diff < min_diff
+                min_diff = diff
+                best_split = ranges
+            end
+        end
+        # @info "" s best_split
+        return best_split
+    end
+
+    # Calculate best splits for each number of segments s
+    segments = Tuple{Int,Int}[]
+    for s in 2:N
+        segments = find_best_segments(s)
+        fits = true
+        for (i, s) in enumerate(segments)
+            if i == 1
+                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+            else
+                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+            end
+        end
+        # @info "" segments
+        fits && break
+    end
+    @info "" segments
+
+    if length(segments) == length(placeholder_inds) - 1
+        return placeholder_inds
+    end
+
+    # ex: (ph, arg, ph, arg, ph, arg, ph)
+    # Convert segments to placeholder indices
+    optimal_placeholders = Int[]
+    @info "old" placeholder_inds
+    for i = 1:length(segments)-1
+        s2 = segments[i+1]
+        i1 = first(s2)
+        push!(optimal_placeholders, placeholder_inds[i1])
+    end
+    @info "" optimal_placeholders
+    return optimal_placeholders
+end
