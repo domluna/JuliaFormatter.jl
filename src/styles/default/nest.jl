@@ -688,7 +688,6 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
     src_diff_line =
         s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
 
-
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
