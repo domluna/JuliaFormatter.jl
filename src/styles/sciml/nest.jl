@@ -107,7 +107,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
     end
 
     optimal_placeholders =
-        find_optimal_placeholders_nest(fst, start_line_offset, s.opts.margin)
+        find_optimal_nest_placeholders(fst, start_line_offset, s.opts.margin)
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)

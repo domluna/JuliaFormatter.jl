@@ -214,13 +214,16 @@ end
 """
 Finds the optimal placeholders to turn into a newlines such that the length of the arguments on each line is as close as possible while following margin constraints.
 """
-function find_optimal_placeholders_nest(
+function find_optimal_nest_placeholders(
     fst::FST,
     start_line_offset::Int,
     max_margin::Int,
 )::Vector{Int}
     # Placeholder indices including start and end
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+    if length(placeholder_inds) <= 1
+        return placeholder_inds
+    end
     fst_line_offset = fst.indent
     @info "TYP" fst.typ start_line_offset fst[1].val
 
