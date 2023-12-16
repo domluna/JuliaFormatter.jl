@@ -184,24 +184,22 @@ function find_all_segment_splits(n::Int, k::Int)
         return [[n]]
     end
 
-    _bp =
-        (t::Vector{Int}, current_sum::Int) -> begin
-            if length(t) == k
-                if current_sum == n
-                    push!(res, t)
-                end
-                return
+    function _backtrack(t::Vector{Int}, current_sum::Int)
+        if length(t) == k
+            if current_sum == n
+                push!(res, t)
             end
-
-            start_val = isempty(t) ? 1 : last(t)
-            max_val = n - current_sum - (k - length(t) - 1)
-
-            for i in start_val:min(n, max_val)
-                _bp([t; i], current_sum + i)
-            end
+            return
         end
 
-    _bp(Int[], 0)
+        start_val = isempty(t) ? 1 : last(t)
+        max_val = n - current_sum - (k - length(t) - 1)
+
+        for i in start_val:min(n, max_val)
+            _backtrack([t; i], current_sum + i)
+        end
+    end
+    _backtrack(Int[], 0)
 
     all_splits = Vector{Int}[]
     for r in res
