@@ -173,8 +173,8 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         nest!(style, nodes, s, fst.indent, extra_margin = extra_margin)
     end
 
-    walk(unnest!(style), fst, s)
-
+    s.line_offset = start_line_offset
+    walk(unnest!(style; dedent = false), fst, s)
     s.line_offset = start_line_offset
     walk(increment_line_offset!, fst, s)
 

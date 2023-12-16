@@ -110,12 +110,12 @@ function dedent!(style::YASStyle, fst::FST, s::State)
     end
 end
 
-function unnest!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
+function unnest!(style::S, fst::FST, s::State; dedent::Bool) where {S<:AbstractStyle}
     if is_leaf(fst)
         s.line_offset += length(fst)
     end
 
-    dedent!(style, fst, s)
+    dedent && dedent!(style, fst, s)
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
@@ -126,9 +126,9 @@ function unnest!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
     return
 end
 
-function unnest!(style::S) where {S<:AbstractStyle}
+function unnest!(style::S; dedent::Bool) where {S<:AbstractStyle}
     (fst::FST, s::State) -> begin
-        unnest!(style, fst, s)
+        unnest!(style, fst, s; dedent = dedent)
     end
 end
 

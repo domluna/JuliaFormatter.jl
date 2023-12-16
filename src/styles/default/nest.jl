@@ -766,7 +766,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
                 fst[i1] = Whitespace(1)
                 if indent_nest || style isa YASStyle
                     fst[i2] = Whitespace(0)
-                    walk(unnest!(style), rhs, s)
+                    walk(unnest!(style; dedent = true), rhs, s)
                 end
             end
         end
