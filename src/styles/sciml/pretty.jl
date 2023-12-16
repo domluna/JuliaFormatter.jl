@@ -84,7 +84,6 @@ for f in [
 end
 
 for f in [
-    :p_tuple,
     :p_call,
     :p_curly,
     :p_ref,
@@ -94,17 +93,28 @@ for f in [
     :p_invisbrackets,
     :p_bracescat,
 ]
-    Ts = f === :p_tuple ? TUPLE_T : CST_T
-    for T in Ts
-        @eval function $f(ss::SciMLStyle, cst::$T, s::State; kwargs...)
-            style = getstyle(ss)
-            if s.opts.yas_style_nesting
-                $f(YASStyle(style), cst, s; kwargs...)
-            else
-                $f(DefaultStyle(style), cst, s; kwargs...)
-            end
+    @eval function $f(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+        style = getstyle(ss)
+        if s.opts.yas_style_nesting
+            $f(YASStyle(style), cst, s; kwargs...)
+        else
+            $f(DefaultStyle(style), cst, s; kwargs...)
         end
     end
+end
+
+function p_tuple(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+    style = getstyle(ss)
+    if s.opts.yas_style_nesting
+        p_tuple(YASStyle(style), cst, s; kwargs...)
+    else
+        p_tuple(DefaultStyle(style), cst, s; kwargs...)
+    end
+end
+
+function p_tuple(ss::SciMLStyle, nodes::Vector{CSTParser.EXPR}, s::State; kwargs...)
+    style = getstyle(ss)
+    p_tuple(YASStyle(style), nodes, s; kwargs...)
 end
 
 function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
