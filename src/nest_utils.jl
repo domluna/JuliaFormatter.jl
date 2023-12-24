@@ -253,6 +253,7 @@ function find_optimal_nest_placeholders(
         push!(optimal_placeholders, optinds...)
     end
 
+    @info "optimal_placeholders" optimal_placeholders
     return optimal_placeholders
 end
 
@@ -283,6 +284,8 @@ function find_optimal_nest_placeholders(
             dp[i, j-1] = len
         end
     end
+
+    @info "" dp placeholder_inds
 
     N = size(dp, 1)
 
@@ -337,10 +340,11 @@ function find_optimal_nest_placeholders(
         end
         fits && break
     end
-    @info "" segments
+    @info "segments" segments placeholder_inds
 
-    if length(segments) == length(placeholder_inds) - 1
-        return placeholder_inds
+    # if it's one segment it means it all fits.
+    if length(segments) <= 1
+        return Int[]
     end
 
     # ex: (ph, arg, ph, arg, ph, arg, ph)
