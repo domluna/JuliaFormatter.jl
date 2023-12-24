@@ -175,7 +175,7 @@ end
 p_file(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_file(DefaultStyle(style), cst, s)
 
-@inline function p_nonstdidentifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_nonstdidentifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(NonStdIdentifier, cst, nspaces(s))
     for a in cst.args::Vector{CSTParser.EXPR}
@@ -186,7 +186,7 @@ end
 p_nonstdidentifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_nonstdidentifier(DefaultStyle(style), cst, s)
 
-@inline function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
     FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val::AbstractString)
@@ -194,7 +194,7 @@ end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
-@inline function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
 
@@ -205,7 +205,7 @@ end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
-@inline function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     FST(KEYWORD, loc[2], loc[1], loc[1], cst.val::AbstractString)
@@ -213,7 +213,7 @@ end
 p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
-@inline function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     val = if cst.val === nothing && cst.head === :DOT

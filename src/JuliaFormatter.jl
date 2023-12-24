@@ -51,7 +51,7 @@ end
 
 abstract type AbstractStyle end
 
-@inline options(s::AbstractStyle) = NamedTuple()
+options(s::AbstractStyle) = NamedTuple()
 
 struct NoopStyle <: AbstractStyle end
 

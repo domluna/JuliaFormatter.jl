@@ -174,17 +174,17 @@ function FST(
     )
 end
 
-@inline function Base.setindex!(fst::FST, node::FST, ind::Int)
+function Base.setindex!(fst::FST, node::FST, ind::Int)
     nodes = fst.nodes::Vector{FST}
     fst.len -= nodes[ind].len
     nodes[ind] = node
     fst.len += node.len
 end
-@inline Base.getindex(fst::FST, inds...) = (fst.nodes::Vector{FST})[inds...]
-@inline Base.lastindex(fst::FST) = length(fst.nodes::Vector{FST})
-@inline Base.firstindex(fst::FST) = 1
-@inline Base.length(fst::FST) = fst.len
-@inline function Base.iterate(fst::FST, state = 1)
+Base.getindex(fst::FST, inds...) = (fst.nodes::Vector{FST})[inds...]
+Base.lastindex(fst::FST) = length(fst.nodes::Vector{FST})
+Base.firstindex(fst::FST) = 1
+Base.length(fst::FST) = fst.len
+function Base.iterate(fst::FST, state = 1)
     nodes = fst.nodes::Vector{FST}
     if state > length(nodes::Vector{FST})
         return nothing
@@ -192,21 +192,21 @@ end
     return nodes[state], state + 1
 end
 
-@inline function Base.insert!(fst::FST, ind::Int, node::FST)
+function Base.insert!(fst::FST, ind::Int, node::FST)
     insert!(fst.nodes::Vector{FST}, ind, node)
     fst.len += node.len
     return
 end
 
-@inline Newline(; length = 0, nest_behavior = AllowNest) =
+Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)
-@inline Semicolon() =
+Semicolon() =
     FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
-@inline TrailingComma() =
+TrailingComma() =
     FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-@inline TrailingSemicolon() =
+TrailingSemicolon() =
     FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-@inline InverseTrailingSemicolon() = FST(
+InverseTrailingSemicolon() = FST(
     INVERSETRAILINGSEMICOLON,
     -1,
     -1,
@@ -220,36 +220,36 @@ end
     -1,
     nothing,
 )
-@inline Whitespace(n) =
+Whitespace(n) =
     FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
-@inline Placeholder(n) =
+Placeholder(n) =
     FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
-@inline Notcode(startline, endline) =
+Notcode(startline, endline) =
     FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-@inline InlineComment(line) =
+InlineComment(line) =
     FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 
-@inline must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
-@inline cant_nest(fst::FST) = fst.nest_behavior === NeverNest
-@inline can_nest(fst::FST) = fst.nest_behavior === AllowNest
+must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+can_nest(fst::FST) = fst.nest_behavior === AllowNest
 
-@inline is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
-@inline is_leaf(fst::FST) = fst.nodes === nothing
+is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
+is_leaf(fst::FST) = fst.nodes === nothing
 
-@inline is_punc(cst::CSTParser.EXPR) = CSTParser.ispunctuation(cst)
-@inline is_punc(fst::FST) = fst.typ === PUNCTUATION
+is_punc(cst::CSTParser.EXPR) = CSTParser.ispunctuation(cst)
+is_punc(fst::FST) = fst.typ === PUNCTUATION
 
-@inline is_end(x::CSTParser.EXPR) = x.head === :END && x.val == "end"
-@inline is_end(x::FST) = x.typ === KEYWORD && x.val == "end"
+is_end(x::CSTParser.EXPR) = x.head === :END && x.val == "end"
+is_end(x::FST) = x.typ === KEYWORD && x.val == "end"
 
-@inline is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
+is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 
-@inline is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
-@inline is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
+is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
+is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
-@inline is_circumflex_accent(x::CSTParser.EXPR) =
+is_circumflex_accent(x::CSTParser.EXPR) =
     CSTParser.isoperator(x) && endswith(CSTParser.valof(x)::String, "^")
-@inline is_fwdfwd_slash(x::CSTParser.EXPR) =
+is_fwdfwd_slash(x::CSTParser.EXPR) =
     CSTParser.isoperator(x) && endswith(CSTParser.valof(x)::String, "//")
 
 # TODO: fix this
@@ -264,7 +264,7 @@ function is_multiline(fst::FST)
     )
 end
 
-@inline is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
+is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
 function is_macrodoc(cst::CSTParser.EXPR)
     cst.head === :macrocall &&
@@ -430,7 +430,7 @@ function get_args(args::Nothing)
     return CSTParser.EXPR[]
 end
 
-@inline n_args(x) = length(get_args(x))
+n_args(x) = length(get_args(x))
 
 """
     add_node!(
@@ -693,7 +693,7 @@ function add_node!(
     nothing
 end
 
-@inline function is_prev_newline(fst::FST)
+function is_prev_newline(fst::FST)
     if fst.typ === NEWLINE
         return true
     elseif is_leaf(fst) || length(fst.nodes::Vector) == 0
@@ -707,7 +707,7 @@ end
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
-@inline function length_to(fst::FST, ntyps; start::Int = 1)
+function length_to(fst::FST, ntyps; start::Int = 1)
     fst.typ in ntyps && return 0, true
     is_leaf(fst) && return length(fst), false
     len = 0
@@ -720,14 +720,14 @@ Returns the length to any node type in `ntyps` based off the `start` index.
     return len, false
 end
 
-@inline is_closer(fst::FST) =
+is_closer(fst::FST) =
     fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
-@inline is_closer(cst::CSTParser.EXPR) =
+is_closer(cst::CSTParser.EXPR) =
     cst.head === :RBRACE || cst.head === :RPAREN || cst.head === :RSQUARE
 
-@inline is_opener(fst::FST) =
+is_opener(fst::FST) =
     fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
-@inline is_opener(cst::CSTParser.EXPR) =
+is_opener(cst::CSTParser.EXPR) =
     cst.head === :LBRACE || cst.head === :LPAREN || cst.head === :LSQUARE
 
 function is_iterable(x::CSTParser.EXPR)
