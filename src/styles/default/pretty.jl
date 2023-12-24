@@ -361,12 +361,7 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
     String(take!(buf))
 end
 
-@inline function p_literal(
-    ds::DefaultStyle,
-    cst::CSTParser.EXPR,
-    s::State;
-    from_docstring = false,
-)
+function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstring = false)
     loc = cursor_loc(s)
     if !is_str_or_cmd(cst)
         (val = cst.val) === nothing && return FST(LITERAL, loc[2], loc[1], loc[1], "")

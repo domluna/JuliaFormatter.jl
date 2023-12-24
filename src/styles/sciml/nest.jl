@@ -120,8 +120,6 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         end
         fst[ph] = Whitespace(fst[ph].len)
     end
-    placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    @info "nesting placeholders" placeholder_inds
 
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(nodes)

@@ -219,18 +219,54 @@ function find_optimal_nest_placeholders(
     start_line_offset::Int,
     max_margin::Int,
 )::Vector{Int}
-    # Placeholder indices including start and end
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     if length(placeholder_inds) <= 1
         return placeholder_inds
     end
-    fst_line_offset = fst.indent
-    @info "TYP" fst.typ start_line_offset fst[1].val
+    newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
 
+    placeholder_groups = Vector{Int}[]
+    i = 1
+    current_group = Int[]
+    for ind in placeholder_inds
+        if i > length(newline_inds) || ind < newline_inds[i]
+            push!(current_group, ind)
+        else
+            push!(placeholder_groups, current_group)
+            current_group = Int[ind]
+            i += 1
+        end
+    end
+    push!(placeholder_groups, current_group)
+
+    @info "groups" placeholder_groups
+
+    optimal_placeholders = Int[]
+    for (i, g) in enumerate(placeholder_groups)
+        optinds = find_optimal_nest_placeholders(
+            fst,
+            g,
+            start_line_offset,
+            max_margin,
+            last_group = i == length(placeholder_groups),
+        )
+        push!(optimal_placeholders, optinds...)
+    end
+
+    return optimal_placeholders
+end
+
+function find_optimal_nest_placeholders(
+    fst::FST,
+    placeholder_inds::Vector{Int},
+    initial_offset::Int,
+    max_margin::Int;
+    last_group::Bool = false,
+)::Vector{Int}
     # Function to calculate the length of a segment
     segment_length =
         (start_idx::Int, end_idx::Int) -> begin
-            if placeholder_inds[end] == end_idx
+            if placeholder_inds[end] == end_idx && last_group
                 sum(length.(fst[start_idx:end])) + fst.extra_margin
             else
                 sum(length.(fst[start_idx:end_idx-1]))
@@ -271,11 +307,11 @@ function find_optimal_nest_placeholders(
         all_splits = find_all_segment_splits(N, s)
 
         best_split = UnitRange{Int}[]
-        min_diff = 1_000_000
-        @info "all_splits" s all_splits
+        min_diff = 1_000_000 # big number!
+        # @info "all_splits" s all_splits
         for split in all_splits
             ranges = _f(split)
-            @info "" split ranges
+            # @info "" split ranges
             lens = [dp[r[1], r[end]] for r in ranges]
             diff = maximum(lens) - minimum(lens)
             if diff < min_diff
@@ -286,9 +322,10 @@ function find_optimal_nest_placeholders(
         return best_split
     end
 
+    fst_line_offset = fst.indent
     # Calculate best splits for each number of segments s
     segments = Tuple{Int,Int}[]
-    for s in 2:N
+    for s in 1:N
         segments = find_best_segments(s)
         fits = true
         for (i, s) in enumerate(segments)
@@ -309,12 +346,10 @@ function find_optimal_nest_placeholders(
     # ex: (ph, arg, ph, arg, ph, arg, ph)
     # Convert segments to placeholder indices
     optimal_placeholders = Int[]
-    @info "old" placeholder_inds
     for i in 1:length(segments)-1
         s2 = segments[i+1]
         i1 = first(s2)
         push!(optimal_placeholders, placeholder_inds[i1])
     end
-    @info "" optimal_placeholders
     return optimal_placeholders
 end
