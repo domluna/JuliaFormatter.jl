@@ -604,7 +604,7 @@ begin
     a = 10
     b = 20
     begin
-       # another inent
+       # another indent
         z = 33
     end
 
@@ -623,7 +623,7 @@ begin
     a = 10
     b = 20
     begin
-        # another inent
+        # another indent
         z = 33
     end
 
