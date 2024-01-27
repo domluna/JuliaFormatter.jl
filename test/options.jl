@@ -2521,4 +2521,29 @@
         @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
         @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
     end
+    @testset "disallow single string arg nesting" begin
+
+        s1 = raw"""
+        function_call(
+            "String argument"
+        )
+        [array_item(
+            "String item"
+        )]
+        {key => value(
+            "String value"
+        )}
+        """
+        s2 = raw"""
+        function_call("String argument")
+        [
+          array_item("String item"),
+        ]
+        {
+          key =>
+            value("String value"),
+        }
+        """
+        @test fmt(s1, 2, 1, disallow_single_string_arg_nesting = true) == s2
+    end
 end
