@@ -988,7 +988,13 @@ end
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
-function unnestable_node(cst::CSTParser.EXPR)
+function unnestable_node(
+    cst::CSTParser.EXPR,
+    disallow_single_string_arg_nesting::Bool = false,
+)
+    if disallow_single_string_arg_nesting && is_str_or_cmd(cst)
+        return true
+    end
     cst.head === :tuple && return true
     cst.head === :vect && return true
     cst.head === :braces && return true

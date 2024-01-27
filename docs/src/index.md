@@ -535,6 +535,28 @@ if !b1
 end
 ```
 
+### `disallow_single_string_arg_nesting`
+
+Prevents the nesting of a single string argument `"arg"` in parenthesis, brackets, and curly braces.
+
+```julia
+# Without `disallow_single_string_arg_nesting`:
+function_call(
+    "String argument"
+)
+[array_item(
+    "String item"
+)]
+{key => value(
+    "String value"
+)}
+
+# With `disallow_single_string_arg_nesting` enabled:
+function_call("String argument")
+[array_item("String item")]
+{key => value("String value")}
+```
+
 ## File Options
 
 ### `overwrite`

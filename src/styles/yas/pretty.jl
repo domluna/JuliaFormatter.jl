@@ -513,7 +513,11 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     t = FST(MacroCall, cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
     has_closer = is_closer(cst[end])
 
     !has_closer && (t.typ = MacroBlock)

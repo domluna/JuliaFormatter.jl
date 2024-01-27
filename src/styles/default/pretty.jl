@@ -623,7 +623,11 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(MacroCall, cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
     has_closer = is_closer(cst[end])
 
     !has_closer && (t.typ = MacroBlock)
@@ -1657,7 +1661,11 @@ function p_whereopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, Whitespace(1), s)
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
 
     curly_ctx =
         cst.parent.head === :curly ||
@@ -1769,7 +1777,11 @@ function p_curly(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
     if nest
@@ -1801,7 +1813,11 @@ function p_call(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
 
     if nest
         add_node!(t, Placeholder(0), s)
@@ -1875,7 +1891,11 @@ function p_tuple(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(TupleN, cst, nspaces(s))
 
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
 
     for (i, a) in enumerate(cst)
         n = if is_binary(a) && a[2].val == "="
@@ -1912,7 +1932,11 @@ p_tuple(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_braces(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Braces, cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
+    nest =
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            unnestable_node(cst[2], s.opts.disallow_single_string_arg_nesting)
+        )
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1938,7 +1962,11 @@ p_braces(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(BracesCat, cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
+    nest =
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            unnestable_node(cst[2], s.opts.disallow_single_string_arg_nesting)
+        )
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -1965,7 +1993,11 @@ p_bracescat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_vect(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Vect, cst, nspaces(s))
-    nest = length(cst) > 2 && !(length(cst) == 3 && unnestable_node(cst[2]))
+    nest =
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            unnestable_node(cst[2], s.opts.disallow_single_string_arg_nesting)
+        )
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -2110,7 +2142,11 @@ p_as(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(RefN, cst, nspaces(s))
-    nest = length(cst) > 5 && !(length(cst) == 5 && unnestable_node(cst[3]))
+    nest =
+        length(cst) > 5 && !(
+            length(cst) == 5 &&
+            unnestable_node(cst[3], s.opts.disallow_single_string_arg_nesting)
+        )
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(cst)
@@ -2141,7 +2177,11 @@ function p_vcat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Vcat, cst, nspaces(s))
     st = cst.head === :vcat ? 1 : 2
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
 
     for (i, a) in enumerate(cst)
         n = pretty(style, a, s)
@@ -2211,7 +2251,11 @@ function p_ncat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     t = FST(Ncat, cst, nspaces(s))
     st = cst.head === :ncat ? 2 : 3
     args = get_args(cst)
-    nest = length(args) > 0 && !(length(args) == 1 && unnestable_node(args[1]))
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+        )
     n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
 
     for (i, a) in enumerate(cst)
