@@ -239,7 +239,7 @@ function find_optimal_nest_placeholders(
     end
     push!(placeholder_groups, current_group)
 
-    @info "groups" placeholder_groups
+    # @info "groups" placeholder_groups
 
     optimal_placeholders = Int[]
     for (i, g) in enumerate(placeholder_groups)
@@ -253,7 +253,7 @@ function find_optimal_nest_placeholders(
         push!(optimal_placeholders, optinds...)
     end
 
-    @info "optimal_placeholders" optimal_placeholders
+    # @info "optimal_placeholders" optimal_placeholders
     return optimal_placeholders
 end
 
@@ -285,7 +285,7 @@ function find_optimal_nest_placeholders(
         end
     end
 
-    @info "" dp placeholder_inds
+    # @info "" dp placeholder_inds
 
     N = size(dp, 1)
 
@@ -340,7 +340,7 @@ function find_optimal_nest_placeholders(
         end
         fits && break
     end
-    @info "segments" segments placeholder_inds
+    # @info "segments" segments placeholder_inds
 
     # if it's one segment it means it all fits.
     if length(segments) <= 1

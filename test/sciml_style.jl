@@ -4,8 +4,8 @@
            m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     formatted_str = raw"""
-    @noinline require_complete(m::Matching) = m.inv_match === nothing &&
-                                              throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
+    @noinline require_complete(m::Matching) = m.inv_match === nothing && throw(
+        ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     @test format_text(str, SciMLStyle()) == formatted_str
 
@@ -35,8 +35,7 @@
     """
     formatted_str = raw"""
     function BipartiteGraph(fadj::AbstractVector,
-            badj::Union{AbstractVector, Integer} = maximum(maximum, fadj);
-            metadata = nothing)
+            badj::Union{AbstractVector, Integer} = maximum(maximum, fadj); metadata = nothing)
         BipartiteGraph(mapreduce(length, +, fadj; init = 0), fadj, badj, metadata)
     end
     """
@@ -68,11 +67,12 @@
 
     formatted_str = raw"""
     function my_large_function(argument1, argument2,
-        argument3, argument4,
-        argument5, x, y, z)
+            argument3, argument4,
+            argument5, x, y, z)
         foo(x) + goo(y)
     end
     """
+    @test format_text(str, SciMLStyle()) == formatted_str
 
     formatted_str_yas_nesting = raw"""
     function my_large_function(argument1, argument2,
@@ -81,7 +81,6 @@
         foo(x) + goo(y)
     end
     """
-
     @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
           formatted_str_yas_nesting
 
@@ -110,7 +109,8 @@
     """
 
     formatted_str1 = raw"""
-    Dict{Int, Int}(1 => 2,
+    Dict{Int, Int}(
+        1 => 2,
         3 => 4)
     """
 
@@ -131,7 +131,8 @@
     """
 
     formatted_str1 = raw"""
-    SVector(1.0,
+    SVector(
+        1.0,
         2.0)
     """
 
@@ -154,8 +155,10 @@
     """
 
     formatted_str = raw"""
-    Dict{Int, Int}(1 => 2,
-        3 => 4)
+    Dict{Int, Int}(
+        1 => 2,
+        3 => 4,
+    )
     """
 
     formatted_str_yas_nesting = raw"""
@@ -175,9 +178,11 @@
         2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
     """
 
+    # over margin will nest
     formatted_str1 = raw"""
     SomeLongerTypeThanJustString = String
-    y = Dict{Int, SomeLongerTypeThanJustString}(1 => "some arbitrary string bla bla bla bla bla bla",
+    y = Dict{Int, SomeLongerTypeThanJustString}(
+        1 => "some arbitrary string bla bla bla bla bla bla",
         2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
     """
 
@@ -236,7 +241,8 @@
     """
 
     formatted_str1 = raw"""
-    Dict{Int, Int}(1 => 2,
+    Dict{Int, Int}(# Comment
+        1 => 2,
         3 => 4)
     """
 
@@ -360,14 +366,8 @@
     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx::SomePrettyLongTypeName{Foo}
     """
 
-    # The line is too long, so a line break will be inserted in the curly braces
-    formatted_str = """
-    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx::SomePrettyLongTypeName{
-        Foo,
-    }
-    """
-
-    @test format_text(str, SciMLStyle()) == formatted_str
+    # disallow_single_arg_nesting is true by defaultin sciml formatting options, so we don't want the line break
+    @test format_text(str, SciMLStyle()) == str
     # With `yas_style_nesting=true`, we don't want the line break, as it will look like this:
     # xxxxx::SomePrettyLongTypeName{
     #                               Foo

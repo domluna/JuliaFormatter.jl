@@ -516,7 +516,7 @@ function p_macrocall(ys::YASStyle, cst::CSTParser.EXPR, s::State)
     nest =
         length(args) > 0 && !(
             length(args) == 1 &&
-            unnestable_node(args[1], s.opts.disallow_single_string_arg_nesting)
+            (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
     has_closer = is_closer(cst[end])
 

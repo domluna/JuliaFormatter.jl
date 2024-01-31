@@ -125,10 +125,8 @@ function pprof(
     locs = Dict{UInt64,Location}()
     locs_from_c = Dict{UInt64,Bool}()
 
-    sample_type = [
-        ValueType!("events", "count"), # Mandatory
-        ValueType!("stack_depth", "count"),
-    ]
+    sample_type = [ValueType!("events", "count"), # Mandatory
+        ValueType!("stack_depth", "count"),]
 
     prof = PProfile(
         sample = [],
@@ -163,10 +161,8 @@ function pprof(
             end
 
             # End of sample
-            value = [
-                1,                   # events
-                length(location_id), # stack_depth
-            ]
+            value = [1,                   # events
+                length(location_id),]
             push!(prof.sample, Sample(; location_id = location_id, value = value))
             location_id = Vector{eltype(data)}()
             lastwaszero = true
