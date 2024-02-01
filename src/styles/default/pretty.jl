@@ -1932,11 +1932,10 @@ p_tuple(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_braces(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Braces, cst, nspaces(s))
-    args = get_args(cst)
     nest =
-        length(args) > 2 && !(
-            length(args) == 3 &&
-            (unnestable_node(args[2]) || s.opts.disallow_single_arg_nesting)
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            (unnestable_node(cst[2]) || s.opts.disallow_single_arg_nesting)
         )
 
     for (i, a) in enumerate(cst)
@@ -1963,11 +1962,10 @@ p_braces(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_bracescat(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(BracesCat, cst, nspaces(s))
-    args = get_args(cst)
     nest =
-        length(args) > 2 && !(
-            length(args) == 3 &&
-            (unnestable_node(args[2]) || s.opts.disallow_single_arg_nesting)
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            (unnestable_node(cst[2]) || s.opts.disallow_single_arg_nesting)
         )
 
     for (i, a) in enumerate(cst)
@@ -1995,11 +1993,10 @@ p_bracescat(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_vect(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(Vect, cst, nspaces(s))
-    args = get_args(cst)
     nest =
-        length(args) > 2 && !(
-            length(args) == 3 &&
-            (unnestable_node(args[2]) || s.opts.disallow_single_arg_nesting)
+        length(cst) > 2 && !(
+            length(cst) == 3 &&
+            (unnestable_node(cst[2]) || s.opts.disallow_single_arg_nesting)
         )
 
     for (i, a) in enumerate(cst)
@@ -2145,11 +2142,10 @@ p_as(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 function p_ref(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     t = FST(RefN, cst, nspaces(s))
-    args = get_args(cst)
     nest =
-        length(args) > 5 && !(
-            length(args) == 5 &&
-            (unnestable_node(args[3]) || s.opts.disallow_single_arg_nesting)
+        length(cst) > 5 && !(
+            length(cst) == 5 &&
+            (unnestable_node(cst[3]) || s.opts.disallow_single_arg_nesting)
         )
     nospace = !s.opts.whitespace_ops_in_indices
 
