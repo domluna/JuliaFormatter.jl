@@ -1,11 +1,10 @@
 @testset "SciML Style" begin
     str = raw"""
-       @noinline require_complete(m::Matching) =
-           m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
+       @noinline require_complete(m::Matching) = m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     formatted_str = raw"""
-    @noinline require_complete(m::Matching) = m.inv_match === nothing && throw(
-        ArgumentError("Backwards matching not defined. `complete` the matching first."))
+    @noinline require_complete(m::Matching) = m.inv_match === nothing &&
+                                              throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
     @test format_text(str, SciMLStyle()) == formatted_str
 
