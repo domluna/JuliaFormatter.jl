@@ -115,7 +115,10 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
 
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
     for (i, ph) in enumerate(placeholder_inds)
-        if i == 1 || i == length(placeholder_inds)
+        if i == 1 ||
+           i == length(placeholder_inds) ||
+           (ph < length(fst) && is_comment(fst[ph+1])) ||
+           (ph > 1 && is_comment(fst[ph-1]))
             continue
         end
         fst[ph] = Whitespace(fst[ph].len)
