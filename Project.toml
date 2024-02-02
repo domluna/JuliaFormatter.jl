@@ -14,7 +14,7 @@ PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
-CSTParser = "^3.3.5"
+CSTParser = "^3.4.0"
 CommonMark = "0.5, 0.6, 0.7, 0.8"
 DataStructures = "0.17, 0.18"
 Glob = "1.3"
