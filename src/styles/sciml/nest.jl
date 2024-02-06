@@ -124,6 +124,10 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         fst[ph] = Whitespace(fst[ph].len)
     end
 
+    if has_closer && length(placeholder_inds) > 0
+        fst[placeholder_inds[end]] = Whitespace(0)
+    end
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE

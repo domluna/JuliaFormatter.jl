@@ -42,7 +42,7 @@ function options(style::SciMLStyle)
         align_conditional = false,
         align_pair_arrow = false,
         align_matrix = false,
-        trailing_comma = true,
+        trailing_comma = false,
         trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
