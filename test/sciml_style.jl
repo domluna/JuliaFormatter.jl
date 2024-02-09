@@ -429,26 +429,62 @@
     end"""
     @test format_text(str_, SciMLStyle(), margin = 1) == str
 
-    str = """
-    function foo(arg1, arg2, arg3, arg4, arg5)
-        body
-    end
-    """
+    @testset "optimal nesting" begin
+        str = """
+        function foo(arg1, arg2, arg3, arg4, arg5)
+            body
+        end
+        """
 
-    fstr = """
-    function foo(
-            arg1, arg2, arg3, arg4, arg5)
-        body
-    end
-    """
-    @test format_text(str, SciMLStyle(), margin = 41) == fstr
+        fstr = """
+        function foo(
+                arg1, arg2, arg3, arg4, arg5)
+            body
+        end
+        """
+        @test format_text(str, SciMLStyle(), margin = 41) == fstr
+        @test format_text(str, SciMLStyle(), margin = 37) == fstr
 
-    fstr = """
-    function foo(
-            arg1, arg2, arg3, arg4, arg5)
-        body
+        fstr = """
+        function foo(arg1, arg2, arg3,
+                arg4, arg5)
+            body
+        end
+        """
+        @test format_text(str, SciMLStyle(), margin = 36) == fstr
+        # should be 30? might be a unnesting off by 1 error
+        @test format_text(str, SciMLStyle(), margin = 31) == fstr
+
+        fstr = """
+        function foo(
+                arg1, arg2, arg3,
+                arg4, arg5)
+            body
+        end
+        """
+        @test format_text(str, SciMLStyle(), margin = 29) == fstr
+        @test format_text(str, SciMLStyle(), margin = 25) == fstr
+
+        fstr = """
+        function foo(
+                arg1, arg2,
+                arg3,
+                arg4, arg5)
+            body
+        end
+        """
+        @test format_text(str, SciMLStyle(), margin = 24) == fstr
+
+        fstr = """
+        function foo(
+                arg1,
+                arg2,
+                arg3,
+                arg4,
+                arg5)
+            body
+        end
+        """
+        @test format_text(str, SciMLStyle(), margin = 18) == fstr
     end
-    """
-    # TODO: +4 indent is not recoginized
-    @test format_text(str, SciMLStyle(), margin = 41) == fstr
 end

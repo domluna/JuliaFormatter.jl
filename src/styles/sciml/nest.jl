@@ -52,29 +52,20 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
             extra_margin = fst.extra_margin,
         )
     else
-        nest!(
-            DefaultStyle(style),
-            fst.nodes::Vector,
-            s,
-            fst.indent,
-            extra_margin = fst.extra_margin,
-        )
-
         base_indent = fst.indent
-        closers = FST[]
-        f = (fst::FST, s::State) -> begin
-            if is_closer(fst) && fst.indent == base_indent
-                push!(closers, fst)
+        add_indent!(fst[3], s, s.opts.indent)
+
+        nest!(ss, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
+
+        f =
+            (fst::FST, s::State) -> begin
+                if is_closer(fst) && fst.indent == base_indent + s.opts.indent
+                    fst.indent -= s.opts.indent
+                end
             end
-            fst.indent += s.opts.indent
-            return nothing
-        end
         lo = s.line_offset
         walk(f, fst[3], s)
         s.line_offset = lo
-        for c in closers
-            c.indent -= s.opts.indent
-        end
     end
 end
 
