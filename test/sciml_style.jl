@@ -153,10 +153,11 @@
     )
     """
 
+    # appears on a different line in source
     formatted_str = raw"""
     Dict{Int, Int}(
         1 => 2,
-        3 => 4,
+        3 => 4
     )
     """
 
@@ -169,7 +170,7 @@
     @test format_text(str, SciMLStyle()) == formatted_str
     @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
           formatted_str_yas_nesting
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
+    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
     SomeLongerTypeThanJustString = String
@@ -388,7 +389,7 @@
             T,
             S,
             F1,
-            F2,
+            F2
     })(integrator::AbstractSSAIntegrator) where {
             T,
             S,
@@ -396,9 +397,7 @@
             F2 <:
             Union{
                 Tuple,
-                Nothing,
-            },
-    }
+                Nothing}}
         body
     end"""
     @test format_text(str_, SciMLStyle(), margin = 1) == str
@@ -417,7 +416,7 @@
             T,
             S,
             F1,
-            F2,
+            F2
     })(integrator::AbstractSSAIntegrator) where {
             T,
             S,
@@ -425,10 +424,31 @@
             F2 <:
             Union{
                 Tuple,
-                Nothing,
-            },
-    }
+                Nothing}}
         body
     end"""
     @test format_text(str_, SciMLStyle(), margin = 1) == str
+
+    str = """
+    function foo(arg1, arg2, arg3, arg4, arg5)
+        body
+    end
+    """
+
+    fstr = """
+    function foo(
+            arg1, arg2, arg3, arg4, arg5)
+        body
+    end
+    """
+    @test format_text(str, SciMLStyle(), margin = 41) == fstr
+
+    fstr = """
+    function foo(
+            arg1, arg2, arg3, arg4, arg5)
+        body
+    end
+    """
+    # TODO: +4 indent is not recoginized
+    @test format_text(str, SciMLStyle(), margin = 41) == fstr
 end
