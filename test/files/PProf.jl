@@ -165,7 +165,7 @@ function pprof(
             # End of sample
             value = [
                 1,                   # events
-                length(location_id), # stack_depth
+                length(location_id),
             ]
             push!(prof.sample, Sample(; location_id = location_id, value = value))
             location_id = Vector{eltype(data)}()

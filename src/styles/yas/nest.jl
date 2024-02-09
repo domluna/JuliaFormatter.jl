@@ -53,11 +53,11 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
         end
     end
 end
-@inline n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
-@inline n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
-@inline n_macrocall!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
-@inline n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
-@inline n_typedvcat!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+n_macrocall!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+n_typedcomprehension!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
+n_typedvcat!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 
 function n_tuple!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
@@ -89,13 +89,13 @@ function n_tuple!(ys::YASStyle, fst::FST, s::State)
         end
     end
 end
-@inline n_braces!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_vect!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_parameters!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_vcat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
-@inline n_bracescat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_braces!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_vect!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_parameters!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_invisbrackets!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_comprehension!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_vcat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
+n_bracescat!(ys::YASStyle, fst::FST, s::State) = n_tuple!(ys, fst, s)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
@@ -123,8 +123,8 @@ function n_generator!(ys::YASStyle, fst::FST, s::State)
         end
     end
 end
-@inline n_filter!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
-@inline n_flatten!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
+n_filter!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
+n_flatten!(ys::YASStyle, fst::FST, s::State) = n_generator!(ys, fst, s)
 
 function n_whereopcall!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
@@ -173,8 +173,8 @@ function n_using!(ys::YASStyle, fst::FST, s::State)
         end
     end
 end
-@inline n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
-@inline n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
+n_export!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
+n_import!(ys::YASStyle, fst::FST, s::State) = n_using!(ys, fst, s)
 
 function n_chainopcall!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)

@@ -11,6 +11,7 @@ using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
 import Base: get, pairs
+using Combinatorics: permutations
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -50,7 +51,7 @@ end
 
 abstract type AbstractStyle end
 
-@inline options(s::AbstractStyle) = NamedTuple()
+options(s::AbstractStyle) = NamedTuple()
 
 struct NoopStyle <: AbstractStyle end
 
