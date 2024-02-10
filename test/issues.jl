@@ -1777,4 +1777,13 @@
         s = "Int <: B where {B} && Int <: C where {C}"
         fmt(s) == s
     end
+
+    @testset "802" begin
+        s = """
+        mutable struct Foo
+            const a
+        end
+        """
+        @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
 end
