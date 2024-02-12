@@ -487,4 +487,14 @@
         """
         @test format_text(str, SciMLStyle(), margin = 18) == fstr
     end
+
+    str = raw"""
+    x = [
+        1, 2, 3
+    ]
+    """
+
+    # This should be valid with and without `yas_style_nesting`
+    @test format_text(str, SciMLStyle()) == str
+    @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
 end
