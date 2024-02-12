@@ -89,7 +89,7 @@ for f in [
     :p_curly,
     :p_ref,
     :p_braces,
-    :p_vect,
+    # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
     :p_parameters,
     :p_invisbrackets,
     :p_bracescat,

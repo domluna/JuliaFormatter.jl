@@ -183,7 +183,7 @@ for f in [
     :n_curly!,
     :n_macrocall!,
     :n_ref!,
-    :n_vect!,
+    # :n_vect!, don't use YAS style vector formatting with `yas_style_nesting = true`
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,
