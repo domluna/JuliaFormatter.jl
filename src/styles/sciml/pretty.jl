@@ -106,11 +106,7 @@ end
 
 function p_tuple(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     style = getstyle(ss)
-    if s.opts.yas_style_nesting
-        p_tuple(YASStyle(style), cst, s; kwargs...)
-    else
-        p_tuple(DefaultStyle(style), cst, s; kwargs...)
-    end
+    p_tuple(DefaultStyle(style), cst, s; kwargs...)
 end
 
 function p_tuple(ss::SciMLStyle, nodes::Vector{CSTParser.EXPR}, s::State; kwargs...)

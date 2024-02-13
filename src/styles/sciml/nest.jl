@@ -81,6 +81,10 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
     has_closer = is_closer(fst[end])
     start_line_offset = s.line_offset
 
+    if s.opts.yas_style_nesting && length(nodes) > 0 && is_opener(fst[1])
+        fst.indent += 1
+    end
+
     if has_closer
         fst[end].indent = fst.indent
     end
@@ -178,7 +182,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
 end
 
 for f in [
-    :n_tuple!,
+    # :n_tuple!,
     :n_call!,
     :n_curly!,
     :n_macrocall!,
@@ -197,6 +201,11 @@ for f in [
             _n_tuple!(style, fst, s)
         end
     end
+end
+
+function n_tuple!(ss::SciMLStyle, fst::FST, s::State)
+    style = getstyle(ss)
+    _n_tuple!(style, fst, s)
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]

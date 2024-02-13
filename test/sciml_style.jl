@@ -488,6 +488,40 @@
         @test format_text(str, SciMLStyle(), margin = 18) == fstr
     end
 
+    @testset "optimal nesting with `yas_style_nesting = true`" begin
+        str = """
+        x = (arg1, arg2, arg3, arg4, arg5)
+        """
+
+        # Fits within the margin
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 50) == str
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 34) == str
+
+        fstr = """
+        x = (arg1, arg2, arg3,
+             arg4, arg5)
+        """
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 33) == fstr
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 23) == fstr
+
+        fstr = """
+        x = (arg1, arg2,
+             arg3,
+             arg4, arg5)
+        """
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 21) == fstr
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 17) == fstr
+
+        fstr = """
+        x = (arg1,
+             arg2,
+             arg3,
+             arg4,
+             arg5)
+        """
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, margin = 15) == fstr
+    end
+
     str = raw"""
     x = [
         1, 2, 3
