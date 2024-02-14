@@ -1,6 +1,33 @@
 function n_call!(ys::YASStyle, fst::FST, s::State)
     style = getstyle(ys)
 
+    has_closer = is_closer(fst[end])
+    start_line_offset = s.line_offset
+
+    optimal_placeholders =
+        find_optimal_nest_placeholders(fst, start_line_offset, s.opts.margin)
+
+    for i in optimal_placeholders
+        fst[i] = Newline(length = fst[i].len)
+    end
+
+    # placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+    # for (i, ph) in enumerate(placeholder_inds)
+    #     if i == 1 ||
+    #        i == length(placeholder_inds) ||
+    #        (ph < length(fst) && is_comment(fst[ph+1])) ||
+    #        (ph > 1 && is_comment(fst[ph-1]))
+    #         continue
+    #     end
+    #     fst[ph] = Whitespace(fst[ph].len)
+    # end
+
+    # if has_closer && length(placeholder_inds) > 0
+    #     fst[placeholder_inds[end]] = Whitespace(10)
+    # end
+    @info "" fst.nodes
+    @info "" optimal_placeholders
+
     # With `variable_call_indent`, check if the caller is in the list
     if caller_in_list(fst, s.opts.variable_call_indent) &&
        length(fst.nodes::Vector{FST}) > 5
