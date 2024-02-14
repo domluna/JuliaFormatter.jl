@@ -220,11 +220,17 @@ function find_optimal_nest_placeholders(
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
+
+    # For 1 or fewer placeholders, all are optimal
     if length(placeholder_inds) <= 1
         return placeholder_inds
     end
-    newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
 
+    # Split `placeholder_inds` at newlines.
+    # The first entry of `placeholder_groups` will contain all placeholders before the first
+    # newline, the second entry will contain all placeholders between the first and second
+    # newline, and so on.
+    newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
     placeholder_groups = Vector{Int}[]
     i = 1
     current_group = Int[]
@@ -241,6 +247,7 @@ function find_optimal_nest_placeholders(
 
     # @info "groups" placeholder_groups
 
+    # Pass individual placeholder groups to the function below
     optimal_placeholders = Int[]
     for (i, g) in enumerate(placeholder_groups)
         optinds = find_optimal_nest_placeholders(
