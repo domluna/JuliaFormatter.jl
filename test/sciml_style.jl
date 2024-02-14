@@ -430,62 +430,144 @@
     @test format_text(str_, SciMLStyle(), margin = 1) == str
 
     @testset "optimal nesting" begin
-        str = """
-        function foo(arg1, arg2, arg3, arg4, arg5)
-            body
-        end
-        """
+        @testset "function definition" begin
+            str = """
+            function foo(arg1, arg2, arg3, arg4, arg5)
+                body
+            end
+            """
 
-        fstr = """
-        function foo(
-                arg1, arg2, arg3, arg4, arg5)
-            body
-        end
-        """
-        @test format_text(str, SciMLStyle(), margin = 41) == fstr
-        @test format_text(str, SciMLStyle(), margin = 37) == fstr
+            fstr = """
+            function foo(
+                    arg1, arg2, arg3, arg4, arg5)
+                body
+            end
+            """
+            @test format_text(str, SciMLStyle(), margin = 41) == fstr
+            @test format_text(str, SciMLStyle(), margin = 37) == fstr
 
-        fstr = """
-        function foo(arg1, arg2, arg3,
-                arg4, arg5)
-            body
-        end
-        """
-        @test format_text(str, SciMLStyle(), margin = 36) == fstr
-        # should be 30? might be a unnesting off by 1 error
-        @test format_text(str, SciMLStyle(), margin = 31) == fstr
+            fstr = """
+            function foo(arg1, arg2, arg3,
+                    arg4, arg5)
+                body
+            end
+            """
+            @test format_text(str, SciMLStyle(), margin = 36) == fstr
+            # should be 30? might be a unnesting off by 1 error
+            @test format_text(str, SciMLStyle(), margin = 31) == fstr
 
-        fstr = """
-        function foo(
+            fstr = """
+            function foo(
+                    arg1, arg2, arg3,
+                    arg4, arg5)
+                body
+            end
+            """
+            @test format_text(str, SciMLStyle(), margin = 29) == fstr
+            @test format_text(str, SciMLStyle(), margin = 25) == fstr
+
+            fstr = """
+            function foo(
+                    arg1, arg2,
+                    arg3,
+                    arg4, arg5)
+                body
+            end
+            """
+            @test format_text(str, SciMLStyle(), margin = 24) == fstr
+
+            fstr = """
+            function foo(
+                    arg1,
+                    arg2,
+                    arg3,
+                    arg4,
+                    arg5)
+                body
+            end
+            """
+            @test format_text(str, SciMLStyle(), margin = 18) == fstr
+        end
+
+        @testset "vector definition" begin
+            str = """
+            test = [arg1, arg2, arg3, arg4, arg5]
+            """
+
+            # Fits within the margin
+            @test format_text(str, SciMLStyle(), margin = 41) == str
+            @test format_text(str, SciMLStyle(), margin = 37) == str
+
+            fstr = """
+            test = [
+                arg1, arg2, arg3, arg4, arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 36) == fstr
+            @test format_text(str, SciMLStyle(), margin = 33) == fstr
+
+            fstr = """
+            test = [arg1, arg2, arg3,
+                arg4, arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 32) == fstr
+            # should be 25? might be a unnesting off by 1 error
+            @test format_text(str, SciMLStyle(), margin = 26) == fstr
+
+            fstr = """
+            test = [
                 arg1, arg2, arg3,
-                arg4, arg5)
-            body
-        end
-        """
-        @test format_text(str, SciMLStyle(), margin = 29) == fstr
-        @test format_text(str, SciMLStyle(), margin = 25) == fstr
+                arg4, arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 25) == fstr
+            @test format_text(str, SciMLStyle(), margin = 21) == fstr
 
-        fstr = """
-        function foo(
+            fstr = """
+            test = [arg1, arg2,
+                arg3,
+                arg4, arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 20) == fstr
+            # should be 19? might be a unnesting off by 1 error
+            # @test format_text(str, SciMLStyle(), margin = 19) == fstr
+
+            fstr = """
+            test = [
                 arg1, arg2,
                 arg3,
-                arg4, arg5)
-            body
-        end
-        """
-        @test format_text(str, SciMLStyle(), margin = 24) == fstr
+                arg4, arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 19) == fstr
+            # should be 15? might be a unnesting off by 1 error
+            @test format_text(str, SciMLStyle(), margin = 16) == fstr
 
-        fstr = """
-        function foo(
+            fstr = """
+            test = [
+                arg1, arg2,
+                arg3,
+                arg4,
+                arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 15) == fstr
+
+            fstr = """
+            test = [arg1,
+                arg2,
+                arg3,
+                arg4,
+                arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 14) == fstr
+
+            fstr = """
+            test = [
                 arg1,
                 arg2,
                 arg3,
                 arg4,
-                arg5)
-            body
+                arg5]
+            """
+            @test format_text(str, SciMLStyle(), margin = 13) == fstr
         end
-        """
-        @test format_text(str, SciMLStyle(), margin = 18) == fstr
     end
 
     str = raw"""
