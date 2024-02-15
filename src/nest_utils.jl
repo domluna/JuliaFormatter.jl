@@ -216,7 +216,7 @@ Finds the optimal placeholders to turn into a newlines such that the length of t
 """
 function find_optimal_nest_placeholders(
     fst::FST,
-    start_line_offset::Int,
+    indent_offset::Int,
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -253,7 +253,7 @@ function find_optimal_nest_placeholders(
         optinds = find_optimal_nest_placeholders(
             fst,
             g,
-            start_line_offset,
+            indent_offset,
             max_margin,
             last_group = i == length(placeholder_groups),
         )
@@ -267,7 +267,7 @@ end
 function find_optimal_nest_placeholders(
     fst::FST,
     placeholder_inds::Vector{Int},
-    initial_offset::Int,
+    indent_offset::Int,
     max_margin::Int;
     last_group::Bool = false,
 )::Vector{Int}
@@ -291,8 +291,6 @@ function find_optimal_nest_placeholders(
             dp[i, j-1] = len
         end
     end
-
-    # @info "" dp placeholder_inds
 
     N = size(dp, 1)
 
@@ -332,7 +330,6 @@ function find_optimal_nest_placeholders(
         return best_split
     end
 
-    fst_line_offset = fst.indent
     # Calculate best splits for each number of segments s
     segments = Tuple{Int,Int}[]
     for s in 1:N
@@ -340,9 +337,9 @@ function find_optimal_nest_placeholders(
         fits = true
         for (i, s) in enumerate(segments)
             if i == 1
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= indent_offset + dp[first(s), last(s)] <= max_margin
             else
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= indent_offset + dp[first(s), last(s)] <= max_margin
             end
         end
         fits && break

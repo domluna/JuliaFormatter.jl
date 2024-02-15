@@ -49,6 +49,13 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 
+    indent_offset = s.line_offset + sum(length.(fst[1:2]))
+    optimal_placeholders = find_optimal_nest_placeholders(fst, indent_offset, s.opts.margin)
+
+    for i in optimal_placeholders
+        fst[i] = Newline(length = fst[i].len)
+    end
+
     nodes = fst.nodes::Vector
     for (i, n) in enumerate(nodes)
         if i == 3
