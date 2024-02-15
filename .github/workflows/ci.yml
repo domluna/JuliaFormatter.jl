@@ -25,7 +25,8 @@ jobs:
           - '1.7'
           - '1.8'
           - '1.9'
-          - 'nightly'
+          - '1.10'
+          # - 'nightly'
         arch: [x64, x86]
         os: [ubuntu-latest, windows-latest, macos-latest]
         exclude:

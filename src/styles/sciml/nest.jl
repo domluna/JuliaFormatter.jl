@@ -115,7 +115,8 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         fst[ph] = Whitespace(fst[ph].len)
     end
 
-    if has_closer && length(placeholder_inds) > 0
+    # macrocall doesn't have a placeholder before the closing parenthesis
+    if fst.typ !== MacroCall && has_closer && length(placeholder_inds) > 0
         fst[placeholder_inds[end]] = Whitespace(0)
     end
 
