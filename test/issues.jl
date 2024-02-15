@@ -1786,4 +1786,11 @@
         """
         @test fmt(s, 4, 92, align_struct_field = true) == s
     end
+
+    @testset "810" begin
+        s = """
+        @f(a, b, c)
+        """
+        @test format_text(s, SciMLStyle()) == s
+    end
 end
