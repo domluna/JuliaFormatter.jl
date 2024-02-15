@@ -184,7 +184,7 @@ for f in [
     :n_curly!,
     :n_macrocall!,
     :n_ref!,
-    :n_vect!,
+    # :n_vect!,
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,
@@ -197,6 +197,16 @@ for f in [
         else
             _n_tuple!(style, fst, s)
         end
+    end
+end
+
+function n_vect!(ss::SciMLStyle, fst::FST, s::State)
+    style = getstyle(ss)
+    if s.opts.yas_style_nesting
+        # Allow a line break after the opening brackets without aligning
+        n_vect!(DefaultStyle(style), fst, s)
+    else
+        _n_tuple!(style, fst, s)
     end
 end
 
