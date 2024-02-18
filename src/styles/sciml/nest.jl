@@ -97,7 +97,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
         false
     end
 
-    optimal_placeholders = find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
+    optimal_placeholders = find_optimal_nest_placeholders(fst, fst.indent, fst.indent, s.opts.margin)
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)

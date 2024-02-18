@@ -50,7 +50,9 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 
     indent_offset = s.line_offset + sum(length.(fst[1:2]))
-    optimal_placeholders = find_optimal_nest_placeholders(fst, indent_offset, s.opts.margin)
+    first_ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes::Vector)
+    first_line_indent_offset = s.line_offset + sum(length.(fst[1:first_ph_idx]))
+    optimal_placeholders = find_optimal_nest_placeholders(fst, first_line_indent_offset, indent_offset, s.opts.margin)
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)
