@@ -212,11 +212,33 @@ function find_all_segment_splits(n::Int, k::Int)
 end
 
 """
-Finds the optimal placeholders to turn into a newlines such that the length of the arguments on each line is as close as possible while following margin constraints.
+Finds the optimal placeholders to turn into a newlines such that the length of
+the arguments on each line is as close as possible while following margin constraints.
+
+first_segment_offset: The offset of the first line of the segment.
+segment_offset: The offset of the rest of the segments.
+max_margin: The maximum margin allowed.
+
+The offsets are used with paired with segment lengths to determine if the margin is exceeded.
+The offsets for the first segment and the rest are typically the same value.
+
+A scenario in which they are not is YASStyle, where the first argument cannot be nested
+and so to determine the "best fit" the `first_segment_offset` is the length up until
+the the first placeholder. Example:
+
+```
+function foo(arg1, arg2, ....)
+                  ^(First Placeholder)
+    body
+end
+```
+
+length of "function foo(arg1," is the `first_segment_offset`.
 """
 function find_optimal_nest_placeholders(
     fst::FST,
-    indent_offset::Int,
+    first_segment_offset::Int,
+    segment_offset::Int,
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
@@ -246,7 +268,8 @@ function find_optimal_nest_placeholders(
         optinds = find_optimal_nest_placeholders(
             fst,
             g,
-            indent_offset,
+            i == 1 ? first_segment_offset : segment_offset,
+            segment_offset,
             max_margin,
             last_group = i == length(placeholder_groups),
         )
@@ -260,14 +283,15 @@ end
 function find_optimal_nest_placeholders(
     fst::FST,
     placeholder_inds::Vector{Int},
-    indent_offset::Int,
+    first_segment_offset::Int,
+    segment_offset::Int,
     max_margin::Int;
     last_group::Bool = false,
 )::Vector{Int}
     # Function to calculate the length of a segment
     segment_length =
         (start_idx::Int, end_idx::Int) -> begin
-            if placeholder_inds[end] == end_idx && last_group
+            if end_idx == placeholder_inds[end] && last_group
                 sum(length.(fst[start_idx:end])) + fst.extra_margin
             else
                 sum(length.(fst[start_idx:end_idx-1]))
@@ -275,6 +299,7 @@ function find_optimal_nest_placeholders(
         end
 
     n = length(placeholder_inds)
+    # @info "" placeholder_inds
     dp = fill(0, n - 1, n - 1)
 
     # Initialize the lengths of segments with single placeholders
@@ -284,6 +309,7 @@ function find_optimal_nest_placeholders(
             dp[i, j-1] = len
         end
     end
+
 
     N = size(dp, 1)
 
@@ -323,17 +349,19 @@ function find_optimal_nest_placeholders(
         return best_split
     end
 
+    # @info "" offset dp max_margin
     # Calculate best splits for each number of segments s
     segments = Tuple{Int,Int}[]
     for s in 1:N
         segments = find_best_segments(s)
         fits = true
         for (i, s) in enumerate(segments)
-            if i == 1
-                fits &= indent_offset + dp[first(s), last(s)] <= max_margin
+            val = if i == 1
+                first_segment_offset + dp[first(s), last(s)]
             else
-                fits &= indent_offset + dp[first(s), last(s)] <= max_margin
+                segment_offset + dp[first(s), last(s)]
             end
+            fits &= val <= max_margin
         end
         fits && break
     end
