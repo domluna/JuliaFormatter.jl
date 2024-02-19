@@ -1385,10 +1385,12 @@
         end
         """
         # no trailing comma since (arg) is semantically different from (arg,) !!!
+        # NOTE: as of CSTParser 3.4.0 this is no longe parsed as a tuple but as invisbrackets
+        # so we don't need to worry about it
         s_ = """
-        function (
-            func(arg)
-        )
+        function (func(
+            arg,
+        ))
             body
         end
         """
@@ -1774,5 +1776,21 @@
     @testset "779" begin
         s = "Int <: B where {B} && Int <: C where {C}"
         fmt(s) == s
+    end
+
+    @testset "802" begin
+        s = """
+        mutable struct Foo
+            const a
+        end
+        """
+        @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
+
+    @testset "810" begin
+        s = """
+        @f(a, b, c)
+        """
+        @test format_text(s, SciMLStyle()) == s
     end
 end

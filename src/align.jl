@@ -214,7 +214,7 @@ function align_struct!(fst::FST)
 
             push!(g, n, i, n[ind].line_offset, nlen, ws)
             prev_endline = n.endline
-        elseif n.typ === Const
+        elseif n.typ === Const && n[end].typ === Binary
             if n.startline - prev_endline > 1
                 push!(groups, g)
                 g = AlignGroup()
