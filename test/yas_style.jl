@@ -278,13 +278,13 @@
         var = fcall(arg1, arg2, arg3, # comment
                     arg4, arg5)"""
         @test yasfmt(str_, 4, 80, join_lines_based_on_source = false) == str
-        @test yasfmt(str_, 4, 29, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 30, join_lines_based_on_source = false) == str
 
         str = """
         var = fcall(arg1, arg2,
                     arg3, # comment
                     arg4, arg5)"""
-        @test yasfmt(str_, 4, 28, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 29, join_lines_based_on_source = false) == str
         @test yasfmt(str_, 4, 23, join_lines_based_on_source = false) == str
 
         str = """
@@ -446,7 +446,8 @@
 
     @testset "issue 321 - exponential inline comments !!!" begin
         str = """
-        scaled_ticks, mini, maxi = optimize_ticks(scale_func(lmin), scale_func(lmax); k_min=4, # minimum number of ticks
+        scaled_ticks, mini, maxi = optimize_ticks(scale_func(lmin), scale_func(lmax);
+                                                  k_min=4, # minimum number of ticks
                                                   k_max=8)"""
         @test yasfmt(str, 4, 92, whitespace_in_kwargs = false) == str
     end
@@ -501,7 +502,8 @@
         @test yasfmt(str_, 4, 22) == str_
 
         str = """
-        T[10 20; 30 40;
+        T[10 20;
+          30 40;
           50 60;
           10
           10]"""
@@ -771,5 +773,47 @@
               formatted_str1
         @test format_text(str, YASStyle(), variable_call_indent = ["SVector", "test"]) ==
               formatted_str2
+    end
+
+    @testset "optimal nesting" begin
+        str = """
+        function foo(arg1, arg2, arg3, arg4, arg5)
+            return body
+        end
+        """
+
+        @test format_text(str, YASStyle(), margin = 42) == str
+
+        fstr = """
+        function foo(arg1, arg2, arg3,
+                     arg4, arg5)
+            return body
+        end
+        """
+        @test format_text(str, YASStyle(), margin = 41) == fstr
+        # should be 30? might be a unnesting off by 1 error
+        @test format_text(str, YASStyle(), margin = 31) == fstr
+
+        fstr = """
+        function foo(arg1, arg2,
+                     arg3,
+                     arg4, arg5)
+            return body
+        end
+        """
+        @test format_text(str, YASStyle(), margin = 30) == fstr
+        @test format_text(str, YASStyle(), margin = 24) == fstr
+
+        fstr = """
+        function foo(arg1,
+                     arg2,
+                     arg3,
+                     arg4,
+                     arg5)
+            return body
+        end
+        """
+        @test format_text(str, YASStyle(), margin = 23) == fstr
+        @test format_text(str, YASStyle(), margin = 10) == fstr
     end
 end

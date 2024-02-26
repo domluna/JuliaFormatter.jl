@@ -22,6 +22,19 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 
+    start_line_offset = s.line_offset
+    indent_offset = start_line_offset + sum(length.(fst[1:2]))
+    first_ph_idx = findfirst(n -> n.typ === PLACEHOLDER, fst.nodes::Vector)
+    first_line_indent_offset = start_line_offset
+    if first_ph_idx !== nothing
+        first_line_indent_offset += sum(length.(fst[1:first_ph_idx]))
+    end
+    optimal_placeholders = find_optimal_nest_placeholders(fst, first_line_indent_offset, indent_offset, s.opts.margin)
+
+    for i in optimal_placeholders
+        fst[i] = Newline(length = fst[i].len)
+    end
+
     nodes = fst.nodes::Vector
     for (i, n) in enumerate(nodes)
         if i == 3
@@ -52,6 +65,11 @@ function n_call!(ys::YASStyle, fst::FST, s::State)
             nest!(style, n, s)
         end
     end
+
+    s.line_offset = start_line_offset
+    walk(unnest!(style; dedent = false), fst, s)
+    s.line_offset = start_line_offset
+    walk(increment_line_offset!, fst, s)
 end
 n_curly!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
 n_ref!(ys::YASStyle, fst::FST, s::State) = n_call!(ys, fst, s)
