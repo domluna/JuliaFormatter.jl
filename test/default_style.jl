@@ -2027,6 +2027,28 @@
         """
         @test fmt(str) == str
 
+        str_ = """
+          \"\"\"
+          - ΩCL
+          - ΩVc
+          -  ΩKa
+          - ΩVp
+          - ΩQ
+          \"\"\"
+          f
+        """
+        str = """
+        \"\"\"
+          - ΩCL
+          - ΩVc
+          - ΩKa
+          - ΩVp
+          - ΩQ
+        \"\"\"
+        f
+        """
+        @test fmt(str_; format_docstrings = true) == str
+
         str = """
         # comments
         # before
