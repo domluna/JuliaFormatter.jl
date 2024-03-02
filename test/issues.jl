@@ -1793,4 +1793,25 @@
         """
         @test format_text(s, SciMLStyle()) == s
     end
+
+    @testset "817" begin
+        s = raw"""
+        a = ["Unknown" => SubRegion.Unknown, "Northern Europe" => SubRegion.Northern_Europe, "Southern Asia" => SubRegion.Southern_Asia, "Western Europe" => SubRegion.Western_Europe, "Sub-Saharan Africa" => SubRegion.Sub_Saharan_Africa, "Western Asia" => SubRegion.Western_Asia, "Eastern Asia" => SubRegion.Eastern_Asia, "Northern America" => SubRegion.Northern_America, "South-eastern Asia" => SubRegion.South_eastern_Asia, "Australia and New Zealand" => SubRegion.Australia_and_New_Zealand, "Eastern Europe" => SubRegion.Eastern_Europe, "Latin America and the Caribbean" => SubRegion.Latin_America_and_the_Caribbean, "Southern Europe" => SubRegion.Southern_Europe, "Central Asia" => SubRegion.Central_Asia]
+        """
+        s2 = raw"""
+        a = ["Unknown" => SubRegion.Unknown, "Northern Europe" => SubRegion.Northern_Europe,
+            "Southern Asia" => SubRegion.Southern_Asia,
+            "Western Europe" => SubRegion.Western_Europe,
+            "Sub-Saharan Africa" => SubRegion.Sub_Saharan_Africa,
+            "Western Asia" => SubRegion.Western_Asia, "Eastern Asia" => SubRegion.Eastern_Asia,
+            "Northern America" => SubRegion.Northern_America,
+            "South-eastern Asia" => SubRegion.South_eastern_Asia,
+            "Australia and New Zealand" => SubRegion.Australia_and_New_Zealand,
+            "Eastern Europe" => SubRegion.Eastern_Europe,
+            "Latin America and the Caribbean" => SubRegion.Latin_America_and_the_Caribbean,
+            "Southern Europe" => SubRegion.Southern_Europe,
+            "Central Asia" => SubRegion.Central_Asia]
+        """
+        @test format_text(s, SciMLStyle()) == s2
+    end
 end

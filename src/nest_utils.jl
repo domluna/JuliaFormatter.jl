@@ -175,13 +175,15 @@ function nest_if_over_margin!(
     return false
 end
 
-function find_all_segment_splits(n::Int, k::Int)
+# TOOD: further improve the runtime of this function
+function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     res = Vector{Int}[]
+    n = size(dp, 1)
 
     if n == k
-        return [fill(1, k)]
+        return Int[fill(1, k)]
     elseif k == 1
-        return [[n]]
+        return Int[[n]]
     end
 
     function _backtrack(t::Vector{Int}, current_sum::Int)
@@ -190,25 +192,34 @@ function find_all_segment_splits(n::Int, k::Int)
                 push!(res, t)
             end
             return
+        elseif current_sum >= n
+            return
         end
 
-        start_val = isempty(t) ? 1 : last(t)
-        max_val = n - current_sum - (k - length(t) - 1)
-
-        for i in start_val:min(n, max_val)
+        for i in 1:(n-k+1)
+            if current_sum + i > n
+                break
+            end
+            if dp[current_sum+1, current_sum+i] > max_margin
+                break
+            end
             _backtrack([t; i], current_sum + i)
         end
     end
-    _backtrack(Int[], 0)
 
-    all_splits = Vector{Int}[]
-    for r in res
-        for c in unique(permutations(r))
-            push!(all_splits, c)
+    for i in 1:(n-k+1)
+        cm = dp[1, i]
+        if cm > max_margin
+            break
         end
+        _backtrack([i], i)
     end
 
-    return all_splits
+    if length(res) == 0
+        return [[n]]
+    end
+
+    return res
 end
 
 """
@@ -220,7 +231,7 @@ function find_optimal_nest_placeholders(
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if length(placeholder_inds) <= 1
+    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 30
         return placeholder_inds
     end
     newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
@@ -238,8 +249,6 @@ function find_optimal_nest_placeholders(
         end
     end
     push!(placeholder_groups, current_group)
-
-    # @info "groups" placeholder_groups
 
     optimal_placeholders = Int[]
     for (i, g) in enumerate(placeholder_groups)
@@ -307,7 +316,7 @@ function find_optimal_nest_placeholders(
             ranges
         end
 
-        all_splits = find_all_segment_splits(N, s)
+        all_splits = find_all_segment_splits(dp, s, max_margin)
 
         best_split = UnitRange{Int}[]
         min_diff = 1_000_000 # big number!
