@@ -219,7 +219,7 @@ function find_optimal_nest_placeholders(
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 20
+    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 40
         return placeholder_inds
     end
     newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
