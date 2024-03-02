@@ -250,8 +250,6 @@ function find_optimal_nest_placeholders(
     end
     push!(placeholder_groups, current_group)
 
-    # @info "groups" placeholder_groups
-
     optimal_placeholders = Int[]
     for (i, g) in enumerate(placeholder_groups)
         optinds = find_optimal_nest_placeholders(
