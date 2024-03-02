@@ -5,7 +5,6 @@ version = "1.0.50"
 
 [deps]
 CSTParser = "00ebfdb7-1f24-5e51-bd34-a7502290713f"
-Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 CommonMark = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
@@ -15,7 +14,6 @@ Tokenize = "0796e94c-ce3b-5d07-9a54-7f471281c624"
 
 [compat]
 CSTParser = "^3.4.0"
-Combinatorics = "1"
 CommonMark = "0.5, 0.6, 0.7, 0.8"
 DataStructures = "0.17, 0.18"
 Glob = "1.3"
