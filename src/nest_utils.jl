@@ -175,9 +175,9 @@ function nest_if_over_margin!(
     return false
 end
 
-function find_all_segment_splits(n::Int, k::Int, max_margin::Int)
+function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     res = Vector{Int}[]
-    # n = size(dp, 1)
+    n = size(dp, 1)
 
     if n == k
         return [fill(1, k)]
@@ -195,15 +195,19 @@ function find_all_segment_splits(n::Int, k::Int, max_margin::Int)
             return
         end
 
-        start_val = 1
-        max_val = n - k + 1
-
-        for i in start_val:min(n, max_val)
+        for i in 1:(n-k+1)
+            if current_sum + i > n
+                break
+            end
             _backtrack([t; i], current_sum + i)
         end
     end
 
     for i in 1:(n-k+1)
+        cm = dp[1, i]
+        if cm > max_margin
+            break
+        end
         _backtrack([i], i)
     end
 
@@ -284,7 +288,7 @@ function find_optimal_nest_placeholders(
         end
     end
 
-    @info "" dp placeholder_inds
+    # @info "" dp placeholder_inds
 
     N = size(dp, 1)
 
@@ -306,7 +310,7 @@ function find_optimal_nest_placeholders(
             ranges
         end
 
-        all_splits = find_all_segment_splits(N, s, max_margin)
+        all_splits = find_all_segment_splits(dp, s, max_margin)
 
         best_split = UnitRange{Int}[]
         min_diff = 1_000_000 # big number!
