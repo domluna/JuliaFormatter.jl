@@ -175,6 +175,7 @@ function nest_if_over_margin!(
     return false
 end
 
+# TOOD: further improve the runtime of this function
 function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     res = Vector{Int}[]
     n = size(dp, 1)
@@ -230,7 +231,7 @@ function find_optimal_nest_placeholders(
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 40
+    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 30
         return placeholder_inds
     end
     newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
