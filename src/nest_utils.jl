@@ -180,9 +180,9 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     n = size(dp, 1)
 
     if n == k
-        return [fill(1, k)]
+        return Int[fill(1, k)]
     elseif k == 1
-        return [[n]]
+        return Int[[n]]
     end
 
     function _backtrack(t::Vector{Int}, current_sum::Int)
@@ -199,6 +199,9 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
             if current_sum + i > n
                 break
             end
+            if dp[current_sum+1, current_sum+i] > max_margin
+                break
+            end
             _backtrack([t; i], current_sum + i)
         end
     end
@@ -209,6 +212,10 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
             break
         end
         _backtrack([i], i)
+    end
+
+    if length(res) == 0
+        return [[n]]
     end
 
     return res
