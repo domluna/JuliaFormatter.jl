@@ -175,7 +175,7 @@ function nest_if_over_margin!(
     return false
 end
 
-function find_all_segment_splits2(n::Int, k::Int, max_margin::Int)
+function find_all_segment_splits(n::Int, k::Int, max_margin::Int)
     res = Vector{Int}[]
     # n = size(dp, 1)
 
@@ -203,7 +203,7 @@ function find_all_segment_splits2(n::Int, k::Int, max_margin::Int)
         end
     end
 
-    for i in 1:(n - k + 1)
+    for i in 1:(n-k+1)
         _backtrack([i], i)
     end
 
@@ -306,7 +306,7 @@ function find_optimal_nest_placeholders(
             ranges
         end
 
-        @time all_splits = find_all_segment_splits(N, s, max_margin)
+        all_splits = find_all_segment_splits(N, s, max_margin)
 
         best_split = UnitRange{Int}[]
         min_diff = 1_000_000 # big number!
@@ -329,7 +329,6 @@ function find_optimal_nest_placeholders(
     segments = Tuple{Int,Int}[]
     for s in 1:N
         segments = find_best_segments(s)
-        @info "" segments
         fits = true
         for (i, s) in enumerate(segments)
             if i == 1
