@@ -231,7 +231,7 @@ function find_optimal_nest_placeholders(
     max_margin::Int,
 )::Vector{Int}
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)
-    if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 30
+    if length(placeholder_inds) <= 1
         return placeholder_inds
     end
     newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
@@ -306,7 +306,6 @@ function find_optimal_nest_placeholders(
         end
 
         _f = (t::Vector{Int}) -> begin
-            local n = sum(t)
             local ranges = UnitRange{Int}[]
             local s = 1
             for tt in t
