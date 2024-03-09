@@ -124,7 +124,11 @@ function Document(text::AbstractString)
                 # multiline comment of the form
                 # #=
                 #
-                # #=
+                # =#
+
+                idx = findfirst(x -> x == '\n', t.val) + 1
+                fc2 = findfirst(c -> !isspace(c), t.val[idx:end])
+                ws2 = fc2 === nothing || t.startpos[2] < fc2 ? ws : max(ws, fc2 - 1)
 
                 line = t.startpos[1]
                 offset = goffset
@@ -143,6 +147,7 @@ function Document(text::AbstractString)
                             comments[line] = (ws, cs[idx:end])
                         end
                         line += 1
+                        ws = ws2
                         cs = ""
                     end
                     offset += 1
