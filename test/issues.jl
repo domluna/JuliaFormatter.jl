@@ -1814,4 +1814,20 @@
         """
         @test format_text(s, SciMLStyle()) == s2
     end
+
+    @testset "822" begin
+        s = """
+        ℯ #=
+        =#
+        """
+        @test format_text(s) == s
+
+        s = """
+        begin
+            π => im #=
+            comment =#
+        end
+        """
+        @test format_text(s) == s
+    end
 end

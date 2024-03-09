@@ -160,7 +160,7 @@ function print_inlinecomment(io::IOBuffer, fst::FST, s::State)
     s.on || return
     ws, v = get(s.doc.comments, fst.startline, (0, ""))
     isempty(v) && return
-    v = v[end] == '\n' ? v[nextind(v, 1):prevind(v, end)] : v
+    v = v[end] == '\n' ? v[firstindex(v):prevind(v, end)] : v
     if ws > 0
         write(io, repeat(" ", ws))
     elseif startswith(v, "#=") && endswith(v, "=#")
