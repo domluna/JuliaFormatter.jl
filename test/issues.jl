@@ -1830,4 +1830,9 @@
         """
         @test format_text(s) == s
     end
+
+    @testset "820" begin
+        s = "this_func(::Tuple{<:(some_func())}) = nothing"
+        @test format_text(s) == s
+    end
 end

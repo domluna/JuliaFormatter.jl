@@ -1751,6 +1751,7 @@ p_conditionalopcall(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractS
 function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace = true)
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
+
     if length(cst) == 1
         head = cst.head::CSTParser.EXPR
         if head.fullspan != 0
@@ -1764,7 +1765,9 @@ function p_unaryopcall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; nospace 
     else
         add_node!(t, pretty(style, cst[1], s), s)
         !nospace && add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+        for i in 2:length(cst)
+            add_node!(t, pretty(style, cst[i], s), s, join_lines = true)
+        end
     end
     t
 end
