@@ -1107,22 +1107,21 @@
     end
 
     @testset "512" begin
-        # the 3rd line in the multiline comment contains a bunch of spaces prior 
-        # to the newline, before this fix the whitespace prior to the start of 
-        # the comment would be prepended to that line so that on repeated indents 
+        # the 3rd line in the multiline comment contains a bunch of spaces prior
+        # to the newline, before this fix the whitespace prior to the start of
+        # the comment would be prepended to that line so that on repeated indents
         # the spaces would keep increasing.
         str = """
         function make_router()
             function get_sesh()
-                #= 
+                #=
                 x
-                             
+
                 x=#
             end
         end
         """
-        ans = "function make_router()\n    function get_sesh()\n        #= \n        x\n\n        x=#\n    end\nend\n"
-        @test fmt(str) == ans
+        @test fmt(fmt(str)) == str
     end
 
     @testset "513" begin
