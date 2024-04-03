@@ -1835,4 +1835,44 @@
         s = "this_func(::Tuple{<:(some_func())}) = nothing"
         @test format_text(s) == s
     end
+
+    @testset "820" begin
+        s1 = """
+        X = (
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+            xxxxx=["xxxx", "xxxx", "xxxx"]
+        )
+        """
+        s2 = """
+        X = (
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+        )
+        """
+        @test format_text(
+            s1,
+            style = BlueStyle(),
+            trailing_comma = true,
+            join_lines_based_on_source = true,
+        ) == s2
+
+        s1 = """
+        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX = (
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+            xxxxx=["xxxx", "xxxx", "xxxx"]
+        )
+        """
+        s2 = """
+        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX = (
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+            xxxxx=["xxxx", "xxxx", "xxxx"],
+        )
+        """
+        @test format_text(
+            s1,
+            style = BlueStyle(),
+            trailing_comma = true,
+            join_lines_based_on_source = true,
+        ) == s2
+    end
 end
