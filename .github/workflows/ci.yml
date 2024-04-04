@@ -36,12 +36,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v2
         with:
           show-versioninfo: true
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/julia-buildpkg@v1
+        with:
+          ignore-no-cache: true
       - uses: julia-actions/julia-runtest@latest
   docs:
     name: Documentation
@@ -50,7 +52,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v2
         with:
           show-versioninfo: true
           version: '1'
