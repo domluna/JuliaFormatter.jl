@@ -1,6 +1,6 @@
 @testset "Format repo" begin
     try
-        sandbox_dir = joinpath(tempdir(), "format_repo_test", join(rand('a':'z', 20)))
+        sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 40)))
         mkdir(sandbox_dir)
         cp(@__DIR__, sandbox_dir; force = true)
 
