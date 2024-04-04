@@ -454,7 +454,6 @@ n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s)
 
 function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
-    @info "here 1" fst.typ map(n -> n.typ, fst.nodes)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
@@ -462,7 +461,6 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
 
     nodes = fst.nodes::Vector
     if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
-        @info "ok"
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, nodes))
         if s.opts.join_lines_based_on_source
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
