@@ -45,7 +45,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             last_arg_idx = findlast(is_iterable_arg, nodes)
             last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
 
-            first_arg.startline != last_arg.startline
+            first_arg.endline != last_arg.startline
         else
             false
         end
