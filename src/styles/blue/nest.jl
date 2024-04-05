@@ -29,10 +29,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
                 false
             end
 
-        # nesting is initiated by source code
-        src_nest = src_diff_line && line_margin <= s.opts.margin
-
-        args_diff_line = if src_nest
+        args_diff_line = if src_diff_line
             # first arg
             first_arg_idx = if fst.typ === TupleN && !has_closer
                 1
@@ -61,7 +58,8 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             fst.indent += s.opts.indent
         end
 
-        add_trailing_comma = (src_nest && args_diff_line) || (!src_nest && !nest_to_oneline)
+        add_trailing_comma =
+            (src_diff_line && args_diff_line) || (!src_diff_line && !nest_to_oneline)
 
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE

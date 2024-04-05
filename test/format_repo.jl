@@ -1,7 +1,7 @@
 @testset "Format repo" begin
-    sandbox_dir = joinpath(tempdir(), "format_repo_test")
-    mkdir(sandbox_dir)
     try
+        sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 40)))
+        mkdir(sandbox_dir)
         cp(@__DIR__, sandbox_dir; force = true)
 
         # initial format
@@ -12,6 +12,9 @@
         @test format(sandbox_dir, join_lines_based_on_source = true, margin = 10_000) ==
               true
     finally
-        rm(sandbox_dir; recursive = true)
+        try
+            rm(sandbox_dir; recursive = true)
+        catch
+        end
     end
 end
