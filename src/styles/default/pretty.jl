@@ -637,6 +637,7 @@ function p_macrocall(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
 
     !has_closer && (t.typ = MacroBlock)
 
+
     # same as CSTParser.Call but whitespace sensitive
     for (i, a) in enumerate(cst)
         if CSTParser.is_nothing(a)

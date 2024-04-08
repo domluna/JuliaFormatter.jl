@@ -494,7 +494,10 @@ function add_node!(
            en.typ === MacroBlock ||
            en.typ === SEMICOLON ||
            # arg = @macro foo
-           en.typ === Kw && (en[end].typ === MacroCall || en[end].typ === MacroBlock)
+           en.typ === Kw && (en[end].typ === MacroCall || en[end].typ === MacroBlock) ||
+           # arg => @macro foo
+           en.typ === Binary && (en[end].typ === MacroCall || en[end].typ === MacroBlock)
+
             # don't add trailing comma in these cases
         elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
             # preserve comma
