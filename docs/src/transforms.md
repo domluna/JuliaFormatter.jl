@@ -5,7 +5,7 @@
 By default if the RHS is a range, i.e. `1:10` then `for in` is converted to `for =`. Otherwise `for =` is converted to `for in`. See [this issue](https://github.com/domluna/JuliaFormatter.jl/issues/34) for the rationale and further explanation.
 
 Alternative to the above - setting `always_for_in` to `true`, i.e. `format_text(..., always_for_in = true)` will always convert `=` to `in` even if the RHS is a range.
-`always_for_in=nothing` will leave the choice of `in` vs `=` up to the user.
+`always_for_in="nothing"` will leave the choice of `in` vs `=` up to the user.
 
 ## Trailing Commas
 
