@@ -28,9 +28,9 @@ jobs:
           - '1.10'
           # - 'nightly'
         arch: [x64, x86]
-        os: [ubuntu-latest, windows-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         exclude:
-          - os: macos-13
+          - os: macos-latest
             arch: x86
           - julia-version: 1.4
     steps:
