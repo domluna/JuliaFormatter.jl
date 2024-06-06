@@ -396,7 +396,8 @@ end
         options...,
     )::Bool
 
-Recursively descend into files and directories, formatting any `.jl` files.
+Recursively descend into files and directories, formatting any `.jl`, `.md`, `.jmd`,
+or `.qmd` files.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
