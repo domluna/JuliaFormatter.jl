@@ -4,8 +4,9 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_m
     @eval Base.Experimental.@max_methods 1
 end
 
+# using JuliaSyntax: var"@K_str", Kind, tokenize, sourcetext, has_flags, haschildren
+using JuliaSyntax
 using CSTParser
-using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
 using Glob
@@ -75,39 +76,7 @@ function getstyle(s::NoopStyle)
     return s
 end
 
-function options(s::DefaultStyle)
-    return (;
-        indent = 4,
-        margin = 92,
-        always_for_in = false,
-        whitespace_typedefs = false,
-        whitespace_ops_in_indices = false,
-        remove_extra_newlines = false,
-        import_to_using = false,
-        pipe_to_function_call = false,
-        short_to_long_function_def = false,
-        long_to_short_function_def = false,
-        always_use_return = false,
-        whitespace_in_kwargs = true,
-        annotate_untyped_fields_with_any = true,
-        format_docstrings = false,
-        align_struct_field = false,
-        align_assignment = false,
-        align_conditional = false,
-        align_pair_arrow = false,
-        conditional_to_if = false,
-        normalize_line_endings = "auto",
-        align_matrix = false,
-        join_lines_based_on_source = false,
-        trailing_comma = true,
-        trailing_zero = true,
-        indent_submodule = false,
-        separate_kwargs_with_semicolon = false,
-        surround_whereop_typeparameters = true,
-        variable_call_indent = [],
-        short_circuit_to_if = false,
-    )
-end
+options(s::DefaultStyle) = return Options()
 
 if VERSION < v"1.3"
     # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
@@ -294,26 +263,28 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     end
     text = normalize_line_ending(text, replacer)
 
-    _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    # TODO: This line info is not correct since it doesn't stop at the error.
-    # At the moment it doesn't seem there's a way to get the error line info.
-    # https://github.com/julia-vscode/CSTParser.jl/issues/335
-    line, offset = ps.lt.startpos
-    if ps.errored
-        buf = IOBuffer()
-        lines = split(text, '\n')
-        padding = ndigits(length(lines))
-        for (i, l) in enumerate(lines)
-            write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
-            if i == line
-                write(buf, "\n...")
-                break
+    srcfile = JuliaSyntax.SourceFile(text)
+    toks = JuliaSyntax.tokenize(text)
+    for t in toks
+        if t.head == K"error"
+            offset = first(t.range)
+            line = JuliaSyntax.source_line(srcfile, offset)
+
+            lines = split(text, '\n')
+            padding = ndigits(JuliaSyntax.source_line(srcfile, first(toks[end].range)))
+            for (i, l) in enumerate(lines)
+                write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
+                if i == line
+                    write(buf, "\n...")
+                    break
+                end
             end
+            error_text = String(take!(buf))
+            error(
+                "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
+            )
+            break
         end
-        error_text = String(take!(buf))
-        error(
-            "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
-        )
     end
     return text
 end
