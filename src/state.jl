@@ -25,14 +25,14 @@ function has_semicolon(d::Document, line::Integer)
 end
 
 function cursor_loc(s::State, offset::Integer)
-    l = s.doc.range_to_line[offset:offset]
-    r = s.doc.line_to_range[l]
-    return (l, offset - first(r) + 1, length(r))
+    l = JuliaSyntax.source_line(s.doc.srcfile, offset)
+    r = JuliaSyntax.source_line_range(s.doc.srcfile, offset)
+    return (l, first(r), last(r))
 end
 cursor_loc(s::State) = cursor_loc(s, s.offset)
 
 function on_same_line(s::State, offset1::Int, offset2::Int)
-    l = s.doc.range_to_line[offset1:offset1]
-    r = s.doc.line_to_range[l]
-    return offset2 in r
+    l1 = JuliaSyntax.source_line(s.doc.srcfile, offset1)
+    l2 = JuliaSyntax.source_line(s.doc.srcfile, offset2)
+    return l1 == l2
 end
