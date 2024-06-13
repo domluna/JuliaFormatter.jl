@@ -231,8 +231,8 @@ function n_for!(ys::YASStyle, fst::FST, s::State)
 
     idx = 5
     n = fst[idx]
-    if n.typ === NOTCODE && n.startline == n.endline
-        res = get(s.doc.comments, n.startline, (0, ""))
-        res == (0, "") && (fst[idx-1] = Whitespace(0))
-    end
+    # if n.typ === NOTCODE && n.startline == n.endline
+    #     res = get(s.doc.comments, n.startline, (0, ""))
+    #     res == (0, "") && (fst[idx-1] = Whitespace(0))
+    # end
 end

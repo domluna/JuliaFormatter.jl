@@ -7,6 +7,7 @@ end
 # using JuliaSyntax: var"@K_str", Kind, tokenize, sourcetext, has_flags, haschildren
 using JuliaSyntax
 using CSTParser
+using Tokenize
 using DataStructures
 using Pkg.TOML: parsefile
 using Glob
@@ -247,9 +248,10 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         print_leaf(io, Newline(), s)
     end
     print_tree(io, fst, s)
-    if fst.endline < length(s.doc.range_to_line)
+    nlines = length(s.doc.srcfile.line_starts)
+    if fst.endline < nlines
         print_leaf(io, Newline(), s)
-        format_check(io, Notcode(fst.endline + 1, length(s.doc.range_to_line)), s)
+        format_check(io, Notcode(fst.endline + 1, nlines), s)
     end
 
     text = String(take!(io))
