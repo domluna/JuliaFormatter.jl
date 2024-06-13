@@ -8,7 +8,6 @@ end
 using JuliaSyntax
 using CSTParser
 using Tokenize
-using DataStructures
 using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
