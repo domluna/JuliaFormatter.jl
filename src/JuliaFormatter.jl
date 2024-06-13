@@ -77,7 +77,39 @@ function getstyle(s::NoopStyle)
     return s
 end
 
-options(s::DefaultStyle) = return Options()
+function options(s::DefaultStyle)
+    return (;
+        indent = 4,
+        margin = 92,
+        always_for_in = false,
+        whitespace_typedefs = false,
+        whitespace_ops_in_indices = false,
+        remove_extra_newlines = false,
+        import_to_using = false,
+        pipe_to_function_call = false,
+        short_to_long_function_def = false,
+        long_to_short_function_def = false,
+        always_use_return = false,
+        whitespace_in_kwargs = true,
+        annotate_untyped_fields_with_any = true,
+        format_docstrings = false,
+        align_struct_field = false,
+        align_assignment = false,
+        align_conditional = false,
+        align_pair_arrow = false,
+        conditional_to_if = false,
+        normalize_line_endings = "auto",
+        align_matrix = false,
+        join_lines_based_on_source = false,
+        trailing_comma = true,
+        trailing_zero = true,
+        indent_submodule = false,
+        separate_kwargs_with_semicolon = false,
+        surround_whereop_typeparameters = true,
+        variable_call_indent = [],
+        short_circuit_to_if = false,
+    )
+end
 
 if VERSION < v"1.3"
     # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
@@ -248,7 +280,8 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         print_leaf(io, Newline(), s)
     end
     print_tree(io, fst, s)
-    nlines = length(s.doc.srcfile.line_starts)
+    # extra line
+    nlines = length(s.doc.srcfile.line_starts) - 1
     if fst.endline < nlines
         print_leaf(io, Newline(), s)
         format_check(io, Notcode(fst.endline + 1, nlines), s)
@@ -261,7 +294,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     elseif s.opts.normalize_line_endings == "windows"
         UNIX_TO_WINDOWS
     else
-        choose_line_ending_replacer(s.doc.text)
+        choose_line_ending_replacer(s.doc.srcfile.code)
     end
     text = normalize_line_ending(text, replacer)
 
