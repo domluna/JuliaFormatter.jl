@@ -4,37 +4,44 @@ struct Document
     # Line where there's a noindent comment. "#! format: noindent". This is checked during
     # the print stage to know if the contents of the block (recursive) should not be indented.
     noindent_blocks::Vector{Int}
+
+    lit_strings::Dict{Int,Tuple{Int,Int,String}}
+    comments::Dict{Int,Tuple{Int,String}}
+    semicolons::Dict{Int,Vector{Int}}
 end
 
 function Document(text::AbstractString)
     format_skips = Tuple{Int,Int}[]
     noindent_blocks = Int[]
     stack = Int[]
-    format_on = true
-    inline_comments::Dict{Int,Tuple{Int,String}}
-    comments::Dict{Int,Tuple{Int,String}}
+    comments = Dict{Int,Tuple{Int,String}}()
     semicolons = Dict{Int,Vector{Int}}()
+    lit_strings = Dict{Int,Tuple{Int,Int,String}}()
 
     srcfile = JuliaSyntax.SourceFile(text)
     tokens = JuliaSyntax.tokenize(text)
+
     for (i, t) in enumerate(tokens)
         kind = t.head.kind
         if kind === K"Comment"
-
             ws = 0
-            if i > 1 && tokens[i-1].head.kind === "Whitespace"
-                r = tokens[i-1].head.range
-                ws = last(r) - first(r)
+            val = srcfile.code[first(t.range):last(t.range)]
+
+            if i > 1 && (tokens[i-1].head.kind === K"Whitespace"  || tokens[i-1].head.kind === K"NewlineWs")
+                pt = tokens[i-1]
+                prevval = srcfile.code[first(pt.range):last(pt.range)]
+                i = findlast(c -> c == '\n', prevval)
+                i === nothing && (i = 1)
+                ws = count(c -> c == ' ', prevval[i:end])
             end
 
             startline = JuliaSyntax.source_line(srcfile, first(t.range))
             endline = JuliaSyntax.source_line(srcfile, last(t.range))
-            val = text[first(t.range):last(t.range)]
             if startline == endline
                 if ws > 0
-                inline_comments[line] = (ws, val)
+                comments[startline] = (ws, val)
             else
-                comments[line] = (ws, val)
+                comments[startline] = (ws, val)
                 end
             else
                 # multiline comment
@@ -46,13 +53,10 @@ function Document(text::AbstractString)
                 ws2 = fc2 === nothing || lineoffset < fc2 ? ws : max(ws, fc2 - 1)
 
                 line = startline
-                offset = goffset
                 cs = ""
                 for (i, c) in enumerate(val)
                     cs *= c
                     if c == '\n'
-                        s = length(ranges) > 0 ? last(ranges[end]) + 1 : 1
-                        push!(ranges, s:offset+1)
                         fc = findfirst(c -> !isspace(c), cs)
                         if fc === nothing
                             # comment is all whitespace
@@ -65,7 +69,6 @@ function Document(text::AbstractString)
                         ws = ws2
                         cs = ""
                     end
-                    offset += 1
                 end
                 # last comment
                 idx = min(findfirst(c -> !isspace(c), cs)::Int, ws + 1)
@@ -78,14 +81,12 @@ function Document(text::AbstractString)
                 offset = first(t.range)
                 r = JuliaSyntax.source_line_range(srcfile, offset)
                 push!(stack, first(r))
-                format_on = false
             elseif length(stack) > 0 && occursin(r"^#!\s*format\s*:\s*on\s*$", val)
                 # If "#! format: off" has not been seen
                 # "#! format: on" is treated as a normal comment.
                 offset = last(t.range)
                 r = JuliaSyntax.source_line_range(srcfile, offset)
                 push!(format_skips, (pop!(stack), last(r)))
-                format_on = true
             end
             if occursin(r"^#!\s*format\s*:\s*noindent\s*$", val)
                 line = JuliaSyntax.source_line(srcfile, first(t.range))
@@ -98,7 +99,22 @@ function Document(text::AbstractString)
                     """Unable to format. Multi-line comment on line $l is not closed.""",
                 ),
             )
-        elseif kind === K"CmdString" || kind == K"String"
+        elseif kind === K"String"
+            wrapper = tokens[i-1] === K"\"\"\"" ? "\"\"\"" :  "\""
+            val = text[first(t.range):last(t.range)]
+            s = wrapper * val * wrapper
+            startline = JuliaSyntax.source_line(srcfile, first(t.range))
+            startline = JuliaSyntax.source_line(srcfile, last(t.range))
+            offset = first(t.range)
+            lit_strings[offset] = (startline, endline, s)
+        elseif kind === K"CmdString"
+            wrapper = tokens[i-1] === K"```" ? "```" :  "`"
+            val = text[first(t.range):last(t.range)]
+            s = wrapper * val * wrapper
+            startline = JuliaSyntax.source_line(srcfile, first(t.range))
+            startline = JuliaSyntax.source_line(srcfile, last(t.range))
+            offset = first(t.range)
+            lit_strings[offset] = (startline, endline, s)
         elseif kind === K";"
             line = JuliaSyntax.source_line(srcfile, first(t.range))
              if haskey(semicolons, line)
@@ -121,7 +137,7 @@ function Document(text::AbstractString)
         push!(format_skips, (stack[1], -1))
     end
 
-    return Document(srcfile, format_skips, noindent_blocks)
+    return Document(srcfile, format_skips, noindent_blocks, lit_strings, comments, semicolons )
 end
 
 function has_noindent_block(d::Document, r::Tuple{Int,Int})
