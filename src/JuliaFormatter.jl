@@ -107,6 +107,7 @@ function options(s::DefaultStyle)
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
         short_circuit_to_if = false,
+        disallow_single_arg_nesting = false,
     )
 end
 
