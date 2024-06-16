@@ -31,7 +31,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-13]
         exclude:
           - os: macos-13
-            version: 1.4
+            arch: x86
+          - os: macos-13
+            version: '1.4'
+        include:
+          - os: macos-latest
+            version: '1'
+            arch: aarch64
     steps:
       - uses: actions/checkout@v4
         with:
