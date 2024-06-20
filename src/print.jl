@@ -4,32 +4,60 @@ function format_check(io::IOBuffer, fst::FST, s::State)
         return
     end
 
-    skip = s.doc.format_skips[1]
     line_range = fst.startline:fst.endline
+    skip = s.doc.format_skips[1]
 
-    if s.on && skip[1] in line_range && skip[2] in line_range
-        # weird corner case where off and on toggle
-        # are in the same comment block
-        fst.endline = skip[1]
-        print_notcode(io, fst, s, fmttag = true)
-        write(io, skip[3])
-        fst.startline = skip[2]
-        fst.endline = skip[2]
-        print_notcode(io, fst, s, fmttag = true)
-    elseif s.on && skip[1] in line_range
-        fst.endline = skip[1]
-        print_notcode(io, fst, s, fmttag = true)
-        write(io, skip[3])
+    if s.on && skip.startline in line_range && skip.endline in line_range
+        l1 = fst.startline
+        l2 = skip.startline - 1
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
+
+        output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
+        l1 = skip.endline + 1
+        l2 = fst.endline
+        nlines = numlines(s.doc)
+
+        if l1 <= nlines && output[end] == '\n'
+            output = output[1:prevind(output, end)]
+        end
+        write(io, output)
+
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
+    elseif s.on && skip.startline in line_range
+        l1 = fst.startline
+        l2 = skip.startline - 1
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
         s.on = false
-    elseif !s.on && skip[2] in line_range
-        deleteat!(s.doc.format_skips, 1)
+    elseif !s.on && skip.endline in line_range
+        output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
+        l1 = skip.endline + 1
+        l2 = fst.endline
+        nlines = numlines(s.doc)
+
+        if l1 <= nlines && output[end] == '\n'
+            output = output[1:prevind(output, end)]
+        end
+        write(io, output)
+
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
+        popfirst!(s.doc.format_skips)
         s.on = true
-        # change the startline, otherwise lines
-        # prior to in the NOTCODE node prior to
-        # "format: on" will be reprinted
-        fst.startline = skip[2]
-        print_notcode(io, fst, s, fmttag = true)
-        # previous NEWLINE node won't be printed
     else
         print_notcode(io, fst, s)
     end
@@ -103,10 +131,10 @@ function print_tree(
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) || nodes[i+1].typ === Block || nodes[i+1].typ === Begin
-                write(io, repeat(" ", max(nodes[i+1].indent, 0)))
+                s.on && write(io, repeat(" ", max(nodes[i+1].indent, 0)))
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
-                write(io, ws)
+                s.on && write(io, ws)
                 s.line_offset = indent
             end
         end
@@ -127,11 +155,11 @@ function print_string(io::IOBuffer, fst::FST, s::State)
     print_tree(io, fst, s)
 end
 
-function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
+function print_notcode(io::IOBuffer, fst::FST, s::State)
     s.on || return
     for l in fst.startline:fst.endline
         ws, v = get(s.doc.comments, l, (0, "\n"))
-        !fmttag && (ws = fst.indent)
+        ws = fst.indent
 
         # If the current newline is followed by another newline
         # don't print the current newline.

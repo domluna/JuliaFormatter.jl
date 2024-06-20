@@ -36,3 +36,9 @@ function on_same_line(s::State, offset1::Int, offset2::Int)
     l2 = JuliaSyntax.source_line(s.doc.srcfile, offset2)
     return l1 == l2
 end
+
+function linerange(s::State, line::Int)
+    f = s.doc.srcfile.line_starts[line]
+    r = JuliaSyntax.source_line_range(s.doc.srcfile, f)
+    return (first(r), last(r))
+end

@@ -1,5 +1,9 @@
 # this should be formatted
-a = f(aaa, bbb, ccc)
+a = f(
+    aaa,
+    bbb,
+    ccc,
+)
 
 # this should not be formatted
 #! format: off
@@ -11,5 +15,12 @@ c = 102000
 d = @foo 10 20
 
 e = "what the foocho"
+
+           f = """what the foocho"""
+
+
+                             g = ```what the foocho```
+
+  h = `foo`
 
 # ok
