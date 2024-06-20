@@ -281,7 +281,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     end
     print_tree(io, fst, s)
     # extra line
-    nlines = length(s.doc.srcfile.line_starts) - 1
+    nlines = numlines(s.doc)
     if fst.endline < nlines
         print_leaf(io, Newline(), s)
         format_check(io, Notcode(fst.endline + 1, nlines), s)

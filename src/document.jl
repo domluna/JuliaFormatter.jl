@@ -175,5 +175,5 @@ function has_noindent_block(d::Document, r::Tuple{Int,Int})
     return false
 end
 
-numlines(d::Document) = length(d.srcfile.line_starts) - 1
 numlines(sf::JuliaSyntax.SourceFile) = length(sf.line_starts) - 1
+numlines(d::Document) = numlines(d.srcfile)
