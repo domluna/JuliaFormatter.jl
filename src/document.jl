@@ -15,6 +15,8 @@ struct Document
     lit_strings::Dict{Int,Tuple{Int,Int,String}}
     comments::Dict{Int,Tuple{Int,String}}
     semicolons::Dict{Int,Vector{Int}}
+
+    ends_on_nl::Bool
 end
 
 function Document(text::AbstractString)
@@ -27,6 +29,8 @@ function Document(text::AbstractString)
 
     srcfile = JuliaSyntax.SourceFile(text)
     tokens = JuliaSyntax.tokenize(text)
+
+    ends_on_nl = tokens[end].head.kind === K"NewlineWs"
 
     for (i, t) in enumerate(tokens)
         kind = t.head.kind
@@ -165,6 +169,7 @@ function Document(text::AbstractString)
         lit_strings,
         comments,
         semicolons,
+        ends_on_nl,
     )
 end
 

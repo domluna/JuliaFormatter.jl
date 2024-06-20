@@ -6,8 +6,11 @@ function format_check(io::IOBuffer, fst::FST, s::State)
 
     line_range = fst.startline:fst.endline
     skip = s.doc.format_skips[1]
+    nlines = numlines(s.doc)
 
-    if s.on && skip.startline in line_range && skip.endline in line_range
+    if s.on &&
+       skip.startline in line_range &&
+       (skip.endline in line_range || skip.endline == nlines)
         l1 = fst.startline
         l2 = skip.startline - 1
         if l1 <= l2
@@ -19,17 +22,25 @@ function format_check(io::IOBuffer, fst::FST, s::State)
         output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
         l1 = skip.endline + 1
         l2 = fst.endline
-        nlines = numlines(s.doc)
-
-        if l1 <= nlines && output[end] == '\n'
-            output = output[1:prevind(output, end)]
-        end
-        write(io, output)
 
         if l1 <= l2
             r1 = linerange(s, l1)
             r2 = linerange(s, l2)
-            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+            write(io, output)
+            output = JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)]
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        else
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        end
+
+        if nlines == skip.endline
+            s.on = false
         end
     elseif s.on && skip.startline in line_range
         l1 = fst.startline
@@ -44,17 +55,21 @@ function format_check(io::IOBuffer, fst::FST, s::State)
         output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
         l1 = skip.endline + 1
         l2 = fst.endline
-        nlines = numlines(s.doc)
-
-        if l1 <= nlines && output[end] == '\n'
-            output = output[1:prevind(output, end)]
-        end
-        write(io, output)
 
         if l1 <= l2
             r1 = linerange(s, l1)
             r2 = linerange(s, l2)
-            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+            write(io, output)
+            output = JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)]
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        else
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
         end
         popfirst!(s.doc.format_skips)
         s.on = true

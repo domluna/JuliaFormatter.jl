@@ -111,6 +111,7 @@
         b = 10 * 20
 
         # comment"""
+
         str_ = """
         # this should be formatted
         a = f(aaa, bbb, ccc)

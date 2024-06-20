@@ -280,13 +280,13 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         print_leaf(io, Newline(), s)
     end
     print_tree(io, fst, s)
-    # extra line
     nlines = numlines(s.doc)
-    if fst.endline < nlines
+    if s.on && fst.endline < nlines
         print_leaf(io, Newline(), s)
         format_check(io, Notcode(fst.endline + 1, nlines), s)
+    elseif s.doc.ends_on_nl
+        print_leaf(io, Newline(), s)
     end
-
     text = String(take!(io))
 
     replacer = if s.opts.normalize_line_endings == "unix"
