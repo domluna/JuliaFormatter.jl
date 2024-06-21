@@ -156,7 +156,7 @@ function main()
     if pdb == ""
         check_space(free, 157, "PDB")
         mkpath(pdb_path)
-        downloadentirepdb(pdb_dir = pdb_path, file_format = MMCIF)
+        downloadentirepdb(pdb_dir = pdb_path, file_format = MMCIFFormat)
     else
         pdb = abspath(pdb)
         symlink(pdb, pdb_path)
