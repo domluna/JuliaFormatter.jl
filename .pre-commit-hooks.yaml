@@ -1,7 +1,7 @@
 - id: julia-formatter
   name: "Julia Formatter"
-  entry: "julia -e 'import JuliaFormatter: format; format(\".\")'"
-  pass_filenames: false
+  entry: "julia -e 'import JuliaFormatter: format; format(ARGS)'"
+  pass_filenames: true
   always_run: false
   types: [file]
   files: \.(jl|[jq]?md)$
