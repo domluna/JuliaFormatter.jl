@@ -12,4 +12,11 @@ d = @foo 10 20
 
 e = "what the foocho"
 
+           f = """what the foocho"""
+
+
+                             g = ```what the foocho```
+
+  h = `foo`
+
 # ok

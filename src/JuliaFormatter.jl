@@ -4,9 +4,10 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_m
     @eval Base.Experimental.@max_methods 1
 end
 
+# using JuliaSyntax: var"@K_str", Kind, tokenize, sourcetext, has_flags, haschildren
+using JuliaSyntax
 using CSTParser
 using Tokenize
-using DataStructures
 using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
@@ -106,6 +107,7 @@ function options(s::DefaultStyle)
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
         short_circuit_to_if = false,
+        disallow_single_arg_nesting = false,
     )
 end
 
@@ -278,11 +280,13 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
         print_leaf(io, Newline(), s)
     end
     print_tree(io, fst, s)
-    if fst.endline < length(s.doc.range_to_line)
+    nlines = numlines(s.doc)
+    if s.on && fst.endline < nlines
         print_leaf(io, Newline(), s)
-        format_check(io, Notcode(fst.endline + 1, length(s.doc.range_to_line)), s)
+        format_check(io, Notcode(fst.endline + 1, nlines), s)
+    elseif s.doc.ends_on_nl
+        print_leaf(io, Newline(), s)
     end
-
     text = String(take!(io))
 
     replacer = if s.opts.normalize_line_endings == "unix"
@@ -290,30 +294,32 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     elseif s.opts.normalize_line_endings == "windows"
         UNIX_TO_WINDOWS
     else
-        choose_line_ending_replacer(s.doc.text)
+        choose_line_ending_replacer(s.doc.srcfile.code)
     end
     text = normalize_line_ending(text, replacer)
 
-    _, ps = CSTParser.parse(CSTParser.ParseState(text), true)
-    # TODO: This line info is not correct since it doesn't stop at the error.
-    # At the moment it doesn't seem there's a way to get the error line info.
-    # https://github.com/julia-vscode/CSTParser.jl/issues/335
-    line, offset = ps.lt.startpos
-    if ps.errored
-        buf = IOBuffer()
-        lines = split(text, '\n')
-        padding = ndigits(length(lines))
-        for (i, l) in enumerate(lines)
-            write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
-            if i == line
-                write(buf, "\n...")
-                break
+    srcfile = JuliaSyntax.SourceFile(text)
+    toks = JuliaSyntax.tokenize(text)
+    for t in toks
+        if t.head == K"error"
+            offset = first(t.range)
+            line = JuliaSyntax.source_line(srcfile, offset)
+
+            lines = split(text, '\n')
+            padding = ndigits(JuliaSyntax.source_line(srcfile, first(toks[end].range)))
+            for (i, l) in enumerate(lines)
+                write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
+                if i == line
+                    write(buf, "\n...")
+                    break
+                end
             end
+            error_text = String(take!(buf))
+            error(
+                "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
+            )
+            break
         end
-        error_text = String(take!(buf))
-        error(
-            "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
-        )
     end
     return text
 end
