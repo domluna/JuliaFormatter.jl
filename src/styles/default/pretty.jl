@@ -394,7 +394,6 @@ function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstri
         s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], val)
     end
-    # @info "" s.doc.lit_strings s.offset
 
     # Strings are unescaped by CSTParser
     # to mimic Meta.parse which makes reproducing

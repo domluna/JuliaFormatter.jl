@@ -327,7 +327,9 @@ function align_matrix!(fst::FST)
     for r in rows
         if r[1].line_offset > min_offset && line != r.startline
             diff = r[1].line_offset - min_offset
-            insert!(r.nodes::Vector{FST}, 1, Whitespace(diff))
+            if diff > 0
+                insert!(r.nodes::Vector{FST}, 1, Whitespace(diff))
+            end
         end
         line = r.startline
     end
@@ -339,7 +341,9 @@ function align_matrix!(fst::FST)
                 n1 = r[i-1]
                 n2 = r[i+1]
 
+                # diff = n2.line_offset - n1.line_offset - length(n1)
                 diff = n2.line_offset - n1.line_offset - length(n1)
+                @info "" diff
 
                 # fix #694 and #713
                 if diff > 0
