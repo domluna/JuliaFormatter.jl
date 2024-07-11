@@ -188,7 +188,7 @@ p_nonstdidentifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractSt
 
 function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
+    s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
     FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val::AbstractString)
 end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -196,8 +196,7 @@ p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
 
 function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
-    s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
-
+    s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val::AbstractString)
     t.metadata = Metadata(tokenize(cst.val::AbstractString), CSTParser.isdotted(cst))
     return t
@@ -392,11 +391,10 @@ function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstri
             val *= float_suffix
         end
 
-        s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
+        s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], val)
     end
-
-    @info "pedro" s.offset
+    # @info "" s.doc.lit_strings s.offset
 
     # Strings are unescaped by CSTParser
     # to mimic Meta.parse which makes reproducing
@@ -408,12 +406,12 @@ function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstri
     # IDENTIFIER where as CSTParser parses it as a LITERAL.
     # An IDENTIFIER won't show up in the string literal lookup table.
     if str_info === nothing
-        s.offset += length(cst.val::AbstractString) + (cst.fullspan - cst.span)
+        s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
         return FST(LITERAL, loc[2], loc[1], loc[1], cst.val::AbstractString)
     end
 
     startline, endline, str = str_info
-    s.offset += length(str) + (cst.fullspan - cst.span)
+    s.offset += ncodeunits(str) + (cst.fullspan - cst.span)
 
     if from_docstring && s.opts.format_docstrings
         str = format_docstring(ds, s, str)
@@ -483,7 +481,7 @@ function p_stringh(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     style = getstyle(ds)
     loc = cursor_loc(s)
     startline, endline, str = s.doc.lit_strings[s.offset-1]
-    s.offset += length(str) + (cst.fullspan - cst.span)
+    s.offset += ncodeunits(str) + (cst.fullspan - cst.span)
 
     lines = split(str, "\n")
 
@@ -618,7 +616,7 @@ function p_macrostr_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
     idx = findfirst(==('_'), cst.val)
     val = cst.val::AbstractString
     val = val[2:prevind(val, idx::Int)]
-    s.offset += length(val) + (cst.fullspan - cst.span)
+    s.offset += ncodeunits(val) + (cst.fullspan - cst.span)
     return FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
 end
 p_macrostr_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =

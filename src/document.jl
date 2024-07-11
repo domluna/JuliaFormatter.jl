@@ -38,15 +38,14 @@ function Document(text::AbstractString)
         kind = t.head.kind
         if kind === K"Comment"
             ws = 0
-            val = srcfile.code[first(t.range):prevind(srcfile.code, last(t.range))]
+            val = srcfile.code[first(t.range):last(t.range)]
 
             if i > 1 && (
                 tokens[i-1].head.kind === K"Whitespace" ||
                 tokens[i-1].head.kind === K"NewlineWs"
             )
                 pt = tokens[i-1]
-                prevval =
-                    srcfile.code[first(pt.range):prevind(srcfile.code, last(pt.range))]
+                prevval = srcfile.code[first(pt.range):last(pt.range)]
                 idx = findlast(c -> c == '\n', prevval)
                 idx === nothing && (idx = 1)
                 ws = count(c -> c == ' ', prevval[idx:end])
@@ -139,7 +138,15 @@ function Document(text::AbstractString)
                     end_token = t
                     break
                 else
-                    full_string *= text[first(t.range):last(t.range)]
+                    try
+                        full_string *= text[first(t.range):last(t.range)]
+                    catch e
+                        if isa(e, StringIndexError)
+                            full_string *= text[first(t.range):prevind(text, last(t.range))]
+                        else
+                            rethrow(e)
+                        end
+                    end
                 end
                 i += 1
             end
