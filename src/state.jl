@@ -27,7 +27,8 @@ end
 function cursor_loc(s::State, offset::Integer)
     l = JuliaSyntax.source_line(s.doc.srcfile, offset)
     r = JuliaSyntax.source_line_range(s.doc.srcfile, offset)
-    return (l, first(r), last(r))
+    # return (l, first(r), last(r))
+    return (l, offset - first(r) + 1, length(r))
 end
 cursor_loc(s::State) = cursor_loc(s, s.offset)
 

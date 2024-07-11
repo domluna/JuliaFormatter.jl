@@ -396,6 +396,8 @@ function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstri
         return FST(LITERAL, loc[2], loc[1], loc[1], val)
     end
 
+    @info "pedro" s.offset
+
     # Strings are unescaped by CSTParser
     # to mimic Meta.parse which makes reproducing
     # the correct output from the LITERAL value problematic.

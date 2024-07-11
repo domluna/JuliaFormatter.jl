@@ -32,21 +32,24 @@ function Document(text::AbstractString)
 
     ends_on_nl = tokens[end].head.kind === K"NewlineWs"
 
-    for (i, t) in enumerate(tokens)
+    i = 1
+    while i <= length(tokens)
+        t = tokens[i]
         kind = t.head.kind
         if kind === K"Comment"
             ws = 0
-            val = srcfile.code[first(t.range):last(t.range)]
+            val = srcfile.code[first(t.range):prevind(srcfile.code, last(t.range))]
 
             if i > 1 && (
                 tokens[i-1].head.kind === K"Whitespace" ||
                 tokens[i-1].head.kind === K"NewlineWs"
             )
                 pt = tokens[i-1]
-                prevval = srcfile.code[first(pt.range):last(pt.range)]
-                i = findlast(c -> c == '\n', prevval)
-                i === nothing && (i = 1)
-                ws = count(c -> c == ' ', prevval[i:end])
+                prevval =
+                    srcfile.code[first(pt.range):prevind(srcfile.code, last(pt.range))]
+                idx = findlast(c -> c == '\n', prevval)
+                idx === nothing && (idx = 1)
+                ws = count(c -> c == ' ', prevval[idx:end])
             end
 
             startline = JuliaSyntax.source_line(srcfile, first(t.range))
@@ -116,27 +119,36 @@ function Document(text::AbstractString)
                     """Unable to format. Multi-line comment on line $l is not closed.""",
                 ),
             )
-        elseif kind === K"String"
-            wrapper = tokens[i-1] === K"\"\"\"" ? "\"\"\"" : "\""
-            val = text[first(t.range):last(t.range)]
-            s = wrapper * val * wrapper
-            startline = JuliaSyntax.source_line(srcfile, first(t.range))
-            endline = JuliaSyntax.source_line(srcfile, last(t.range))
-            # offset = first(t.range)
+        elseif kind in (K"String", K"CmdString")
+            start_token = tokens[i-1]
+            wrapper = if start_token.head.kind in (K"\"\"\"", K"```")
+                (kind === K"String" ? "\"\"\"" : "```")
+            else
+                (kind === K"String" ? "\"" : "`")
+            end
 
-            # NOTE: Here until we no longer use CSTParser in the prettify stage
-            # since the offset needs to be the cursor location prior to the first quotation
-            offset = first(tokens[i-1].range) - 1
-            lit_strings[offset] = (startline, endline, s)
-        elseif kind === K"CmdString"
-            wrapper = tokens[i-1] === K"```" ? "```" : "`"
-            val = text[first(t.range):last(t.range)]
-            s = wrapper * val * wrapper
-            startline = JuliaSyntax.source_line(srcfile, first(t.range))
-            endline = JuliaSyntax.source_line(srcfile, last(t.range))
-            # offset = first(t.range)
-            offset = first(tokens[i-1].range) - 1
-            lit_strings[offset] = (startline, endline, s)
+            startline = JuliaSyntax.source_line(srcfile, first(start_token.range))
+            offset = first(start_token.range) - 1
+
+            # Concatenate adjacent string tokens
+            full_string = wrapper
+            end_token = nothing
+            while i <= length(tokens)
+                t = tokens[i]
+                if t.head.kind in (K"\"\"\"", K"```", K"\"", K"`")
+                    end_token = t
+                    break
+                else
+                    full_string *= text[first(t.range):last(t.range)]
+                end
+                i += 1
+            end
+
+            if end_token !== nothing
+                full_string *= wrapper
+                endline = JuliaSyntax.source_line(srcfile, last(end_token.range))
+                lit_strings[offset] = (startline, endline, full_string)
+            end
         elseif kind === K";"
             line = JuliaSyntax.source_line(srcfile, first(t.range))
             if haskey(semicolons, line)
@@ -149,6 +161,7 @@ function Document(text::AbstractString)
                 semicolons[line] = Int[1]
             end
         end
+        i += 1
     end
 
     # If there is a SINGLE "#! format: off" tag
