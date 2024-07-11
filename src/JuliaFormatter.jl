@@ -284,7 +284,8 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
     if s.on && fst.endline < nlines
         print_leaf(io, Newline(), s)
         format_check(io, Notcode(fst.endline + 1, nlines), s)
-    elseif s.doc.ends_on_nl
+    end
+    if s.doc.ends_on_nl
         print_leaf(io, Newline(), s)
     end
     text = String(take!(io))
@@ -307,6 +308,7 @@ function format_text(cst::CSTParser.EXPR, style::AbstractStyle, s::State)
 
             lines = split(text, '\n')
             padding = ndigits(JuliaSyntax.source_line(srcfile, first(toks[end].range)))
+            buf = IOBuffer()
             for (i, l) in enumerate(lines)
                 write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
                 if i == line
