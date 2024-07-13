@@ -107,7 +107,7 @@ mutable struct FST
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
-    ref::Union{Nothing,Ref{CSTParser.EXPR}}
+    ref::Union{Nothing,Ref{JuliaSyntax.GreenNode}}
     nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
@@ -121,7 +121,7 @@ mutable struct FST
     metadata::Union{Nothing,Metadata}
 end
 
-FST(typ::FNode, cst::CSTParser.EXPR, indent::Int) =
+FST(typ::FNode, cst::JuliaSyntax.GreenNode, indent::Int) =
     FST(typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1, nothing)
 
 FST(typ::FNode, indent::Int) =
@@ -129,7 +129,7 @@ FST(typ::FNode, indent::Int) =
 
 function FST(
     typ::FNode,
-    cst::CSTParser.EXPR,
+    cst::JuliaSyntax.GreenNode,
     line_offset::Int,
     startline::Int,
     endline::Int,
@@ -232,13 +232,15 @@ must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
 cant_nest(fst::FST) = fst.nest_behavior === NeverNest
 can_nest(fst::FST) = fst.nest_behavior === AllowNest
 
-is_leaf(cst::CSTParser.EXPR) = cst.args === nothing
+is_leaf(cst::JuliaSyntax.GreenNode) = cst.args === ()
 is_leaf(fst::FST) = fst.nodes === nothing
 
-is_punc(cst::CSTParser.EXPR) = CSTParser.ispunctuation(cst)
+# headof(x) === :ATSIGN  || headof(x) === :DOT
+is_punc(cst::JuliaSyntax.GreenNode) = cst.head.kind in (K",", K"(", K")", K"[", K"]", K"{", K"}", K"@") ||
+    cst.head.kind === K"." && cst.args === ()
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
-is_end(x::CSTParser.EXPR) = x.head === :END && x.val == "end"
+is_end(x::JuliaSyntax.GreenNode) = x.head.kind === K"end"
 is_end(x::FST) = x.typ === KEYWORD && x.val == "end"
 
 is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"

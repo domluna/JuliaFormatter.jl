@@ -1,9 +1,7 @@
 # Creates a _prettified_ version of a CST.
-function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+function pretty(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
-    if cst.head === :NONSTDIDENTIFIER
-        return p_nonstdidentifier(style, cst, s)
-    elseif CSTParser.isidentifier(cst)
+    if CSTParser.isidentifier(cst)
         return p_identifier(style, cst, s)
     elseif CSTParser.isoperator(cst)
         return p_operator(style, cst, s)
@@ -175,18 +173,7 @@ end
 p_file(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_file(DefaultStyle(style), cst, s)
 
-function p_nonstdidentifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
-    style = getstyle(ds)
-    t = FST(NonStdIdentifier, cst, nspaces(s))
-    for a in cst.args::Vector{CSTParser.EXPR}
-        add_node!(t, pretty(style, a, s), s, join_lines = true)
-    end
-    t
-end
-p_nonstdidentifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
-    p_nonstdidentifier(DefaultStyle(style), cst, s)
-
-function p_identifier(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_identifier(_::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
     FST(IDENTIFIER, loc[2], loc[1], loc[1], cst.val::AbstractString)
@@ -194,7 +181,7 @@ end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
-function p_operator(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_operator(_::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val::AbstractString)
@@ -204,7 +191,7 @@ end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
-function p_keyword(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_keyword(_::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     FST(KEYWORD, loc[2], loc[1], loc[1], cst.val::AbstractString)
@@ -212,7 +199,7 @@ end
 p_keyword(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
-function p_punctuation(ds::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_punctuation(_::DefaultStyle, cst::CSTParser.EXPR, s::State)
     loc = cursor_loc(s)
     s.offset += cst.fullspan
     val = if cst.val === nothing && cst.head === :DOT
