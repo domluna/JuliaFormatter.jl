@@ -22,7 +22,7 @@ function align_fst!(fst::FST, opts::Options)
             # Gather all assignments within the current code block
             # they will be aligned at the end
             push!(assignment_inds, i)
-        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
+        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === K"=>"
             push!(pair_arrow_inds, i)
         end
     end

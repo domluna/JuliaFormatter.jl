@@ -20,9 +20,9 @@ getstyle(s::CustomStyle) = s
 Next we'll create a function for the `p_kw` to dispatch on `CustomStyle`.
 
 ```julia
-function p_kw(style::CustomStyle, cst::CSTParser.EXPR, s::State)
+function p_kw(style::CustomStyle, t::JuliaSyntax.GreenNode, s::State)
     t = FST(cst, 0)
-    for a in cst
+    for a in children(t)
         add_node!(t, pretty(style, a, s), s, join_lines = true)
     end
     t
@@ -32,11 +32,11 @@ end
 For comparison here's the default definition:
 
 ```julia
-function p_kw(style::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_kw(style::DefaultStyle, t::JuliaSyntax.GreenNode, s::State)
     style = getstyle(style)
     t = FST(cst, nspaces(s))
-    for a in cst
-        if a.kind === Tokens.EQ
+    for a in children(t)
+        if kind(a) == K"=="
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)

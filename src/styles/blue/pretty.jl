@@ -90,7 +90,7 @@ end
 
 function p_binaryopcall(
     bs::BlueStyle,
-    cst::CSTParser.EXPR,
+    cst::JuliaSyntax.GreenNode,
     s::State;
     nonest = false,
     nospace = false,
@@ -98,6 +98,7 @@ function p_binaryopcall(
     style = getstyle(bs)
     t = FST(Binary, cst, nspaces(s))
     op = cst[2]
+    opkind = op_kind(cst)
 
     nonest = nonest || CSTParser.is_colon(op)
 
@@ -141,11 +142,12 @@ function p_binaryopcall(
     elseif (
         (CSTParser.isnumber(cst[1]) || is_fwdfwd_slash(op) || is_circumflex_accent(op)) &&
         CSTParser.isdotted(op)
-    ) || (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && is_dot_op(cst))
+    # ) || (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && op_kind(cst) === K"..")
+        ) || (JuliaSyntax.is_number(cst[end]) && op_kind(cst) === K"..")
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op) || is_isa(op)) && (
+    elseif !(opkind in KSet"in isa ∈") && (
         nospace || (
             !CSTParser.is_anon_func(op) && precedence(op) in (
                 CSTParser.RationalOp,

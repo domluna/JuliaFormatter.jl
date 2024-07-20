@@ -698,8 +698,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
         indent_nest =
             CSTParser.defines_function(cst) ||
             is_assignment(cst) ||
-            op_kind(fst) === Tokens.PAIR_ARROW ||
-            op_kind(fst) === Tokens.ANON_FUNC ||
+            op_kind(fst) in KSet"=> ->" ||
             (fst.ref !== nothing && is_standalone_shortcircuit(cst))
 
         if indent_nest
@@ -739,8 +738,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
 
             # replace IN with all of precedence level 6
             if (
-                   rhs.typ === Binary &&
-                   !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
+                   rhs.typ === Binary && !(op_kind(rhs) in KSet"in ::")
                ) ||
                rhs.typ === Unary && rhs[end].typ !== Brackets ||
                rhs.typ === Chain ||

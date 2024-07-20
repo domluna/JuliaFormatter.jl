@@ -181,11 +181,11 @@ end
 p_identifier(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
-function p_operator(_::DefaultStyle, cst::CSTParser.EXPR, s::State)
+function p_operator(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     loc = cursor_loc(s)
     s.offset += ncodeunits(cst.val::AbstractString) + (cst.fullspan - cst.span)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], cst.val::AbstractString)
-    t.metadata = Metadata(tokenize(cst.val::AbstractString), CSTParser.isdotted(cst))
+    # t.metadata = Metadata(tokenize(cst.val::AbstractString), CSTParser.isdotted(cst))
     return t
 end
 p_operator(style::S, cst::CSTParser.EXPR, s::State) where {S<:AbstractStyle} =
@@ -1536,7 +1536,7 @@ const RADICAL_OPS = Set(["√", "∛", "∜"])
 
 function p_binaryopcall(
     ds::DefaultStyle,
-    cst::CSTParser.EXPR,
+    cst::JuliaSyntax.GreenNode,
     s::State;
     nonest = false,
     nospace = false,
@@ -1544,6 +1544,7 @@ function p_binaryopcall(
     style = getstyle(ds)
     t = FST(Binary, cst, nspaces(s))
     op = cst[2]
+    opkind = op_kind(cst)
 
     nonest = nonest || CSTParser.is_colon(op)
 
@@ -1588,11 +1589,12 @@ function p_binaryopcall(
         (CSTParser.isnumber(cst[1]) || is_circumflex_accent(op)) && CSTParser.isdotted(op)
     ) ||
            # 1 .. -2 (can be ., .., ..., etc)
-           (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && is_dot_op(cst))
+           # (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && is_dot_op(cst))
+        (JuliaSyntax.is_number(cst[end]) && opkind === K"..")
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(CSTParser.is_in(op) || CSTParser.is_elof(op) || is_isa(op)) && (
+    elseif !(opkind in KSet"in isa ∈") && (
         nospace || (
             !CSTParser.is_anon_func(op) &&
             precedence(op) in (CSTParser.PowerOp, CSTParser.DeclarationOp, CSTParser.DotOp)

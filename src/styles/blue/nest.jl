@@ -94,7 +94,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State)
             elseif n.typ === TRAILINGCOMMA
                 if add_trailing_comma ||
                    nodes[i-1].typ === OPERATOR &&
-                   nodes[i-1].metadata.op_kind === Tokens.COLON
+                    op_kind(nodes[i-1]) === K":"
                     # if add_trailing_comma  || nodes[i-1].typ === OPERATOR && nodes[i-1].val == ":"
                     n.val = ","
                     n.len = 1

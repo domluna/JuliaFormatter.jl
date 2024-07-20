@@ -1,13 +1,4 @@
-# FST passes/transforms
-
-function flattenable(kind::Tokens.Kind)
-    kind === Tokens.AND && return true
-    kind === Tokens.OR && return true
-    kind === Tokens.LAZY_AND && return true
-    kind === Tokens.LAZY_OR && return true
-    kind === Tokens.RPIPE && return true
-    return false
-end
+flattenable(k) = kind(k) in KSet"&& || |>"
 flattenable(::Nothing) = false
 
 """
@@ -90,7 +81,7 @@ function pipe_to_function_call_pass!(fst::FST)
     is_leaf(fst) && return
 
     # the RHS must be a valid type to apply a function call.
-    if op_kind(fst) === Tokens.RPIPE && (fst[end].typ !== PUNCTUATION)
+    if op_kind(fst) === K"|>" && (fst[end].typ !== PUNCTUATION)
         fst.nodes = pipe_to_function_call(fst)
         fst.typ = Call
         return
@@ -98,7 +89,7 @@ function pipe_to_function_call_pass!(fst::FST)
     for n in fst.nodes::Vector
         if is_leaf(n)
             continue
-        elseif op_kind(n) === Tokens.RPIPE && (n[end].typ !== PUNCTUATION)
+        elseif op_kind(n) === K"|>" && (n[end].typ !== PUNCTUATION)
             n.nodes = pipe_to_function_call(n)
             n.typ = Call
         else
@@ -115,7 +106,7 @@ function pipe_to_function_call(fst::FST)
     # is RHS is an anon function?
     # need to wrap it parens, i.e. "(x -> x + 1)(arg)"
     # and then possibly add a "." as well !
-    if op_kind(arg2) === Tokens.ANON_FUNC
+    if op_kind(arg2) === K"->"
         n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
         push!(nodes, n)
 
@@ -146,7 +137,7 @@ function pipe_to_function_call(fst::FST)
             push!(nodes, n)
         elseif dot && arg2.typ === Brackets
             idx = findfirst(
-                n -> n.typ === Binary && op_kind(n) === Tokens.ANON_FUNC,
+                n -> n.typ === Binary && op_kind(n) === K"->",
                 arg2.nodes,
             )
             if idx !== nothing
@@ -193,7 +184,7 @@ function import_to_usings(fst::FST, s::State)
 
         add_node!(use, n, s, join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
-        colon.metadata = Metadata(Tokens.COLON, false)
+        colon.metadata = Metadata("::", false)
         add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
         add_node!(use, n[end], s, join_lines = true)
@@ -220,7 +211,7 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             add_node!(nn, n, s)
             line_offset = n.line_offset + length(n)
             op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
-            op.metadata = Metadata(Tokens.DECLARATION, false)
+            op.metadata = Metadata(K"::", false)
             add_node!(nn, op, s, join_lines = true)
             line_offset += 2
             add_node!(
@@ -766,7 +757,7 @@ function _short_circuit_to_if!(fst::FST, s::State)
 
         add_node!(t, call, s, join_lines = true)
     else
-        # from idx-1 go backwards until we find a node that's not a 
+        # from idx-1 go backwards until we find a node that's not a
         lhs = FST(Chain, fst.indent)
         for n in nodes[1:idx-1]
             add_node!(lhs, n, s, join_lines = true)
@@ -806,7 +797,7 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
         if is_leaf(n)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
-               (op_kind(n) === Tokens.LAZY_AND || op_kind(n) === Tokens.LAZY_OR) &&
+               (op_kind(n) === K"&&" || op_kind(n) === K"||") &&
                n.ref[] !== nothing &&
                is_standalone_shortcircuit(n.ref[])
             _short_circuit_to_if!(n, s)
