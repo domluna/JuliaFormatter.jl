@@ -9,7 +9,7 @@ mutable struct State
     on::Bool
     opts::Options
 end
-State(doc, opts) = State(doc, 0, 1, 0, true, opts)
+State(doc, opts) = State(doc, 0, 0, 0, true, opts)
 
 nspaces(s::State) = s.indent
 hascomment(d::Document, line::Integer) = haskey(d.comments, line)
@@ -43,3 +43,4 @@ function linerange(s::State, line::Int)
     r = JuliaSyntax.source_line_range(s.doc.srcfile, f)
     return (first(r), last(r))
 end
+

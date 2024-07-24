@@ -4,7 +4,6 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_m
     @eval Base.Experimental.@max_methods 1
 end
 
-import JuliaSyntax: GreenNode
 using JuliaSyntax
 using CSTParser
 using Tokenize

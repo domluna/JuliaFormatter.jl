@@ -2,6 +2,9 @@ using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 @enum(
     FNode,
 
+    # dummy
+    NONE,
+
     # leaf nodes
     NEWLINE,
     SEMICOLON,
@@ -279,22 +282,6 @@ end
 
 is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
-function is_macrodoc(t::JuliaSyntax.GreenNode)
-    kind(t) == KSet"doc" && return true
-
-    k = kind(t)
-    if k == K"macrocall" && haschildren(t)
-        return true
-    end
-
-    return false
-    # cst.head === :macrocall &&
-    #     length(cst) == 4 &&
-    #     CSTParser.isidentifier(cst[1]) &&
-    #     cst[1].val == "@doc" &&
-    #     (is_str_or_cmd(cst[3]) || is_macrostr(cst[3]))
-end
-
 function is_macrodoc(fst::FST)
     fst.typ === GlobalRefDoc && return true
     fst.typ === MacroBlock &&
@@ -304,87 +291,24 @@ function is_macrodoc(fst::FST)
     return false
 end
 
-function is_macrostr(cst::JuliaSyntax.GreenNode)
-    cst.head === :macrocall || return false
-    length(cst) > 2 || return false
+function is_macrostr(t::JuliaSyntax.GreenNode)
+    kind(t) == K"macrocall" && haschildren(t) && kind(t[1]) in KSet"StringMacroName CmdMacroName"
+end
 
-    local n::Union{Nothing,JuliaSyntax.GreenNode}
-    n = if CSTParser.isidentifier(cst[1])
-        cst[1]
-    elseif CSTParser.is_getfield_w_quotenode(cst[1])
-        # last quotenode
-        qn = cst[1][end]
-        # identifier
-        qn[end]
-    else
-        nothing
+function is_func_call(t::JuliaSyntax.GreenNode)
+    JuliaSyntax.is_prefix_call(t) && return true
+    if kind(t) in KSet":: where"
+        return is_func_call(t[1])
+    elseif kind(t) == K"parens"
+        return is_func_call(t[2])
     end
-    n !== nothing || return false
-
-    is_macrostr_identifier(n) || return false
-
-    return is_str_or_cmd(cst[3])
-end
-
-function is_macrostr_identifier(cst::JuliaSyntax.GreenNode)
-    CSTParser.isidentifier(cst) || return false
-    val = cst.val
-
-    # handles odd cases like """M.var"@f";"""
-    val !== nothing || return false
-
-    m = match(r"@(.*)_(str|cmd)", val)
-    m !== nothing || return false
-    val = m.captures[1]::AbstractString
-
-    # r"hello" is parsed as @r_str"hello"
-    # if it was originally r"hello" then
-    # the number of bytes in the matched string (between @ and _)
-    # will be == the span of the node.
-    #
-    # In this example the span == 1.
-    ncodeunits(val) == cst.span
-end
-
-
-# function is_func_call(x::EXPR)
-#     if isoperator(x.head) && !issplat(x)
-#         if length(x.args) == 2
-#             return is_decl(x.head) && is_func_call(x.args[1])
-#         elseif length(x.args) == 1
-#             return !(is_exor(x.head) || is_decl(x.head))
-#         end
-#     elseif x.head === :call
-#         return true
-#     elseif x.head === :where || isbracketed(x)
-#         return is_func_call(x.args[1])
-#     end
-#     return false
-# end
-#
-# t = CSTParser.is_func_call(cst)
-# t !== nothing && t && return is_opener(cst[2])
-# return false
-function is_call(t::JuliaSyntax.GreenNode)
-    kind(t) === K"call" || kind(t) === K"dotcall"
+    return false
 end
 
 function is_if(cst::JuliaSyntax.GreenNode)
     k = kind(cst)
     k === K"if" && haschildren(cst) && kind(cst[1]) === K"if" && return true
     k === K"elseif" && haschildren(cst) && kind(cst[1]) === K"elseif" && return true
-    return false
-end
-
-function is_colon_call(cst::JuliaSyntax.GreenNode)
-    JuliaSyntax.is_operator(cst) && kind(cst) == K":" && return true
-    if kind(cst) == K"call"
-        for c in children(cst)
-            if is_colon_call(c)
-            return true
-            end
-        end
-    end
     return false
 end
 
@@ -398,12 +322,6 @@ function is_custom_leaf(fst::FST)
         fst.typ === TRAILINGCOMMA ||
         fst.typ === TRAILINGSEMICOLON ||
         fst.typ === INVERSETRAILINGSEMICOLON
-end
-
-function is_nothing(cst::JuliaSyntax.GreenNode)
-    CSTParser.is_nothing(cst) && return true
-    cst.val === nothing && cst.args === nothing && return true
-    return false
 end
 
 """
@@ -429,11 +347,28 @@ end
 function get_args(t::JuliaSyntax.GreenNode)
     nodes = JuliaSyntax.GreenNode[]
     k = kind(t)
-    for (i, c) in children(enumerate(t))
-        if i < 2 && (k in KSet"macrocall where typed_vcat typed_ncat ref curly typed_comprehension" || is_call(t))
-            continue
-        end
 
+    ret = if k == K"where"
+    if is_leaf(t[end])
+            JuliaSyntax.GreenNode[t[end]]
+    else
+        get_args(children(t)[end])
+        end
+    elseif k in KSet"macrocall typed_vcat typed_ncat ref curly typed_comprehension call"
+        get_args(children(t)[2:end])
+    elseif k == K"dotcall"
+        get_args(children(t)[3:end])
+    else
+        get_args(children(t))
+    end
+    append!(nodes, ret)
+
+    nodes
+end
+
+function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where T
+    nodes = JuliaSyntax.GreenNode[]
+    for c in args
         if is_punc(c) ||
             kind(c) == K";" ||
             JuliaSyntax.is_whitespace(c)
@@ -626,7 +561,7 @@ end
 
 function is_binary(x)
     k = kind(x)
-    !(k in KSet"call dotcall") && return false
+    !JuliaSyntax.is_infix_op_call(x) && return false
     n = 0
     for c in children(x)
         if k == K"dotcall" && JuliaSyntax.is_operator(c) && kind(c) == K"."
@@ -640,10 +575,12 @@ end
 
 function is_unary(x::JuliaSyntax.GreenNode)
     JuliaSyntax.is_unary_op(x) && return true
-    k = kind(x)
-    k != K"call" && return false
-    length(children(x)) == 2 && return (JuliaSyntax.is_unary_op(x[1]) || JuliaSyntax.is_unary_op(x[2]))
-    length(children(x)) == 1 && return JuliaSyntax.is_unary_op(x[1])
+    kind(x) != K"call" && return false
+    for c in children(x)
+        if JuliaSyntax.is_unary_op(c)
+            return true
+        end
+    end
     return false
 end
 
@@ -685,12 +622,6 @@ is_assignment(::Nothing) = false
 function is_pairarrow(cst::JuliaSyntax.GreenNode)
     op = get_binary_op(cst)
     kind(op) === K"=>"
-end
-
-function precedence(cst::JuliaSyntax.GreenNode)
-    CSTParser.isoperator(cst) || return 0
-    val = CSTParser.isdotted(cst) ? (cst.val::AbstractString)[2:end] : cst.val
-    CSTParser.get_prec(val)
 end
 
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
@@ -784,15 +715,6 @@ end
 function op_kind(fst::FST)::Union{JuliaSyntax.Kind, Nothing}
     fst.ref === nothing && return nothing
     op_kind(fst.ref[])
-    # if fst.typ === OPERATOR
-    #     gn = fst.ref[]
-    #     return kind(gn)
-    # elseif is_opcall(fst)
-    #     idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
-    #     idx === nothing && return nothing
-    #     return op_kind(fst[idx])
-    # end
-    # return nothing
 end
 
 function _valid_parent_node_for_standalone_circuit(n::JuliaSyntax.GreenNode)
@@ -963,6 +885,11 @@ function add_node!(
     max_padding::Int = -1,
     override_join_lines_based_on_source::Bool = false,
 )
+
+    if n.typ === NONE
+        return
+    end
+
     tnodes = t.nodes::Vector{FST}
     if n.typ === SEMICOLON
         join_lines = true
@@ -1195,5 +1122,4 @@ function add_node!(
         t.len += length(n)
     end
     push!(tnodes, n)
-    nothing
 end

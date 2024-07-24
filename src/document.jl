@@ -39,7 +39,7 @@ function Document(text::AbstractString)
         if kind in (K"\"\"\"", K"```", K"\"", K"`")
             if isempty(string_stack)
                 # Opening quote
-                start_offset = first(t.range) - 1
+                start_offset = first(t.range)
                 start_line = JuliaSyntax.source_line(srcfile, first(t.range))
                 opening_quote = if kind === K"\"\"\""
                     "\"\"\""
@@ -209,3 +209,12 @@ end
 
 numlines(sf::JuliaSyntax.SourceFile) = length(sf.line_starts) - 1
 numlines(d::Document) = numlines(d.srcfile)
+
+
+function getsrcval(d::Document, r::UnitRange{Int})
+    try
+        d.srcfile.code[r]
+    catch
+        d.srcfile.code[r[1]:prevind(d.srcfile.code, r[2])]
+    end
+end
