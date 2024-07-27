@@ -1,4 +1,3 @@
-using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 @enum(
     FNode,
 
@@ -20,6 +19,7 @@ using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
     OPERATOR,
     PUNCTUATION,
     IDENTIFIER,
+
     # non-leaf nodes
     MacroBlock,
     MacroCall,
@@ -111,7 +111,7 @@ mutable struct FST
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
-    ref::Union{Nothing,Ref{JuliaSyntax.GreenNode}}
+    ref::Union{Nothing,Ref{<:JuliaSyntax.GreenNode}}
     nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
@@ -296,7 +296,7 @@ function is_macrostr(t::JuliaSyntax.GreenNode)
 end
 
 function is_func_call(t::JuliaSyntax.GreenNode)
-    JuliaSyntax.is_prefix_call(t) && return true
+    kind(t) in KSet"call dotcall" && JuliaSyntax.is_prefix_call(t) && return true
     if kind(t) in KSet":: where"
         return is_func_call(t[1])
     elseif kind(t) == K"parens"
@@ -304,6 +304,8 @@ function is_func_call(t::JuliaSyntax.GreenNode)
     end
     return false
 end
+
+defines_function(x::JuliaSyntax.GreenNode) = kind(x) === K"function" || (is_assignment(x) && is_func_call(x[1]))
 
 function is_if(cst::JuliaSyntax.GreenNode)
     k = kind(cst)
@@ -763,9 +765,7 @@ var = a && b
 ```
 """
 function is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
-    val = cst[2].val
-    (val == "&&" || val == "||") || return false
-
+    (kind(cst) in KSet"|| &&") || return false
     return parent_is(
         cst,
         _valid_parent_node_for_standalone_circuit,
@@ -891,31 +891,7 @@ function add_node!(
     end
 
     tnodes = t.nodes::Vector{FST}
-    if n.typ === SEMICOLON
-        join_lines = true
-        loc = if s.offset > length(s.doc.srcfile.code) && t.typ === TopLevel
-            cursor_loc(s, s.offset - 1)
-        else
-            cursor_loc(s)
-        end
-        for l in t.endline:loc[1]
-            if has_semicolon(s.doc, l)
-                n.startline = l
-                n.endline = l
-                break
-            end
-        end
-
-        # If there's no semicolon, treat it
-        # as formatter node
-        if n.startline == -1
-            t.len += length(n)
-            n.startline = t.endline
-            n.endline = t.endline
-            push!(tnodes::Vector{FST}, n)
-            return
-        end
-    elseif n.typ === TRAILINGCOMMA
+    if n.typ === TRAILINGCOMMA
         en = (tnodes::Vector{FST})[end]
         if en.typ === Generator ||
            en.typ === Filter ||

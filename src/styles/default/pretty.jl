@@ -1,179 +1,192 @@
-# Creates a _prettified_ version of a CST.
 function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
     k = kind(t)
     style = getstyle(ds)
-    if k == K"Identifier"
-        return p_identifier(style, t, s)
-elseif JuliaSyntax.is_operator(t)
-        return p_operator(style, t, s)
+
+    if k == K"Identifier" && !haschildren(t)
+        p_identifier(style, t, s)
+    elseif JuliaSyntax.is_operator(t) && !haschildren(t)
+        p_operator(style, t, s)
 elseif JuliaSyntax.is_whitespace(t)
         p_whitespace(style, t, s)
-    elseif is_punc(t)
-        return p_punctuation(style, t, s)
-    elseif JuliaSyntax.is_keyword(t)
-        return p_keyword(style, t, s)
+    elseif kind(t) == K"Comment"
+        p_comment(style, t, s)
+    elseif kind(t) == K";"
+        p_semicolon(style, t, s)
+    elseif is_punc(t) && !haschildren(t)
+        p_punctuation(style, t, s)
+    elseif JuliaSyntax.is_keyword(t) && !haschildren(t)
+        p_keyword(style, t, s)
     elseif k == K"as"
-        return p_as(style, t, s)
+        p_as(style, t, s)
     elseif k === K"string"
-        return p_stringh(style, t, s)
+        p_stringh(style, t, s)
     elseif JuliaSyntax.is_literal(t)
-        return p_literal(style, t, s)
+        p_literal(style, t, s)
     elseif k === K"block" && length(children(t)) > 1 && kind(t[1]) === K"begin"
-        return p_begin(style, t, s)
+        p_begin(style, t, s)
     elseif k === K"block"
-        return p_block(style, t, s; kwargs...)
+        p_block(style, t, s; kwargs...)
     elseif k === K"module"
-        return p_module(style, t, s)
+        p_module(style, t, s)
     elseif k === K"baremodule"
-        return p_baremodule(style, t, s)
+        p_baremodule(style, t, s)
     elseif k === K"function"
-        return p_functiondef(style, t, s)
+        p_functiondef(style, t, s)
     elseif k === K"macro"
-        return p_macro(style, t, s)
+        p_macro(style, t, s)
     elseif k === K"struct" && !JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        return p_struct(style, t, s)
-    elseif k === K"struct" && !JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        return p_mutable(style, t, s)
+        p_struct(style, t, s)
+    elseif k === K"struct" && JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
+        p_mutable(style, t, s)
     elseif k === K"abstract"
-        return p_abstract(style, t, s)
+        p_abstract(style, t, s)
     elseif k === K"primitive"
-        return p_primitive(style, t, s)
+        p_primitive(style, t, s)
     elseif k === K"for"
-        return p_for(style, t, s)
+        p_for(style, t, s)
     elseif k === K"while"
-        return p_while(style, t, s)
+        p_while(style, t, s)
     elseif k === K"do"
-        return p_do(style, t, s)
+        p_do(style, t, s)
     elseif is_if(t)
-        return p_if(style, t, s)
+        p_if(style, t, s)
     elseif k === K"try"
-        return p_try(style, t, s)
+        p_try(style, t, s)
     elseif k === K"toplevel"
-        return p_toplevel(style, t, s)
-    elseif k === K"quote"
-        return p_quote(style, t, s)
+        p_toplevel(style, t, s)
+    elseif k === K"quote" && haschildren(t) && kind(t[1]) === K":"
+        p_quotenode(style, t, s)
+    elseif k === K"quote" && haschildren(t)
+        p_quote(style, t, s)
     elseif k === K"let"
-        return p_let(style, t, s)
+        p_let(style, t, s)
     elseif k === K"vect"
-        return p_vect(style, t, s)
+        p_vect(style, t, s)
     elseif k === K"comprehension"
-        return p_comprehension(style, t, s)
+        p_comprehension(style, t, s)
     elseif k === K"typed_comprehension"
-        return p_typedcomprehension(style, t, s)
+        p_typedcomprehension(style, t, s)
     elseif k === K"braces"
-        return p_braces(style, t, s)
+        p_braces(style, t, s)
     elseif k === K"bracescat"
-        return p_bracescat(style, t, s)
+        p_bracescat(style, t, s)
     elseif k === K"tuple"
-        return p_tuple(style, t, s)
+        p_tuple(style, t, s)
     elseif k === K"parens"
-        return p_invisbrackets(style, t, s; kwargs...)
+        p_invisbrackets(style, t, s; kwargs...)
     elseif k === K"curly"
-        return p_curly(style, t, s)
+        p_curly(style, t, s)
     elseif is_macrostr(t)
-        return p_macrostr(style, t, s)
+        p_macrostr(style, t, s)
     elseif k === K"doc"
-        return p_globalrefdoc(style, t, s)
-    # elseif k === K"macrocall" && is_macrodoc(t)
-    #     return p_macrodoc(style, t, s)
+        p_globalrefdoc(style, t, s)
     elseif k === K"macrocall"
-        return p_macrocall(style, t, s)
-    # elseif JuliaSyntax.is_macro_name(t)
-    #     return p_macroname(style, t, s)
+        p_macrocall(style, t, s)
     elseif k === K"where"
-        return p_whereopcall(style, t, s)
+        p_whereopcall(style, t, s)
     elseif k === K"?" && haschildren(t)
-        return p_conditionalopcall(style, t, s)
-    elseif is_binary(t)
-        return p_binaryopcall(style, t, s; kwargs...)
+        p_conditionalopcall(style, t, s)
+    elseif is_binary(t) || (kind(t) === K"=" && haschildren(t))
+        p_binaryopcall(style, t, s; kwargs...)
     elseif is_unary(t)
-        return p_unaryopcall(style, t, s; kwargs...)
+        p_unaryopcall(style, t, s; kwargs...)
     elseif is_chain(t)
-        return p_chainopcall(style, t, s; kwargs...)
+        p_chainopcall(style, t, s; kwargs...)
     elseif is_func_call(t)
-        return p_call(style, t, s)
+        p_call(style, t, s)
     elseif k === K"comparison"
-        return p_comparison(style, t, s; kwargs...)
-    # elseif k === K"kw"
-    #     return p_kw(style, t, s)
+        p_comparison(style, t, s; kwargs...)
     elseif k === K"parameters"
-        return p_parameters(style, t, s)
+        p_parameters(style, t, s)
     elseif k === K"local"
-        return p_local(style, t, s)
+        p_local(style, t, s)
     elseif k === K"global"
-        return p_global(style, t, s)
+        p_global(style, t, s)
     elseif k === K"const"
-        return p_const(style, t, s)
+        p_const(style, t, s)
     elseif k === K"return"
-        return p_return(style, t, s)
+        p_return(style, t, s)
     elseif k === K"outer"
-        return p_outer(style, t, s)
+        p_outer(style, t, s)
     elseif k === K"import"
-        return p_import(style, t, s)
+        p_import(style, t, s)
     elseif k === K"export"
-        return p_export(style, t, s)
+        p_export(style, t, s)
     elseif k === K"using"
-        return p_using(style, t, s)
+        p_using(style, t, s)
     elseif k === K"row"
-        return p_row(style, t, s)
+        p_row(style, t, s)
     elseif k === K"nrow"
-        return p_nrow(style, t, s)
+        p_nrow(style, t, s)
     elseif k === K"ncat"
-        return p_ncat(style, t, s)
+        p_ncat(style, t, s)
     elseif k === K"typed_ncat"
-        return p_typedncat(style, t, s)
+        p_typedncat(style, t, s)
     elseif k === K"vcat"
-        return p_vcat(style, t, s)
+        p_vcat(style, t, s)
     elseif k === K"typed_vcat"
-        return p_typedvcat(style, t, s)
+        p_typedvcat(style, t, s)
     elseif k === K"hcat"
-        return p_hcat(style, t, s)
+        p_hcat(style, t, s)
     elseif k === K"typed_hcat"
-        return p_typedhcat(style, t, s)
+        p_typedhcat(style, t, s)
     elseif k === K"ref"
-        return p_ref(style, t, s)
+        p_ref(style, t, s)
     elseif k === K"generator"
-        return p_generator(style, t, s)
+        p_generator(style, t, s)
     elseif k === K"filter"
-        return p_filter(style, t, s)
-    end
-
-    t = if is_leaf(t)
-        @info "unknown leaf node" t
-        s.offset += span(t)
-        FST(NONE, 0, 0, 0, "")
+        p_filter(style, t, s)
     else
-        tt = FST(Unknown, t, nspaces(s))
-        for a in children(t)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        @warn "unknown node" t s.offset span(t)
+        if is_leaf(t)
+            s.offset += span(t)
+            FST(NONE, 0, 0, 0, "")
+        else
+            tt = FST(Unknown, t, nspaces(s))
+            for a in children(t)
+                add_node!(tt, pretty(style, a, s), s, join_lines = true)
+            end
+            tt
         end
-        tt
     end
-
-    t
 end
 pretty(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
     pretty(DefaultStyle(style), cst, s; kwargs...)
 
-function p_identifier(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_identifier(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst))
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
     FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
 end
 p_identifier(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_identifier(DefaultStyle(style), cst, s)
 
-function p_whitespace(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_whitespace(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     s.offset += span(cst)
     FST(NONE, 0, 0, 0, "")
 end
 p_whitespace(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_whitespace(DefaultStyle(style), cst, s)
 
-function p_operator(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_comment(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+    s.offset += span(cst)
+    FST(NONE, 0, 0, 0, "")
+end
+p_comment(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
+    p_comment(DefaultStyle(style), cst, s)
+
+function p_semicolon(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst))
+    s.offset += span(cst)
+    FST(SEMICOLON, loc[2], loc[1], loc[1], ";")
+end
+p_semicolon(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
+    p_semicolon(DefaultStyle(style), cst, s)
+
+function p_operator(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+    loc = cursor_loc(s)
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], val)
     # t.metadata = Metadata(tokenize(cst.val::AbstractString), CSTParser.isdotted(cst))
@@ -182,18 +195,18 @@ end
 p_operator(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_operator(DefaultStyle(style), cst, s)
 
-function p_keyword(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_keyword(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst))
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
     FST(KEYWORD, loc[2], loc[1], loc[1], val)
 end
 p_keyword(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_keyword(DefaultStyle(style), cst, s)
 
-function p_punctuation(_::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_punctuation(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst))
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
     FST(PUNCTUATION, loc[2], loc[1], loc[1], val)
 end
@@ -213,17 +226,18 @@ p_punctuation(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:Abstract
 #      3:7      │      String             ✔
 #      8:8      │      "
 #      9:9      │    String               ✔
-function p_literal(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; from_docstring = false)
+function p_literal(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; from_docstring = false)
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst))
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
 
     if !is_str_or_cmd(cst)
         if kind(cst) in KSet"Float Float32"
-            if (fidx = findlast(==('f'), val)) === nothing
-                float_suffix = ""
+            float_suffix = if (fidx = findlast(==('f'), val)) === nothing
+                ""
             else
-                float_suffix = val[fidx:end]
+                fs = val[fidx:end]
                 val = val[1:fidx-1]
+                fs
             end
             if findfirst(c -> c == 'e' || c == 'E', val) === nothing
                 if (dotidx = findlast(==('.'), val)) === nothing
@@ -301,7 +315,7 @@ args = children(cst)
         elseif i == length(args)
             add_node!(t, pretty(style, c, s), s, max_padding = 0)
     else
-            add_node!(t, pretty(style, c, s))
+            add_node!(t, pretty(style, c, s), s)
         end
     end
 
@@ -371,11 +385,11 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
             if JuliaSyntax.is_whitespace(kind(cst[i+1]))
                 add_node!(t, Whitespace(1), s)
             end
-        elseif is_opener(n) && nest
+        elseif is_opener(n)
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif is_closer(n) && nest
-            add_node!(t, Placeholder(0), s)
+            nest && add_node!(t, Placeholder(0), s)
+        elseif is_closer(n)
+            nest && add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -386,7 +400,7 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
             end
             if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if i < length(cst) - 1 && cst[i+1].head != :parameters
+                if i < length(cst) - 1 && kind(cst[i+1]) !== K"parameters"
                     add_node!(t, Whitespace(1), s)
                 end
             else
@@ -440,34 +454,30 @@ function p_block(
     single_line =
         ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst))
 
-    for (i, a) in enumerate(children(cst))
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s)
 
         if from_quote && !single_line
-            if i == 1 || kind(a) === K","
+            if i == 1 || kind(a) in KSet", ;"
                 add_node!(t, n, s, join_lines = true)
-            elseif kind(cst[i-1]) === K","
+            elseif kind(childs[i-1]) === K","
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, Semicolon(), s)
                 add_node!(t, n, s, max_padding = 0)
             end
         elseif single_line
-            if i == 1 || kind(a) === K","
+            if kind(a) in KSet", ;"
                 add_node!(t, n, s, join_lines = true)
-            elseif kind(cst[i-1]) === K","
                 add_node!(t, Placeholder(1), s)
-                add_node!(t, n, s, join_lines = true)
             else
-                add_node!(t, Semicolon(), s)
-                add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s, join_lines = true)
             end
         else
-            if i < length(cst) && kind(a) === K"," && is_punc(cst[i+1])
+            if i < length(childs) && kind(a) === K"," && is_punc(childs[i+1])
                 add_node!(t, n, s, join_lines = true)
-            elseif kind(a) === K"," && i != length(cst)
+            elseif kind(a) === K"," && i != length(childs)
                 add_node!(t, n, s, join_lines = true)
                 join_body && add_node!(t, Placeholder(1), s)
             elseif join_body
@@ -496,7 +506,7 @@ p_block(
     join_body = join_body,
 )
 
-function p_block(ds::DefaultStyle, nodes::Vector{JuliaSyntax.GreenNode}, s::State)
+function p_block(ds::DefaultStyle, nodes::Vector{JuliaSyntax.GreenNode{T}}, s::State) where {T}
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
 
@@ -506,6 +516,8 @@ function p_block(ds::DefaultStyle, nodes::Vector{JuliaSyntax.GreenNode}, s::Stat
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i != length(nodes)
             add_node!(t, n, s, join_lines = true)
+        elseif kind(a) === K";"
+            continue
         else
             add_node!(t, n, s, max_padding = 0)
         end
@@ -520,13 +532,13 @@ p_block(style::S, nodes::Vector{JuliaSyntax.GreenNode}, s::State) where {S<:Abst
 function p_abstract(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Abstract, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
+
+    for c in children(cst)
+        add_node!(t, pretty(style, c, s), s, join_lines = true)
+        if !JuliaSyntax.is_whitespace(c)  || kind(c) === K"end"
+            add_node!(t, Whitespace(1), s)
+        end
+    end
     t
 end
 p_abstract(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
@@ -536,15 +548,13 @@ p_abstract(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSty
 function p_primitive(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Primitive, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[5], s), s, join_lines = true)
+
+    for c in children(cst)
+        add_node!(t, pretty(style, c, s), s, join_lines = true)
+    if !JuliaSyntax.is_whitespace(c)  || kind(c) === K"end"
+            add_node!(t, Whitespace(1), s)
+        end
+    end
     t
 end
 p_primitive(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
@@ -554,38 +564,37 @@ p_primitive(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSt
 function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(FunctionN, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    if length(cst) > 3
-        if cst[3].fullspan == 0
-            n = pretty(style, cst[4], s)
-            if s.opts.join_lines_based_on_source
+
+    block_has_contents = false
+    childs = children(cst)
+    for (i, c) in enumerate(childs)
+        if i == 1
+            n = pretty(style, c, s)
+            add_node!(t,n, s)
+            add_node!(t, Whitespace(1), s)
+        elseif kind(c) === K"end"
+            n = pretty(style, c, s)
+            if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
                 join_lines && (add_node!(t, Whitespace(1), s))
                 add_node!(t, n, s, join_lines = join_lines)
+            elseif block_has_contents
+                add_node!(t, n, s)
             else
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s, join_lines = true)
             end
-        else
+        elseif kind(c) === K"block" && haschildren(c)
+            block_has_contents = length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
             s.indent += s.opts.indent
-            n = pretty(style, cst[3], s, ignore_single_line = true)
-            s.opts.always_use_return && prepend_return!(n, s)
+            n = pretty(style, c, s, ignore_single_line=true)
+            if s.opts.always_use_return
+                prepend_return!(n, s)
+            end
             add_node!(t, n, s, max_padding = s.opts.indent)
             s.indent -= s.opts.indent
-            add_node!(t, pretty(style, cst[4], s), s)
-        end
-    else
-        # function stub `function foo end`
-        n = pretty(style, cst[3], s)
-        if s.opts.join_lines_based_on_source
-            join_lines = t.endline == n.startline
-            join_lines && (add_node!(t, Whitespace(1), s))
-            add_node!(t, n, s, join_lines = join_lines)
         else
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t,pretty(style, c, s), s, join_lines=true)
         end
     end
     t
@@ -605,28 +614,38 @@ p_macro(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle}
 function p_struct(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Struct, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    if cst[4].fullspan == 0
-        n = pretty(style, cst[5], s)
-        if s.opts.join_lines_based_on_source
-            join_lines = t.endline == n.startline
-            join_lines && (add_node!(t, Whitespace(1), s))
-            add_node!(t, n, s, join_lines = join_lines)
-        else
+
+    block_has_contents = false
+    childs = children(cst)
+    for (i, c) in enumerate(childs)
+        if i == 1
+            n = pretty(style, c, s)
+            add_node!(t,n, s)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
+        elseif kind(c) === K"end"
+            n = pretty(style, c, s)
+            if s.opts.join_lines_based_on_source && !block_has_contents
+                join_lines = t.endline == n.startline
+                join_lines && (add_node!(t, Whitespace(1), s))
+                add_node!(t, n, s, join_lines = join_lines)
+            elseif block_has_contents
+                add_node!(t, n, s)
+            else
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
+            end
+        elseif kind(c) === K"block" && haschildren(c)
+            block_has_contents = length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
+            s.indent += s.opts.indent
+            n = pretty(style, c, s, ignore_single_line=true)
+            if s.opts.annotate_untyped_fields_with_any
+                annotate_typefields_with_any!(n, s)
+            end
+            add_node!(t, n, s, max_padding = s.opts.indent)
+            s.indent -= s.opts.indent
+        else
+            add_node!(t,pretty(style, c, s), s, join_lines=true)
         end
-    else
-        s.indent += s.opts.indent
-        n = pretty(style, cst[4], s, ignore_single_line = true)
-        if s.opts.annotate_untyped_fields_with_any
-            annotate_typefields_with_any!(n, s)
-        end
-        add_node!(t, n, s, max_padding = s.opts.indent)
-        s.indent -= s.opts.indent
-        add_node!(t, pretty(style, cst[5], s), s)
     end
     t
 end
@@ -637,30 +656,38 @@ p_struct(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle
 function p_mutable(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Mutable, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[4], s), s, join_lines = true)
-    if cst[5].fullspan == 0
-        n = pretty(style, cst[6], s)
-        if s.opts.join_lines_based_on_source
-            join_lines = t.endline == n.startline
-            join_lines && (add_node!(t, Whitespace(1), s))
-            add_node!(t, n, s, join_lines = join_lines)
-        else
+
+    block_has_contents = false
+    childs = children(cst)
+    for c in childs
+        if  kind(c) in KSet"struct mutable"
+            n = pretty(style, c, s)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
+        elseif kind(c) === K"end"
+            n = pretty(style, c, s)
+            if s.opts.join_lines_based_on_source && !block_has_contents
+                join_lines = t.endline == n.startline
+                join_lines && (add_node!(t, Whitespace(1), s))
+                add_node!(t, n, s, join_lines = join_lines)
+            elseif block_has_contents
+                add_node!(t, n, s)
+            else
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
+            end
+        elseif kind(c) === K"block" && haschildren(c)
+            block_has_contents = length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
+            s.indent += s.opts.indent
+            n = pretty(style, c, s, ignore_single_line=true)
+            if s.opts.annotate_untyped_fields_with_any
+                annotate_typefields_with_any!(n, s)
+            end
+            add_node!(t, n, s, max_padding = s.opts.indent)
+            s.indent -= s.opts.indent
+        else
+            add_node!(t,pretty(style, c, s), s, join_lines=true)
         end
-    else
-        s.indent += s.opts.indent
-        n = pretty(style, cst[5], s, ignore_single_line = true)
-        if s.opts.annotate_untyped_fields_with_any
-            annotate_typefields_with_any!(n, s)
-        end
-        add_node!(t, n, s, max_padding = s.opts.indent)
-        s.indent -= s.opts.indent
-        add_node!(t, pretty(style, cst[6], s), s)
     end
     t
 end
@@ -671,32 +698,69 @@ p_mutable(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyl
 function p_module(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(ModuleN, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    if cst[4].fullspan == 0
-        n = pretty(style, cst[5], s)
-        if s.opts.join_lines_based_on_source
-            join_lines = t.endline == n.startline
-            join_lines && (add_node!(t, Whitespace(1), s))
-            add_node!(t, n, s, join_lines = join_lines)
-        else
+
+    # add_node!(t, pretty(style, cst[1], s), s)
+    # add_node!(t, Whitespace(1), s)
+    # add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
+    # if cst[4].fullspan == 0
+    #     n = pretty(style, cst[5], s)
+    #     if s.opts.join_lines_based_on_source
+    #         join_lines = t.endline == n.startline
+    #         join_lines && (add_node!(t, Whitespace(1), s))
+    #         add_node!(t, n, s, join_lines = join_lines)
+    #     else
+    #         add_node!(t, Whitespace(1), s)
+    #         add_node!(t, n, s, join_lines = true)
+    #     end
+    # else
+    #     if s.opts.indent_submodule && parent_is(
+    #         cst,
+    #         n -> n !== nothing;
+    #         ignore = n -> !(n.head === :module || n.head === :baremodule),
+    #     )
+    #         s.indent += s.opts.indent
+    #         add_node!(t, pretty(style, cst[4], s), s, max_padding = s.opts.indent)
+    #         s.indent -= s.opts.indent
+    #     else
+    #         add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
+    #     end
+    #     add_node!(t, pretty(style, cst[5], s), s)
+    # end
+
+    block_has_contents = false
+    childs = children(cst)
+    for c in childs
+        if  kind(c) in KSet"module baremodule"
+            n = pretty(style, c, s)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
-        end
-    else
-        if s.opts.indent_submodule && parent_is(
-            cst,
-            n -> n !== nothing;
-            ignore = n -> !(n.head === :module || n.head === :baremodule),
-        )
-            s.indent += s.opts.indent
-            add_node!(t, pretty(style, cst[4], s), s, max_padding = s.opts.indent)
-            s.indent -= s.opts.indent
+        elseif kind(c) === K"end"
+            n = pretty(style, c, s)
+            if s.opts.join_lines_based_on_source && !block_has_contents
+                join_lines = t.endline == n.startline
+                join_lines && (add_node!(t, Whitespace(1), s))
+                add_node!(t, n, s, join_lines = join_lines)
+            elseif block_has_contents
+                add_node!(t, n, s)
+            else
+                add_node!(t, Whitespace(1), s)
+                add_node!(t, n, s, join_lines = true)
+            end
+        elseif kind(c) === K"block" && haschildren(c)
+            block_has_contents = length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
+            #     TODO: add indent based on parent
+    #     if s.opts.indent_submodule && parent_is(
+    #         cst,
+    #         n -> n !== nothing;
+    #         ignore = n -> !(n.head === :module || n.head === :baremodule),
+    #     )
+            # s.indent += s.opts.indent
+            n = pretty(style, c, s, ignore_single_line=true)
+            add_node!(t, n, s, max_padding = s.opts.indent)
+            # s.indent -= s.opts.indent
         else
-            add_node!(t, pretty(style, cst[4], s), s, max_padding = 0)
+            add_node!(t,pretty(style, c, s), s, join_lines=true)
         end
-        add_node!(t, pretty(style, cst[5], s), s)
     end
     t
 end
@@ -715,15 +779,14 @@ p_baremodule(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractS
 function p_const(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Const, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    if cst[2].fullspan != 0
-        for i in 2:length(cst)
-            a = cst[i]
-            if kind(a) !== K","
-                add_node!(t, Whitespace(1), s)
-            end
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        end
+    childs = children(cst)
+    add_node!(t, pretty(style, childs[1], s), s)
+    if length(childs) == 1
+        return t
+    end
+    add_node!(t, Whitespace(1), s)
+    for a in childs[2:end]
+        add_node!(t, pretty(style, a, s), s, join_lines = true)
     end
     t
 end
@@ -767,7 +830,6 @@ function p_toplevel(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     t = FST(TopLevel, cst, nspaces(s))
     for a in children(cst)
         add_node!(t, pretty(style, a, s), s, max_padding = s.opts.indent)
-        add_node!(t, Semicolon(), s)
     end
     t
 end
@@ -779,13 +841,20 @@ function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Begin, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
-    if length(cst) == 2
+
+    childs = children(cst)
+    # TODO: might not work with comments?
+    empty_body = length(filter(n -> !JuliaSyntax.is_whitespace(n), childs)) == 2
+
+    if empty_body
+        for c in childs[2:end-1]
+            pretty(style, c, s)
+        end
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
     else
         s.indent += s.opts.indent
-        nodes = children(cst)[2:end-1]
-        add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
+        add_node!(t, p_block(style, childs[2:end-1], s), s, max_padding = s.opts.indent)
         s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst[end], s), s)
     end
@@ -797,29 +866,21 @@ p_begin(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle}
 # quote
 function p_quote(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
+
     t = FST(Quote, cst, nspaces(s))
-    if cst[1].head === :QUOTE
-        add_node!(t, pretty(style, cst[1], s), s)
-        if cst[2].fullspan == 0
-            add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-        else
-            s.indent += s.opts.indent
-            add_node!(
-                t,
-                pretty(style, cst[2], s, ignore_single_line = true),
-                s,
-                max_padding = s.opts.indent,
-            )
-            s.indent -= s.opts.indent
-            add_node!(t, pretty(style, cst[3], s), s)
+    childs = children(cst)
+    if kind(childs[1]) === K"block"
+        add_node!(t, p_begin(style, childs[1], s), s, join_lines = true)
+        for i = 2:length(childs)
+            add_node!(t, pretty(style, childs[i], s), s, join_lines = true)
         end
     else
-        for a in cst
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+        for c in childs
+            add_node!(t, pretty(style, c, s), s, join_lines = true)
         end
     end
-    t
+
+    return t
 end
 p_quote(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_quote(DefaultStyle(style), cst, s)
@@ -846,40 +907,41 @@ p_quotenode(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSt
 # y, back = let
 #     body
 # end
+# #
+#
+# let
+# [block]
+# ...
+# [block]
+# end
 function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Let, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    if cst[2].fullspan == 0
-        s.indent += s.opts.indent
-        add_node!(t, pretty(style, cst[3], s, ignore_single_line = true), s)
-        s.indent -= s.opts.indent
-        add_node!(t, pretty(style, cst[end], s), s)
-    else
-        add_node!(t, Whitespace(1), s)
-        s.indent += s.opts.indent
-        if cst[2].head === :block
-            add_node!(t, p_block(style, cst[2], s, join_body = true), s, join_lines = true)
-        else
-            add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-        end
-        s.indent -= s.opts.indent
+    block_count = 0
 
-        idx = length(t.nodes::Vector{FST})
-        s.indent += s.opts.indent
+    for c in children(cst)
+    if kind(c) === K"block"
+            s.indent += s.opts.indent
+            if block_count  == 0
+            add_node!(t, p_block(style, c, s, join_body = true), s, join_lines = true)
+            else
         add_node!(
             t,
-            pretty(style, cst[3], s, ignore_single_line = true),
+            pretty(style, c, s, ignore_single_line = true),
             s,
             max_padding = s.opts.indent,
         )
-        s.indent -= s.opts.indent
-        # Possible newline after args if nested to act as a separator
-        # to the block body.
-        if cst[2].head === :block && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
-            add_node!((t.nodes::Vector{FST})[idx], Placeholder(0), s)
-        end
-        add_node!(t, pretty(style, cst[end], s), s)
+            end
+            s.indent -= s.opts.indent
+            block_count += 1
+    elseif kind(c) === K"let"
+            add_node!(t, pretty(style, c, s), s)
+            add_node!(t, Whitespace(1), s)
+    elseif kind(c) === K"end"
+            add_node!(t, pretty(style, c, s), s)
+    else
+            add_node!(t, pretty(style, c, s), s, join_lines = true)
+    end
     end
     t
 end
@@ -890,19 +952,22 @@ p_let(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
 function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(For, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
+    childs = children(cst)
+
+    add_node!(t, pretty(style, childs[1], s), s)
     add_node!(t, Whitespace(1), s)
 
-    n = if cst[2].head === :block
+
+    n = if kind(childs[2]) === K"block"
         s.indent += s.opts.indent
-        n = p_block(style, cst[2], s, join_body = true)
+        n = p_block(style, childs[2], s, join_body = true)
         s.indent -= s.opts.indent
         n
     else
-        pretty(style, cst[2], s)
+        pretty(style, childs[2], s)
     end
 
-    cst[1].head === :FOR &&
+    kind(childs[1]) === K"for" &&
         eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     add_node!(t, n, s, join_lines = true)
 
@@ -910,7 +975,7 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     s.indent += s.opts.indent
     add_node!(
         t,
-        pretty(style, cst[3], s, ignore_single_line = true),
+        pretty(style, childs[3], s, ignore_single_line = true),
         s,
         max_padding = s.opts.indent,
     )
@@ -918,10 +983,13 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
 
     # Possible newline after args if nested to act as a separator
     # to the block body.
-    if cst[2].head === :block && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
+    # if kind(childs[2]) === K"block" && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
+    if kind(childs[2]) === K"block" && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
         add_node!((t.nodes::Vector{FST})[idx], Placeholder(0), s)
     end
-    add_node!(t, pretty(style, cst[4], s), s)
+    for i in 4:length(childs)
+        add_node!(t, pretty(style, childs[i], s), s)
+    end
     t
 end
 p_for(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
@@ -950,7 +1018,7 @@ function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, nodes[1], s), s, join_lines = true)
     end
-    if nodes[2].head === :block
+    if kind(nodes[2]) === K"block"
         s.indent += s.opts.indent
         n = pretty(style, nodes[2], s, ignore_single_line = true)
         s.opts.always_use_return && prepend_return!(n, s)
@@ -998,6 +1066,7 @@ p_try(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
 function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(If, cst, nspaces(s))
+
     if cst[1].head == :IF
         add_node!(t, pretty(style, cst[1], s), s)
         add_node!(t, Whitespace(1), s)
@@ -1207,7 +1276,6 @@ function p_binaryopcall(
 )
     style = getstyle(ds)
     t = FST(Binary, cst, nspaces(s))
-    op = findfirst(JuliaSyntax.is_operator, children(cst))
     opkind = op_kind(cst)
 
     nonest = nonest || opkind === K":"
@@ -1217,28 +1285,36 @@ function p_binaryopcall(
        opkind in KSet"<: >:" &&
        !s.opts.whitespace_typedefs
         nospace = true
-    elseif kind(op) === K":"
+    elseif kind(opkind) === K":"
         nospace = true
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
 
-    if is_opcall(cst[1])
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    else
-        n = pretty(style, cst[1], s)
+    childs = children(cst)
+    nodes = map(enumerate(childs)) do a
+        idx, c = a
+        n = if idx == 1 || idx == length(childs)
+            pretty(style, c, s, nonest = nonest, nospace = nospace_args)
+        else
+            pretty(style, c, s)
+        end
+        n
     end
+    nodes = filter(n -> n.typ !== NONE, nodes)
+
+    op = nodes[findfirst(n -> n.typ === OPERATOR, nodes)]
 
     if opkind === K":" &&
        s.opts.whitespace_ops_in_indices &&
-       !is_leaf(cst[1]) &&
-       !is_iterable(cst[1])
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
+       !is_leaf(nodes[1]) &&
+       !is_iterable(nodes[1])
+        paren = FST(PUNCTUATION, -1, nodes[1].startline, nodes[1].startline, "(")
         add_node!(t, paren, s)
-        add_node!(t, n, s, join_lines = true)
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
+        add_node!(t, nodes[1], s, join_lines = true)
+        paren = FST(PUNCTUATION, -1, nodes[1].startline, nodes[1].startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s)
+        add_node!(t, nodes[1], s)
     end
 
     nrhs = nest_rhs(cst)
@@ -1246,47 +1322,40 @@ function p_binaryopcall(
     nest = (is_binaryop_nestable(style, cst) && !nonest) || nrhs
 
     if opkind === K"$"
-        add_node!(t, pretty(style, op, s), s, join_lines = true)
+        add_node!(t, op, s, join_lines = true)
     elseif (
         (JuliaSyntax.is_number(cst[1]) || opkind === K"^") && kind(cst) === K"dotcall"
     ) ||
-           # 1 .. -2 (can be ., .., ..., etc)
-           # (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && is_dot_op(cst))
-        (JuliaSyntax.is_number(cst[end]) && opkind in KSet"..")
+        # 1 .. -2 (can be ., .., ..., etc)
+        (JuliaSyntax.is_number(cst[end]) && startswith(nodes[end].val, "-") && opkind in KSet"..")
         add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, op, s), s, join_lines = true)
+        add_node!(t, op, s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     elseif !(opkind in KSet"in isa ∈") && (
         nospace || (
             opkind !== K"->" && opkind in KSet"⥔ :: ."
         )
     )
-        add_node!(t, pretty(style, op, s), s, join_lines = true)
+        add_node!(t, op, s, join_lines = true)
     elseif JuliaSyntax.is_radical_op(opkind)
-        add_node!(t, pretty(style, op, s), s, join_lines = true)
+        add_node!(t, op, s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, op, s), s, join_lines = true)
+        add_node!(t, op, s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    end
-
-    if is_opcall(cst[3])
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    else
-        n = pretty(style, cst[3], s)
     end
 
     if opkind === K":" &&
        s.opts.whitespace_ops_in_indices &&
-       !is_leaf(cst[3]) &&
-       !is_iterable(cst[3])
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
+        !is_leaf(cst[end]) &&
+        !is_iterable(cst[end])
+        paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, "(")
         add_node!(t, paren, s, join_lines = true)
-        add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = !nest)
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
+        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
+        paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source = !nest)
+        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
     end
 
     if nest
@@ -1322,10 +1391,8 @@ function p_whereopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
         )
 
     curly_ctx =
-        cst.parent.head === :curly ||
-        cst[3].head === :curly ||
-        cst[3].head === :bracescat ||
-        cst[3].head === :parameters
+        # cst.parent.head === :curly ||
+        kind(cst[3]) in KSet"curly bracescat parameters"
 
     add_braces =
         s.opts.surround_whereop_typeparameters && !curly_ctx && !kind(cst[3]) === K"{"
@@ -1461,9 +1528,11 @@ function p_curly(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
         pretty(style, a, s)
         end
 
-        if i == length(childs) && nest
+        if i == length(childs)
+            if nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i < length(childs) && !is_punc(childs[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -1497,9 +1566,11 @@ function p_call(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     childs = children(cst)
     for i in 3:length(childs)
         a = childs[i]
-        if i == length(childs) && nest
+        if i == length(childs)
+            if nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         elseif kind(a) === K"," && i < length(childs) && !is_punc(childs[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
@@ -1511,7 +1582,7 @@ function p_call(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
 
     # TODO: parent
     if s.opts.separate_kwargs_with_semicolon &&
-       (!parent_is(cst, n -> is_function_or_macro_def(n) || n.head == :macrocall))
+        (!parent_is(cst, n -> is_function_or_macro_def(n) || kind(n) === K"macrocall"))
         separate_kwargs_with_semicolon!(t)
     end
     t
@@ -1537,7 +1608,7 @@ function p_invisbrackets(
     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
     nest && add_node!(t, Placeholder(0), s)
 
-    if cst[2].head === :block
+    if kind(cst[2]) === K"block"
         add_node!(t, pretty(style, cst[2], s, from_quote = true), s, join_lines = true)
     elseif is_opcall(cst[2])
         n = pretty(style, cst[2], s, nonest = nonest, nospace = nospace)
@@ -1578,20 +1649,22 @@ function p_tuple(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
             pretty(style, a, s)
         end
 
-        if is_opener(n) && nest
+        if is_opener(n)
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif is_closer(n) && nest
+            nest && add_node!(t, Placeholder(0), s)
+        elseif is_closer(n)
             # An odd case but this could occur if there are no keyword arguments.
             # In which case ";," is invalid syntax.
             #
             # no trailing comma since (arg) is semantically different from (arg,) !!!
-            if t[end].typ !== SEMICOLON && length(args) > 1
-                add_node!(t, TrailingComma(), s)
+            if nest
+                if t[end].typ !== SEMICOLON && length(args) > 1
+                    add_node!(t, TrailingComma(), s)
+                end
+                add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
-        elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
+        elseif kind(a) === K"," && i < length(childs) && !is_punc(childs[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
@@ -1614,12 +1687,14 @@ function p_braces(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
 
     for (i, a) in enumerate(children(cst))
         n = pretty(style, a, s)
-        if i == 1 && nest
+        if i == 1
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif i == length(cst) && nest
-            add_node!(t, TrailingComma(), s)
-            add_node!(t, Placeholder(0), s)
+            nest && add_node!(t, Placeholder(0), s)
+        elseif i == length(cst)
+            if nest
+                add_node!(t, TrailingComma(), s)
+                add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -1642,14 +1717,16 @@ function p_bracescat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
             (unnestable_node(cst[2]) || s.opts.disallow_single_arg_nesting)
         )
 
-    for (i, a) in enumerate(cst)
+    for (i, a) in enumerate(children(cst))
         n = pretty(style, a, s)
-        if i == 1 && nest
+        if i == 1
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif i == length(cst) && nest
-            add_node!(t, TrailingSemicolon(), s)
-            add_node!(t, Placeholder(0), s)
+            nest && add_node!(t, Placeholder(0), s)
+        elseif i == length(cst)
+            if nest
+                add_node!(t, TrailingSemicolon(), s)
+                add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, n, s, join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
@@ -1675,12 +1752,14 @@ function p_vect(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
 
     for (i, a) in enumerate(children(cst))
         n = pretty(style, a, s)
-        if i == 1 && nest
+        if i == 1
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif i == length(cst) && nest
+            nest && add_node!(t, Placeholder(0), s)
+        elseif i == length(cst)
+            if nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
@@ -1698,7 +1777,7 @@ function p_comprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Comprehension, cst, nspaces(s))
 
-    if is_block(cst[2]) || (cst[2].head === :generator && is_block(cst[2][1]))
+    if is_block(cst[2]) || (kind(cst[2]) === K"generator" && is_block(cst[2][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -1716,7 +1795,7 @@ function p_typedcomprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::S
     style = getstyle(ds)
     t = FST(TypedComprehension, cst, nspaces(s))
 
-    if is_block(cst[3]) || (cst[3].head === :generator && is_block(cst[3][1]))
+    if is_block(cst[3]) || (kind(cst[3]) === K"generator" && is_block(cst[3][1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -1752,11 +1831,12 @@ p_parameters(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractS
 function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Import, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    add_node!(t, Whitespace(1), s)
 
     for a in children(cst)
-        if kind(a) === K":"
+        if kind(a) in KSet"import export using"
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+        elseif kind(a) === K":"
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s), s, join_lines = true)
@@ -1796,13 +1876,16 @@ p_using(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle}
 function p_as(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(As, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, p_keyword(style, cst[2], s), s, join_lines = true)
-    # no nesting for the time being
-    add_node!(t, Whitespace(1), s)
-    add_node!(t, pretty(style, cst[3], s), s, join_lines = true)
-    return t
+
+    childs = children(cst)
+    for (i, c) in enumerate(childs)
+        add_node!(t, pretty(style, c, s), s, join_lines = true)
+        if !(i == length(childs) || JuliaSyntax.is_whitespace(c))
+            add_node!(t, Whitespace(1), s)
+        end
+    end
+
+    t
 end
 p_as(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
     p_as(DefaultStyle(style), cst, s)
@@ -1818,13 +1901,15 @@ function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(children(cst))
-        if is_closer(a) && nest
+        if is_closer(a)
+            if nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
+            end
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-        elseif is_opener(a) && nest
+        elseif is_opener(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
+            nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
@@ -1843,7 +1928,7 @@ p_ref(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
 function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Vcat, cst, nspaces(s))
-    st = cst.head === :vcat ? 1 : 2
+    st = kind(cst)=== K"vcat" ? 1 : 2
     args = get_args(cst)
     nest =
         length(args) > 0 && !(
@@ -1851,29 +1936,43 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
 
-    for (i, a) in enumerate(cst)
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s)
         diff_line = t.endline != t.startline
-        if is_opener(a) && nest
+        # If arguments are on different always nest
+        diff_line && (t.nest_behavior = AlwaysNest)
+
+        if is_opener(a)
             add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif !is_closer(a) && i > st
+            nest && add_node!(t, Placeholder(0), s)
+        elseif is_closer(a)
+            nest && add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
+        elseif JuliaSyntax.is_whitespace(a)
+        else
+            # [a b c d e f] is semantically different from [a b c; d e f]
+            # child_has_semicolon = any(aa -> kind(aa) === K";", children(a))
+            # if !child_has_semicolon
+            #     add_node!(t, n, s, join_lines = false)
+            # else
+            #     add_node!(t, n, s, join_lines = true)
+            # end
             add_node!(t, n, s, join_lines = true)
 
-            if i != length(cst) - 1 && has_semicolon(s.doc, n.startline)
-                add_node!(t, InverseTrailingSemicolon(), s)
-                add_node!(t, Placeholder(1), s)
-                # Keep trailing semicolon if there's only one arg
-            elseif length(args) == 1 && has_semicolon(s.doc, n.startline)
-                add_node!(t, Semicolon(), s)
-                add_node!(t, Placeholder(0), s)
-            else
-                add_node!(t, Placeholder(0), s)
+            j = i + 1
+            is_last_arg = false
+            while j <= length(childs) && !is_last_arg
+                k = kind(childs[j])
+                if !JuliaSyntax.is_whitespace(k)
+                    k !== K"row" && (is_last_arg = true)
+                    break
+                end
+                j += 1
             end
-        else
-            # If arguments are on different always nest
-            diff_line && (t.nest_behavior = AlwaysNest)
-            add_node!(t, n, s, join_lines = true)
+            if !is_last_arg
+                add_node!(t, Placeholder(1), s)
+            end
         end
     end
     t
@@ -1892,8 +1991,8 @@ p_typedvcat(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSt
 function p_hcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Hcat, cst, nspaces(s))
-    st = cst.head === :hcat ? 1 : 2
-    for (i, a) in enumerate(cst)
+    st = kind(cst) === K"hcat" ? 1 : 2
+    for (i, a) in enumerate(children(cst))
         if i > st && i < length(cst) - 1
             add_node!(t, pretty(style, a, s), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
@@ -1917,48 +2016,38 @@ p_typedhcat(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSt
 function p_ncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Ncat, cst, nspaces(s))
-    st = cst.head === :ncat ? 2 : 3
+    st = kind(cst) === K"ncat" ? 2 : 3
     args = get_args(cst)
     nest =
         length(args) > 0 && !(
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
-    n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
-
-    for (i, a) in enumerate(cst)
+    childs = children(cst)
+    last_was_semicolon = false
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s)
         diff_line = t.endline != t.startline
-        if i == st && length(args) == 0
-            for c in 1:n_semicolons
-                add_node!(t, Semicolon(), s)
-            end
-        elseif i == st
-            continue
-        elseif is_opener(a) && nest
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(0), s)
-        elseif !is_closer(a) && i > st
-            add_node!(t, n, s, join_lines = true)
+        diff_line && (t.nest_behavior = AlwaysNest)
 
-            if i != length(cst) - 1
-                for c in 1:n_semicolons
-                    add_node!(t, Semicolon(), s)
-                end
-                add_node!(t, Placeholder(1), s)
-                # Keep trailing semicolon if there's only one arg
-            elseif length(args) == 1
-                for _ in 1:n_semicolons
-                    add_node!(t, Semicolon(), s)
-                end
-                add_node!(t, Placeholder(0), s)
-            else
-                add_node!(t, Placeholder(0), s)
-            end
-        else
-            # If arguments are on different always nest
-            diff_line && (t.nest_behavior = AlwaysNest)
+        if is_opener(a)
             add_node!(t, n, s, join_lines = true)
+            nest && add_node!(t, Placeholder(0), s)
+        elseif is_closer(a)
+            nest && add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
+        else
+            if kind(a) === K";"
+                add_node!(t, n, s)
+                last_was_semicolon = true
+            elseif JuliaSyntax.is_whitespace(a)
+            else
+                if last_was_semicolon
+                    add_node!(t, Placeholder(1), s)
+                    last_was_semicolon = false
+                end
+                add_node!(t, n, s, join_lines = true)
+            end
         end
     end
     t
@@ -1977,8 +2066,8 @@ p_typedncat(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractSt
 function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(Row, cst, nspaces(s))
-
-    for (i, a) in enumerate(cst)
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
         if is_opcall(a)
             add_node!(
                 t,
@@ -1989,7 +2078,24 @@ function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
         else
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-        i < length(cst) && add_node!(t, Whitespace(1), s)
+
+        if kind(a) === K";"
+        elseif i < length(childs) && !JuliaSyntax.is_whitespace(a) && JuliaSyntax.is_whitespace(childs[i+1])
+            # check if there's a semicolon in the future
+            j = i+2
+            future_has_semicolon = false
+            while j <= length(childs) && !future_has_semicolon
+                k = kind(childs[j])
+                if !JuliaSyntax.is_whitespace(k)
+                    k === K";" && (future_has_semicolon = true)
+                    break
+                end
+                j += 1
+            end
+            if !future_has_semicolon
+                add_node!(t, Whitespace(1), s)
+            end
+        end
     end
     t.nest_behavior = NeverNest
     t
@@ -2000,28 +2106,36 @@ p_row(style::S, cst::JuliaSyntax.GreenNode, s::State) where {S<:AbstractStyle} =
 function p_nrow(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ds)
     t = FST(NRow, cst, nspaces(s))
+    childs = children(cst)
+    last_was_semicolon = false
 
-    n_semicolons = SEMICOLON_LOOKUP[cst[1].head]
-
-    for (i, a) in enumerate(cst)
-        i == 1 && continue
-        if is_opcall(a)
-            add_node!(
-                t,
-                pretty(style, a, s, nospace = true, nonest = true),
-                s,
-                join_lines = true,
-            )
+    for (i, a) in enumerate(childs)
+        if kind(a) === K";"
+            add_node!(t, pretty(style, a, s), s)
+            last_was_semicolon = true
+        elseif JuliaSyntax.is_whitespace(a)
+            pretty(style, a, s)
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
-        end
-        if i < length(cst)
-            for _ in 1:n_semicolons
-                add_node!(t, Semicolon(), s)
+            if last_was_semicolon
+                if i < length(childs) - 1
+                    add_node!(t, Whitespace(1), s)
+                end
+                last_was_semicolon = false
             end
-            add_node!(t, Whitespace(1), s)
+
+            if is_opcall(a)
+                add_node!(
+                    t,
+                    pretty(style, a, s, nospace = true, nonest = true),
+                    s,
+                    join_lines = true,
+                )
+            else
+                add_node!(t, pretty(style, a, s), s, join_lines = true)
+            end
         end
     end
+
     t.nest_behavior = NeverNest
     t
 end

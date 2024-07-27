@@ -18,7 +18,7 @@ struct SciMLStyle <: AbstractStyle
 end
 SciMLStyle() = SciMLStyle(NoopStyle())
 
-function options(style::SciMLStyle)
+function options(::SciMLStyle)
     return (;
         always_for_in = true,
         always_use_return = false,
@@ -53,14 +53,14 @@ function options(style::SciMLStyle)
     )
 end
 
-function is_binaryop_nestable(::SciMLStyle, cst::CSTParser.EXPR)
-    (CSTParser.defines_function(cst) || is_assignment(cst)) && return false
-    ((cst[2]::CSTParser.EXPR).val in ("=>", "->", "in")) && return false
+function is_binaryop_nestable(::SciMLStyle, cst::JuliaSyntax.GreenNode)
+    (defines_function(cst) || is_assignment(cst)) && return false
+    ((cst[2]::JuliaSyntax.GreenNode).val in ("=>", "->", "in")) && return false
     return true
 end
 
-const CST_T = [CSTParser.EXPR]
-const TUPLE_T = [CSTParser.EXPR, Vector{CSTParser.EXPR}]
+const CST_T = [JuliaSyntax.GreenNode]
+const TUPLE_T = [JuliaSyntax.GreenNode, Vector{JuliaSyntax.GreenNode}]
 for f in [
     :p_import,
     :p_using,
@@ -78,7 +78,7 @@ for f in [
     :p_filter,
     :p_flatten,
 ]
-    @eval function $f(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+    @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         style = getstyle(ss)
         $f(YASStyle(style), cst, s; kwargs...)
     end
@@ -94,7 +94,7 @@ for f in [
     :p_invisbrackets,
     :p_bracescat,
 ]
-    @eval function $f(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+    @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         style = getstyle(ss)
         if s.opts.yas_style_nesting
             $f(YASStyle(style), cst, s; kwargs...)
@@ -104,7 +104,7 @@ for f in [
     end
 end
 
-function p_tuple(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+function p_tuple(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ss)
     if s.opts.yas_style_nesting
         p_tuple(YASStyle(style), cst, s; kwargs...)
@@ -113,12 +113,12 @@ function p_tuple(ss::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
     end
 end
 
-function p_tuple(ss::SciMLStyle, nodes::Vector{CSTParser.EXPR}, s::State; kwargs...)
+function p_tuple(ss::SciMLStyle, nodes::Vector{JuliaSyntax.GreenNode}, s::State; kwargs...)
     style = getstyle(ss)
     p_tuple(YASStyle(style), nodes, s; kwargs...)
 end
 
-function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
+function p_begin(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ss)
     t = FST(Begin, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
@@ -126,12 +126,8 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
     else
-        stmts_idxs = 2:length(cst)-1
+        nodes = children(cst)[2:end-1]
         s.indent += s.opts.indent
-        nodes = CSTParser.EXPR[]
-        for i in 2:length(cst)-1
-            push!(nodes, cst[i])
-        end
         add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
         s.indent -= s.opts.indent
         add_node!(t, pretty(style, cst[end], s), s)
@@ -139,7 +135,7 @@ function p_begin(ss::SciMLStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
+function p_macrocall(ys::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ys)
     t = FST(MacroCall, cst, nspaces(s))
 
@@ -154,28 +150,19 @@ function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
     !has_closer && (t.typ = MacroBlock)
     nospace = length(2:length(cst)-1) > 1
 
-    # same as CSTParser.Call but whitespace sensitive
-    for (i, a) in enumerate(cst)
-        if CSTParser.is_nothing(a)
-            s.offset += a.fullspan
-            continue
-        end
-
+    for (i, a) in enumerate(children(cst))
         # Yes:
         # `@parameters a=a b=b`
         #
         # No:
         # `@parameters a = a b = b`
         n = pretty(style, a, s; nospace = nospace)
-        if CSTParser.ismacroname(a)
+        if JuliaSyntax.is_macro_name(a)
             add_node!(t, n, s, join_lines = true)
-            if length(args) > 0
-                loc = cursor_loc(s)
-                if t[end].line_offset + length(t[end]) < loc[2]
-                    add_node!(t, Whitespace(1), s)
-                end
+            if JuliaSyntax.is_whitespace(kind(cst[i+1]))
+                add_node!(t, Whitespace(1), s)
             end
-        elseif CSTParser.is_comma(a) && i < length(cst) && !is_punc(cst[i+1])
+        elseif kind(a) === "," && i < length(cst) && !is_punc(cst[i+1])
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif is_closer(n)
@@ -197,7 +184,7 @@ function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
         elseif t.typ === MacroBlock
             if has_closer
                 add_node!(t, n, s, join_lines = true)
-                if i < length(cst) - 1 && cst[i+1].head != :parameters
+                if i < length(cst) - 1 && kind(cst[i+1]) != K"parameters"
                     add_node!(t, Whitespace(1), s)
                 end
             else
@@ -221,21 +208,25 @@ function p_macrocall(ys::SciMLStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
-function p_unaryopcall(ds::SciMLStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+function p_unaryopcall(ds::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
-    if length(cst) == 1
-        if cst.head.fullspan != 0
-            add_node!(t, pretty(style, cst.head, s), s, join_lines = true)
+    for c in children(children(cst))
+        if kind(c) === K"Whitespace"
+                add_node!(t, Whitespace(1), s)
+        else
+            add_node!(t, pretty(style, c, s), s, join_lines = true)
         end
-        add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    elseif CSTParser.isidentifier(cst[2]) && startswith(cst[2].val, "ᶜ")
-        add_node!(t, pretty(style, cst[1], s), s)
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    else
-        add_node!(t, pretty(style, cst[1], s), s)
-        add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
     end
+    # if length(cst) == 1
+    #     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    # elseif CSTParser.isidentifier(cst[2]) && startswith(cst[2].val, "ᶜ")
+    #     add_node!(t, pretty(style, cst[1], s), s)
+    #     add_node!(t, Whitespace(1), s)
+    #     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    # else
+    #     add_node!(t, pretty(style, cst[1], s), s)
+    #     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
+    # end
     t
 end

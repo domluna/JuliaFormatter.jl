@@ -25,7 +25,7 @@ struct BlueStyle <: AbstractStyle
 end
 BlueStyle() = BlueStyle(NoopStyle())
 
-function options(style::BlueStyle)
+function options(::BlueStyle)
     return (;
         always_use_return = true,
         short_to_long_function_def = true,
@@ -59,12 +59,12 @@ function options(style::BlueStyle)
     )
 end
 
-function is_binaryop_nestable(::BlueStyle, cst::CSTParser.EXPR)
+function is_binaryop_nestable(::BlueStyle, cst::JuliaSyntax.GreenNode)
     is_assignment(cst) && is_iterable(cst[end]) && return false
     return is_binaryop_nestable(DefaultStyle(), cst)
 end
 
-function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+function p_do(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(bs)
     t = FST(Do, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
@@ -78,7 +78,7 @@ function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, nodes[1], s), s, join_lines = true)
     end
-    if nodes[2].head === :block
+    if kind(nodes[2]) === K"block"
         s.indent += s.opts.indent
         n = pretty(style, nodes[2], s, ignore_single_line = true)
         add_node!(t, n, s, max_padding = s.opts.indent)
@@ -88,77 +88,78 @@ function p_do(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
     t
 end
 
+
 function p_binaryopcall(
-    bs::BlueStyle,
+    ds::BlueStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
     nonest = false,
     nospace = false,
+    from_curly = false,
 )
-    style = getstyle(bs)
+    style = getstyle(ds)
     t = FST(Binary, cst, nspaces(s))
-    op = cst[2]
+    op = findfirst(JuliaSyntax.is_operator, children(cst))
     opkind = op_kind(cst)
 
-    nonest = nonest || CSTParser.is_colon(op)
+    nonest = nonest || opkind === K":"
 
-    if CSTParser.iscurly(cst.parent::CSTParser.EXPR) &&
-       (op.val == "<:" || op.val == ">:") &&
+    # TODO: figure out parent
+    if from_curly &&
+       opkind in KSet"<: >:" &&
        !s.opts.whitespace_typedefs
         nospace = true
-    elseif CSTParser.is_colon(op)
+    elseif kind(op) === K":"
         nospace = true
     end
     nospace_args = s.opts.whitespace_ops_in_indices ? false : nospace
 
-    if is_opcall(cst[1])
-        n = pretty(style, cst[1], s, nonest = nonest, nospace = nospace_args)
-    else
-        n = pretty(style, cst[1], s)
+    childs = children(cst)
+    nodes = map(enumerate(childs)) do a
+        idx, c = a
+        n = if idx == 1 || idx == length(childs)
+            pretty(style, c, s, nonest = nonest, nospace = nospace_args)
+        else
+            pretty(style, c, s)
+        end
+        n
     end
+    nodes = filter(n -> n.typ !== NONE, nodes)
 
-    if CSTParser.is_colon(op) &&
+    if opkind === K":" &&
        s.opts.whitespace_ops_in_indices &&
        !is_leaf(cst[1]) &&
        !is_iterable(cst[1])
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
+        paren = FST(PUNCTUATION, -1, nodes[1].startline, nodes[1].startline, "(")
         add_node!(t, paren, s)
-        add_node!(t, n, s, join_lines = true)
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
+        add_node!(t, nodes[1], s, join_lines = true)
+        paren = FST(PUNCTUATION, -1, nodes[1].startline, nodes[1].startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s)
+        add_node!(t, nodes[1], s)
     end
 
     nrhs = nest_rhs(cst)
     nrhs && (t.nest_behavior = AlwaysNest)
     nest = (is_binaryop_nestable(style, cst) && !nonest) || nrhs
 
-    if op.fullspan == 0
-        # Do nothing - represents a binary op with no textual representation.
-        # For example: `2a`, which is equivalent to `2 * a`.
-    elseif CSTParser.is_exor(op)
+    if opkind === K"$"
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     elseif (
-        (CSTParser.isnumber(cst[1]) || is_fwdfwd_slash(op) || is_circumflex_accent(op)) &&
-        CSTParser.isdotted(op)
-    # ) || (CSTParser.isnumber(cst[3]) && startswith(cst[3].val, "-") && op_kind(cst) === K"..")
-        ) || (JuliaSyntax.is_number(cst[end]) && op_kind(cst) === K"..")
+        (JuliaSyntax.is_number(cst[1]) || opkind === K"^") && kind(cst) === K"dotcall"
+    ) ||
+        # 1 .. -2 (can be ., .., ..., etc)
+        (JuliaSyntax.is_number(cst[end]) && startswith(nodes[end].val, "-") && opkind in KSet"..")
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     elseif !(opkind in KSet"in isa ∈") && (
         nospace || (
-            !CSTParser.is_anon_func(op) && precedence(op) in (
-                CSTParser.RationalOp,
-                CSTParser.PowerOp,
-                CSTParser.DeclarationOp,
-                CSTParser.DotOp,
-            )
+            opkind !== K"->" && opkind in KSet"⥔ :: . //"
         )
     )
         add_node!(t, pretty(style, op, s), s, join_lines = true)
-    elseif op.val in RADICAL_OPS
+    elseif JuliaSyntax.is_radical_op(opkind)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     else
         add_node!(t, Whitespace(1), s)
@@ -166,48 +167,42 @@ function p_binaryopcall(
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
     end
 
-    if is_opcall(cst[3])
-        n = pretty(style, cst[3], s, nonest = nonest, nospace = nospace_args)
-    else
-        n = pretty(style, cst[3], s)
-    end
-
-    if CSTParser.is_colon(op) &&
+    if opkind === K":" &&
        s.opts.whitespace_ops_in_indices &&
-       !is_leaf(cst[3]) &&
-       !is_iterable(cst[3])
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, "(")
+        !is_leaf(cst[end]) &&
+        !is_iterable(cst[end])
+        paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, "(")
         add_node!(t, paren, s, join_lines = true)
-        add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = !nest)
-        paren = FST(PUNCTUATION, -1, n.startline, n.startline, ")")
+        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
+        paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = !nest)
+        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
     end
 
     if nest
         # for indent, will be converted to `indent` if needed
-        nodes = t.nodes::Vector
-        insert!(nodes, length(nodes), Placeholder(0))
+        insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
     end
 
     t
 end
 
-function p_return(bs::BlueStyle, cst::CSTParser.EXPR, s::State)
+function p_return(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(bs)
     t = FST(Return, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
-    if cst[2].fullspan != 0
-        for i in 2:length(cst)
-            a = cst[i]
+    add_node!(t, Whitespace(1), s)
+
+    childs = children(cst)
+    if length(childs) == 1
+        no = FST(IDENTIFIER, -1, t.endline, t.endline, "nothing")
+        add_node!(t, no, s, join_lines = true)
+    else
+        for a in childs[2:end]
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         end
-    elseif CSTParser.is_nothing(cst[2])
-        add_node!(t, Whitespace(1), s)
-        no = FST(IDENTIFIER, -1, t.endline, t.endline, "nothing")
-        add_node!(t, no, s, join_lines = true)
     end
     t
 end

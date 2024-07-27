@@ -5,8 +5,7 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_m
 end
 
 using JuliaSyntax
-using CSTParser
-using Tokenize
+using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using Pkg.TOML: parsefile
 using Glob
 import CommonMark: block_modifier
@@ -50,7 +49,7 @@ end
 
 abstract type AbstractStyle end
 
-options(_::AbstractStyle) = NamedTuple()
+options(::AbstractStyle) = NamedTuple()
 
 struct NoopStyle <: AbstractStyle end
 
@@ -75,7 +74,7 @@ function getstyle(s::NoopStyle)
     return s
 end
 
-function options(_::DefaultStyle)
+function options(::DefaultStyle)
     return (;
         indent = 4,
         margin = 92,
@@ -237,16 +236,17 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     if opts.always_for_in == true
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
-    cst = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
-    return format_text(cst, style, State(Document(text), opts))
+    t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
+    @info "parsed" t
+    return format_text(t, style, State(Document(text), opts))
 end
 
 function format_text(cst::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
     fst = try
         pretty(style, cst, s)
     catch e
-        loc = cursor_loc(s, s.offset - 1)
-        @warn "Error occurred during prettification" line = loc[1] offset = loc[2]
+        loc = cursor_loc(s, s.offset)
+        @warn "Error occurred during prettification" line = loc[1] offset = loc[2] goffset = s.offset
         rethrow(e)
     end
     hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))

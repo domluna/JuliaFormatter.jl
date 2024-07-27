@@ -379,6 +379,7 @@ function long_to_short_function_def!(fst::FST, s::State)
     return true
 end
 
+# TODO: revisit this
 """
     binaryop_to_whereop(fst::FST, s::State)
 

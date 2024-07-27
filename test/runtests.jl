@@ -1,6 +1,5 @@
 using JuliaFormatter
 using JuliaFormatter: DefaultStyle, YASStyle, Options, options, CONFIG_FILE_NAME
-using CSTParser
 using Test
 
 fmt1(s; i = 4, m = 80, kwargs...) =
@@ -35,8 +34,8 @@ minimalfmt(str, i::Int, m::Int; kwargs...) = minimalfmt(str; i = i, m = m, kwarg
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    x = CSTParser.parse(text, true)
-    t = JuliaFormatter.pretty(style, x, s)
+    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    t = JuliaFormatter.pretty(style, g, s)
     t
 end
 run_pretty(text::String, margin::Int) = run_pretty(text, opts = Options(margin = margin))
@@ -44,8 +43,8 @@ run_pretty(text::String, margin::Int) = run_pretty(text, opts = Options(margin =
 function run_nest(text::String; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    x = CSTParser.parse(text, true)
-    t = JuliaFormatter.pretty(style, x, s)
+    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    t = JuliaFormatter.pretty(style, g, s)
     JuliaFormatter.nest!(style, t, s)
     t, s
 end
@@ -54,8 +53,8 @@ run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = mar
 function run_format(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    cst = CSTParser.parse(text, true)
-    JuliaFormatter.format_text(cst, style, s)
+    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    JuliaFormatter.format_text(g, style, s)
     s
 end
 

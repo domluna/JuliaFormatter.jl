@@ -59,7 +59,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
        fst.ref !== nothing &&
-       CSTParser.defines_function(fst.ref[])
+       defines_function(fst.ref[])
         long_to_short_function_def!(fst, s)
     end
 
@@ -84,7 +84,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         if s.opts.short_to_long_function_def &&
            line_margin > s.opts.margin &&
            fst.ref !== nothing &&
-           CSTParser.defines_function(fst.ref[]) &&
+           defines_function(fst.ref[]) &&
            !parent_is(fst.ref[], n -> n.head == :let)
             short_to_long_function_def!(fst, s)
         end
@@ -696,7 +696,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
         cst = fst.ref[]
 
         indent_nest =
-            CSTParser.defines_function(cst) ||
+            defines_function(cst) ||
             is_assignment(cst) ||
             op_kind(fst) in KSet"=> ->" ||
             (fst.ref !== nothing && is_standalone_shortcircuit(cst))
