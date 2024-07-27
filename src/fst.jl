@@ -463,7 +463,7 @@ function add_node!(
     tnodes = t.nodes::Vector{FST}
     if n.typ === SEMICOLON
         join_lines = true
-        loc = if s.offset > length(s.doc.text) && t.typ === TopLevel
+        loc = if s.offset > length(s.doc.srcfile.code) && t.typ === TopLevel
             cursor_loc(s, s.offset - 1)
         else
             cursor_loc(s)
@@ -1185,4 +1185,23 @@ end
 
 function is_isa(x::CSTParser.EXPR)
     CSTParser.isoperator(x) && x.val == "isa"
+end
+
+function is_str_or_cmd(t::Tokens.Kind)
+    t === Tokens.CMD && return true
+    t === Tokens.TRIPLE_CMD && return true
+    t === Tokens.STRING && return true
+    t === Tokens.TRIPLE_STRING && return true
+    return false
+end
+
+function is_str_or_cmd(cst::CSTParser.EXPR)
+    CSTParser.isstring(cst) ||
+        CSTParser.iscmd(cst) ||
+        (cst.head === :macrocall && cst[1].head === :globalrefcmd)
+end
+
+function tokenize(val::AbstractString)::Tokens.Kind
+    toks = collect(Tokenize.tokenize(val))
+    toks[1].kind
 end
