@@ -227,7 +227,7 @@ function p_invisbrackets(
         override_join_lines_based_on_source = true,
     )
 
-    n = if kind(cst[2])=== K"block"
+    n = if kind(cst[2]) === K"block"
         pretty(style, cst[2], s, from_quote = true)
     elseif is_opcall(cst[2])
         pretty(style, cst[2], s, nonest = nonest, nospace = nospace)
@@ -287,7 +287,7 @@ function p_call(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     end
 
     if s.opts.separate_kwargs_with_semicolon &&
-        (!parent_is(cst, n -> is_function_or_macro_def(n) || kind(n) == K"macrocall"))
+       (!parent_is(cst, n -> is_function_or_macro_def(n) || kind(n) == K"macrocall"))
         separate_kwargs_with_semicolon!(t)
     end
 

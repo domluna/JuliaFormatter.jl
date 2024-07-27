@@ -213,7 +213,7 @@ function p_unaryopcall(ds::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     t = FST(Unary, cst, nspaces(s))
     for c in children(children(cst))
         if kind(c) === K"Whitespace"
-                add_node!(t, Whitespace(1), s)
+            add_node!(t, Whitespace(1), s)
         else
             add_node!(t, pretty(style, c, s), s, join_lines = true)
         end

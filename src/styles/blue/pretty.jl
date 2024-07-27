@@ -88,7 +88,6 @@ function p_do(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-
 function p_binaryopcall(
     ds::BlueStyle,
     cst::JuliaSyntax.GreenNode,
@@ -105,9 +104,7 @@ function p_binaryopcall(
     nonest = nonest || opkind === K":"
 
     # TODO: figure out parent
-    if from_curly &&
-       opkind in KSet"<: >:" &&
-       !s.opts.whitespace_typedefs
+    if from_curly && opkind in KSet"<: >:" && !s.opts.whitespace_typedefs
         nospace = true
     elseif kind(op) === K":"
         nospace = true
@@ -148,16 +145,17 @@ function p_binaryopcall(
     elseif (
         (JuliaSyntax.is_number(cst[1]) || opkind === K"^") && kind(cst) === K"dotcall"
     ) ||
-        # 1 .. -2 (can be ., .., ..., etc)
-        (JuliaSyntax.is_number(cst[end]) && startswith(nodes[end].val, "-") && opkind in KSet"..")
+           # 1 .. -2 (can be ., .., ..., etc)
+           (
+        JuliaSyntax.is_number(cst[end]) &&
+        startswith(nodes[end].val, "-") &&
+        opkind in KSet".."
+    )
         add_node!(t, Whitespace(1), s)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
         nest ? add_node!(t, Placeholder(1), s) : add_node!(t, Whitespace(1), s)
-    elseif !(opkind in KSet"in isa ∈") && (
-        nospace || (
-            opkind !== K"->" && opkind in KSet"⥔ :: . //"
-        )
-    )
+    elseif !(opkind in KSet"in isa ∈") &&
+           (nospace || (opkind !== K"->" && opkind in KSet"⥔ :: . //"))
         add_node!(t, pretty(style, op, s), s, join_lines = true)
     elseif JuliaSyntax.is_radical_op(opkind)
         add_node!(t, pretty(style, op, s), s, join_lines = true)
@@ -169,15 +167,27 @@ function p_binaryopcall(
 
     if opkind === K":" &&
        s.opts.whitespace_ops_in_indices &&
-        !is_leaf(cst[end]) &&
-        !is_iterable(cst[end])
+       !is_leaf(cst[end]) &&
+       !is_iterable(cst[end])
         paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, "(")
         add_node!(t, paren, s, join_lines = true)
-        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
+        add_node!(
+            t,
+            nodes[end],
+            s,
+            join_lines = true,
+            override_join_lines_based_on_source = !nest,
+        )
         paren = FST(PUNCTUATION, -1, nodes[end].startline, nodes[end].startline, ")")
         add_node!(t, paren, s, join_lines = true)
     else
-        add_node!(t, nodes[end], s, join_lines = true, override_join_lines_based_on_source = !nest)
+        add_node!(
+            t,
+            nodes[end],
+            s,
+            join_lines = true,
+            override_join_lines_based_on_source = !nest,
+        )
     end
 
     if nest

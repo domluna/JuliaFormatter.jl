@@ -737,9 +737,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
             line_margin = s.line_offset
 
             # replace IN with all of precedence level 6
-            if (
-                   rhs.typ === Binary && !(op_kind(rhs) in KSet"in ::")
-               ) ||
+            if (rhs.typ === Binary && !(op_kind(rhs) in KSet"in ::")) ||
                rhs.typ === Unary && rhs[end].typ !== Brackets ||
                rhs.typ === Chain ||
                rhs.typ === Comparison ||

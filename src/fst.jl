@@ -239,8 +239,8 @@ can_nest(fst::FST) = fst.nest_behavior === AllowNest
 is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = fst.nodes === nothing
 
-is_punc(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet", ( ) [ ] { } @" ||
-    kind(cst) === K"." && !haschildren(cst)
+is_punc(cst::JuliaSyntax.GreenNode) =
+    kind(cst) in KSet", ( ) [ ] { } @" || kind(cst) === K"." && !haschildren(cst)
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
 is_end(x::JuliaSyntax.GreenNode) = kind(x) === K"end"
@@ -257,16 +257,20 @@ is_circumflex_accent(x::JuliaSyntax.GreenNode) =
 is_fwdfwd_slash(x::JuliaSyntax.GreenNode) =
     kind(x) === K"dotcall" && haschildren(x) && kind(x[3]) == K"//"
 
-function traverse(text, ex, pos=1)
-           if !haschildren(ex)
-               println(repr(JuliaSyntax.kind(ex)), " => ", repr(text[pos:prevind(text, pos + JuliaSyntax.span(ex))]))
-               return
-           end
-           for e in children(ex)
-               traverse(text, e, pos)
-               pos += JuliaSyntax.span(e)
-           end
-       end
+function traverse(text, ex, pos = 1)
+    if !haschildren(ex)
+        println(
+            repr(JuliaSyntax.kind(ex)),
+            " => ",
+            repr(text[pos:prevind(text, pos + JuliaSyntax.span(ex))]),
+        )
+        return
+    end
+    for e in children(ex)
+        traverse(text, e, pos)
+        pos += JuliaSyntax.span(e)
+    end
+end
 
 # TODO: fix this
 function is_multiline(fst::FST)
@@ -292,7 +296,9 @@ function is_macrodoc(fst::FST)
 end
 
 function is_macrostr(t::JuliaSyntax.GreenNode)
-    kind(t) == K"macrocall" && haschildren(t) && kind(t[1]) in KSet"StringMacroName CmdMacroName"
+    kind(t) == K"macrocall" &&
+        haschildren(t) &&
+        kind(t[1]) in KSet"StringMacroName CmdMacroName"
 end
 
 function is_func_call(t::JuliaSyntax.GreenNode)
@@ -305,7 +311,8 @@ function is_func_call(t::JuliaSyntax.GreenNode)
     return false
 end
 
-defines_function(x::JuliaSyntax.GreenNode) = kind(x) === K"function" || (is_assignment(x) && is_func_call(x[1]))
+defines_function(x::JuliaSyntax.GreenNode) =
+    kind(x) === K"function" || (is_assignment(x) && is_func_call(x[1]))
 
 function is_if(cst::JuliaSyntax.GreenNode)
     k = kind(cst)
@@ -351,10 +358,10 @@ function get_args(t::JuliaSyntax.GreenNode)
     k = kind(t)
 
     ret = if k == K"where"
-    if is_leaf(t[end])
+        if is_leaf(t[end])
             JuliaSyntax.GreenNode[t[end]]
-    else
-        get_args(children(t)[end])
+        else
+            get_args(children(t)[end])
         end
     elseif k in KSet"macrocall typed_vcat typed_ncat ref curly typed_comprehension call"
         get_args(children(t)[2:end])
@@ -368,12 +375,10 @@ function get_args(t::JuliaSyntax.GreenNode)
     nodes
 end
 
-function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where T
+function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     nodes = JuliaSyntax.GreenNode[]
     for c in args
-        if is_punc(c) ||
-            kind(c) == K";" ||
-            JuliaSyntax.is_whitespace(c)
+        if is_punc(c) || kind(c) == K";" || JuliaSyntax.is_whitespace(c)
             continue
         end
         if kind(c) === K"parameters"
@@ -427,7 +432,8 @@ is_opener(fst::FST) =
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
 function is_iterable(t::JuliaSyntax.GreenNode)
-    kind(t) in KSet"tuple vect vcat braces call curly comprehension typed_comprehension macrocall parens ref typed_vcat import using export"
+    kind(t) in
+    KSet"tuple vect vcat braces call curly comprehension typed_comprehension macrocall parens ref typed_vcat import using export"
 end
 
 function is_iterable(x::FST)
@@ -702,19 +708,19 @@ function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
     false
 end
 
-function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind, Nothing}
+function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
     JuliaSyntax.is_operator(cst) && return kind(cst)
     if is_binary(cst) || kind(cst) === K"comparison" || is_chain(cst) || is_unary(cst)
         for c in children(cst)
             if JuliaSyntax.is_operator(c)
-                    return kind(c)
-                end
+                return kind(c)
             end
         end
+    end
     return nothing
 end
 
-function op_kind(fst::FST)::Union{JuliaSyntax.Kind, Nothing}
+function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
     fst.ref === nothing && return nothing
     op_kind(fst.ref[])
 end
@@ -885,7 +891,6 @@ function add_node!(
     max_padding::Int = -1,
     override_join_lines_based_on_source::Bool = false,
 )
-
     if n.typ === NONE
         return
     end

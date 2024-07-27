@@ -246,7 +246,8 @@ function format_text(cst::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
         pretty(style, cst, s)
     catch e
         loc = cursor_loc(s, s.offset)
-        @warn "Error occurred during prettification" line = loc[1] offset = loc[2] goffset = s.offset
+        @warn "Error occurred during prettification" line = loc[1] offset = loc[2] goffset =
+            s.offset
         rethrow(e)
     end
     hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))

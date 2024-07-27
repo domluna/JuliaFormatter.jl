@@ -24,9 +24,7 @@ end
 function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    if line_margin > s.opts.margin &&
-       fst.ref !== nothing &&
-       defines_function(fst.ref[])
+    if line_margin > s.opts.margin && fst.ref !== nothing && defines_function(fst.ref[])
         transformed = short_to_long_function_def!(fst, s)
         transformed && nest!(style, fst, s)
     end

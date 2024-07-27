@@ -43,4 +43,3 @@ function linerange(s::State, line::Int)
     r = JuliaSyntax.source_line_range(s.doc.srcfile, f)
     return (first(r), last(r))
 end
-
