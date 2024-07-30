@@ -315,10 +315,11 @@ defines_function(x::JuliaSyntax.GreenNode) =
     kind(x) === K"function" || (is_assignment(x) && is_func_call(x[1]))
 
 function is_if(cst::JuliaSyntax.GreenNode)
-    k = kind(cst)
-    k === K"if" && haschildren(cst) && kind(cst[1]) === K"if" && return true
-    k === K"elseif" && haschildren(cst) && kind(cst[1]) === K"elseif" && return true
-    return false
+    kind(cst) in KSet"if elseif else" && haschildren(cst) && return true
+    # k = kind(cst)
+    # k === K"if" && haschildren(cst) && kind(cst[1]) === K"if" && return true
+    # k === K"elseif" && haschildren(cst) && kind(cst[1]) === K"elseif" && return true
+    # return false
 end
 
 function is_custom_leaf(fst::FST)

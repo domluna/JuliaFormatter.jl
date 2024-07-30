@@ -127,7 +127,7 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     style = getstyle(ys)
     t = FST(TupleN, cst, nspaces(s))
     for (i, a) in enumerate(children(cst))
-        n = if kind(a) === K"="
+        n = if kind(a) === K"=" && haschildren(a)
             p_kw(style, a, s)
         else
             pretty(style, a, s)
