@@ -1,142 +1,143 @@
-function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
+function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State, node_lineage::Vector{Tuple{JuliaSyntax.Kind,Bool}}=Vector{Tuple{JuliaSyntax.Kind,Bool}}(); kwargs...)
     k = kind(t)
     style = getstyle(ds)
 
-    if k == K"Identifier" && !haschildren(t)
-        p_identifier(style, t, s)
+    push!(node_lineage, (k, haschildren(t)))
+
+    t = if k == K"Identifier" && !haschildren(t)
+        p_identifier(style, t, s, node_lineage)
     elseif JuliaSyntax.is_operator(t) && !haschildren(t)
-        p_operator(style, t, s)
+        p_operator(style, t, s, node_lineage)
     elseif JuliaSyntax.is_whitespace(t)
-        p_whitespace(style, t, s)
+        p_whitespace(style, t, s, node_lineage)
     elseif kind(t) == K"Comment"
-        p_comment(style, t, s)
+        p_comment(style, t, s, node_lineage)
     elseif kind(t) == K";"
-        p_semicolon(style, t, s)
+        p_semicolon(style, t, s, node_lineage)
     elseif is_punc(t) && !haschildren(t)
-        p_punctuation(style, t, s)
+        p_punctuation(style, t, s, node_lineage)
     elseif JuliaSyntax.is_keyword(t) && !haschildren(t)
-        p_keyword(style, t, s)
+        p_keyword(style, t, s, node_lineage)
     elseif k == K"as"
-        p_as(style, t, s)
+        p_as(style, t, s, node_lineage)
     elseif k === K"string"
-        p_stringh(style, t, s)
+        p_stringh(style, t, s, node_lineage)
     elseif JuliaSyntax.is_literal(t)
-        p_literal(style, t, s)
+        p_literal(style, t, s, node_lineage)
     elseif k === K"block" && length(children(t)) > 1 && kind(t[1]) === K"begin"
-        p_begin(style, t, s)
+        p_begin(style, t, s, node_lineage)
     elseif k === K"block"
-        p_block(style, t, s; kwargs...)
+        p_block(style, t, s, node_lineage; kwargs...)
     elseif k === K"module"
-        p_module(style, t, s)
+        p_module(style, t, s, node_lineage)
     elseif k === K"baremodule"
-        p_baremodule(style, t, s)
+        p_baremodule(style, t, s, node_lineage)
     elseif k === K"function"
-        p_functiondef(style, t, s)
+        p_functiondef(style, t, s, node_lineage)
     elseif k === K"macro"
-        p_macro(style, t, s)
+        p_macro(style, t, s, node_lineage)
     elseif k === K"struct" && !JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        p_struct(style, t, s)
+        p_struct(style, t, s, node_lineage)
     elseif k === K"struct" && JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        p_mutable(style, t, s)
+        p_mutable(style, t, s, node_lineage)
     elseif k === K"abstract"
-        p_abstract(style, t, s)
+        p_abstract(style, t, s, node_lineage)
     elseif k === K"primitive"
-        p_primitive(style, t, s)
+        p_primitive(style, t, s, node_lineage)
     elseif k === K"for"
-        p_for(style, t, s)
+        p_for(style, t, s, node_lineage)
     elseif k === K"while"
-        p_while(style, t, s)
+        p_while(style, t, s, node_lineage)
     elseif k === K"do"
-        p_do(style, t, s)
+        p_do(style, t, s, node_lineage)
     elseif is_if(t)
-        p_if(style, t, s)
+        p_if(style, t, s, node_lineage)
     elseif k in KSet"try catch finally" && haschildren(t)
-        # TODO: maybe give this separate blocks
-        p_try(style, t, s)
+        p_try(style, t, s, node_lineage)
     elseif k === K"toplevel"
-        p_toplevel(style, t, s)
+        p_toplevel(style, t, s, node_lineage)
     elseif k === K"quote" && haschildren(t) && kind(t[1]) === K":"
-        p_quotenode(style, t, s)
+        p_quotenode(style, t, s, node_lineage)
     elseif k === K"quote" && haschildren(t)
-        p_quote(style, t, s)
+        p_quote(style, t, s, node_lineage)
     elseif k === K"let"
-        p_let(style, t, s)
+        p_let(style, t, s, node_lineage)
     elseif k === K"vect"
-        p_vect(style, t, s)
+        p_vect(style, t, s, node_lineage)
     elseif k === K"comprehension"
-        p_comprehension(style, t, s)
+        p_comprehension(style, t, s, node_lineage)
     elseif k === K"typed_comprehension"
-        p_typedcomprehension(style, t, s)
+        p_typedcomprehension(style, t, s, node_lineage)
     elseif k === K"braces"
-        p_braces(style, t, s)
+        p_braces(style, t, s, node_lineage)
     elseif k === K"bracescat"
-        p_bracescat(style, t, s)
+        p_bracescat(style, t, s, node_lineage)
     elseif k === K"tuple"
-        p_tuple(style, t, s)
+        p_tuple(style, t, s, node_lineage)
     elseif k === K"parens"
-        p_invisbrackets(style, t, s; kwargs...)
+        p_invisbrackets(style, t, s, node_lineage; kwargs...)
     elseif k === K"curly"
-        p_curly(style, t, s)
+        p_curly(style, t, s, node_lineage)
     elseif is_macrostr(t)
-        p_macrostr(style, t, s)
+        p_macrostr(style, t, s, node_lineage)
     elseif k === K"doc"
-        p_globalrefdoc(style, t, s)
+        p_globalrefdoc(style, t, s, node_lineage)
     elseif k === K"macrocall"
-        p_macrocall(style, t, s)
+        p_macrocall(style, t, s, node_lineage)
     elseif k === K"where"
-        p_whereopcall(style, t, s)
+        p_whereopcall(style, t, s, node_lineage)
     elseif k === K"?" && haschildren(t)
-        p_conditionalopcall(style, t, s)
+        p_conditionalopcall(style, t, s, node_lineage)
     elseif is_binary(t) || (kind(t) === K"=" && haschildren(t))
-        p_binaryopcall(style, t, s; kwargs...)
+        p_binaryopcall(style, t, s, node_lineage; kwargs...)
     elseif is_unary(t)
-        p_unaryopcall(style, t, s; kwargs...)
+        p_unaryopcall(style, t, s, node_lineage; kwargs...)
     elseif is_chain(t)
-        p_chainopcall(style, t, s; kwargs...)
+        p_chainopcall(style, t, s, node_lineage; kwargs...)
     elseif is_func_call(t)
-        p_call(style, t, s)
+        p_call(style, t, s, node_lineage)
     elseif k === K"comparison"
-        p_comparison(style, t, s; kwargs...)
+        p_comparison(style, t, s, node_lineage; kwargs...)
     elseif k === K"parameters"
-        p_parameters(style, t, s)
+        p_parameters(style, t, s, node_lineage)
     elseif k === K"local"
-        p_local(style, t, s)
+        p_local(style, t, s, node_lineage)
     elseif k === K"global"
-        p_global(style, t, s)
+        p_global(style, t, s, node_lineage)
     elseif k === K"const"
-        p_const(style, t, s)
+        p_const(style, t, s, node_lineage)
     elseif k === K"return"
-        p_return(style, t, s)
+        p_return(style, t, s, node_lineage)
     elseif k === K"outer"
-        p_outer(style, t, s)
+        p_outer(style, t, s, node_lineage)
     elseif k === K"import"
-        p_import(style, t, s)
+        p_import(style, t, s, node_lineage)
     elseif k === K"export"
-        p_export(style, t, s)
+        p_export(style, t, s, node_lineage)
     elseif k === K"using"
-        p_using(style, t, s)
+        p_using(style, t, s, node_lineage)
     elseif k === K"row"
-        p_row(style, t, s)
+        p_row(style, t, s, node_lineage)
     elseif k === K"nrow"
-        p_nrow(style, t, s)
+        p_nrow(style, t, s, node_lineage)
     elseif k === K"ncat"
-        p_ncat(style, t, s)
+        p_ncat(style, t, s, node_lineage)
     elseif k === K"typed_ncat"
-        p_typedncat(style, t, s)
+        p_typedncat(style, t, s, node_lineage)
     elseif k === K"vcat"
-        p_vcat(style, t, s)
+        p_vcat(style, t, s, node_lineage)
     elseif k === K"typed_vcat"
-        p_typedvcat(style, t, s)
+        p_typedvcat(style, t, s, node_lineage)
     elseif k === K"hcat"
-        p_hcat(style, t, s)
+        p_hcat(style, t, s, node_lineage)
     elseif k === K"typed_hcat"
-        p_typedhcat(style, t, s)
+        p_typedhcat(style, t, s, node_lineage)
     elseif k === K"ref"
-        p_ref(style, t, s)
+        p_ref(style, t, s, node_lineage)
     elseif k === K"generator"
-        p_generator(style, t, s)
+        p_generator(style, t, s, node_lineage)
     elseif k === K"filter"
-        p_filter(style, t, s)
+        p_filter(style, t, s, node_lineage)
     else
         @warn "unknown node" t s.offset span(t)
         if is_leaf(t)
@@ -145,11 +146,13 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         else
             tt = FST(Unknown, t, nspaces(s))
             for a in children(t)
-                add_node!(tt, pretty(style, a, s), s, join_lines = true)
+                add_node!(tt, pretty(style, a, s, node_lineage; kwargs...), s, join_lines = true)
             end
             tt
         end
     end
+    pop!(node_lineage)
+    return t
 end
 pretty(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
     pretty(DefaultStyle(style), cst, s; kwargs...)
