@@ -148,6 +148,8 @@ include("styles/sciml/pretty.jl")
 include("styles/sciml/nest.jl")
 include("styles/minimal/pretty.jl")
 
+include("format_docstring.jl")
+
 include("nest_utils.jl")
 
 include("print.jl")

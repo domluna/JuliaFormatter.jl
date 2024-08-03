@@ -257,6 +257,8 @@ is_circumflex_accent(x::JuliaSyntax.GreenNode) =
 is_fwdfwd_slash(x::JuliaSyntax.GreenNode) =
     kind(x) === K"dotcall" && haschildren(x) && kind(x[3]) == K"//"
 
+is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
+
 function traverse(text, ex, pos = 1)
     if !haschildren(ex)
         println(
@@ -316,10 +318,6 @@ defines_function(x::JuliaSyntax.GreenNode) =
 
 function is_if(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"if elseif else" && haschildren(cst) && return true
-    # k = kind(cst)
-    # k === K"if" && haschildren(cst) && kind(cst[1]) === K"if" && return true
-    # k === K"elseif" && haschildren(cst) && kind(cst[1]) === K"elseif" && return true
-    # return false
 end
 
 function is_custom_leaf(fst::FST)
@@ -530,27 +528,21 @@ function is_typedef(fst::FST)
     return false
 end
 
-function is_opcall(x::JuliaSyntax.GreenNode)
+function is_opcall(x)
     is_binary(x) && return true
     kind(x) == K"comparison" && return true
     is_chain(x) && return true
-    # is_unary(x) && return true
+    is_unary(x) && return true
     # Brackets are often mixed with operators
     # so kwargs are propagated through its related
     # functions
-    kind(x) === K"parens" && return true
-    return false
-end
-
-function is_opcall(x::FST)
-    x.typ === Binary && return true
-    x.typ === Comparison && return true
-    x.typ === Chain && return true
-    # x.typ === Unary && return true
-    # Brackets are often mixed with operators
-    # so kwargs are propagated through its related
-    # functions
-    x.typ === Brackets && return true
+    if kind(x) === K"parens"
+        idx = findfirst(
+            n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"( )"),
+            children(x),
+        )
+        return is_opcall(x[idx])
+    end
     return false
 end
 
@@ -634,10 +626,11 @@ function is_pairarrow(cst::JuliaSyntax.GreenNode)
 end
 
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
+    !haschildren(cst) && return false
     k = kind(cst)
-    (k == K"function" || k == K"macro") && haschildren(cst) && return true
+    (k == K"function" || k == K"macro") && return true
 
-    if JuliaSyntax.is_operator(cst) && k == K"="
+    if JuliaSyntax.is_operator(cst) && k === K"="
         return is_function_like_lhs(cst[1])
     end
 
