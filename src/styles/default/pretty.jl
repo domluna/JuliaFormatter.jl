@@ -2,9 +2,9 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
     k = kind(t)
     style = getstyle(ds)
 
-    # parent_is(a, is_iterable; ignore = n -> is_gen(n) || kind(n) === K"parens")
-    # can_separate_kwargs = !(is_function_or_macro_def(t) || kind(t) === K"macrocall")
-    # kwargs = (; kwargs..., can_separate_kwargs=can_separate_kwargs)
+    if !(haskey(kwargs, :from_iterable) && kwargs[:from_iterable])
+        kwargs = (; kwargs..., from_iterable = is_iterable(t))
+    end
 
     if k == K"Identifier" && !haschildren(t)
         p_identifier(style, t, s; kwargs...)
@@ -90,7 +90,7 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_whereopcall(style, t, s; kwargs...)
     elseif k === K"?" && haschildren(t)
         p_conditionalopcall(style, t, s; kwargs...)
-    elseif is_binary(t) || (kind(t) === K"=" && haschildren(t))
+    elseif is_binary(t)
         p_binaryopcall(style, t, s; kwargs...)
     elseif is_unary(t)
         p_unaryopcall(style, t, s; kwargs...)
@@ -396,7 +396,14 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     !has_closer && (t.typ = MacroBlock)
 
     for (i, a) in enumerate(children(cst))
-        n = pretty(style, a, s; kwargs..., can_separate_kwargs=false)
+        n = pretty(
+            style,
+            a,
+            s;
+            kwargs...,
+            can_separate_kwargs = false,
+            standalone_binary_circuit = false,
+        )
         if JuliaSyntax.is_macro_name(a)
             add_node!(t, n, s, join_lines = true)
             if JuliaSyntax.is_whitespace(kind(cst[i+1]))
@@ -482,7 +489,7 @@ function p_block(
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs...)
+        n = pretty(style, a, s; kwargs..., standalone_binary_circuit = false)
 
         if from_quote && !single_line
             if i == 1 || kind(a) in KSet", ;"
@@ -544,7 +551,7 @@ function p_block(
     t = FST(Block, nspaces(s))
 
     for (i, a) in enumerate(nodes)
-        n = pretty(style, a, s; kwargs...)
+        n = pretty(style, a, s; kwargs..., standalone_binary_circuit = false)
         if i < length(nodes) && kind(a) === K"," && is_punc(nodes[i+1])
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i != length(nodes)
@@ -641,7 +648,12 @@ function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; k
             add_node!(t, n, s, max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         elseif kind(c) === K"call"
-            add_node!(t, pretty(style, c, s; kwargs..., can_separate_kwargs=false), s, join_lines = true)
+            add_node!(
+                t,
+                pretty(style, c, s; kwargs..., can_separate_kwargs = false),
+                s,
+                join_lines = true,
+            )
         else
             add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
         end
@@ -808,11 +820,11 @@ function p_module(
             )
             add_node!(t, n, s, max_padding = s.opts.indent)
             indent_module && (s.indent -= s.opts.indent)
-        # elseif kind(c) in KSet"module baremodule" && indent_module
-        #     @info "here"
-        #     s.indent += s.opts.indent
-        #     add_node!(t, pretty(style, c, s; from_module = true), s, join_lines = true)
-        #     s.indent -= s.opts.indent
+            # elseif kind(c) in KSet"module baremodule" && indent_module
+            #     @info "here"
+            #     s.indent += s.opts.indent
+            #     add_node!(t, pretty(style, c, s; from_module = true), s, join_lines = true)
+            #     s.indent -= s.opts.indent
         else
             add_node!(t, pretty(style, c, s; from_module = true), s, join_lines = true)
         end
@@ -839,7 +851,7 @@ p_baremodule(
 ) where {S<:AbstractStyle} = p_baremodule(DefaultStyle(style), cst, s; kwargs...)
 
 function p_return(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    t = p_const(ds, cst, s; kwargs...)
+    t = p_const(ds, cst, s; kwargs..., standalone_binary_circuit = false)
     t.typ = Return
     t
 end
@@ -1152,7 +1164,7 @@ function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         end
     end
 
-    @info "length" t.len
+    # @info "length" t.len
     t
 end
 p_try(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
@@ -1179,20 +1191,26 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             s.indent += s.opts.indent
             add_node!(
                 t,
-                p_block(style, c, s, kwargs..., ignore_single_line = true),
+                p_block(style, c, s; kwargs..., ignore_single_line = true),
                 s,
                 max_padding = s.opts.indent,
             )
             s.indent -= s.opts.indent
         elseif !JuliaSyntax.is_whitespace(c)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+            @info "if" kind(c)
+            add_node!(
+                t,
+                pretty(style, c, s; kwargs..., standalone_binary_circuit = false),
+                s,
+                join_lines = true,
+            )
         else
             add_node!(t, pretty(style, c, s; kwargs...), s)
         end
     end
 
-    @info "length" t.len
+    # @info "length" t.len
     return t
 end
 p_if(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
@@ -1286,7 +1304,10 @@ function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             add_node!(t, Whitespace(1), s)
         else
             n = pretty(style, c, s; kwargs...)
-            if !s.opts.whitespace_in_kwargs && ((n.typ === IDENTIFIER && endswith(n.val, "!")) || (n.typ === Call && n[1].typ === OPERATOR))
+            if !s.opts.whitespace_in_kwargs && (
+                (n.typ === IDENTIFIER && endswith(n.val, "!")) ||
+                (n.typ === Call && n[1].typ === OPERATOR)
+            )
                 add_node!(
                     t,
                     FST(PUNCTUATION, -1, n.startline, n.startline, "("),
@@ -1325,16 +1346,17 @@ function p_binaryopcall(
     t = FST(Binary, cst, nspaces(s))
     opkind = op_kind(cst)
 
-
+    # TODO: add some metadata flag(s) to show this is a standalone_binary_circuit
 
     nonest = nonest || opkind === K":"
 
-    if (from_curly && opkind in KSet"<: >:" && !s.opts.whitespace_typedefs) || opkind === K":"
+    if (from_curly && opkind in KSet"<: >:" && !s.opts.whitespace_typedefs) ||
+       opkind === K":"
         nospace = true
     end
     can_separate_kwargs = !is_function_or_macro_def(cst)
 
-    standalone_binary_circuit =
+    # standalone_binary_circuit =
     # @info "" opkind JuliaSyntax.is_prec_assignment(cst) is_function_or_macro_def(cst) kind(cst) can_separate_kwargs
 
     nodes = map(children(cst)) do c
@@ -1347,7 +1369,7 @@ function p_binaryopcall(
             from_curly = from_curly,
             kwargs...,
             can_separate_kwargs = can_separate_kwargs,
-            standalone_binary_circuit = true,
+            standalone_binary_circuit = false,
         )
     end
     nodes = filter(n -> n.typ !== NONE, nodes)
@@ -1612,7 +1634,13 @@ p_curly(
     kwargs...,
 ) where {S<:AbstractStyle} = p_curly(DefaultStyle(style), cst, s; kwargs...)
 
-function p_call(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; can_separate_kwargs::Bool = true, kwargs...)
+function p_call(
+    ds::DefaultStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    can_separate_kwargs::Bool = true,
+    kwargs...,
+)
     style = getstyle(ds)
     t = FST(Call, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
@@ -1882,15 +1910,18 @@ function p_comprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State;
         t.nest_behavior = AlwaysNest
     end
 
+    @info "" kwargs
+
     for c in children(cst)
+        n = pretty(style, c, s; kwargs...)
         if kind(c) === K"["
-        add_node!(t, pretty(style, c, s), s, join_lines = true)
-    add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
         elseif kind(c) === K"]"
-    add_node!(t, Placeholder(0), s)
-        add_node!(t, pretty(style, c, s), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, n, s, join_lines = true)
         else
-        add_node!(t, pretty(style, c, s), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
 
@@ -2282,10 +2313,17 @@ end
 p_nrow(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
     p_nrow(DefaultStyle(style), cst, s; kwargs...)
 
-function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_generator(
+    ds::DefaultStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    from_iterable::Bool = false,
+    kwargs...,
+)
     style = getstyle(ds)
     t = FST(Generator, cst, nspaces(s))
     has_for_kw = false
+
     for (i, a) in enumerate(children(cst))
         n = pretty(style, a, s; kwargs...)
         if JuliaSyntax.is_keyword(a)
@@ -2295,8 +2333,7 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
 
             # for keyword can only be on the following line
             # if this expression is within an iterable expression
-            if kind(a) === K"for" &&
-               parent_is(a, is_iterable; ignore = n -> is_gen(n) || kind(n) === K"parens")
+            if kind(a) === K"for" && from_iterable
                 add_node!(t, Placeholder(1), s)
             else
                 add_node!(t, Whitespace(1), s)

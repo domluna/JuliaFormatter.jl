@@ -244,12 +244,13 @@ end
 function short_to_long_function_def!(fst::FST, s::State)
     (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
+    # TODO: what does this mean?
     # do not apply if parent is a function or macro definition
-    parent_is(
-        fst.ref[],
-        n -> is_function_or_macro_def(n) || n.head == :macrocall;
-        ignore = n -> is_block(n),
-    ) && return false
+    # parent_is(
+    #     fst.ref[],
+    #     n -> is_function_or_macro_def(n) || n.head == :macrocall;
+    #     ignore = n -> is_block(n),
+    # ) && return false
 
     # 3 cases
     #
@@ -795,10 +796,12 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
     for n in fst.nodes::Vector
         if is_leaf(n)
             continue
-        elseif (n.typ === Binary || n.typ === Chain) &&
-               (op_kind(n) === K"&&" || op_kind(n) === K"||") &&
-               n.ref[] !== nothing &&
-               is_standalone_shortcircuit(n.ref[])
+        elseif (n.typ === Binary || n.typ === Chain)
+            # #TODO: replace with flags
+            # &&
+            #    (op_kind(n) === K"&&" || op_kind(n) === K"||") &&
+            #    n.ref[] !== nothing &&
+            #    is_standalone_shortcircuit(n.ref[])
             _short_circuit_to_if!(n, s)
         else
             short_circuit_to_if_pass!(n, s)

@@ -313,8 +313,14 @@ function is_func_call(t::JuliaSyntax.GreenNode)
     return false
 end
 
-defines_function(x::JuliaSyntax.GreenNode) =
-    kind(x) === K"function" || (is_assignment(x) && is_func_call(x[1]))
+function defines_function(x::JuliaSyntax.GreenNode)
+    kind(x) === K"function" && haschildren(x) && return true
+    if is_assignment(x)
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(kind(n)), children(x))
+        return is_func_call(x[idx])
+    end
+    return false
+end
 
 function is_if(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"if elseif else" && haschildren(cst) && return true
@@ -330,20 +336,6 @@ function is_custom_leaf(fst::FST)
         fst.typ === TRAILINGCOMMA ||
         fst.typ === TRAILINGSEMICOLON ||
         fst.typ === INVERSETRAILINGSEMICOLON
-end
-
-"""
-Returns whether the first unignored parent of `cst` matches the criteria determined by
-`valid`, which is a function that returns a boolean. `ignore` can be used to ignore certain
-parent nodes if desired, also a function which returns a boolean.
-"""
-function parent_is(cst::JuliaSyntax.GreenNode, valid; ignore = _ -> false)
-    p = cst.parent
-    p === nothing && return false
-    while p !== nothing && ignore(p)
-        p = p.parent
-    end
-    valid(p::Union{Nothing,JuliaSyntax.GreenNode})
 end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
@@ -431,7 +423,9 @@ is_opener(fst::FST) =
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
 function is_iterable(t::JuliaSyntax.GreenNode)
-    kind(t) in
+    k = kind(t)
+
+    k in
     KSet"tuple vect vcat braces call curly comprehension typed_comprehension macrocall parens ref typed_vcat import using export"
 end
 
@@ -562,10 +556,14 @@ end
 
 function is_binary(x)
     k = kind(x)
-    !JuliaSyntax.is_infix_op_call(x) && return false
+    if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || =" && haschildren(x))
+        return false
+    end
     n = 0
     for c in children(x)
-        if k == K"dotcall" && JuliaSyntax.is_operator(c) && kind(c) == K"."
+        if haschildren(c)
+            continue
+        elseif k == K"dotcall" && JuliaSyntax.is_operator(c) && kind(c) == K"."
             continue
         elseif JuliaSyntax.is_operator(c)
             n += 1
@@ -631,7 +629,8 @@ function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
     (k == K"function" || k == K"macro") && return true
 
     if JuliaSyntax.is_operator(cst) && k === K"="
-        return is_function_like_lhs(cst[1])
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(cst))
+        return is_function_like_lhs(cst[idx])
     end
 
     return false
@@ -682,7 +681,8 @@ end
 function is_binaryop_nestable(::S, cst::JuliaSyntax.GreenNode) where {S<:AbstractStyle}
     # is_function_or_macro_def(cst) && is_unary(cst[3]) && return true
     if is_assignment(cst) || is_pairarrow(cst)
-        return !is_str_or_cmd(cst[3])
+        idx = findlast(n -> !JuliaSyntax.is_whitespace(n), children(cst))
+        return !is_str_or_cmd(cst[idx])
     end
     true
 end
@@ -719,60 +719,34 @@ function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
     op_kind(fst.ref[])
 end
 
-function _valid_parent_node_for_standalone_circuit(n::JuliaSyntax.GreenNode)
-    kind(n) in KSet"parens macrocall return" && return false
-    is_if(n) && return false
-    # TODO: parent
-    kind(n) === K"block" && is_assignment(n.parent) && return false
-    is_binary(n) && is_assignment(n) && return false
-    return true
-end
-_valid_parent_node_for_standalone_circuit(n::Nothing) = true
-
-function _ignore_node_for_standalone_circuit(n::JuliaSyntax.GreenNode)
-    kind(n) in KSet"parens block macrocall return" && return false
-    is_if(n) && return false
-    is_binary(n) && is_assignment(n) && return false
-    return true
-end
-
-"""
-    is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
-
-Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`)
-and is *standalone*, meaning it's not directly associated with another statement or
-expression.
-
-### Examples
-
-```julia
-# this IS a standalone short-circuit
-a && b
-
-# this IS NOT a standalone short-circuit
-if a && b
-end
-
-# this IS NOT a standalone short-circuit
-var = a && b
-
-# this IS NOT a standalone short-circuit
-@macro a && b
-
-# operation inside parenthesis IS NOT a standalone short-circuit
-# operation outside parenthesis IS a standalone short-circuit
-(a && b) && c
-```
-"""
-function is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
-    (kind(cst) in KSet"|| &&") || return false
-    return parent_is(
-        cst,
-        _valid_parent_node_for_standalone_circuit,
-        ignore = _ignore_node_for_standalone_circuit,
-    )
-end
-is_standalone_shortcircuit(::Nothing) = false
+# """
+#     is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
+#
+# Returns `true` if the `cst` is a short-circuit expression (uses `&&`, `||`)
+# and is *standalone*, meaning it's not directly associated with another statement or
+# expression.
+#
+# ### Examples
+#
+# ```julia
+# # this IS a standalone short-circuit
+# a && b
+#
+# # this IS NOT a standalone short-circuit
+# if a && b
+# end
+#
+# # this IS NOT a standalone short-circuit
+# var = a && b
+#
+# # this IS NOT a standalone short-circuit
+# @macro a && b
+#
+# # operation inside parenthesis IS NOT a standalone short-circuit
+# # operation outside parenthesis IS a standalone short-circuit
+# (a && b) && c
+# ```
+# """
 
 """
     eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
