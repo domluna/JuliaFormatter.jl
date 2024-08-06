@@ -12,6 +12,7 @@ Base.@kwdef struct Options
     pipe_to_function_call::Bool = false
     short_to_long_function_def::Bool = false
     long_to_short_function_def::Bool = false
+    max_short_function_length::Int = margin
     always_use_return::Bool = false
     whitespace_in_kwargs::Bool = true
     annotate_untyped_fields_with_any::Bool = true
