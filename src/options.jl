@@ -38,6 +38,11 @@ Base.@kwdef struct Options
     disallow_single_arg_nesting::Bool = false
 end
 
+function Base.show(io::IO, opt::Options)
+    print(io, "Options")
+    print(io, NamedTuple(key => getproperty(opt, key) for key in fieldnames(Options)))
+end
+
 function needs_alignment(opts::Options)
     opts.align_struct_field ||
         opts.align_conditional ||
