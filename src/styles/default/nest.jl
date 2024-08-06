@@ -56,12 +56,12 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         return
     end
 
-    if fst.typ === FunctionN &&
-       s.opts.long_to_short_function_def &&
-       fst.ref !== nothing &&
-       defines_function(fst.ref[])
-        long_to_short_function_def!(fst, s)
-    end
+    # if fst.typ === FunctionN &&
+    #    s.opts.long_to_short_function_def &&
+    #    fst.ref !== nothing &&
+    #    defines_function(fst.ref[])
+    #     long_to_short_function_def!(fst, s)
+    # end
 
     if fst.typ === Import
         n_import!(style, fst, s)
@@ -81,13 +81,13 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         end
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.short_to_long_function_def &&
-           line_margin > s.opts.margin &&
-           fst.ref !== nothing &&
-           defines_function(fst.ref[]) &&
-           !parent_is(fst.ref[], n -> n.head == :let)
-            short_to_long_function_def!(fst, s)
-        end
+        # if s.opts.short_to_long_function_def &&
+        #    line_margin > s.opts.margin &&
+        #    fst.ref !== nothing &&
+        #    defines_function(fst.ref[]) &&
+        #    !parent_is(fst.ref[], n -> n.head == :let)
+        #     short_to_long_function_def!(fst, s)
+        # end
         if fst.typ === Binary
             n_binaryopcall!(style, fst, s)
         else
@@ -105,7 +105,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_typedvcat!(style, fst, s)
     elseif fst.typ === TypedNcat
         n_typedvcat!(style, fst, s)
-    elseif fst.typ === TupleN
+    elseif fst.typ === TupleN && length(fst.nodes) > 0
         n_tuple!(style, fst, s)
     elseif fst.typ === Vect
         n_vect!(style, fst, s)
@@ -194,6 +194,7 @@ n_unaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 function n_do!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
+    @info "here" fst.typ fst.nodes
     extra_margin = sum(length.(fst[2:3]))
     # make sure there are nodes after "do"
     if fst[4].typ === WHITESPACE
@@ -696,10 +697,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
         cst = fst.ref[]
 
         indent_nest =
-            defines_function(cst) ||
-            is_assignment(cst) ||
-            op_kind(fst) in KSet"=> ->" ||
-            (fst.ref !== nothing && is_standalone_shortcircuit(cst))
+            defines_function(cst) || is_assignment(cst) || op_kind(fst) in KSet"=> ->" #|| (fst.ref !== nothing && is_standalone_shortcircuit(cst))
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent
@@ -811,9 +809,9 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     has_nl = false
     indent >= 0 && (fst.indent = indent)
 
-    if fst.typ === Chain && fst.ref !== nothing && is_standalone_shortcircuit(fst.ref[])
-        fst.indent += s.opts.indent
-    end
+    # if fst.typ === Chain && fst.ref !== nothing && is_standalone_shortcircuit(fst.ref[])
+    #     fst.indent += s.opts.indent
+    # end
 
     if idx !== nothing &&
        (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)

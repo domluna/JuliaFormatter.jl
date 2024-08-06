@@ -19,8 +19,10 @@
     OPERATOR,
     PUNCTUATION,
     IDENTIFIER,
+    MACRONAME,
 
     # non-leaf nodes
+    Accessor,
     MacroBlock,
     MacroCall,
     MacroStr,
@@ -328,7 +330,6 @@ end
 
 function is_custom_leaf(fst::FST)
     fst.typ === NEWLINE ||
-        fst.typ === SEMICOLON ||
         fst.typ === WHITESPACE ||
         fst.typ === PLACEHOLDER ||
         fst.typ === NOTCODE ||
@@ -480,6 +481,7 @@ function is_iterable_arg(fst::FST)
     fst.typ === PUNCTUATION && return false
     fst.typ === KEYWORD && return false
     fst.typ === OPERATOR && return false
+    fst.typ === SEMICOLON && return false
     is_custom_leaf(fst) && return false
     return true
 end
@@ -556,45 +558,61 @@ end
 
 function is_binary(x)
     k = kind(x)
-    if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || =" && haschildren(x))
+    # if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || = ->" && haschildren(x))
+    if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
         return false
     end
-    n = 0
+    nops, nargs = callinfo(x)
+    return nops == 1 && nargs == 2
+end
+
+function callinfo(x)
+    k = kind(x)
+    n_operators = 0
+    n_args = 0
     for c in children(x)
-        if haschildren(c)
+        if JuliaSyntax.is_whitespace(c)
             continue
+        elseif haschildren(c) || (!haschildren(c) && !JuliaSyntax.is_operator(c))
+            n_args += 1
         elseif k == K"dotcall" && JuliaSyntax.is_operator(c) && kind(c) == K"."
             continue
         elseif JuliaSyntax.is_operator(c)
-            n += 1
+            n_operators += 1
         end
     end
-    return n == 1
+    return n_operators, n_args
 end
+
 
 function is_unary(x::JuliaSyntax.GreenNode)
     JuliaSyntax.is_unary_op(x) && return true
-    kind(x) != K"call" && return false
-    for c in children(x)
-        if JuliaSyntax.is_unary_op(c)
-            return true
-        end
+    if kind(x) === K"call" || (JuliaSyntax.is_operator(x) && haschildren(x))
+        nops, nargs = callinfo(x)
+        return nops == 1 && nargs == 1
     end
     return false
+    # for c in children(x)
+    #     if JuliaSyntax.is_unary_op(c)
+    #         return true
+    #     end
+    # end
+    # return false
 end
 
 function is_chain(x::JuliaSyntax.GreenNode)
-    k = kind(x)
-    k != K"call" && return false
-    n = 0
-    ops = Set{JuliaSyntax.Kind}()
-    for c in children(x)
-        if JuliaSyntax.is_operator(c)
-            n += 1
-            push!(ops, kind(c))
-        end
-    end
-    return n > 1 && length(ops) == 1
+    kind(x) === K"call" || return false
+    nops, nargs = callinfo(x)
+    return nops > 1 && nargs > 2
+    # n = 0
+    # ops = Set{JuliaSyntax.Kind}()
+    # for c in children(x)
+    #     if JuliaSyntax.is_operator(c)
+    #         n += 1
+    #         push!(ops, kind(c))
+    #     end
+    # end
+    # return n > 1 && length(ops) == 1
 end
 
 function is_assignment(x::FST)
@@ -830,6 +848,17 @@ function is_str_or_cmd(t::JuliaSyntax.GreenNode)
     kind(t) in KSet"doc string cmdstring"
 end
 
+function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind)
+    j = start_index
+    while j <= length(childs)
+        if !JuliaSyntax.is_whitespace(childs[j])
+            return kind(childs[j]) !== stop_kind
+        end
+        j += 1
+    end
+    return true  # If we reach the end without finding a non-whitespace character
+end
+
 """
     add_node!(
         t::FST,
@@ -859,11 +888,17 @@ function add_node!(
     max_padding::Int = -1,
     override_join_lines_based_on_source::Bool = false,
 )
+    tnodes = t.nodes::Vector{FST}
+
     if n.typ === NONE
+    if length(tnodes::Vector{FST}) == 0
+        t.startline = n.startline
+        t.endline = n.endline
+        end
         return
     end
 
-    tnodes = t.nodes::Vector{FST}
+
     if n.typ === TRAILINGCOMMA
         en = (tnodes::Vector{FST})[end]
         if en.typ === Generator ||
@@ -911,29 +946,6 @@ function add_node!(
 
     if n.typ === Block && length(n) == 0
         push!(tnodes::Vector{FST}, n)
-        return
-    elseif n.typ === Parameters
-        # unpack Parameters arguments into the parent node
-        if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
-            # There are no arguments prior to params
-            # so we can remove the initial placeholder.
-            idx = findfirst(n -> n.typ === PLACEHOLDER, tnodes)
-            idx !== nothing && (t[idx] = Whitespace(0))
-        end
-        add_node!(t, Semicolon(), s)
-
-        if length(n.nodes::Vector{FST}) > 0
-            nws = 1
-            if (t.typ === Curly || t.typ === Where || t.typ === BracesCat) &&
-               !s.opts.whitespace_typedefs
-                nws = 0
-            end
-            multi_arg = t.ref !== nothing && n_args(t.ref[]) > 0
-            multi_arg ? add_node!(t, Placeholder(nws), s) : add_node!(t, Whitespace(nws), s)
-        end
-        for nn in n.nodes::Vector{FST}
-            add_node!(t, nn, s, join_lines = true)
-        end
         return
     elseif s.opts.import_to_using && n.typ === Import && t.typ !== MacroBlock
         usings = import_to_usings(n, s)

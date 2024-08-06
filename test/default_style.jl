@@ -135,7 +135,7 @@
         #! format: off
         b = 10*20
         #! format: on
-        b = 10*20
+        b = 10 *20
 
         # comment"""
         @test fmt(str_) == str
