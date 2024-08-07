@@ -34,7 +34,7 @@ minimalfmt(str, i::Int, m::Int; kwargs...) = minimalfmt(str; i = i, m = m, kwarg
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    g = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
     t = JuliaFormatter.pretty(style, g, s)
     t
 end
@@ -43,7 +43,7 @@ run_pretty(text::String, margin::Int) = run_pretty(text, opts = Options(margin =
 function run_nest(text::String; opts = Options(), style = DefaultStyle())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    g = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
     t = JuliaFormatter.pretty(style, g, s)
     JuliaFormatter.nest!(style, t, s)
     t, s
@@ -53,7 +53,7 @@ run_nest(text::String, margin::Int) = run_nest(text, opts = Options(margin = mar
 function run_format(text::String; style = DefaultStyle(), opts = Options())
     d = JuliaFormatter.Document(text)
     s = JuliaFormatter.State(d, opts)
-    g = JuliaSyntax.parse(JuliaSyntax.GreenNode, text)
+    g = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
     JuliaFormatter.format_text(g, style, s)
     s
 end

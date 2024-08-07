@@ -546,24 +546,24 @@ function move_at_sign_to_the_end(fst::FST, s::State)
     end
     walk(f(t), fst, s)
 
-val = ""
-for n in t
-    if n.val != "@"
-        val *= n.val
+    val = ""
+    for n in t
+        if n.val != "@"
+            val *= n.val
+        end
     end
-end
 
-# Remove all @ symbols
-val = replace(val, "@" => "")
+    # Remove all @ symbols
+    val = replace(val, "@" => "")
 
-# Find the last occurrence of . and insert @ after it
-last_dot_index = findlast('.', val)
-if last_dot_index !== nothing
-    val = val[1:last_dot_index] * "@" * val[last_dot_index+1:end]
-else
-    # If there's no dot, add @ to the beginning
-    val = "@" * val
-end
+    # Find the last occurrence of . and insert @ after it
+    last_dot_index = findlast('.', val)
+    if last_dot_index !== nothing
+        val = val[1:last_dot_index] * "@" * val[last_dot_index+1:end]
+    else
+        # If there's no dot, add @ to the beginning
+        val = "@" * val
+    end
 
     return FST(MACRONAME, -1, fst.startline, fst.startline, val)
 end

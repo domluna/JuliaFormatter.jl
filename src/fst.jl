@@ -1,3 +1,5 @@
+import Base: show
+
 @enum(
     FNode,
 
@@ -125,6 +127,33 @@ mutable struct FST
     line_offset::Int
 
     metadata::Union{Nothing,Metadata}
+end
+
+function show(io::IO, fst::FST)
+    show(io, MIME("text/plain"), fst)
+end
+
+function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
+    println(io, indent, "FST:")
+    println(io, indent, "  typ: ", fst.typ)
+    println(io, indent, "  startline: ", fst.startline)
+    println(io, indent, "  endline: ", fst.endline)
+    println(io, indent, "  indent: ", fst.indent)
+    println(io, indent, "  len: ", fst.len)
+    println(io, indent, "  val: ", fst.val)
+    println(io, indent, "  nest_behavior: ", fst.nest_behavior)
+    println(io, indent, "  extra_margin: ", fst.extra_margin)
+    println(io, indent, "  line_offset: ", fst.line_offset)
+
+    if fst.nodes !== nothing
+        println(io, indent, "  nodes:")
+        for (i, node) in enumerate(fst.nodes)
+            print(io, indent, "    [$i] ")
+            show(io, MIME("text/plain"), node, indent * "    ")
+        end
+    else
+        println(io, indent, "  nodes: nothing")
+    end
 end
 
 FST(typ::FNode, cst::JuliaSyntax.GreenNode, indent::Int) =
@@ -370,7 +399,10 @@ end
 function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     nodes = JuliaSyntax.GreenNode[]
     for c in args
-        if is_punc(c) || kind(c) == K";" || JuliaSyntax.is_whitespace(c)
+        if is_punc(c) ||
+           kind(c) == K";" ||
+           JuliaSyntax.is_whitespace(c) ||
+           kind(c) in KSet"` ``` \" \"\"\""
             continue
         end
         if kind(c) === K"parameters"
@@ -583,7 +615,6 @@ function callinfo(x)
     end
     return n_operators, n_args
 end
-
 
 function is_unary(x::JuliaSyntax.GreenNode)
     JuliaSyntax.is_unary_op(x) && return true
@@ -891,13 +922,12 @@ function add_node!(
     tnodes = t.nodes::Vector{FST}
 
     if n.typ === NONE
-    if length(tnodes::Vector{FST}) == 0
-        t.startline = n.startline
-        t.endline = n.endline
+        if length(tnodes::Vector{FST}) == 0
+            t.startline = n.startline
+            t.endline = n.endline
         end
         return
     end
-
 
     if n.typ === TRAILINGCOMMA
         en = (tnodes::Vector{FST})[end]

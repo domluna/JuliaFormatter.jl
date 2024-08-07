@@ -163,9 +163,13 @@
     @testset "dot op" begin
         @test fmt("10 .^ a") == "10 .^ a"
         @test fmt("10.0 .^ a") == "10.0 .^ a"
-        @test fmt("a.^b") == "a .^ b"
-        @test fmt("a.^10.") == "a .^ 10.0"
-        @test fmt("a.//10") == "a .// 10"
+        @test fmt("a.^b") == "a.^b"
+        @test fmt("a.^10.") == "a.^10.0"
+        @test fmt("a.//10") == "a.//10"
+
+        @test fmt("a .^ b") == "a .^ b"
+        @test fmt("a .^ 10.") == "a .^ 10.0"
+        @test fmt("a .// 10") == "a .// 10"
     end
 
     @testset "toplevel" begin
@@ -183,8 +187,7 @@
 
         hello = "string";
 
-        a = 10
-        ;
+        a = 10        ;
 
 
         c = 50;
@@ -319,8 +322,10 @@
     end
 
     @testset "unary ops" begin
-        @test fmt("! x") == "!x"
-        @test fmt("x ...") == "x..."
+        @test fmt("! x") == "! x"
+        @test fmt("x ...") == "x ..."
+        @test fmt("!x") == "!x"
+        @test fmt("x...") == "x..."
 
         # Issue 110
         str = raw"""
@@ -341,6 +346,7 @@
         foo(
             args...,
         )"""
+        @test fmt(str_, m = 1) == str
         @test fmt(str, m = 1) == str
     end
 
