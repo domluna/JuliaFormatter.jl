@@ -328,10 +328,10 @@ function is_macrodoc(fst::FST)
     return false
 end
 
-function is_macrostr(t::JuliaSyntax.GreenNode)
+function is_macrostr(t)
     kind(t) == K"macrocall" &&
         haschildren(t) &&
-        kind(t[1]) in KSet"StringMacroName CmdMacroName"
+        kind(t[1]) in KSet"StringMacroName CmdMacroName core_@cmd"
 end
 
 function is_func_call(t::JuliaSyntax.GreenNode)
@@ -871,12 +871,8 @@ function caller_in_list(fst::Union{FST,JuliaSyntax.GreenNode}, list::Vector{Stri
     return false
 end
 
-function is_str_or_cmd(t::JuliaSyntax.Kind)
-    kind(t) in KSet"String CmdString"
-end
-
-function is_str_or_cmd(t::JuliaSyntax.GreenNode)
-    kind(t) in KSet"doc string cmdstring"
+function is_str_or_cmd(t)
+    kind(t) in KSet"doc string cmdstring String CmdString"
 end
 
 function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind)
@@ -889,6 +885,8 @@ function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind
     end
     return true  # If we reach the end without finding a non-whitespace character
 end
+
+next_node_is(nn, k::JuliaSyntax.Kind) = kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
 
 """
     add_node!(

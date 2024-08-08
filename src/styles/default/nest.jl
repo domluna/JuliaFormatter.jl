@@ -194,7 +194,6 @@ n_unaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 
 function n_do!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
-    @info "here" fst.typ fst.nodes
     extra_margin = sum(length.(fst[2:3]))
     # make sure there are nodes after "do"
     if fst[4].typ === WHITESPACE

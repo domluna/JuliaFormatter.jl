@@ -214,6 +214,6 @@ function getsrcval(d::Document, r::UnitRange{Int})
     try
         d.srcfile.code[r]
     catch
-        d.srcfile.code[r[1]:prevind(d.srcfile.code, r[2])]
+        d.srcfile.code[first(r):prevind(d.srcfile.code, last(r))]
     end
 end

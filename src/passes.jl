@@ -553,6 +553,10 @@ function move_at_sign_to_the_end(fst::FST, s::State)
         end
     end
 
+    if !contains(val, "@")
+        return fst
+    end
+
     # Remove all @ symbols
     val = replace(val, "@" => "")
 
