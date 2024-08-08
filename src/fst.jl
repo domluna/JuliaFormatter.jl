@@ -883,7 +883,8 @@ function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind
         end
         j += 1
     end
-    return true  # If we reach the end without finding a non-whitespace character
+    return false
+    # return true  # If we reach the end without finding a non-whitespace character
 end
 
 next_node_is(nn, k::JuliaSyntax.Kind) = kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
@@ -974,6 +975,19 @@ function add_node!(
 
     if n.typ === Block && length(n) == 0
         push!(tnodes::Vector{FST}, n)
+        return
+    elseif n.typ === Parameters
+        # unpack Parameters arguments into the parent node
+        if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
+            # There are no arguments prior to params
+            # so we can remove the initial placeholder.
+            idx = findfirst(n -> n.typ === PLACEHOLDER, tnodes)
+            idx !== nothing && (t[idx] = Whitespace(0))
+        end
+
+        for nn in n.nodes::Vector{FST}
+            add_node!(t, nn, s, join_lines = true)
+        end
         return
     elseif s.opts.import_to_using && n.typ === Import && t.typ !== MacroBlock
         usings = import_to_usings(n, s)

@@ -1814,6 +1814,8 @@ function p_call(
         end
     end
 
+    # @info "" t
+
     if s.opts.separate_kwargs_with_semicolon && can_separate_kwargs
         separate_kwargs_with_semicolon!(t)
     end
@@ -2117,15 +2119,14 @@ function p_parameters(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kw
 
         if kind(a) in KSet", ;"
             add_node!(t, n, s, join_lines = true)
-            if needs_placeholder(childs, i + 1, K"]")
+            if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         else
-            n.nest_behavior = NeverNest
+            # n.nest_behavior = NeverNest
             add_node!(t, n, s, join_lines = true)
         end
     end
-
     t
 end
 p_parameters(
