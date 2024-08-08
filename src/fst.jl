@@ -98,6 +98,8 @@ import Base: show
 struct Metadata
     op_kind::JuliaSyntax.Kind
     op_dotted::Bool
+    is_standalone_shortcircuit::Bool
+    is_short_form_function::Bool
 end
 
 """
@@ -384,9 +386,9 @@ function get_args(t::JuliaSyntax.GreenNode)
         else
             get_args(children(t)[end])
         end
-    elseif k in KSet"macrocall typed_vcat typed_ncat ref curly typed_comprehension call"
+    elseif k in KSet"typed_vcat typed_ncat ref curly typed_comprehension call"
         get_args(children(t)[2:end])
-    elseif k == K"dotcall"
+    elseif k in KSet"dotcall macrocall"
         get_args(children(t)[3:end])
     else
         get_args(children(t))
@@ -992,7 +994,7 @@ function add_node!(
     elseif s.opts.import_to_using && n.typ === Import && t.typ !== MacroBlock
         usings = import_to_usings(n, s)
         if length(usings) > 0
-            for (i, nn) in enumerate(usings)
+            for nn in usings
                 add_node!(t, nn, s; join_lines = false, max_padding = 0)
             end
             return

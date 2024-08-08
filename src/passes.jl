@@ -548,9 +548,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
 
     val = ""
     for n in t
-        if n.val != "@"
-            val *= n.val
-        end
+        val *= n.val
     end
 
     if !contains(val, "@")
@@ -650,7 +648,6 @@ a = f(; x = 1, y = 2)
 function separate_kwargs_with_semicolon!(fst::FST)
     nodes = fst.nodes::Vector
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    @info "" kw_idx
     kw_idx === nothing && return
     sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg

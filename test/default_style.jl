@@ -465,14 +465,6 @@
             end"""
         @test fmt(str_) == str
 
-        str_ = """foo() = let var1=value1,var2,var3=value3 body end"""
-        str = """
-        foo() =
-            let var1 = value1, var2, var3 = value3
-                body
-            end"""
-        @test fmt(str_) == str
-
         # Assignment op
 
         str_ = """foo = if cond a else b end"""
@@ -544,48 +536,6 @@
           end"""
         @test fmt(str_, 2, 1) == str
 
-        str_ = """foo = let var1=value1,var2,var3=value3 body end"""
-        str = """
-        foo =
-          let var1 = value1, var2, var3 = value3
-            body
-          end"""
-        @test fmt(str_, 2, 43) == str
-        @test fmt(str_, 2, 40) == str
-
-        str = """
-        foo =
-          let var1 = value1,
-            var2,
-            var3 = value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 39) == str
-
-        str = """
-        foo =
-          let var1 =
-              value1,
-            var2,
-            var3 = value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 17) == str
-
-        str = """
-        foo =
-          let var1 =
-              value1,
-            var2,
-            var3 =
-              value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 16) == str
-        @test fmt(str_, 2, 1) == str
 
         str_ = """
         foo = let

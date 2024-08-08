@@ -400,9 +400,9 @@ function p_stringh(
     startline = -1
     endline = -1
 
-    for (i, a) in enumerate(children(cst))
+    for a in children(cst)
         n = pretty(style, a, s; from_docstring = from_docstring, kwargs...)
-        val *= n.val
+        val *= gettreeval(n)
 
         if startline == -1
             startline = n.startline
@@ -1144,11 +1144,11 @@ function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         if kind(c) === K"block"
             s.indent += s.opts.indent
             if block_count == 0
-                add_node!(t, p_block(style, c, s; join_body = true), s, join_lines = true)
+                add_node!(t, p_block(style, c, s; join_body = true, from_let = true), s, join_lines = true)
             else
                 add_node!(
                     t,
-                    pretty(style, c, s; kwargs..., ignore_single_line = true),
+                    pretty(style, c, s; kwargs..., ignore_single_line = true, from_let = true),
                     s,
                     max_padding = s.opts.indent,
                 )
@@ -1161,7 +1161,7 @@ function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         elseif kind(c) === K"end"
             add_node!(t, pretty(style, c, s; kwargs...), s)
         else
-            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+            add_node!(t, pretty(style, c, s; kwargs..., from_let = true), s, join_lines = true)
         end
     end
     t
@@ -1458,6 +1458,7 @@ function p_binaryopcall(
     nospace = false,
     from_curly = false,
     standalone_binary_circuit = true,
+    from_let = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1487,6 +1488,18 @@ function p_binaryopcall(
     else
         0
     end
+
+    is_short_form_function = defines_function(cst) && !from_let
+    op_dotted = kind(cst) === K"dotcall"
+
+    t.metadata = Metadata(
+        opkind,
+        op_dotted,
+        standalone_binary_circuit,
+        is_short_form_function,
+    )
+
+    @info "abcd" t.metadata
 
     for (i, c) in enumerate(children(cst))
         n = pretty(
@@ -2354,22 +2367,23 @@ function p_ncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
-    childs = children(cst)
     last_was_semicolon = false
+
+    childs = children(cst)
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
         diff_line = t.endline != t.startline
         diff_line && (t.nest_behavior = AlwaysNest)
 
-        if is_opener(a)
+        if kind(a) === K"["
             add_node!(t, n, s, join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
-        elseif is_closer(a)
+        elseif kind(a) === K"]"
             nest && add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         else
             if kind(a) === K";"
-                add_node!(t, n, s)
+                add_node!(t, n, s, join_lines=true)
                 last_was_semicolon = true
             elseif JuliaSyntax.is_whitespace(a)
             else

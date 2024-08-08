@@ -81,13 +81,13 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         end
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
-        # if s.opts.short_to_long_function_def &&
-        #    line_margin > s.opts.margin &&
-        #    fst.ref !== nothing &&
-        #    defines_function(fst.ref[]) &&
-        #    !parent_is(fst.ref[], n -> n.head == :let)
-        #     short_to_long_function_def!(fst, s)
-        # end
+        if s.opts.short_to_long_function_def &&
+           line_margin > s.opts.margin &&
+           fst.metadata !== nothing &&
+           fst.metadata.is_short_form_function
+           # !parent_is(fst.ref[], n -> n.head == :let)
+            short_to_long_function_def!(fst, s)
+        end
         if fst.typ === Binary
             n_binaryopcall!(style, fst, s)
         else
@@ -696,7 +696,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
         cst = fst.ref[]
 
         indent_nest =
-            defines_function(cst) || is_assignment(cst) || op_kind(fst) in KSet"=> ->" #|| (fst.ref !== nothing && is_standalone_shortcircuit(cst))
+            defines_function(cst) || is_assignment(cst) || op_kind(fst) in KSet"=> ->" || (fst.metadata !== nothing && fst.metadata.is_standalone_shortcircuit)
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent
@@ -808,9 +808,10 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
     has_nl = false
     indent >= 0 && (fst.indent = indent)
 
-    # if fst.typ === Chain && fst.ref !== nothing && is_standalone_shortcircuit(fst.ref[])
-    #     fst.indent += s.opts.indent
-    # end
+    # TODO: might have to set this somewhere?
+    if fst.typ === Chain && fst.metadata !== nothing && fst.metadata.is_standalone_shortcircuit
+        fst.indent += s.opts.indent
+    end
 
     if idx !== nothing &&
        (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)

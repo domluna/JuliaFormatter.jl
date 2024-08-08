@@ -45,7 +45,7 @@ function increment_line_offset!(fst::FST, s::State)
     return nothing
 end
 
-function add_indent!(fst::FST, s::State, indent)
+function add_indent!(fst::FST, s::State, indent::Int)
     indent == 0 && return
     f = (fst::FST, s::State) -> begin
         fst.indent += indent
@@ -54,6 +54,17 @@ function add_indent!(fst::FST, s::State, indent)
     lo = s.line_offset
     walk(f, fst, s)
     s.line_offset = lo
+end
+
+function gettreeval(fst::FST)
+    if fst.val !== nothing
+        return fst.val
+    end
+    ss = ""
+    for n in fst.nodes
+        ss *= gettreeval(n)
+    end
+    return ss
 end
 
 # unnest, converts newlines to whitespace
