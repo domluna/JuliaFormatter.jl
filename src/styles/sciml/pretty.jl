@@ -55,8 +55,7 @@ end
 
 function is_binaryop_nestable(::SciMLStyle, cst::JuliaSyntax.GreenNode)
     (defines_function(cst) || is_assignment(cst)) && return false
-    ((cst[2]::JuliaSyntax.GreenNode).val in ("=>", "->", "in")) && return false
-    return true
+    !(op_kind(cst) in KSet"=> -> in")
 end
 
 const CST_T = [JuliaSyntax.GreenNode]

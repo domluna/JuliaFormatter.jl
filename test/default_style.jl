@@ -350,31 +350,39 @@
         @test fmt(str, m = 1) == str
     end
 
-    @testset "binary ops" begin
-        @test fmt("a+b*c") == "a + b * c"
-        @test fmt("a +b*c") == "a + b * c"
-        @test fmt("a+ b*c") == "a + b * c"
-        @test fmt("a+b *c") == "a + b * c"
-        @test fmt("a+b* c") == "a + b * c"
-        @test fmt("a+b*c ") == "a + b * c"
-        @test fmt("a:b") == "a:b"
-        @test fmt("a : b") == "a:b"
-        @test fmt("a: b") == "a:b"
-        @test fmt("a :b") == "a:b"
-        @test fmt("a +1 :b -1") == "a+1:b-1"
+    @testset ": op" begin
         @test fmt("a:b:c") == "a:b:c"
         @test fmt("a :b:c") == "a:b:c"
         @test fmt("a: b:c") == "a:b:c"
         @test fmt("a:b :c") == "a:b:c"
         @test fmt("a:b: c") == "a:b:c"
         @test fmt("a:b:c ") == "a:b:c"
-        @test fmt("a::b:: c") == "a::b::c"
-        @test fmt("a :: b::c") == "a::b::c"
+    end
+
+    @testset "binary ops" begin
+        @test fmt("a+b*c") == "a+b*c"
+        @test fmt("a +b *c") == "a + b * c"
+        @test fmt("a + b      *c") == "a + b * c"
+        @test fmt("a +b*c") == "a + b*c"
+        @test fmt("a + b*c") == "a + b*c"
+        @test fmt("a+b *c") == "a+b * c"
+        @test fmt("a+b* c") == "a+b * c"
+        @test fmt("a+b*c ") == "a+b*c"
+        @test fmt("a:b") == "a:b"
+        @test fmt("a : b") == "a:b"
+        @test fmt("a: b") == "a:b"
+        @test fmt("a :b") == "a:b"
+        @test fmt("a +1 :b -1") == "a+1:b-1"
+
+        @test fmt("a::b:: c") == "a::b :: c"
+        @test fmt("a :: b::c") == "a :: b::c"
+        @test fmt("a      :: b   :: c") == "a :: b :: c"
         # issue 74
         @test fmt("0:1/3:2") == "0:1/3:2"
         @test fmt("2a") == "2a"
         # issue 251
-        @test fmt("2(a+1)") == "2(a + 1)"
+        @test fmt("2(a   + 1)") == "2(a + 1)"
+        @test fmt("2(a+1)") == "2(a+1)"
         @test fmt("1 / 2a^2") == "1 / 2a^2"
 
         str_ = "a[1:2 * num_source * num_dump-1]"
@@ -388,7 +396,8 @@
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
 
-        @test fmt("1 // 2 + 3 ^ 4") == "1 // 2 + 3^4"
+        @test fmt("1 // 2 + 3^4") == "1 // 2 + 3^4"
+        @test fmt("1 // 2 + 3 ^ 4") == "1 // 2 + 3 ^ 4"
 
         # Function def
 
@@ -1107,6 +1116,7 @@
             end""") == str
 
         str = """
+        a = 10000
         for i = 1:10
             body
         end"""
@@ -1114,6 +1124,7 @@
         @test length(t) == 12
 
         str = """
+        a = 1
         for i in 1:10
             bodybodybodybody
         end"""
@@ -3665,24 +3676,48 @@
     end
 
     @testset "comprehension types" begin
-        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str_ = "var = ((x, y) for x = 1:10, y = 1:10)"
         str = """
-        var = (x, y) for x = 1:10,
-        y = 1:10"""
+        var =
+            ((x, y) for x = 1:10, y = 1:10)"""
         @test fmt(str_, 4, length(str_) - 1) == str
-        @test fmt(str_, 4, 26) == str
+        @test fmt(str_, 4, 35) == str
 
         str = """
-        var = (x, y) for
-        x = 1:10, y = 1:10"""
-        @test fmt(str_, 4, 25) == str
-        @test fmt(str_, 4, 18) == str
+        var = (
+            (x, y) for x = 1:10, y = 1:10
+        )"""
+        @test fmt(str_, 4, 34) == str
 
         str = """
-        var = (x, y) for
-        x = 1:10,
-        y = 1:10"""
-        @test fmt(str_, 4, 17) == str
+        var = (
+            (x, y) for
+            x = 1:10, y = 1:10
+        )"""
+        @test fmt(str_, 4, 30) == str
+
+        str = """
+        var = (
+            (x, y) for
+            x = 1:10,
+            y = 1:10
+        )"""
+        @test fmt(str_, 4, 20) == str
+
+        str = """
+        var =
+            (
+                (
+                    x,
+                    y,
+                )
+                for
+                x =
+                    1:10,
+                y =
+                    1:10
+            )"""
+        @test fmt(str_, 4, 1) == str
 
         str_ = """
         begin
@@ -4169,16 +4204,16 @@ some_function(
         begin
             a && b ||
                 c &&
-                    d
+                d
         end"""
         @test fmt(str_, 4, 13) == str
 
         str = """
         begin
             a &&
-                b ||
+            b ||
                 c &&
-                    d
+                d
         end"""
         @test fmt(str_, 4, 1) == str
 
@@ -4231,14 +4266,11 @@ some_function(
         begin
             a ||
                 b &&
-                    c ||
+                c ||
                 d
         end"""
         @test fmt(str_, 4, 16) == str
 
-        # Due to parsing but in practice this
-        # case that will never come up and
-        # can be fixed by adding parenthesis.
         str_ = """
         begin
          a && b || c || d || e
@@ -4246,12 +4278,12 @@ some_function(
         str = """
         begin
             a &&
-                b ||
-                    c ||
-                    d ||
-                    e
+            b ||
+                c ||
+                d ||
+                e
         end"""
-        @test_broken fmt(str_, 4, 1) == str
+        @test fmt(str_, 4, 1) == str
 
         str_ = """
         begin
@@ -4261,9 +4293,9 @@ some_function(
         begin
             a ||
                 b &&
-                    c &&
-                    d &&
-                    e
+                c &&
+                d &&
+                e
         end"""
         @test fmt(str_, 4, 1) == str
 

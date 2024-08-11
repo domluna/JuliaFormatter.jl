@@ -1,6 +1,7 @@
 using JuliaFormatter
 using JuliaFormatter: DefaultStyle, YASStyle, Options, options, CONFIG_FILE_NAME
 using Test
+using JuliaSyntax
 
 fmt1(s; i = 4, m = 80, kwargs...) =
     JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)

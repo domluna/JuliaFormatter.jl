@@ -136,25 +136,21 @@ function show(io::IO, fst::FST)
 end
 
 function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
-    println(io, indent, "FST:")
-    println(io, indent, "  typ: ", fst.typ)
-    println(io, indent, "  startline: ", fst.startline)
-    println(io, indent, "  endline: ", fst.endline)
-    println(io, indent, "  indent: ", fst.indent)
-    println(io, indent, "  len: ", fst.len)
-    println(io, indent, "  val: ", fst.val)
-    println(io, indent, "  nest_behavior: ", fst.nest_behavior)
-    println(io, indent, "  extra_margin: ", fst.extra_margin)
-    println(io, indent, "  line_offset: ", fst.line_offset)
-
     if fst.nodes !== nothing
+        println(io, indent, "FST: $(fst.typ) $(length(fst.nodes))")
+        println(io, indent, "  ($(fst.startline), $(fst.endline), $(fst.indent), $(fst.len))")
+        println(io, indent, "  nest_behavior: ", fst.nest_behavior)
+        println(io, indent, "  extra_margin: ", fst.extra_margin)
+
         println(io, indent, "  nodes:")
         for (i, node) in enumerate(fst.nodes)
             print(io, indent, "    [$i] ")
             show(io, MIME("text/plain"), node, indent * "    ")
         end
     else
-        println(io, indent, "  nodes: nothing")
+        println(io, indent, "FST: $(fst.typ)")
+        println(io, indent, "  val: ", fst.val)
+        println(io, indent, "  line_offset: ", fst.line_offset)
     end
 end
 
@@ -347,7 +343,7 @@ function is_func_call(t::JuliaSyntax.GreenNode)
 end
 
 function defines_function(x::JuliaSyntax.GreenNode)
-    kind(x) === K"function" && haschildren(x) && return true
+    kind(x) in KSet"function macro" && haschildren(x) && return true
     if is_assignment(x)
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(kind(n)), children(x))
         return is_func_call(x[idx])
@@ -590,17 +586,7 @@ function is_gen(x::FST)
     return false
 end
 
-function is_binary(x)
-    k = kind(x)
-    # if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || = ->" && haschildren(x))
-    if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
-        return false
-    end
-    nops, nargs = callinfo(x)
-    return nops == 1 && nargs == 2
-end
-
-function callinfo(x)
+function _callinfo(x)
     k = kind(x)
     n_operators = 0
     n_args = 0
@@ -621,31 +607,27 @@ end
 function is_unary(x::JuliaSyntax.GreenNode)
     JuliaSyntax.is_unary_op(x) && return true
     if kind(x) === K"call" || (JuliaSyntax.is_operator(x) && haschildren(x))
-        nops, nargs = callinfo(x)
+        nops, nargs = _callinfo(x)
         return nops == 1 && nargs == 1
     end
     return false
-    # for c in children(x)
-    #     if JuliaSyntax.is_unary_op(c)
-    #         return true
-    #     end
-    # end
-    # return false
 end
+
+function is_binary(x)
+    k = kind(x)
+    # if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || = ->" && haschildren(x))
+    if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
+        return false
+    end
+    nops, nargs = _callinfo(x)
+    return nops == 1 && nargs == 2
+end
+
 
 function is_chain(x::JuliaSyntax.GreenNode)
     kind(x) === K"call" || return false
-    nops, nargs = callinfo(x)
+    nops, nargs = _callinfo(x)
     return nops > 1 && nargs > 2
-    # n = 0
-    # ops = Set{JuliaSyntax.Kind}()
-    # for c in children(x)
-    #     if JuliaSyntax.is_operator(c)
-    #         n += 1
-    #         push!(ops, kind(c))
-    #     end
-    # end
-    # return n > 1 && length(ops) == 1
 end
 
 function is_assignment(x::FST)
@@ -666,7 +648,13 @@ function is_assignment(x::FST)
     return false
 end
 
-is_assignment(k::JuliaSyntax.GreenNode) = JuliaSyntax.is_prec_assignment(k)
+function is_assignment(t::JuliaSyntax.GreenNode)
+    # return JuliaSyntax.is_prec_assignment(t)
+    if JuliaSyntax.is_prec_assignment(t)
+        return !any(c -> kind(c) in KSet"in ∈", children(t))
+    end
+    return false
+end
 is_assignment(::Nothing) = false
 
 function is_pairarrow(cst::JuliaSyntax.GreenNode)
@@ -712,25 +700,15 @@ function remove_empty_notcode(fst::FST)
     return false
 end
 
-function get_binary_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
-    !is_binary(cst) && return nothing
-    for c in children(cst)
-        if JuliaSyntax.is_operator(kind(c))
-            return c
-        end
-    end
-    return nothing
-end
 
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
 function unnestable_node(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet"tuple vect braces bracescat comprehension typed_comprehension parens"
+    kind(cst) in KSet"tuple vect braces bracescat comprehension parens"
 end
 
 function is_binaryop_nestable(::S, cst::JuliaSyntax.GreenNode) where {S<:AbstractStyle}
-    # is_function_or_macro_def(cst) && is_unary(cst[3]) && return true
     if is_assignment(cst) || is_pairarrow(cst)
         idx = findlast(n -> !JuliaSyntax.is_whitespace(n), children(cst))
         return !is_str_or_cmd(cst[idx])
@@ -739,13 +717,9 @@ function is_binaryop_nestable(::S, cst::JuliaSyntax.GreenNode) where {S<:Abstrac
 end
 
 function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
-    if is_function_or_macro_def(cst)
-        idx = findfirst(c -> kind(c) == K"block", children(cst))
-        idx === nothing && return false
-        b = cst[idx]
-        for c in children(b)
-            k = kind(c)
-            if is_if(c) || k in KSet"do try for while let"
+    if defines_function(cst)
+        for c in children(cst)
+            if is_if(c) || kind(c) in KSet"do try for while let" && haschildren(c)
                 return true
             end
         end
@@ -753,14 +727,27 @@ function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
     false
 end
 
-function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
-    JuliaSyntax.is_operator(cst) && return kind(cst)
+function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
+    JuliaSyntax.is_operator(cst) && return cst
     if is_binary(cst) || kind(cst) === K"comparison" || is_chain(cst) || is_unary(cst)
         for c in children(cst)
             if JuliaSyntax.is_operator(c)
-                return kind(c)
+                return c
             end
         end
+    end
+    return nothing
+end
+
+function get_binary_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
+    !is_binary(cst) && return nothing
+    return get_op(cst)
+end
+
+function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
+    op = get_op(cst)
+    if op !== nothing
+        return kind(op)
     end
     return nothing
 end
@@ -832,8 +819,13 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
         idx === nothing && return
         op = fst[idx]
+        valid_for_in_op(op.val) || return
 
-        !valid_for_in_op(op.val) && return
+        # surround op with ws
+        if for_in_replacement != "=" && fst[idx-1].typ !== WHITESPACE
+            insert!(fst, idx, Whitespace(1))
+            insert!(fst, idx+2, Whitespace(1))
+        end
 
         if always_for_in
             op.val = for_in_replacement

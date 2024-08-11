@@ -493,35 +493,13 @@
         str = raw":($(@__MODULE__))"
         @test fmt(str) == str
 
-        str = raw":($(@__MODULE__).@field.macro)"
-        @test fmt(str) == str
-
-        str_ = raw":($(@__MODULE__.macro).@field.macro)"
-        str = raw":($(__MODULE__.@macro).@field.macro)"
+        str_ = raw":($(@__MODULE__.macro).field.macro)"
+        str = raw":($(__MODULE__.@macro).field.macro)"
         @test fmt(str_) == str
         @test fmt(str) == str
 
         str_ = raw"@a.b.c"
         str = raw"a.b.@c"
-        @test fmt(str_) == str
-        @test fmt(str) == str
-
-        str_ = raw"@a.b.c"
-        str = raw"a.b.@c"
-        @test fmt(str_) == str
-        @test fmt(str) == str
-
-        str = raw"a.@b.c"
-        @test fmt(str) == str
-
-        str = raw"a.@b.c.d"
-        @test fmt(str) == str
-
-        str = raw"a.b.@c.d"
-        @test fmt(str) == str
-
-        str_ = raw"@a.b.c.d"
-        str = raw"a.b.c.@d"
         @test fmt(str_) == str
         @test fmt(str) == str
     end

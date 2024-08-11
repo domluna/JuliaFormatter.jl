@@ -531,32 +531,24 @@ Module.@macro
 ```
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
-    t = FST[]
-    f = (t) -> (n, s) -> begin
-        # if is_macrocall(n) || (n.typ === Accessor && !is_leaf(n[1]))
-        if is_macrocall(n) || (n.typ === Quote && !is_leaf(n[1]))
-            # 1. Do not move "@" in nested macro calls
-            # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
-            # since it's semantically different to "@a.b.c" and "a.b.@c"
-            push!(t, n)
+    val = ""
+    has_at = false
+    f = (n::FST, _) -> begin
+        if n.typ === MACRONAME && n.line_offset == -33
+            val *= gettreeval(n)
             return false
         elseif is_leaf(n)
-            push!(t, n)
+            v = gettreeval(n)
+            has_at = has_at || contains(v, "@")
+            v = replace(v, "@" => "")
+            val *= v
         end
     end
-    walk(f(t), fst, s)
+    walk(f, fst, s)
 
-    val = ""
-    for n in t
-        val *= n.val
-    end
-
-    if !contains(val, "@")
+    if !has_at
         return fst
     end
-
-    # Remove all @ symbols
-    val = replace(val, "@" => "")
 
     # Find the last occurrence of . and insert @ after it
     last_dot_index = findlast('.', val)
@@ -567,7 +559,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
         val = "@" * val
     end
 
-    return FST(MACRONAME, -1, fst.startline, fst.startline, val)
+    return FST(MACRONAME, -33, fst.startline, fst.startline, val)
 end
 
 function conditional_to_if_block!(fst::FST, s::State; top = true)

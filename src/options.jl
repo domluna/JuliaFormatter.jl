@@ -45,5 +45,5 @@ function needs_alignment(opts::Options)
         opts.align_matrix
 end
 
-valid_for_in_op(s::String) = s in VALID_FOR_IN_OPERATORS
+valid_for_in_op(s::AbstractString) = s in VALID_FOR_IN_OPERATORS
 valid_for_in_op(_) = false
