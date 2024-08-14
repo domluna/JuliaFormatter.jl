@@ -698,7 +698,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
         indent_nest =
             defines_function(cst) || is_assignment(cst) || op_kind(fst) in KSet"=> ->" || (fst.metadata !== nothing && fst.metadata.is_standalone_shortcircuit)
 
-        @info "" indent_nest defines_function(cst) is_assignment(cst) cst
+        # @info "" indent_nest defines_function(cst) is_assignment(cst) cst
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent

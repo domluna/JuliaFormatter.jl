@@ -31,6 +31,7 @@ import Base: show
     Macroname,
     GlobalRefDoc,
     TupleN,
+    CartesianIterator,
     RefN,
     ModuleN,
     Unary,
@@ -100,6 +101,7 @@ struct Metadata
     op_dotted::Bool
     is_standalone_shortcircuit::Bool
     is_short_form_function::Bool
+    ia_assignment::Bool
 end
 
 """

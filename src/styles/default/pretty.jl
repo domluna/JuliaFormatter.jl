@@ -1200,7 +1200,7 @@ p_for(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abstr
 
 function p_cartesian_iterator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; from_for = false, kwargs...)
     style = getstyle(ds)
-    t = FST(TupleN, cst, nspaces(s))
+    t = FST(CartesianIterator, cst, nspaces(s))
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
@@ -1506,6 +1506,7 @@ function p_binaryopcall(
         op_dotted,
         opkind in KSet"&& ||" && standalone_binary_circuit,
         is_short_form_function,
+        is_assignment(cst)
     )
 
     # @info "abcd" t.metadata nest
