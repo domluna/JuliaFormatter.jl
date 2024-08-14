@@ -1139,12 +1139,16 @@ function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
             if block_id == 1
                 add_node!(t, p_block(style, c, s; join_body = true, from_let = true), s, join_lines = true)
             else
+                idx = length(t.nodes::Vector{FST})
                 add_node!(
                     t,
                     pretty(style, c, s; kwargs..., ignore_single_line = true, from_let = true),
                     s,
                     max_padding = s.opts.indent,
                 )
+                if (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
+            add_node!((t.nodes::Vector{FST})[idx], Placeholder(0), s)
+        end
             end
             s.indent -= s.opts.indent
             block_id += 1

@@ -1172,7 +1172,7 @@
 
     @testset "let" begin
         str = """
-        let x = X
+        let x=X
             arg
         end"""
         @test fmt("""
