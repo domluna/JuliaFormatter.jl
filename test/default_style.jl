@@ -545,7 +545,6 @@
           end"""
         @test fmt(str_, 2, 1) == str
 
-
         str_ = """
         foo = let
           body

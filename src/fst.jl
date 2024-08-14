@@ -140,7 +140,11 @@ end
 function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
     if fst.nodes !== nothing
         println(io, indent, "FST: $(fst.typ) $(length(fst.nodes))")
-        println(io, indent, "  ($(fst.startline), $(fst.endline), $(fst.indent), $(fst.len))")
+        println(
+            io,
+            indent,
+            "  ($(fst.startline), $(fst.endline), $(fst.indent), $(fst.len))",
+        )
         println(io, indent, "  nest_behavior: ", fst.nest_behavior)
         println(io, indent, "  extra_margin: ", fst.extra_margin)
 
@@ -625,7 +629,6 @@ function is_binary(x)
     return nops == 1 && nargs == 2
 end
 
-
 function is_chain(x::JuliaSyntax.GreenNode)
     kind(x) === K"call" || return false
     nops, nargs = _callinfo(x)
@@ -701,7 +704,6 @@ function remove_empty_notcode(fst::FST)
     fst.typ === Chain && return true
     return false
 end
-
 
 """
 `cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
@@ -826,7 +828,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         # surround op with ws
         if for_in_replacement != "=" && fst[idx-1].typ !== WHITESPACE
             insert!(fst, idx, Whitespace(1))
-            insert!(fst, idx+2, Whitespace(1))
+            insert!(fst, idx + 2, Whitespace(1))
         end
 
         if always_for_in
@@ -883,7 +885,8 @@ function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind
     # return true  # If we reach the end without finding a non-whitespace character
 end
 
-next_node_is(nn, k::JuliaSyntax.Kind) = kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
+next_node_is(nn, k::JuliaSyntax.Kind) =
+    kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
 
 """
     add_node!(
