@@ -101,12 +101,16 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
         n_macrocall!(style, fst, s)
     elseif fst.typ === RefN
         n_ref!(style, fst, s)
+        # elseif fst.typ === Row
+        #     n_row!(style, fst, s)
     elseif fst.typ === TypedVcat
         n_typedvcat!(style, fst, s)
     elseif fst.typ === TypedNcat
         n_typedvcat!(style, fst, s)
     elseif fst.typ === TupleN && length(fst.nodes) > 0
         n_tuple!(style, fst, s)
+    elseif fst.typ === CartesianIterator
+        n_cartesian_iterator!(style, fst, s)
     elseif fst.typ === Vect
         n_vect!(style, fst, s)
     elseif fst.typ === Vcat
@@ -186,6 +190,7 @@ n_string!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
     style = getstyle(ds)
     fst[1].extra_margin = fst.extra_margin + length(fst[2])
+    # nest!(style, fst.nodes::Vector{FST}, s, fst.indent)
     nest!(style, fst[1], s)
     nest!(style, fst[2], s)
 end
@@ -267,7 +272,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     if has_closer
         fst[end].indent = fst.indent
     end
-    if fst.typ !== TupleN || has_closer
+    if (fst.typ !== TupleN && fst.typ !== CartesianIterator) || has_closer
         fst.indent += s.opts.indent
     end
 
@@ -345,6 +350,10 @@ end
 n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s)
 
+n_cartesian_iterator!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_cartesian_iterator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_cartesian_iterator!(DefaultStyle(style), fst, s)
+
 n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_vect!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_vect!(DefaultStyle(style), fst, s)
@@ -384,6 +393,10 @@ n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
 n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
     n_ref!(DefaultStyle(style), fst, s)
+
+n_row!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
+n_row!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
+    n_row!(DefaultStyle(style), fst, s)
 
 n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
 n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =

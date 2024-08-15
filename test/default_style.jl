@@ -556,6 +556,11 @@
             body
           end"""
         @test fmt(str_, 2, 8) == str
+        str = """
+        foo =
+          let
+            body
+          end"""
         @test fmt(str_, 2, 1) == str
 
         str_ = """a, b = cond ? e1 : e2"""
@@ -2155,12 +2160,12 @@
         @test fmt("""map(a) do b,c
                      e end""") == str
 
-        str = """let a = b, c = d
+        str = """let a=b, c = d
                      e1
                      e2
                      e3
                  end"""
-        @test fmt("""let a=b,c=d\ne1; e2; e3 end""") == str
+        @test fmt("""let a=b,c  =  d  \ne1; e2; e3 end""") == str
 
         str = """let a, b
                      e
@@ -2240,24 +2245,62 @@
         @test fmt("[a   b         c   ]") == str
 
         str = """
-        [a; b; c]"""
+        [a; b; c;]"""
         @test fmt("[a;   b;         c;   ]") == str
+        str = """
+        [a; b; c]"""
+        @test fmt("[a;   b;         c   ]") == str
 
         str = """
         T[a b c]"""
         @test fmt("T[a   b         c   ]") == str
 
-        str = """
-        T[a; b; c]"""
+        str = """T[a; b; c]"""
+        @test fmt("T[a;   b;         c   ]") == str
+        str = """T[a; b; c;]"""
         @test fmt("T[a;   b;         c;   ]") == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+        ]"""
+        @test fmt("T[a;   b;         c;   ]", 4, 1) == str
+
+        str = """
+        T[
+            a;
+            b;
+            c
+        ]"""
+        @test fmt("T[a;   b;         c   ]", 4, 1) == str
 
         str = """
         T[a; b; c; e d f]"""
         @test fmt("T[a;   b;         c;   e  d    f   ]") == str
 
         str = """
-        T[a; b; c; e d f]"""
-        @test fmt("T[a;   b;         c;   e  d    f    ;   ]") == str
+        T[a; b; c; e d f;]"""
+        @test fmt("T[a;   b;         c;   e  d    f;   ]") == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+            e d f
+        ]"""
+        @test fmt("T[a;   b;         c;   e  d    f   ]", 4, 1) == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+            e d f;
+        ]"""
+        @test fmt("T[a;   b;         c;   e  d    f;   ]", 4, 1) == str
 
         str = "T[a;]"
         @test fmt(str) == str
@@ -3447,12 +3490,17 @@
         d e Expr();]"""
         str = """
         [
-           a b Expr()
-           d e Expr()
+           a b Expr();
+           d e Expr();
         ]"""
         @test fmt(str_, 3, 92) == str
         str_ = "[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
+        str = """
+        [
+           a b Expr();
+           d e Expr()
+        ]"""
         @test fmt(str_, 3, 1) == str
 
         str_ = """
@@ -3460,13 +3508,18 @@
         d e Expr();]"""
         str = """
         T[
-            a b Expr()
-            d e Expr()
+            a b Expr();
+            d e Expr();
         ]"""
         @test fmt(str_) == str
 
         str_ = "T[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
+        str = """
+        T[
+            a b Expr();
+            d e Expr()
+        ]"""
         @test fmt(str_, 4, 1) == str
 
         str = """
@@ -3709,8 +3762,7 @@
                 (
                     x,
                     y,
-                )
-                for
+                ) for
                 x =
                     1:10,
                 y =

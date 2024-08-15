@@ -104,6 +104,10 @@ struct Metadata
     ia_assignment::Bool
 end
 
+function Metadata(k::JuliaSyntax.Kind, dotted::Bool)
+    return Metadata(k, dotted, false, false, false)
+end
+
 """
 Formatted Syntax Tree
 """
@@ -286,12 +290,6 @@ is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
 is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
-# TODO: dont rely on the node being where you want it to be?
-is_circumflex_accent(x::JuliaSyntax.GreenNode) =
-    kind(x) === K"dotcall" && haschildren(x) && kind(x[3]) == K"^"
-is_fwdfwd_slash(x::JuliaSyntax.GreenNode) =
-    kind(x) === K"dotcall" && haschildren(x) && kind(x[3]) == K"//"
-
 is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 
 function traverse(text, ex, pos = 1)
@@ -341,9 +339,16 @@ end
 function is_func_call(t::JuliaSyntax.GreenNode)
     kind(t) in KSet"call dotcall" && JuliaSyntax.is_prefix_call(t) && return true
     if kind(t) in KSet":: where"
-        return is_func_call(t[1])
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(t))
+        idx === nothing && return false
+        return is_func_call(t[idx])
     elseif kind(t) == K"parens"
-        return is_func_call(t[2])
+        idx = findfirst(
+            n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"),
+            children(t),
+        )
+        idx === nothing && return false
+        return is_func_call(t[idx])
     end
     return false
 end
@@ -460,10 +465,9 @@ is_opener(fst::FST) =
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
 function is_iterable(t::JuliaSyntax.GreenNode)
-    k = kind(t)
-
-    k in
-    KSet"tuple vect vcat braces call curly comprehension typed_comprehension macrocall parens ref typed_vcat import using export"
+    kind(t) in
+    KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export" ||
+        is_func_call(t)
 end
 
 function is_iterable(x::FST)
@@ -565,9 +569,6 @@ function is_opcall(x)
     kind(x) == K"comparison" && return true
     is_chain(x) && return true
     is_unary(x) && return true
-    # Brackets are often mixed with operators
-    # so kwargs are propagated through its related
-    # functions
     if kind(x) === K"parens"
         idx = findfirst(
             n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"( )"),
@@ -578,10 +579,7 @@ function is_opcall(x)
     return false
 end
 
-# Generator typ
-# (x for x in 1:10)
-# (x for x in 1:10 if x % 2 == 0)
-function is_gen(x::JuliaSyntax.GreenNode)
+function is_gen(x)
     kind(x) in KSet"generator filter"
 end
 
@@ -706,7 +704,7 @@ function remove_empty_notcode(fst::FST)
 end
 
 """
-`cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
+`cst` is assumed to be a single child node. Returnss true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
 function unnestable_node(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"tuple vect braces bracescat comprehension parens"
@@ -873,7 +871,11 @@ function is_str_or_cmd(t)
     kind(t) in KSet"doc string cmdstring String CmdString"
 end
 
-function needs_placeholder(childs, start_index::Int, stop_kind::JuliaSyntax.Kind)
+function needs_placeholder(
+    childs::Vector{JuliaSyntax.GreenNode{T}},
+    start_index::Int,
+    stop_kind::JuliaSyntax.Kind,
+) where {T}
     j = start_index
     while j <= length(childs)
         if !JuliaSyntax.is_whitespace(childs[j])
