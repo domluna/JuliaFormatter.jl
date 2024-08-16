@@ -73,12 +73,9 @@ function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
         fst[ind] = Whitespace(fst[ind].len)
         i == length(nl_inds) || continue
         pn = fst[ind-1]
-        if pn.typ === TRAILINGCOMMA || pn.typ === TRAILINGSEMICOLON
+        if pn.typ === TRAILINGCOMMA
             pn.val = ""
             pn.len = 0
-        elseif pn.typ === INVERSETRAILINGSEMICOLON
-            pn.val = ";"
-            pn.len = 1
         elseif fst.typ === Binary && fst[ind+1].typ === WHITESPACE
             # remove additional indent
             fst[ind+1] = Whitespace(0)
@@ -165,6 +162,7 @@ function nest_if_over_margin!(
     s::State,
     idx::Int;
     stop_idx::Union{Int,Nothing} = nothing,
+    kwargs...,
 )::Bool where {S<:AbstractStyle}
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
@@ -182,7 +180,7 @@ function nest_if_over_margin!(
         return true
     end
 
-    nest!(style, fst[idx], s)
+    nest!(style, fst[idx], s; kwargs...)
     return false
 end
 

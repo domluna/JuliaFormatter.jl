@@ -173,7 +173,7 @@ end
 function print_notcode(io::IOBuffer, fst::FST, s::State)
     s.on || return
     for l in fst.startline:fst.endline
-        ws, v = get(s.doc.comments, l, (0, "\n"))
+        _, v = get(s.doc.comments, l, (0, "\n"))
         ws = fst.indent
 
         # If the current newline is followed by another newline

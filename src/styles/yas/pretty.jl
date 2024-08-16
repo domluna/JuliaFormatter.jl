@@ -61,9 +61,9 @@ function is_binaryop_nestable(::YASStyle, cst::JuliaSyntax.GreenNode)
     return true
 end
 
-function p_import(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_import(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
-    t = p_import(DefaultStyle(style), cst, s)
+    t = p_import(DefaultStyle(style), cst, s; kwargs...)
     idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
     if idx !== nothing && is_colon(t[idx-1])
         t[idx] = Whitespace(1)
@@ -71,24 +71,24 @@ function p_import(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_using(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_import(ys, cst, s)
+function p_using(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_import(ys, cst, s; kwargs...)
     t.typ = Using
     t
 end
 
-function p_export(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_import(ys, cst, s)
+function p_export(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_import(ys, cst, s; kwargs...)
     t.typ = Export
     t
 end
 
-function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, cst, nspaces(s))
     for (i, a) in enumerate(children(cst))
-        n = pretty(style, a, s)
+        n = pretty(style, a, s; kwargs...)
         if kind(a) === K"," && i == length(cst) - 1
             continue
         elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
@@ -117,20 +117,20 @@ function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_braces(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_curly(ys, cst, s)
+function p_braces(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_curly(ys, cst, s; kwargs...)
     t.typ = Braces
     t
 end
 
-function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(TupleN, cst, nspaces(s))
     for (i, a) in enumerate(children(cst))
         n = if kind(a) === K"=" && haschildren(a)
-            p_kw(style, a, s)
+            p_kw(style, a, s; kwargs...)
         else
-            pretty(style, a, s)
+            pretty(style, a, s; kwargs...)
         end
 
         if kind(a) === K"," && i + 1 == length(cst)
@@ -166,11 +166,11 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_tuple(ys::YASStyle, nodes::Vector{JuliaSyntax.GreenNode{T}}, s::State) where {T}
+function p_tuple(ys::YASStyle, nodes::Vector{JuliaSyntax.GreenNode{T}}, s::State; kwargs...) where {T}
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
     for (i, a) in enumerate(nodes)
-        n = pretty(style, a, s)
+        n = pretty(style, a, s; kwargs...)
         if kind(a) === K"," && i + 1 == length(nodes)
             if length(nodes) == 1
                 add_node!(t, n, s, join_lines = true)
@@ -211,6 +211,7 @@ function p_invisbrackets(
     s::State;
     nonest = false,
     nospace = false,
+ kwargs...,
 )
     style = getstyle(ys)
     t = FST(Brackets, cst, nspaces(s))
@@ -247,7 +248,10 @@ function p_invisbrackets(
     t
 end
 
-function p_call(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_call(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State;
+    can_separate_kwargs::Bool = true,
+kwargs...,
+                )
     style = getstyle(ys)
 
     # # With `variable_call_indent`, check if the caller is in the list
@@ -286,27 +290,26 @@ function p_call(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
         end
     end
 
-    if s.opts.separate_kwargs_with_semicolon &&
-       (!parent_is(cst, n -> is_function_or_macro_def(n) || kind(n) == K"macrocall"))
+    if s.opts.separate_kwargs_with_semicolon && can_separate_kwargs
         separate_kwargs_with_semicolon!(t)
     end
 
     t
 end
-function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_call(ys, cst, s)
+function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_call(ys, cst, s; kwargs...)
     t.typ = Vect
     t
 end
 
-function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     st = kind(cst) === K"vcat" ? 1 : 2
     args = get_args(cst)
 
     for (i, a) in enumerate(children(cst))
-        n = pretty(style, a, s)
+        n = pretty(style, a, s; kwargs...)
         if is_closer(n)
             add_node!(
                 t,
@@ -339,13 +342,13 @@ function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     end
     t
 end
-function p_typedvcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_vcat(ys, cst, s)
+function p_typedvcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_vcat(ys, cst, s; kwargs...)
     t.typ = TypedVcat
     t
 end
 
-function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Ncat, nspaces(s))
     st = kind(cst) === K"ncat" ? 2 : 3
@@ -353,7 +356,7 @@ function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
 
     for (i, a) in enumerate(children(cst))
-        n = pretty(style, a, s)
+        n = pretty(style, a, s; kwargs...)
         i == st && continue
         if is_closer(n)
             add_node!(
@@ -392,13 +395,13 @@ function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     end
     t
 end
-function p_typedncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_ncat(ys, cst, s)
+function p_typedncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_ncat(ys, cst, s; kwargs...)
     t.typ = TypedNcat
     t
 end
 
-function p_nrow(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_nrow(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(NRow, cst, nspaces(s))
 
@@ -409,12 +412,12 @@ function p_nrow(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
         if is_opcall(a)
             add_node!(
                 t,
-                pretty(style, a, s, nospace = true, nonest = true),
+                pretty(style, a, s; nospace = true, nonest = true, kwargs...),
                 s,
                 join_lines = true,
             )
         else
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
         end
         if i < length(cst)
             for _ in 1:n_semicolons
@@ -427,16 +430,16 @@ function p_nrow(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(RefN, cst, nspaces(s))
     nospace = !s.opts.whitespace_ops_in_indices
 
     for (i, a) in enumerate(children(cst))
         n = if is_binary(a) || is_chain(a) || kind(a) in KSet"parens comparison"
-            pretty(style, a, s, nonest = true, nospace = nospace)
+            pretty(style, a, s; nonest = true, nospace = nospace, kwargs...)
         else
-            pretty(style, a, s)
+            pretty(style, a, s; kwargs...)
         end
 
         if kind(a) === K"," && i + 1 == length(cst)
@@ -467,7 +470,7 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Comprehension, cst, nspaces(s))
 
@@ -475,7 +478,7 @@ function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
         t.nest_behavior = AlwaysNest
     end
 
-    add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
+    add_node!(t, pretty(style, cst[1], s; kwargs...), s, join_lines = true)
     add_node!(
         t,
         pretty(style, cst[2], s),
@@ -493,7 +496,7 @@ function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_typedcomprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_typedcomprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(TypedComprehension, cst, nspaces(s))
 
@@ -508,7 +511,7 @@ function p_typedcomprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State
     t
 end
 
-function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(MacroCall, cst, nspaces(s))
 
@@ -575,7 +578,7 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_whereopcall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_whereopcall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Where, cst, nspaces(s))
 
@@ -637,24 +640,31 @@ function p_whereopcall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Generator, cst, nspaces(s))
     has_for_kw = false
 
-    for (i, a) in enumerate(children(cst))
+    from_iterable = false
+    lineage = get(kwargs, :lineage, JuliaSyntax.Kind[])
+    for (kind, is_itr) in Iterators.reverse(lineage)
+        if kind in KSet"parens generator filter"
+            continue
+        elseif is_itr
+            from_iterable = true
+            break
+        end
+    end
+
+    childs = children(cst)
+    has_for_kw = findfirst(n -> kind(n) === K"for", childs) !== nothing
+
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s)
         if JuliaSyntax.is_keyword(a)
-            if !has_for_kw && kind(a) === K"for"
-                has_for_kw = true
-            end
-
-            incomp =
-                parent_is(a, is_iterable, ignore = n -> is_gen(n) || kind(n) === K"parens")
-
             if is_block(cst[i-1])
                 add_node!(t, Newline(), s)
-            elseif incomp
+            elseif from_iterable
                 add_node!(t, Placeholder(1), s)
             else
                 add_node!(t, Whitespace(1), s)
@@ -671,7 +681,7 @@ function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
                 # verify this is not another for loop
                 any(b -> kind(b) === K"for", tupargs) && continue
 
-                tup = p_tuple(style, tupargs, s)
+                tup = p_tuple(style, tupargs, s; kwargs...)
                 if has_for_kw
                     for nn in tup.nodes
                         eq_to_in_normalization!(
@@ -681,14 +691,16 @@ function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
                         )
                     end
                 end
-                add_node!(t, tup, s, join_lines = true)
+                add_node!(t, tup, s; join_lines = true)
                 break
             end
-        elseif kind(a) === K"," && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
+        elseif kind(a) === K","
+            add_node!(t, n, s; join_lines = true)
+            if needs_placeholder(childs, i + 1, K")")
+                add_node!(t, Placeholder(1), s)
+            end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
 
         has_for_kw &&
@@ -698,14 +710,14 @@ function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_filter(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_generator(ys, cst, s)
+function p_filter(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_generator(ys, cst, s; kwargs...)
     t.typ = Filter
     t
 end
 
-function p_flatten(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State)
-    t = p_generator(ys, cst, s)
+function p_flatten(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_generator(ys, cst, s; kwargs...)
     t.typ = Flatten
     t
 end

@@ -159,8 +159,9 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
         end
     else
         println(io, indent, "FST: $(fst.typ)")
-        println(io, indent, "  val: ", fst.val)
+        println(io, indent, "  val: \"$(fst.val)\"")
         println(io, indent, "  line_offset: ", fst.line_offset)
+        println(io, indent, "  indent: ", fst.indent)
     end
 end
 
@@ -246,22 +247,6 @@ Newline(; length = 0, nest_behavior = AllowNest) =
 Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
 TrailingComma() =
     FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-TrailingSemicolon() =
-    FST(TRAILINGSEMICOLON, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-InverseTrailingSemicolon() = FST(
-    INVERSETRAILINGSEMICOLON,
-    -1,
-    -1,
-    0,
-    1,
-    ";",
-    nothing,
-    nothing,
-    AllowNest,
-    0,
-    -1,
-    nothing,
-)
 Whitespace(n) =
     FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
 Placeholder(n) =
@@ -363,7 +348,11 @@ function defines_function(x::JuliaSyntax.GreenNode)
 end
 
 function is_if(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet"if elseif else" && haschildren(cst) && return true
+    kind(cst) in KSet"if elseif else" && haschildren(cst)
+end
+
+function is_try(cst::JuliaSyntax.GreenNode)
+    kind(cst) in KSet"try catch finally" && haschildren(cst)
 end
 
 function is_custom_leaf(fst::FST)
@@ -372,9 +361,7 @@ function is_custom_leaf(fst::FST)
         fst.typ === PLACEHOLDER ||
         fst.typ === NOTCODE ||
         fst.typ === INLINECOMMENT ||
-        fst.typ === TRAILINGCOMMA ||
-        fst.typ === TRAILINGSEMICOLON ||
-        fst.typ === INVERSETRAILINGSEMICOLON
+        fst.typ === TRAILINGCOMMA
 end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
@@ -595,7 +582,7 @@ function _callinfo(x)
     n_operators = 0
     n_args = 0
     for c in children(x)
-        if JuliaSyntax.is_whitespace(c)
+        if JuliaSyntax.is_whitespace(c) || is_punc(c)
             continue
         elseif haschildren(c) || (!haschildren(c) && !JuliaSyntax.is_operator(c))
             n_args += 1
@@ -618,8 +605,6 @@ function is_unary(x::JuliaSyntax.GreenNode)
 end
 
 function is_binary(x)
-    k = kind(x)
-    # if !JuliaSyntax.is_infix_op_call(x) && !(k in KSet"&& || = ->" && haschildren(x))
     if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
         return false
     end
@@ -629,6 +614,9 @@ end
 
 function is_chain(x::JuliaSyntax.GreenNode)
     kind(x) === K"call" || return false
+    # if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
+    #     return false
+    # end
     nops, nargs = _callinfo(x)
     return nops > 1 && nargs > 2
 end
@@ -755,7 +743,12 @@ function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
 end
 
 function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
-    fst.ref === nothing && return nothing
+    if fst.metadata !== nothing
+        return fst.metadata.op_kind
+    end
+    if fst.ref === nothing
+        return nothing
+    end
     op_kind(fst.ref[])
 end
 
@@ -857,10 +850,10 @@ eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing
 
 # Check if the caller of a call is in `list`
 # Note that this also works for JuliaSyntax.GreenNode
-function caller_in_list(fst::Union{FST,JuliaSyntax.GreenNode}, list::Vector{String})
-    if is_leaf(fst[1]) && (fst[1].val)::String in list
+function caller_in_list(fst::Union{FST}, list::Vector{String})
+    if is_leaf(fst[1]) && (fst[1].val) in list
         return true
-    elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && (fst[1][1].val)::String in list
+    elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && (fst[1][1].val) in list
         return true
     end
 
@@ -952,6 +945,12 @@ function add_node!(
             end
         elseif is_comma(en)
             t[end] = n
+        elseif en.typ === Parameters  && length(en.nodes) > 0
+            if is_comma(en[end])
+                en[end] = n
+            elseif en[end].typ === SEMICOLON
+                # do nothing
+            end
         else
             t.len += length(n)
             n.startline = t.endline
@@ -976,19 +975,6 @@ function add_node!(
 
     if n.typ === Block && length(n) == 0
         push!(tnodes::Vector{FST}, n)
-        return
-    elseif n.typ === Parameters
-        # unpack Parameters arguments into the parent node
-        if t.ref !== nothing && n_args(t.ref[]) == n_args(n.ref[])
-            # There are no arguments prior to params
-            # so we can remove the initial placeholder.
-            idx = findfirst(n -> n.typ === PLACEHOLDER, tnodes)
-            idx !== nothing && (t[idx] = Whitespace(0))
-        end
-
-        for nn in n.nodes::Vector{FST}
-            add_node!(t, nn, s, join_lines = true)
-        end
         return
     elseif s.opts.import_to_using && n.typ === Import && t.typ !== MacroBlock
         usings = import_to_usings(n, s)
@@ -1125,5 +1111,6 @@ function add_node!(
     else
         t.len += length(n)
     end
+
     push!(tnodes, n)
 end

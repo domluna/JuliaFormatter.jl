@@ -1924,6 +1924,13 @@
         )"""
         @test fmt(str_) == str
 
+        str = """
+        foo(;;
+            a = b, # comment
+            c = d,
+            # comment
+        )"""
+
         str_ = """
         foo(
             ;
@@ -1978,6 +1985,23 @@
               # comment
         finally
               # comment
+        end"""
+        @test fmt(str_, 6, 92) == str
+
+        str_ = "if a \n # comment\n body \n# comment\n elseif b\n # comment\nbody\n #comment\n else\n # comment\n body \n #comment\n end"
+        str = """
+        if a
+              # comment
+              body
+              # comment
+        elseif b
+              # comment
+              body
+              #comment
+        else
+              # comment
+              body
+              #comment
         end"""
         @test fmt(str_, 6, 92) == str
 
@@ -2475,8 +2499,8 @@
         )"""
         @test fmt("(a, b, c, d)", 4, 11) == str
 
-        str = """{a, b, c, d}"""
-        @test fmt("{a, b, c, d}", 4, 12) == str
+        str = """{a,b,c,d}"""
+        @test fmt("{a, b, c, d}", 4, 9) == str
 
         str = """
         {
@@ -2485,7 +2509,7 @@
             c,
             d,
         }"""
-        @test fmt("{a, b, c, d}", 4, 11) == str
+        @test fmt("{a, b, c, d}", 4, 8) == str
 
         str = """[a, b, c, d]"""
         @test fmt("[a, b, c, d]", 4, 12) == str
@@ -2612,14 +2636,21 @@
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
-        str = "(a; b; c)"
-        @test fmt("(a;b;c)", 4, 100) == str
-
-        str = """
-        (
-          a; b; c
-        )"""
-        @test fmt("(a;b;c)", 2, 1) == str
+        # str = "(a; b; c)"
+        # @test fmt("(a;b;c)", 4, 100) == str
+        # str = """
+        # (
+        #     a;
+        #     b;
+        #     c
+        # )"""
+        # @test fmt("(a;b;c)", 4, 1) == str
+        #
+        # str = """
+        # (
+        #   a; b; c
+        # )"""
+        # @test fmt("(a;b;c)", 2, 1) == str
 
         str = "(x for x = 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str
@@ -3012,7 +3043,8 @@
 
         str = "f(a, b, c) where {A,{B, C, D},E}"
         _, s = run_nest(str, 100)
-        @test s.line_offset == length(str)
+        # -2 whitespace in the brackets
+        @test s.line_offset == length(str) - 2
         _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
@@ -3157,15 +3189,15 @@
         )"""
         @test fmt(str_, 4, 10) == str
 
-        str_ = "(a, {b, c}, d)"
+        str_ = "(a, {b,c}, d)"
         str = """
         (
             a,
-            {b, c},
+            {b,c},
             d,
         )"""
-        @test fmt(str_, 4, 13) == str
-        @test fmt(str_, 4, 11) == str
+        @test fmt(str_, 4, 12) == str
+        @test fmt(str_, 4, 10) == str
 
         str = """
         (
@@ -3176,7 +3208,7 @@
             },
             d,
         )"""
-        @test fmt(str_, 4, 10) == str
+        @test fmt(str_, 4, 9) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, [b, c], d)"

@@ -1010,7 +1010,7 @@
         ) == str
     end
 
-    @testset "485" begin
+    @testset "485 - blue style binary/chain op nesting" begin
         str = """
         if primal_name isa Symbol ||
             Meta.isexpr(primal_name, :(.)) ||
@@ -1227,15 +1227,16 @@
     end
 
     @testset "530" begin
+        radical_ops = ("√", "∛", "∜")
         @testset "DefaultStyle" begin
-            for op in JuliaFormatter.RADICAL_OPS
+            for op in radical_ops
                 s = "3$(op)2"
                 @test fmt(s) == s
             end
         end
 
         @testset "DefaultStyle" begin
-            for op in JuliaFormatter.RADICAL_OPS
+            for op in radical_ops
                 s = "3$(op)2"
                 @test bluefmt(s) == s
             end

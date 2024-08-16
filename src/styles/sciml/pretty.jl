@@ -117,7 +117,7 @@ function p_tuple(ss::SciMLStyle, nodes::Vector{JuliaSyntax.GreenNode}, s::State;
     p_tuple(YASStyle(style), nodes, s; kwargs...)
 end
 
-function p_begin(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_begin(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ss)
     t = FST(Begin, cst, nspaces(s))
     add_node!(t, pretty(style, cst[1], s), s)
@@ -134,7 +134,7 @@ function p_begin(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State)
     t
 end
 
-function p_macrocall(ys::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State)
+function p_macrocall(ys::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(MacroCall, cst, nspaces(s))
 
@@ -214,7 +214,7 @@ function p_unaryopcall(ds::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
         if kind(c) === K"Whitespace"
             add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(style, c, s), s, join_lines = true)
+            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
         end
     end
     # if length(cst) == 1

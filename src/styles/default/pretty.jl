@@ -58,7 +58,7 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_do(style, t, s; kwargs...)
     elseif is_if(t)
         p_if(style, t, s; kwargs...)
-    elseif k in KSet"try catch finally" && haschildren(t)
+    elseif is_try(t)
         p_try(style, t, s; kwargs...)
     elseif k === K"toplevel"
         p_toplevel(style, t, s; kwargs...)
@@ -124,6 +124,8 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_export(style, t, s; kwargs...)
     elseif k === K"using"
         p_using(style, t, s; kwargs...)
+    elseif k === K"importpath"
+        p_importpath(style, t, s; kwargs...)
     elseif k === K"row"
         p_row(style, t, s; kwargs...)
     elseif k === K"nrow"
@@ -242,6 +244,7 @@ function p_operator(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], val)
+    t.metadata = Metadata(kind(cst), JuliaSyntax.is_dotted(cst))
     return t
 end
 p_operator(
@@ -530,6 +533,14 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
+        elseif kind(a) === K"parameters"
+            if n_args(cst) == n_args(a)
+                # There are no arguments prior to params
+                # so we can remove the initial placeholder.
+                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
+                idx !== nothing && (t[idx] = Whitespace(0))
+            end
+            add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
             if n.typ === MacroBlock && t[end].typ === WHITESPACE
                 t[end] = Placeholder(length(t[end].val))
@@ -908,7 +919,9 @@ function p_module(
             block_has_contents =
                 length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
 
-            indent_module && (s.indent += s.opts.indent)
+            if indent_module
+                s.indent += s.opts.indent
+            end
             n = pretty(
                 style,
                 c,
@@ -917,8 +930,12 @@ function p_module(
                 from_module = true,
                 ignore_single_line = true,
             )
-            add_node!(t, n, s, max_padding = s.opts.indent)
-            indent_module && (s.indent -= s.opts.indent)
+            if indent_module
+                add_node!(t, n, s; max_padding = s.opts.indent)
+                s.indent -= s.opts.indent
+            else
+                add_node!(t, n, s, max_padding = 0)
+            end
         else
             add_node!(t, pretty(style, c, s; from_module = true), s, join_lines = true)
         end
@@ -1016,11 +1033,6 @@ function p_toplevel(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwar
     t = FST(TopLevel, cst, nspaces(s))
     for a in children(cst)
         n = pretty(style, a, s; kwargs...)
-        # if from_toplevel
-        #     add_node!(t, n, s, join_lines=true)
-        # else
-        #     add_node!(t, n, s, max_padding = s.opts.indent)
-        # end
         if kind(a) === K";"
             add_node!(t, n, s, join_lines = true)
         else
@@ -1322,18 +1334,28 @@ function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     style = getstyle(ds)
     t = FST(Try, cst, nspaces(s))
 
+    # in JuliaSyntax this is now a tree structure instead of being linear
+    # since we're still picking up comments in add_node! if the comment is at
+    # the end of block it will be added as a comment in the parent node and hence
+    # have a lower indentation than the rest of the block. To counteract that we reduce
+    # the indent when we encounter "catch finally end" keywords.
+
     childs = children(cst)
     for c in childs
         if kind(c) in KSet"try catch finally"
             if !haschildren(c)
+                if kind(c) in KSet"catch finally"
+                    s.indent -= s.opts.indent
+                end
                 add_node!(t, pretty(style, c, s; kwargs...), s, max_padding = 0)
             else
                 len = length(t)
                 n = pretty(style, c, s; kwargs...)
-                add_node!(t, n, s)
+                add_node!(t, n, s; max_padding = 0)
                 t.len = max(len, length(n))
             end
         elseif kind(c) === K"end"
+            s.indent -= s.opts.indent
             add_node!(t, pretty(style, c, s; kwargs...), s)
         elseif kind(c) === K"block"
             s.indent += s.opts.indent
@@ -1343,8 +1365,8 @@ function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
                 s,
                 max_padding = s.opts.indent,
             )
-            s.indent -= s.opts.indent
         elseif !JuliaSyntax.is_whitespace(c)
+            # "catch" vs "catch ..."
             if !(kind(cst) === K"catch" && any(n -> kind(n) === K"false", childs))
                 add_node!(t, Whitespace(1), s)
             end
@@ -1353,8 +1375,6 @@ function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
             add_node!(t, pretty(style, c, s; kwargs...), s)
         end
     end
-
-    # @info "length" t.len
     t
 end
 p_try(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
@@ -1539,7 +1559,6 @@ function p_binaryopcall(
     from_curly = false,
     standalone_binary_circuit = true,
     from_let = false,
-    from_ref = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1659,11 +1678,12 @@ function p_binaryopcall(
     end
 
     if nest
-        idx = findlast(n -> n.typ === PLACEHOLDER, t.nodes)
-        if idx !== nothing
-            # for indent, will be converted to `indent` if needed
-            insert!(t.nodes::Vector{FST}, idx + 1, Placeholder(0))
-        end
+        # for indent, will be converted to `indent` if needed
+        insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
+        # idx = findlast(n -> n.typ === PLACEHOLDER, t.nodes)
+        # if idx !== nothing
+        #     insert!(t.nodes::Vector{FST}, idx + 1, Placeholder(0))
+        # end
     end
 
     t
@@ -1673,7 +1693,7 @@ p_binaryopcall(
     cst::JuliaSyntax.GreenNode,
     s::State;
     kwargs...,
-) where {S<:AbstractStyle} = p_binaryopcall(DefaultStyle(style), cst, s, kwargs...)
+) where {S<:AbstractStyle} = p_binaryopcall(DefaultStyle(style), cst, s; kwargs...)
 
 function p_whereopcall(
     ds::DefaultStyle,
@@ -1774,10 +1794,10 @@ function p_conditionalopcall(
     for c in children(cst)
         if kind(c) in KSet"? :" && !haschildren(c)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s), s, join_lines = true)
+            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, c, s), s, join_lines = true)
+            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
         end
     end
 
@@ -1786,7 +1806,7 @@ end
 p_conditionalopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
-    s::State,
+    s::State;
     kwargs...,
 ) where {S<:AbstractStyle} = p_conditionalopcall(DefaultStyle(style), cst, s; kwargs...)
 
@@ -1871,6 +1891,7 @@ function p_call(
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
 
+
     childs = children(cst)
     for (i, a) in enumerate(childs)
         k = kind(a)
@@ -1898,12 +1919,18 @@ function p_call(
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
+        elseif k === K"parameters"
+            if n_args(cst) == n_args(a)
+                # There are no arguments prior to params
+                # so we can remove the initial placeholder.
+                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
+                idx !== nothing && (t[idx] = Whitespace(0))
+            end
+            add_node!(t, n, s; join_lines = true)
         else
             add_node!(t, n, s, join_lines = true)
         end
     end
-
-    # @info "" t
 
     if s.opts.separate_kwargs_with_semicolon && can_separate_kwargs
         separate_kwargs_with_semicolon!(t)
@@ -1923,11 +1950,15 @@ function p_invisbrackets(
 )
     style = getstyle(ds)
     t = FST(Brackets, cst, nspaces(s))
-    arg = get_args(cst)[1]
-    nest = !nonest && !s.opts.disallow_single_arg_nesting && !is_iterable(arg)
-
-    if is_block(arg) || (kind(arg) === K"generator" && is_block(arg[1]))
-        t.nest_behavior = AlwaysNest
+    args = get_args(cst)
+    nest = if length(args) > 0
+        arg = args[1]
+        if is_block(arg) || (kind(arg) === K"generator" && is_block(arg[1]))
+            t.nest_behavior = AlwaysNest
+        end
+        !nonest && !s.opts.disallow_single_arg_nesting && !is_iterable(arg)
+    else
+        false
     end
 
     for c in children(cst)
@@ -2028,6 +2059,9 @@ function p_braces(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
 
+
+    nws = s.opts.whitespace_typedefs ? 1 : 0
+
     childs = children(cst)
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs..., from_curly = true)
@@ -2044,7 +2078,7 @@ function p_braces(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs
         elseif kind(a) === K","
             add_node!(t, n, s, join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
-                add_node!(t, Placeholder(1), s)
+                add_node!(t, Placeholder(nws), s)
             end
         else
             add_node!(t, n, s, join_lines = true)
@@ -2210,7 +2244,6 @@ function p_parameters(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kw
                 add_node!(t, Placeholder(1), s)
             end
         else
-            # n.nest_behavior = NeverNest
             add_node!(t, n, s, join_lines = true)
         end
     end
@@ -2235,7 +2268,9 @@ function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s; kwargs...), s, join_lines = true)
-                if kind(n) in KSet", :"
+                if kind(n) in KSet"import export using"
+                    add_node!(t, Whitespace(1), s)
+                elseif kind(n) in KSet", :"
                     add_node!(t, Placeholder(1), s)
                 end
             end
@@ -2279,6 +2314,23 @@ p_using(
     s::State;
     kwargs...,
 ) where {S<:AbstractStyle} = p_using(DefaultStyle(style), cst, s; kwargs...)
+
+function p_importpath(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    style = getstyle(ds)
+    t = FST(Import, cst, nspaces(s))
+
+    for a in children(cst)
+            n = pretty(style, a, s; kwargs...)
+            add_node!(t, n, s, join_lines = true)
+    end
+    t
+end
+p_importpath(
+    style::S,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    kwargs...,
+) where {S<:AbstractStyle} = p_importpath(DefaultStyle(style), cst, s; kwargs...)
 
 function p_as(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
@@ -2599,7 +2651,6 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
 
     from_iterable = false
     lineage = get(kwargs, :lineage, JuliaSyntax.Kind[])
-
     for (kind, is_itr) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"
             continue
@@ -2610,6 +2661,7 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     end
 
     childs = children(cst)
+
     has_for_kw = findfirst(n -> kind(n) === K"for", childs) !== nothing
 
     for (i, a) in enumerate(childs)
@@ -2634,6 +2686,9 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
         else
             add_node!(t, n, s, join_lines = true)
         end
+
+        has_for_kw &&
+            eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
     end
     t
 end

@@ -15,45 +15,46 @@ for f in [
     :n_filter!,
     :n_flatten!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         style = getstyle(ss)
-        $f(YASStyle(style), fst, s)
+        $f(YASStyle(style), fst, s; kwargs...)
     end
 end
 
-function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1)
+function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     if line_margin > s.opts.margin && fst.ref !== nothing && defines_function(fst.ref[])
         transformed = short_to_long_function_def!(fst, s)
-        transformed && nest!(style, fst, s)
+        transformed && nest!(style, fst, s; kwargs...)
     end
 
     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
-        n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent)
+        n_binaryopcall!(DefaultStyle(style), fst, s; kwargs..., indent = indent)
         return
     end
 
     start_line_offset = s.line_offset
     walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
-    nest!(style, fst[end], s)
+    nest!(style, fst[end], s; kwargs...)
 end
 
-function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
+function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
     if s.opts.yas_style_nesting
         nest!(
             YASStyle(style),
             fst.nodes::Vector,
             s,
-            fst.indent,
+            fst.indent;
+            kwargs...,
             extra_margin = fst.extra_margin,
         )
     else
         base_indent = fst.indent
         add_indent!(fst[3], s, s.opts.indent)
 
-        nest!(ss, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
+        nest!(ss, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
 
         f =
             (fst::FST, s::State) -> begin
@@ -67,11 +68,11 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State)
     end
 end
 
-function n_macro!(ss::SciMLStyle, fst::FST, s::State)
-    n_functiondef!(ss, fst, s)
+function n_macro!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+    n_functiondef!(ss, fst, s; kwargs...)
 end
 
-function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
+function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -124,12 +125,12 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
                 si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
                 if has_closer && !nested && n.startline == fst[end].startline
                     # trailing types are automatically converted, undo this if
                     # there is no nest and the closer is on the same in the
                     # original source.
-                    if fst[i-1].typ === TRAILINGCOMMA || fst[i-1].typ === TRAILINGSEMICOLON
+                    if fst[i-1].typ === TRAILINGCOMMA
                         fst[i-1].val = ""
                         fst[i-1].len = 0
                     end
@@ -137,25 +138,14 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === TRAILINGSEMICOLON
-                n.val = ";"
-                n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === INVERSETRAILINGSEMICOLON && !(
-                s.opts.join_lines_based_on_source &&
-                (fst.typ === Vcat || fst.typ === TypedVcat)
-            )
-                n.val = ""
-                n.len = 0
-                nest!(style, n, s)
+                nest!(style, n, s; kwargs...)
             elseif has_closer && (i == 1 || i == length(nodes))
-                nest!(style, n, s)
+                nest!(style, n, s; kwargs...)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
-                nest!(style, n, s)
+                nest!(style, n, s; kwargs...)
             end
         end
 
@@ -165,7 +155,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State)
     else
         extra_margin = fst.extra_margin
         has_closer && (extra_margin += 1)
-        nest!(style, nodes, s, fst.indent, extra_margin = extra_margin)
+        nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
     end
 
     s.line_offset = start_line_offset
@@ -182,39 +172,38 @@ for f in [
     :n_curly!,
     :n_macrocall!,
     :n_ref!,
-    # :n_vect!,
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,
     :n_bracescat!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         style = getstyle(ss)
         if s.opts.yas_style_nesting
-            $f(YASStyle(style), fst, s)
+            $f(YASStyle(style), fst, s; kwargs...)
         else
-            _n_tuple!(style, fst, s)
+            _n_tuple!(style, fst, s; kwargs...)
         end
     end
 end
 
-function n_vect!(ss::SciMLStyle, fst::FST, s::State)
+function n_vect!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
     if s.opts.yas_style_nesting
         # Allow a line break after the opening brackets without aligning
-        n_vect!(DefaultStyle(style), fst, s)
+        n_vect!(DefaultStyle(style), fst, s; kwargs...)
     else
-        _n_tuple!(style, fst, s)
+        _n_tuple!(style, fst, s; kwargs...)
     end
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         style = getstyle(ss)
         if s.opts.yas_style_nesting
-            $f(YASStyle(style), fst, s)
+            $f(YASStyle(style), fst, s; kwargs...)
         else
-            $f(DefaultStyle(style), fst, s)
+            $f(DefaultStyle(style), fst, s; kwargs...)
         end
     end
 end
