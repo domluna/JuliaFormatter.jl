@@ -52,7 +52,8 @@ end
 n_curly!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
 n_ref!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
 n_macrocall!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
-n_typedcomprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
+n_typedcomprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+    n_call!(ys, fst, s; kwargs...)
 n_typedvcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
 
 function n_tuple!(ys::YASStyle, fst::FST, s::State; kwargs...)
@@ -84,8 +85,10 @@ end
 n_braces!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_vect!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_parameters!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_invisbrackets!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_comprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
+n_invisbrackets!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ys, fst, s; kwargs...)
+n_comprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ys, fst, s; kwargs...)
 n_vcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_bracescat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 
@@ -116,7 +119,8 @@ function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     end
 end
 n_filter!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_generator!(ys, fst, s; kwargs...)
-n_flatten!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_generator!(ys, fst, s; kwargs...)
+n_flatten!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+    n_generator!(ys, fst, s; kwargs...)
 
 function n_whereopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ys)
@@ -182,7 +186,7 @@ function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1, kwa
     style = getstyle(ys)
     nodes = fst.nodes::Vector
     if findfirst(n -> n.typ === PLACEHOLDER, nodes) !== nothing
-        n_binaryopcall!(DefaultStyle(style), fst, s; indent= indent, kwargs...)
+        n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
         return
     end
 
@@ -210,9 +214,9 @@ function n_for!(ys::YASStyle, fst::FST, s::State; kwargs...)
         else
             n.extra_margin = fst.extra_margin
             if i == 3 && n.typ === Block
-                n_block!(style, n, s;  kwargs..., indent = s.line_offset)
+                n_block!(style, n, s; kwargs..., indent = s.line_offset)
             else
-                nest!(style, n, s; kwargs... )
+                nest!(style, n, s; kwargs...)
             end
         end
     end

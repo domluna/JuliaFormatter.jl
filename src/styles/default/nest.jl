@@ -42,8 +42,7 @@ nest!(
     s::State,
     indent::Int;
     kwargs...,
-) where {S<:AbstractStyle} =
-    nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
+) where {S<:AbstractStyle} = nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
 
 function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ds)
@@ -142,8 +141,8 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         n_filter!(style, fst, s; kwargs...)
     elseif fst.typ === Flatten
         n_flatten!(style, fst, s; kwargs...)
-    # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
-    #     n_tuple!(style, fst, s; kwargs...)
+        # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
+        #     n_tuple!(style, fst, s; kwargs...)
     elseif fst.typ === Block
         n_block!(style, fst, s; kwargs...)
     elseif fst.typ === Chain
@@ -163,7 +162,14 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     elseif fst.typ === Macro
         n_macro!(style, fst, s; kwargs...)
     else
-        nest!(style, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
+        nest!(
+            style,
+            fst.nodes::Vector,
+            s,
+            fst.indent;
+            kwargs...,
+            extra_margin = fst.extra_margin,
+        )
     end
 
     pop!(lineage)
@@ -179,7 +185,8 @@ end
 n_functiondef!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_functiondef!(DefaultStyle(style), fst, s; kwargs...)
 
-n_macro!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_functiondef!(ds, fst, s; kwargs...)
+n_macro!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_functiondef!(ds, fst, s; kwargs...)
 n_macro!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_macro!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -282,7 +289,6 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     has_closer = is_closer(fst[end])
 
-
     if has_closer
         fst[end].indent = fst.indent
     end
@@ -310,7 +316,8 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                         nodes,
                         i + 1,
                     )
-                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+                    nested =
+                        nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
                     if has_closer && !nested && n.startline == fst[end].startline
                         # trailing types are automatically converted, undo this if
                         # there is no nest and the closer is on the same in the
@@ -335,15 +342,13 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                 n.extra_margin = 1
 
                 if n.typ === Parameters
+                    nb = n.nest_behavior
+                    n.nest_behavior = AlwaysNest
+                    nest!(style, n, s; kwargs...)
+                    n.nest_behavior = nb
 
-                nb = n.nest_behavior
-                n.nest_behavior = AlwaysNest
-                nest!(style, n, s; kwargs...)
-                n.nest_behavior = nb
-
-            else
-
-                nest!(style, n, s; kwargs...)
+                else
+                    nest!(style, n, s; kwargs...)
                 end
             end
         end
@@ -362,7 +367,8 @@ end
 n_tuple!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s; kwargs...)
 
-n_cartesian_iterator!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_cartesian_iterator!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_cartesian_iterator!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_cartesian_iterator!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -378,15 +384,18 @@ n_braces!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s
 n_braces!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_braces!(DefaultStyle(style), fst, s; kwargs...)
 
-n_bracescat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_bracescat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_bracescat!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_bracescat!(DefaultStyle(style), fst, s; kwargs...)
 
-n_parameters!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_parameters!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_parameters!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_parameters!(DefaultStyle(style), fst, s; kwargs...)
 
-n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_invisbrackets!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -398,7 +407,8 @@ n_curly!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s;
 n_curly!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_curly!(DefaultStyle(style), fst, s; kwargs...)
 
-n_macrocall!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_macrocall!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_macrocall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_macrocall!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -410,7 +420,8 @@ n_row!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; k
 n_row!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_row!(DefaultStyle(style), fst, s; kwargs...)
 
-n_typedvcat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
+n_typedvcat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ds, fst, s; kwargs...)
 n_typedvcat!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -474,7 +485,8 @@ end
 n_comprehension!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_comprehension!(DefaultStyle(style), fst, s; kwargs...)
 
-n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_comprehension!(ds, fst, s; kwargs...)
+n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+    n_comprehension!(ds, fst, s; kwargs...)
 n_typedcomprehension!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s; kwargs...)
 
@@ -606,7 +618,14 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         return
     end
 
-    nest!(style, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
+    nest!(
+        style,
+        fst.nodes::Vector,
+        s,
+        fst.indent;
+        kwargs...,
+        extra_margin = fst.extra_margin,
+    )
     return
 end
 n_whereopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
@@ -816,12 +835,25 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1,
         end
     end
 end
-n_binaryopcall!(style::S, fst::FST, s::State; indent = -1, kwargs...) where {S<:AbstractStyle} =
+n_binaryopcall!(
+    style::S,
+    fst::FST,
+    s::State;
+    indent = -1,
+    kwargs...,
+) where {S<:AbstractStyle} =
     n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
 
 function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ds)
-    nest!(style, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
+    nest!(
+        style,
+        fst.nodes::Vector,
+        s,
+        fst.indent;
+        kwargs...,
+        extra_margin = fst.extra_margin,
+    )
 end
 n_for!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s; kwargs...)

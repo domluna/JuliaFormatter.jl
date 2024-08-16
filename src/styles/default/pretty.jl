@@ -1891,7 +1891,6 @@ function p_call(
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
 
-
     childs = children(cst)
     for (i, a) in enumerate(childs)
         k = kind(a)
@@ -2058,7 +2057,6 @@ function p_braces(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
-
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
@@ -2320,8 +2318,8 @@ function p_importpath(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kw
     t = FST(Import, cst, nspaces(s))
 
     for a in children(cst)
-            n = pretty(style, a, s; kwargs...)
-            add_node!(t, n, s, join_lines = true)
+        n = pretty(style, a, s; kwargs...)
+        add_node!(t, n, s, join_lines = true)
     end
     t
 end

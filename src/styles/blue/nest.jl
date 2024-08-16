@@ -31,15 +31,16 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
 
         args_diff_line = if src_diff_line
             # first arg
-            first_arg_idx = if fst.typ in (TupleN, CartesianIterator, Parameters) && !has_closer
-                1
-            elseif is_opener(fst[1])
-                # (...)
-                findfirst(is_iterable_arg, nodes)
-            else
-                # f(...)
-                findnext(is_iterable_arg, nodes, 2)
-            end
+            first_arg_idx =
+                if fst.typ in (TupleN, CartesianIterator, Parameters) && !has_closer
+                    1
+                elseif is_opener(fst[1])
+                    # (...)
+                    findfirst(is_iterable_arg, nodes)
+                else
+                    # f(...)
+                    findnext(is_iterable_arg, nodes, 2)
+                end
             first_arg = first_arg_idx === nothing ? fst[1] : fst[first_arg_idx]
             # last arg
             last_arg_idx = findlast(is_iterable_arg, nodes)
@@ -125,11 +126,15 @@ n_macrocall!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s
 n_ref!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
 n_braces!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
 n_vect!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
+n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(bs, fst, s; kwargs...)
 n_bracescat!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
+n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(bs, fst, s; kwargs...)
 
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     style = getstyle(bs)
@@ -148,7 +153,13 @@ function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     @info "binary" lineage
     # if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
     if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
-        n_binaryopcall!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent )
+        n_binaryopcall!(
+            YASStyle(style),
+            fst,
+            s;
+            kwargs...,
+            indent = fst.indent + s.opts.indent,
+        )
     else
         n_binaryopcall!(YASStyle(style), fst, s; kwargs...)
     end
@@ -160,10 +171,11 @@ function n_chainopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     @info "chain" lineage
     # if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
     if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
-        n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent )
+        n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent)
     else
         n_block!(DefaultStyle(style), fst, s; kwargs..., indent = s.line_offset)
     end
 end
 
-n_comparison!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_chainopcall!(bs, fst, s; kwargs...)
+n_comparison!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+    n_chainopcall!(bs, fst, s; kwargs...)

@@ -54,7 +54,14 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         base_indent = fst.indent
         add_indent!(fst[3], s, s.opts.indent)
 
-        nest!(ss, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
+        nest!(
+            ss,
+            fst.nodes::Vector,
+            s,
+            fst.indent;
+            kwargs...,
+            extra_margin = fst.extra_margin,
+        )
 
         f =
             (fst::FST, s::State) -> begin

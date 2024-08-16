@@ -166,7 +166,12 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     t
 end
 
-function p_tuple(ys::YASStyle, nodes::Vector{JuliaSyntax.GreenNode{T}}, s::State; kwargs...) where {T}
+function p_tuple(
+    ys::YASStyle,
+    nodes::Vector{JuliaSyntax.GreenNode{T}},
+    s::State;
+    kwargs...,
+) where {T}
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
     for (i, a) in enumerate(nodes)
@@ -211,7 +216,7 @@ function p_invisbrackets(
     s::State;
     nonest = false,
     nospace = false,
- kwargs...,
+    kwargs...,
 )
     style = getstyle(ys)
     t = FST(Brackets, cst, nspaces(s))
@@ -248,10 +253,13 @@ function p_invisbrackets(
     t
 end
 
-function p_call(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State;
+function p_call(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
     can_separate_kwargs::Bool = true,
-kwargs...,
-                )
+    kwargs...,
+)
     style = getstyle(ys)
 
     # # With `variable_call_indent`, check if the caller is in the list

@@ -945,7 +945,7 @@ function add_node!(
             end
         elseif is_comma(en)
             t[end] = n
-        elseif en.typ === Parameters  && length(en.nodes) > 0
+        elseif en.typ === Parameters && length(en.nodes) > 0
             if is_comma(en[end])
                 en[end] = n
             elseif en[end].typ === SEMICOLON
