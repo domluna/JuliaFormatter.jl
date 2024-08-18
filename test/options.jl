@@ -299,11 +299,19 @@
             bodybodybodybodybodybodybody
         end"""
         @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
-        @test fmt(str_, 4, length(str_), short_to_long_function_def = true,
-            max_short_function_length=length(str_) - 1
+        @test fmt(
+            str_,
+            4,
+            length(str_),
+            short_to_long_function_def = true,
+            force_long_function_def = true,
         ) == str
-        @test fmt(str_, 4, length(str_), short_to_long_function_def = false,
-            max_short_function_length=length(str_) - 1
+        @test fmt(
+            str_,
+            4,
+            length(str_),
+            short_to_long_function_def = false,
+            force_long_function_def = false,
         ) == str_
         @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
     end
