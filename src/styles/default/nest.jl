@@ -139,7 +139,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         n_generator!(style, fst, s; kwargs...)
     elseif fst.typ === Filter
         n_filter!(style, fst, s; kwargs...)
-    # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
+        # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
         #     n_tuple!(style, fst, s; kwargs...)
     elseif fst.typ === Block
         n_block!(style, fst, s; kwargs...)

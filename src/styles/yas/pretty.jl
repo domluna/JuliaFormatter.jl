@@ -100,7 +100,13 @@ function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                 add_node!(t, Placeholder(nws), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
     t
@@ -133,7 +139,13 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
     t
@@ -162,7 +174,13 @@ function p_tuple(
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
     t
@@ -248,9 +266,21 @@ function p_call(
                 idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
                 idx !== nothing && (t[idx] = Whitespace(0))
             end
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
 
@@ -280,7 +310,13 @@ function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
 end
@@ -409,7 +445,13 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
     t
@@ -434,7 +476,13 @@ function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
         if kind(c) === K"["
             add_node!(t, n, s, join_lines = true)
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
         end
     end
 
@@ -481,7 +529,13 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
                 idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
                 idx !== nothing && (t[idx] = Whitespace(0))
             end
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         elseif is_macroblock
             if n.typ === MacroBlock && t[end].typ === WHITESPACE
                 t[end] = Placeholder(length(t[end].val))
@@ -497,7 +551,13 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
                 add_node!(t, Whitespace(1), s)
             end
         else
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
 
@@ -544,7 +604,13 @@ function p_whereopcall(
             add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
             s.indent += s.opts.indent
         elseif kind(a) === K"}"
-            add_node!(t, pretty(style, a, s; kwargs...), s; join_lines = true, override_join_lines_based_on_source = true)
+            add_node!(
+                t,
+                pretty(style, a, s; kwargs...),
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = true,
+            )
             s.indent -= s.opts.indent
         elseif kind(a) === K","
             add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
@@ -569,7 +635,13 @@ function p_whereopcall(
             end
 
             override = i > 1 && kind(childs[i-1]) === K"{"
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = override)
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "}")
