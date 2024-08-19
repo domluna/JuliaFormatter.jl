@@ -119,8 +119,6 @@ function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     end
 end
 n_filter!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_generator!(ys, fst, s; kwargs...)
-n_flatten!(ys::YASStyle, fst::FST, s::State; kwargs...) =
-    n_generator!(ys, fst, s; kwargs...)
 
 function n_whereopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ys)

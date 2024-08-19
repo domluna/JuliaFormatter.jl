@@ -75,7 +75,6 @@ for f in [
     :p_typedcomprehension,
     :p_generator,
     :p_filter,
-    :p_flatten,
 ]
     @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         style = getstyle(ss)

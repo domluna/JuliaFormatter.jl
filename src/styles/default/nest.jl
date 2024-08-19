@@ -139,9 +139,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         n_generator!(style, fst, s; kwargs...)
     elseif fst.typ === Filter
         n_filter!(style, fst, s; kwargs...)
-    elseif fst.typ === Flatten
-        n_flatten!(style, fst, s; kwargs...)
-        # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
+    # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
         #     n_tuple!(style, fst, s; kwargs...)
     elseif fst.typ === Block
         n_block!(style, fst, s; kwargs...)
@@ -564,11 +562,6 @@ n_filter!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
     n_generator!(ds, fst, s; indent = fst.indent, kwargs...)
 n_filter!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_filter!(DefaultStyle(style), fst, s; kwargs...)
-
-n_flatten!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
-    n_generator!(ds, fst, s; indent = fst.indent, kwargs...)
-n_flatten!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
-    n_flatten!(DefaultStyle(style), fst, s; kwargs...)
 
 function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ds)

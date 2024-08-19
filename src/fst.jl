@@ -850,7 +850,7 @@ eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing
 
 # Check if the caller of a call is in `list`
 # Note that this also works for JuliaSyntax.GreenNode
-function caller_in_list(fst::Union{FST}, list::Vector{String})
+function caller_in_list(fst::FST, list::Vector{String})
     if is_leaf(fst[1]) && (fst[1].val) in list
         return true
     elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && (fst[1][1].val) in list

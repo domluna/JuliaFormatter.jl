@@ -13,7 +13,6 @@ for f in [
     :n_typedcomprehension!,
     :n_generator!,
     :n_filter!,
-    :n_flatten!,
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         style = getstyle(ss)

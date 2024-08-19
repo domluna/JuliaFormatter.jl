@@ -507,7 +507,6 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
     has_closer = is_closer(cst[end])
-
     is_macroblock = !has_closer
 
     childs = children(cst)
@@ -1723,32 +1722,31 @@ function p_whereopcall(
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 
     # bc = curly_ctx ? t : FST(BracesCat, nspaces(s))
-    bc = t
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
     after_where = false
     for (i, a) in enumerate(childs)
         if kind(a) === K"where" && !haschildren(a)
-            add_node!(bc, Whitespace(1), s)
-            add_node!(bc, pretty(style, a, s; kwargs...), s, join_lines = true)
-            add_node!(bc, Whitespace(1), s)
+            add_node!(t, Whitespace(1), s)
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
             after_where = true
         elseif kind(a) === K"{" && nest
-            add_node!(bc, pretty(style, a, s; kwargs...), s, join_lines = true)
-            add_node!(bc, Placeholder(0), s)
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, Placeholder(0), s)
             s.indent += s.opts.indent
         elseif kind(a) === K"}" && nest
-            add_node!(bc, TrailingComma(), s)
-            add_node!(bc, Placeholder(0), s)
-            add_node!(bc, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, TrailingComma(), s)
+            add_node!(t, Placeholder(0), s)
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
             s.indent -= s.opts.indent
         elseif kind(a) === K","
-            add_node!(bc, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
-                add_node!(bc, Placeholder(nws), s)
+                add_node!(t, Placeholder(nws), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(bc, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s, join_lines = true)
         else
             n = pretty(
                 style,
@@ -1761,14 +1759,14 @@ function p_whereopcall(
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "{")
-                add_node!(bc, brace, s, join_lines = true)
+                add_node!(t, brace, s, join_lines = true)
             end
 
-            add_node!(bc, n, s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "}")
-                add_node!(bc, brace, s, join_lines = true)
+                add_node!(t, brace, s, join_lines = true)
             end
         end
     end
@@ -2708,15 +2706,3 @@ p_filter(
     s::State;
     kwargs...,
 ) where {S<:AbstractStyle} = p_filter(DefaultStyle(style), cst, s; kwargs...)
-
-function p_flatten(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    t = p_generator(ds, cst, s; kwargs...)
-    t.typ = Flatten
-    t
-end
-p_flatten(
-    style::S,
-    cst::JuliaSyntax.GreenNode,
-    s::State;
-    kwargs...,
-) where {S<:AbstractStyle} = p_flatten(DefaultStyle(style), cst, s; kwargs...)
