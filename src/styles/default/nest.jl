@@ -82,7 +82,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State)
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
-           line_margin > s.opts.margin &&
+           ((line_margin > s.opts.margin) || s.opts.force_long_function_def) &&
            fst.ref !== nothing &&
            CSTParser.defines_function(fst.ref[]) &&
            !parent_is(fst.ref[], n -> n.head == :let)
