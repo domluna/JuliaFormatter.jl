@@ -540,7 +540,8 @@
 
     @testset "issue 582 - vcat" begin
         @test yasfmt("[sts...;]") == "[sts...;]"
-        @test yasfmt("[a;b;]") == "[a; b]"
+        @test yasfmt("[a;b;]") == "[a; b;]"
+        @test yasfmt("[a;b;;]") == "[a; b;;]"
     end
 
     @testset "variable_call_indent" begin

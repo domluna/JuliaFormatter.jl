@@ -92,6 +92,7 @@ import Base: show
     Unknown,
     As,
     NonStdIdentifier, # i.e. var"##iv369"
+    ImportPath,
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
@@ -1002,6 +1003,7 @@ function add_node!(
        !override_join_lines_based_on_source &&
        max_padding == -1 &&
        !(
+           n.typ === SEMICOLON ||
            is_comma(n) ||
            is_block(t) ||
            t.typ === FunctionN ||

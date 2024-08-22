@@ -61,12 +61,33 @@ function is_binaryop_nestable(::YASStyle, cst::JuliaSyntax.GreenNode)
     return true
 end
 
-function p_import(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ys)
-    t = p_import(DefaultStyle(style), cst, s; kwargs...)
-    idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
-    if idx !== nothing && is_colon(t[idx-1])
-        t[idx] = Whitespace(1)
+function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    style = getstyle(ds)
+    t = FST(Import, cst, nspaces(s))
+
+    for a in children(cst)
+        if kind(a) in KSet"import export using"
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+        elseif kind(a) === K":"
+            nodes = children(a)
+            for n in nodes
+                add_node!(t, pretty(style, n, s; kwargs...), s, join_lines = true)
+                if kind(n) in KSet"import export using :"
+                    add_node!(t, Whitespace(1), s)
+                elseif kind(n) in KSet","
+                    add_node!(t, Placeholder(1), s)
+                end
+            end
+        elseif kind(a) === K","
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, Placeholder(1), s)
+        elseif kind(a) === K":"
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, Whitespace(1), s)
+        else
+            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+        end
     end
     t
 end
@@ -319,46 +340,47 @@ function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             )
         end
     end
+    t
 end
 
 function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     st = kind(cst) === K"vcat" ? 1 : 2
-    args = get_args(cst)
-    #
-    # override = i == st + 1 || kind(a) === K"]"
 
-    for (i, a) in enumerate(children(cst))
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
-        if is_closer(n)
-            add_node!(
-                t,
-                n,
-                s,
-                join_lines = true,
-                override_join_lines_based_on_source = true,
-            )
-        elseif !is_closer(a) && i > st
-            join_lines = i == st + 1 ? true : t.endline == n.startline
-            if join_lines && i != st + 1
+        override = i == st + 1 || kind(a) === K"]"
+
+        if kind(a) === K"["
+            add_node!(t, n, s, join_lines = true)
+        elseif kind(a) === K"]"
+            add_node!(t, n, s, join_lines = true, override_join_lines_based_on_source=override)
+        elseif JuliaSyntax.is_whitespace(a)
+            add_node!(t, n, s; join_lines = true)
+        elseif kind(a) === K";"
+            add_node!(t, n, s, join_lines = true)
+            if needs_placeholder(childs, i + 1, K"]")
                 add_node!(t, Placeholder(1), s)
             end
-
-            add_node!(
-                t,
-                n,
-                s;
-                join_lines = join_lines,
-                override_join_lines_based_on_source = i == st + 1,
-            )
-            if has_semicolon(s.doc, n.startline)
-                if i != length(cst) - 1 || length(args) == 1
-                    add_node!(t, InverseTrailingSemicolon(), s)
-                end
-            end
         else
-            add_node!(t, n, s, join_lines = true)
+            join_lines = i == st + 1 ? true : t.endline == n.startline
+            add_node!(t, n, s, join_lines = join_lines, override_join_lines_based_on_source = override)
+
+            j = i + 1
+            is_last_arg = false
+            while j <= length(childs) && !is_last_arg
+                k = kind(childs[j])
+                if !JuliaSyntax.is_whitespace(k)
+                    k === K"]" && (is_last_arg = true)
+                    break
+                end
+                j += 1
+            end
+            if !is_last_arg && j <= length(childs)
+                add_node!(t, Placeholder(1), s)
+            end
         end
     end
     t
@@ -373,47 +395,31 @@ function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Ncat, nspaces(s))
     st = kind(cst) === K"ncat" ? 2 : 3
-    args = get_args(cst)
-    n_semicolons = SEMICOLON_LOOKUP[cst[st].head]
 
-    # override = i == st + 1 || kind(a) === K"]"
+    last_was_semicolon = false
 
-    for (i, a) in enumerate(children(cst))
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
-        i == st && continue
-        if is_closer(n)
-            add_node!(
-                t,
-                n,
-                s,
-                join_lines = true,
-                override_join_lines_based_on_source = true,
-            )
-        elseif !is_closer(a) && i > st
-            join_lines = i == st + 1 ? true : t.endline == n.startline
-            if join_lines && i != st + 1
-                add_node!(t, Placeholder(1), s)
-            end
+        override = i == st + 1 || kind(a) === K"]"
 
-            add_node!(
-                t,
-                n,
-                s;
-                join_lines = join_lines,
-                override_join_lines_based_on_source = i == st + 1,
-            )
-
-            if i < length(cst) - 1
-                for _ in 1:n_semicolons
-                    add_node!(t, Semicolon(), s)
-                end
-            elseif length(args) == 1
-                for _ in 1:n_semicolons
-                    add_node!(t, Semicolon(), s)
-                end
-            end
-        else
+        if kind(a) === K"["
             add_node!(t, n, s, join_lines = true)
+        elseif kind(a) === K"]"
+            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
+        else
+            if kind(a) === K";"
+                add_node!(t, n, s; join_lines = true)
+                last_was_semicolon = true
+            elseif JuliaSyntax.is_whitespace(a)
+                add_node!(t, n, s; join_lines = true)
+            else
+                if last_was_semicolon
+                    add_node!(t, Placeholder(1), s)
+                    last_was_semicolon = false
+                end
+                add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
+            end
         end
     end
     t

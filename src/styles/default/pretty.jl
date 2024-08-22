@@ -1639,23 +1639,26 @@ function p_binaryopcall(
         elseif JuliaSyntax.is_whitespace(c)
             add_node!(t, n, s; join_lines = true)
         else
+                # TOOD: change this to is op_call? and remove whitespace_ops_in_indices
+            # check
             if opkind === K":" &&
+                # is_opcall(c)
                s.opts.whitespace_ops_in_indices &&
                !is_leaf(n) &&
                !is_iterable(n)
-                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, "("), s)
+                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, "("), s; join_lines = true)
                 if after_op
                     add_node!(
                         t,
                         n,
-                        s;
+                        s,
                         join_lines = true,
                         override_join_lines_based_on_source = !nest,
                     )
                 else
                     add_node!(t, n, s; join_lines = true)
                 end
-                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, ")"), s)
+                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, ")"), s; join_lines = true)
             else
                 if after_op
                     add_node!(
@@ -2313,7 +2316,7 @@ p_using(
 
 function p_importpath(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
-    t = FST(Import, cst, nspaces(s))
+    t = FST(ImportPath, cst, nspaces(s))
 
     for a in children(cst)
         n = pretty(style, a, s; kwargs...)
@@ -2422,7 +2425,7 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             if needs_placeholder(childs, i + 1, K"]")
                 add_node!(t, Placeholder(1), s)
             end
-        elseif kind(a) === K"row"
+        else
             # TODO: maybe we need to do something here?
             # [a b c d e f] is semantically different from [a b c; d e f]
             # child_has_semicolon = any(c -> kind(c) === K";", children(a))
@@ -2438,7 +2441,7 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             while j <= length(childs) && !is_last_arg
                 k = kind(childs[j])
                 if !JuliaSyntax.is_whitespace(k)
-                    k !== K"row" && (is_last_arg = true)
+                    k === K"]" && (is_last_arg = true)
                     break
                 end
                 j += 1
@@ -2446,8 +2449,6 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             if !is_last_arg && j <= length(childs)
                 add_node!(t, Placeholder(1), s)
             end
-        else
-            add_node!(t, n, s, join_lines = true)
         end
     end
     t
