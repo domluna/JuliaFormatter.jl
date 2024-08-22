@@ -7,7 +7,7 @@ end
 using CSTParser
 using Tokenize
 using DataStructures
-using Pkg.TOML: parsefile
+using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
 import Base: get, pairs
