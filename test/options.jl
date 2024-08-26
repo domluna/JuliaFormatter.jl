@@ -124,7 +124,7 @@
         @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
 
         str_ = "a:b+c:d-e"
-        str = "a:(b + c):(d - e)"
+        str = "a:(b+c):(d-e)"
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
 
         # issue 180
@@ -349,6 +349,7 @@
                 nothing
             end
         end"""
+
         str = """
         foo(a) =
             if a > 1
@@ -356,6 +357,7 @@
             else
                 nothing
             end"""
+        @test fmt1(str_, 4, length(str), long_to_short_function_def = true) == str
         @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
     end
 

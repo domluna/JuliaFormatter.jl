@@ -181,7 +181,7 @@ function import_to_usings(fst::FST, s::State)
 
         add_node!(use, n, s, join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
-        colon.metadata = Metadata("::", false)
+        colon.metadata = Metadata(K"::", false)
         add_node!(use, colon, s, join_lines = true)
         add_node!(use, Whitespace(1), s)
         add_node!(use, n[end], s, join_lines = true)
@@ -353,27 +353,39 @@ function long_to_short_function_def!(fst::FST, s::State)
     rhs = first(block.nodes)
 
     if rhs.typ === Return
-        I = findall(!is_custom_leaf, nodes)
-        length(I) < 2 && return false
-        popfirst!(I)  # remove leading `return` keyword
-        rhs = (rhs.nodes::Vector{FST})[first(I)]
+        rhs = (rhs.nodes::Vector{FST})[end]
     end
 
     # length(Whitespace(1) * "=" * Whitespace(1)) = 3
     line_margin = s.line_offset + length(lhs) + 3 + length(rhs) + fst.extra_margin
     line_margin > s.opts.margin && return false
 
+    if rhs.indent > 0
+        add_indent!(rhs, s, -s.opts.indent)
+    end
+
     funcdef = FST(Binary, fst.indent)
+    funcdef.metadata = Metadata(K"=", false, false, true, false, false)
     kw = (join_lines = true, override_join_lines_based_on_source = true)
+
     add_node!(funcdef, lhs, s; kw...)
     add_node!(funcdef, Whitespace(1), s; kw...)
-    add_node!(funcdef, FST(OPERATOR, 0, -1, -1, "="), s; kw...)
-    add_node!(funcdef, Whitespace(1), s; kw...)
+    op = FST(OPERATOR, 0, -1, -1, "=")
+    op.metadata = Metadata(K"=", false)
+    add_node!(funcdef, op, s; kw...)
+    add_node!(funcdef, Placeholder(1), s; kw...)
+    add_node!(funcdef, Placeholder(0), s; kw...)
     add_node!(funcdef, rhs, s; kw...)
+
+    if rhs.typ in (If, Do, Try, For, While, Let)
+        funcdef.nest_behavior = AlwaysNest
+    end
 
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
+    fst.metadata = funcdef.metadata
+    fst.nest_behavior = funcdef.nest_behavior
     return true
 end
 

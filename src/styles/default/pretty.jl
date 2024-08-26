@@ -768,6 +768,7 @@ function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; k
             add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
         end
     end
+    t.metadata = Metadata(kind(cst), false, false, false, false, true)
     t
 end
 p_functiondef(
@@ -979,6 +980,8 @@ function p_const(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
     t = FST(Const, cst, nspaces(s))
     for c in children(cst)
         if !JuliaSyntax.is_whitespace(c) && !JuliaSyntax.is_keyword(c)
+            add_node!(t, Whitespace(1), s)
+        elseif !JuliaSyntax.is_whitespace(c) && JuliaSyntax.is_keyword(c) && haschildren(c)
             add_node!(t, Whitespace(1), s)
         end
         add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
@@ -1444,30 +1447,34 @@ function p_chainopcall(
     style = getstyle(ds)
     t = FST(Chain, cst, nspaces(s))
 
-    if op_kind(cst) === K":"
+    opkind = op_kind(cst)
+    if opkind === K":"
         nospace = true
+        nonest = true
     end
     nws = nospace ? 0 : 1
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
+        n = pretty(style, a, s; nospace, nonest, kwargs...)
         if JuliaSyntax.is_operator(a)
             add_node!(t, Whitespace(nws), s)
-            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
             if nonest
                 add_node!(t, Whitespace(nws), s)
             else
                 add_node!(t, Placeholder(nws), s)
             end
         elseif is_opcall(a)
-            add_node!(
-                t,
-                pretty(style, a, s; nospace = nospace, nonest = nonest, kwargs...),
-                s,
-                join_lines = true,
-            )
+            if kind(a) !== K"parens" && opkind === K":"
+                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, "("), s; join_lines = true)
+                add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source = nonest)
+                add_node!(t, FST(PUNCTUATION, -1, n.startline, n.startline, ")"), s; join_lines = true)
+            else
+                add_node!(t, n, s; join_lines = true)
+            end
         else
-            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -1524,7 +1531,7 @@ function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             n = pretty(style, c, s; kwargs...)
             if !s.opts.whitespace_in_kwargs && (
                 (n.typ === IDENTIFIER && endswith(n.val, "!")) ||
-                (n.typ === Call && n[1].typ === OPERATOR)
+                (is_opcall(c) && kind(c) !== K"parens")
             )
                 add_node!(
                     t,
@@ -1559,6 +1566,7 @@ function p_binaryopcall(
     from_curly = false,
     standalone_binary_circuit = true,
     from_let = false,
+    from_ref = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1581,6 +1589,7 @@ function p_binaryopcall(
         opkind in KSet"&& ||" && standalone_binary_circuit,
         is_short_form_function,
         is_assignment(cst),
+        false,
     )
 
     # @info "abcd" t.metadata nest
@@ -1594,9 +1603,14 @@ function p_binaryopcall(
         end
     end
 
-    if (from_curly && opkind in KSet"<: >:" && !s.opts.whitespace_typedefs) ||
-       opkind === K":"
+    if opkind === K":"
         nospace = true
+    elseif s.opts.whitespace_typedefs && from_curly && opkind in KSet"<: >:"
+        nospace = false
+        has_ws = true
+    elseif s.opts.whitespace_ops_in_indices && from_ref
+        nospace = false
+        has_ws = true
     elseif opkind in KSet"in ∈ isa"
         nospace = false
     end
@@ -1611,9 +1625,10 @@ function p_binaryopcall(
             style,
             c,
             s;
-            nonest = nonest,
-            nospace = nospace,
-            from_curly = from_curly,
+            nonest,
+            nospace,
+            from_curly,
+            from_ref,
             kwargs...,
             can_separate_kwargs = can_separate_kwargs,
             standalone_binary_circuit = false,
@@ -1643,7 +1658,7 @@ function p_binaryopcall(
                 # TOOD: change this to is op_call? and remove whitespace_ops_in_indices
             # check
             if opkind === K":" &&
-                # is_opcall(c)
+                # is_opcall(c) && kind(c) !== K"parens"
                s.opts.whitespace_ops_in_indices &&
                !is_leaf(n) &&
                !is_iterable(n)
@@ -1683,10 +1698,6 @@ function p_binaryopcall(
     if nest
         # for indent, will be converted to `indent` if needed
         insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
-        # idx = findlast(n -> n.typ === PLACEHOLDER, t.nodes)
-        # if idx !== nothing
-        #     insert!(t.nodes::Vector{FST}, idx + 1, Placeholder(0))
-        # end
     end
 
     t
@@ -2383,6 +2394,7 @@ function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
                 a,
                 s;
                 kwargs...,
+                from_ref = true,
                 nonest = true,
                 nospace = !s.opts.whitespace_ops_in_indices,
             )

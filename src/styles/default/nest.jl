@@ -56,12 +56,13 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         return
     end
 
-    # if fst.typ === FunctionN &&
-    #    s.opts.long_to_short_function_def &&
-    #    fst.ref !== nothing &&
-    #    defines_function(fst.ref[])
-    #     long_to_short_function_def!(fst, s)
-    # end
+    if fst.typ === FunctionN &&
+       s.opts.long_to_short_function_def &&
+        !isnothing(fst.metadata) &&
+       fst.metadata.is_long_form_function
+
+        long_to_short_function_def!(fst, s)
+    end
 
     lineage = get(kwargs, :lineage, FNode[])
     push!(lineage, fst.typ)
@@ -87,7 +88,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
            line_margin > s.opts.margin &&
-           fst.metadata !== nothing &&
+            !isnothing(fst.metadata) &&
            fst.metadata.is_short_form_function
             # !parent_is(fst.ref[], n -> n.head == :let)
             short_to_long_function_def!(fst, s)

@@ -102,11 +102,12 @@ struct Metadata
     op_dotted::Bool
     is_standalone_shortcircuit::Bool
     is_short_form_function::Bool
-    ia_assignment::Bool
+    is_assignment::Bool
+    is_long_form_function::Bool
 end
 
 function Metadata(k::JuliaSyntax.Kind, dotted::Bool)
-    return Metadata(k, dotted, false, false, false)
+    return Metadata(k, dotted, false, false, false, false)
 end
 
 """
