@@ -61,7 +61,7 @@ function is_binaryop_nestable(::YASStyle, cst::JuliaSyntax.GreenNode)
     return true
 end
 
-function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_import(ds::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Import, cst, nspaces(s))
 
@@ -116,10 +116,10 @@ function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         override = (i > 1 && kind(childs[i-1]) === K"{") || kind(a) === K"}"
 
         if kind(a) === K","
-            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
-                add_node!(t, Placeholder(nws), s)
-            end
+            add_node!(t, n, s; join_lines = true)
+            add_node!(t, Placeholder(nws), s)
+        end
         else
             add_node!(
                 t,
@@ -144,6 +144,8 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(TupleN, cst, nspaces(s))
 
+    nargs = length(get_args(cst))
+
     childs = children(cst)
     for (i, a) in enumerate(childs)
         n = if kind(a) === K"=" && haschildren(a)
@@ -155,8 +157,10 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         override = (i > 1 && kind(childs[i-1]) === K"(") || kind(a) === K")"
 
         if kind(a) === K","
-            add_node!(t, n, s; join_lines = true)
-            if needs_placeholder(childs, i + 1, K")")
+            if nargs == 1
+                add_node!(t, n, s; join_lines = true)
+            elseif needs_placeholder(childs, i + 1, K")")
+                add_node!(t, n, s; join_lines = true)
                 add_node!(t, Placeholder(1), s)
             end
         else
@@ -174,10 +178,10 @@ end
 
 function p_tuple(
     ys::YASStyle,
-    nodes::Vector{JuliaSyntax.GreenNode{T}},
+    nodes::Vector{JuliaSyntax.GreenNode},
     s::State;
     kwargs...,
-) where {T}
+)
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
     for (i, a) in enumerate(nodes)
@@ -258,12 +262,12 @@ function p_call(
     # and use `p_call` from `DefaultStyle` instead to allow both
     # `caller(something,...)` and `caller(\n,...)`.
     # if caller_in_list(cst, s.opts.variable_call_indent)
-    #     return p_call(DefaultStyle(style), cst, s)
+    #     return p_call(DefaultStyle(style), cst, s; can_separate_kwargs, kwargs...)
     # end
 
     t = FST(Call, cst, nspaces(s))
-
     childs = children(cst)
+
     for (i, a) in enumerate(childs)
         k = kind(a)
         n = if k == K"=" && haschildren(a)
@@ -324,11 +328,10 @@ function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
 
         override = (i > 1 && kind(childs[i-1]) === K"[") || k === K"]"
 
-        if k === K","
-            add_node!(t, n, s; join_lines = true)
-            # figure out if we need to put a placeholder
+        if kind(a) === K","
             if needs_placeholder(childs, i + 1, K"]")
-                add_node!(t, Placeholder(1), s)
+            add_node!(t, n, s; join_lines = true)
+            add_node!(t, Placeholder(1), s)
             end
         else
             add_node!(
@@ -349,6 +352,8 @@ function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     st = kind(cst) === K"vcat" ? 1 : 2
 
     childs = children(cst)
+    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, st+1)
+
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
         override = i == st + 1 || kind(a) === K"]"
@@ -361,26 +366,15 @@ function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
             add_node!(t, n, s, join_lines = true)
-            if needs_placeholder(childs, i + 1, K"]")
-                add_node!(t, Placeholder(1), s)
-            end
         else
-            join_lines = i == st + 1 ? true : t.endline == n.startline
-            add_node!(t, n, s, join_lines = join_lines, override_join_lines_based_on_source = override)
 
-            j = i + 1
-            is_last_arg = false
-            while j <= length(childs) && !is_last_arg
-                k = kind(childs[j])
-                if !JuliaSyntax.is_whitespace(k)
-                    k === K"]" && (is_last_arg = true)
-                    break
-                end
-                j += 1
-            end
-            if !is_last_arg && j <= length(childs)
+            join_lines = i == st + 1 ? true : t.endline == n.startline
+
+            if i > first_arg_idx && join_lines
                 add_node!(t, Placeholder(1), s)
             end
+
+            add_node!(t, n, s, join_lines = join_lines, override_join_lines_based_on_source = override)
         end
     end
     t
@@ -392,37 +386,40 @@ function p_typedvcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
 end
 
 function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ys)
-    t = FST(Ncat, nspaces(s))
-    st = kind(cst) === K"ncat" ? 2 : 3
-
-    last_was_semicolon = false
-
-    childs = children(cst)
-    for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs...)
-        override = i == st + 1 || kind(a) === K"]"
-
-        if kind(a) === K"["
-            add_node!(t, n, s, join_lines = true)
-        elseif kind(a) === K"]"
-            add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
-        else
-            if kind(a) === K";"
-                add_node!(t, n, s; join_lines = true)
-                last_was_semicolon = true
-            elseif JuliaSyntax.is_whitespace(a)
-                add_node!(t, n, s; join_lines = true)
-            else
-                if last_was_semicolon
-                    add_node!(t, Placeholder(1), s)
-                    last_was_semicolon = false
-                end
-                add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
-            end
-        end
-    end
+    t = p_vcat(ys, cst, s; kwargs...)
+    t.typ = Ncat
     t
+
+    # style = getstyle(ys)
+    # t = FST(Ncat, nspaces(s))
+    #
+    # last_was_semicolon = false
+    #
+    # childs = children(cst)
+    # for (i, a) in enumerate(childs)
+    #     n = pretty(style, a, s; kwargs...)
+    #     override = i == st + 1 || kind(a) === K"]"
+    #
+    #     if kind(a) === K"["
+    #         add_node!(t, n, s, join_lines = true)
+    #     elseif kind(a) === K"]"
+    #         add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
+    #     else
+    #         if kind(a) === K";"
+    #             add_node!(t, n, s; join_lines = true)
+    #             last_was_semicolon = true
+    #         elseif JuliaSyntax.is_whitespace(a)
+    #             add_node!(t, n, s; join_lines = true)
+    #         else
+    #             if last_was_semicolon
+    #                 add_node!(t, Placeholder(1), s)
+    #                 last_was_semicolon = false
+    #             end
+    #             add_node!(t, n, s; join_lines = true, override_join_lines_based_on_source=override)
+    #         end
+    #     end
+    # end
+    # t
 end
 function p_typedncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     t = p_ncat(ys, cst, s; kwargs...)
@@ -446,8 +443,8 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         override = (i > 1 && kind(childs[i-1]) === K"[") || kind(a) === K"]"
 
         if kind(a) === K","
-            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"]")
+                add_node!(t, n, s; join_lines = true)
                 add_node!(t, Placeholder(1), s)
             end
         else
@@ -619,8 +616,8 @@ function p_whereopcall(
             )
             s.indent -= s.opts.indent
         elseif kind(a) === K","
-            add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
+                add_node!(t, pretty(style, a, s; kwargs...), s, join_lines = true)
                 add_node!(t, Placeholder(nws), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
@@ -679,40 +676,18 @@ function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
     has_for_kw = findfirst(n -> kind(n) === K"for", childs) !== nothing
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s)
-        if JuliaSyntax.is_keyword(a)
-            if is_block(childs[i-1])
+        n = pretty(style, a, s; kwargs..., from_for = has_for_kw)
+        if JuliaSyntax.is_keyword(a) && !haschildren(a)
+            idx = findprev(n -> !JuliaSyntax.is_whitespace(n), childs, i-1)
+            if !isnothing(idx) && is_block(childs[idx])
                 add_node!(t, Newline(), s)
             elseif from_iterable
                 add_node!(t, Placeholder(1), s)
-            else
+            elseif !isnothing(idx)
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s, join_lines = true)
             add_node!(t, Whitespace(1), s)
-
-            if !is_gen(childs[i+1])
-                tupargs = JuliaSyntax.GreenNode[]
-                for j in i+1:length(cst)
-                    push!(tupargs, childs[j])
-                end
-
-                # verify this is not another for loop
-                any(b -> kind(b) === K"for", tupargs) && continue
-
-                tup = p_tuple(style, tupargs, s; kwargs...)
-                if has_for_kw
-                    for nn in tup.nodes
-                        eq_to_in_normalization!(
-                            nn,
-                            s.opts.always_for_in,
-                            s.opts.for_in_replacement,
-                        )
-                    end
-                end
-                add_node!(t, tup, s; join_lines = true)
-                break
-            end
         elseif kind(a) === K","
             add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")

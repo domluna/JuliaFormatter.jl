@@ -1,3 +1,4 @@
+
 function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ys)
 
@@ -20,22 +21,36 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
         end
     end
 
-    f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
+
+    function find_next_ph_or_nl(nodes::Vector{FST}, idx::Int)
+        while idx < length(nodes)
+            n = nodes[idx]
+            if n.typ === PLACEHOLDER || n.typ === NEWLINE
+                return idx
+            elseif n.typ === Parameters
+                return find_next_ph_or_nl(n.nodes, 1)
+            end
+            idx += 1
+        end
+        return nothing
+    end
 
     nodes = fst.nodes::Vector
+
     for (i, n) in enumerate(nodes)
-        if i == 3
+        if is_opener(n)
             # The indent is set here to handle the edge
             # case where the first argument of Call is
             # nestable.
             # ref https://github.com/domluna/JuliaFormatter.jl/issues/387
-            fst.indent = s.line_offset
+            fst.indent = s.line_offset + 1
         end
 
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
-            si = findnext(f, nodes, i + 1)
+            # si = findnext(find_next_ph_or_nl, nodes, i + 1)
+            si = find_next_ph_or_nl(nodes, i+1)
             nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_gen(n)
             n.indent = fst.indent
@@ -45,7 +60,11 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
             diff = fst.indent - fst[i].indent
             add_indent!(n, s, diff)
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            if n.typ === Parameters
+                nest!(style, n, s; kwargs..., indent=fst.indent)
+            else
+                nest!(style, n, s; kwargs...)
+            end
         end
     end
 end
@@ -56,9 +75,13 @@ n_typedcomprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
     n_call!(ys, fst, s; kwargs...)
 n_typedvcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
 
-function n_tuple!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_tuple!(ys::YASStyle, fst::FST, s::State; indent = -1, kwargs...)
     style = getstyle(ys)
-    fst.indent = s.line_offset
+    if indent > -1
+        fst.indent = indent
+    else
+        fst.indent = s.line_offset
+    end
     nodes = fst.nodes::Vector
     length(nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
 
@@ -91,6 +114,7 @@ n_comprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
     n_tuple!(ys, fst, s; kwargs...)
 n_vcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_bracescat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
+n_cartesian_iterator!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ys)

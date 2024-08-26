@@ -379,14 +379,12 @@
                                  body
                              end)"""
         @test yasfmt(str_, 4, 32) == str
-    end
 
-    @testset "inline comments with arguments" begin
         # parsing error is newline is placed front of `for` here
-        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str_ = "var = ((x, y) for x = 1:10, y = 1:10)"
         str = """
-        var = (x, y) for x = 1:10,
-                         y = 1:10"""
+        var = ((x, y) for x = 1:10,
+                          y = 1:10)"""
         @test yasfmt(str_, 4, length(str_) - 1) == str
     end
 
@@ -516,15 +514,15 @@
           10]"""
         @test yasfmt(str_, 4, 14) == str
 
-        # trailing ; is removed
-        str_ = "(T[10 20; 30 40; 50 60;])"
+        str = "(T[10 20; 30 40; 50 60;])"
+        @test yasfmt(str, 4, 25) == str
         str = "(T[10 20; 30 40; 50 60])"
-        @test yasfmt(str_, 4, 24) == str
+        @test yasfmt(str, 4, 24) == str
 
-        str = """
+        str_ = """
         (T[10 20; 30 40;
            50 60])"""
-        @test yasfmt(str_, 4, 23) == str
+        @test yasfmt(str, 4, 23) == str_
     end
 
     @testset "imports no placeholder, no error" begin

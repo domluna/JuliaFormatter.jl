@@ -131,8 +131,6 @@ n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
 n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
     n_tuple!(bs, fst, s; kwargs...)
 n_bracescat!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
-    n_tuple!(bs, fst, s; kwargs...)
 n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
     n_tuple!(bs, fst, s; kwargs...)
 
@@ -150,8 +148,6 @@ end
 function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     style = getstyle(bs)
     lineage = get(kwargs, :lineage, FNode[])
-    @info "binary" lineage
-    # if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
     if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
         n_binaryopcall!(
             YASStyle(style),
@@ -168,8 +164,6 @@ end
 function n_chainopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     style = getstyle(bs)
     lineage = get(kwargs, :lineage, FNode[])
-    @info "chain" lineage
-    # if fst.ref !== nothing && parent_is(fst.ref[], n -> is_if(n) || n.head === :macrocall)
     if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
         n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent)
     else

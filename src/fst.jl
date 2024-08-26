@@ -861,6 +861,15 @@ function caller_in_list(fst::FST, list::Vector{String})
     return false
 end
 
+# function caller_in_list(t, list::Vector{String})
+#     if is_leaf(fst[1]) && (fst[1].val) in list
+#         return true
+#     elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && (fst[1][1].val) in list
+#         return true
+#     end
+#     return false
+# end
+
 function is_str_or_cmd(t)
     kind(t) in KSet"doc string cmdstring String CmdString"
 end

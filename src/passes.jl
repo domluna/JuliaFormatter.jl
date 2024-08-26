@@ -640,18 +640,20 @@ a = f(; x = 1, y = 2)
 function separate_kwargs_with_semicolon!(fst::FST)
     nodes = fst.nodes::Vector
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    kw_idx === nothing && return
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
+    isnothing(kw_idx) && return
+    parameters_idx = findfirst(n -> n.typ === Parameters, nodes)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, nodes[1:kw_idx-1])
     ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:kw_idx-1])
 
-    if sc_idx !== nothing && sc_idx > kw_idx
+    if !isnothing(parameters_idx) && parameters_idx > kw_idx
+        params_node = nodes[parameters_idx]
+        sc_idx = findfirst(n -> n.typ === SEMICOLON, params_node.nodes)
         # move ; prior to first kwarg
-        fst[sc_idx].val = ","
-        fst[sc_idx].typ = PUNCTUATION
-        if comma_idx === nothing
-            if ph_idx !== nothing
+        params_node[sc_idx].val = ","
+        params_node[sc_idx].typ = PUNCTUATION
+        if isnothing(comma_idx)
+            if !isnothing(ph_idx)
                 fst[ph_idx] = Placeholder(1)
                 insert!(fst, ph_idx, Semicolon())
             else
@@ -662,15 +664,15 @@ function separate_kwargs_with_semicolon!(fst::FST)
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
         end
-    elseif sc_idx === nothing && comma_idx === nothing
-        if ph_idx !== nothing
+    elseif isnothing(parameters_idx) && isnothing(comma_idx)
+        if !isnothing(ph_idx)
             fst[ph_idx] = Placeholder(1)
             insert!(fst, ph_idx, Semicolon())
         else
             insert!(fst, kw_idx, Placeholder(1))
             insert!(fst, kw_idx, Semicolon())
         end
-    elseif sc_idx === nothing
+    elseif isnothing(parameters_idx)
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
     end
@@ -788,12 +790,8 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
     for n in fst.nodes::Vector
         if is_leaf(n)
             continue
-        elseif (n.typ === Binary || n.typ === Chain)
-            # #TODO: replace with flags
-            # &&
-            #    (op_kind(n) === K"&&" || op_kind(n) === K"||") &&
-            #    n.ref[] !== nothing &&
-            #    is_standalone_shortcircuit(n.ref[])
+        elseif (n.typ === Binary || n.typ === Chain) &&
+            !isnothing(n.metadata) && n.metadata.is_standalone_shortcircuit
             _short_circuit_to_if!(n, s)
         else
             short_circuit_to_if_pass!(n, s)

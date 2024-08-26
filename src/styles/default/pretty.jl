@@ -671,15 +671,16 @@ function p_block(
             add_node!(t, n, s, max_padding = 0)
         end
     end
-
     t
 end
-p_block(
+function p_block(
     style::S,
-    nodes::Vector{JuliaSyntax.GreenNode},
+    nodes::Vector{JuliaSyntax.GreenNode{T}},
     s::State;
     kwargs...,
-) where {S<:AbstractStyle} = p_block(DefaultStyle(style), nodes, s; kwargs...)
+) where {S<:AbstractStyle,T}
+    p_block(DefaultStyle(style), nodes, s; kwargs...)
+end
 
 # Abstract
 function p_abstract(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
@@ -2404,8 +2405,11 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
+    st = kind(cst) in KSet"vcat ncat" ? 1 : 2
 
     childs = children(cst)
+    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, st+1)
+
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
         diff_line = t.endline != t.startline
@@ -2419,12 +2423,9 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             nest && add_node!(t, Placeholder(0), s)
             add_node!(t, n, s, join_lines = true)
         elseif JuliaSyntax.is_whitespace(a)
-            continue
+            add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K";"
             add_node!(t, n, s, join_lines = true)
-            if needs_placeholder(childs, i + 1, K"]")
-                add_node!(t, Placeholder(1), s)
-            end
         else
             # TODO: maybe we need to do something here?
             # [a b c d e f] is semantically different from [a b c; d e f]
@@ -2434,21 +2435,11 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             # else
             #     add_node!(t, n, s, join_lines = true)
             # end
-            add_node!(t, n, s, join_lines = true)
-
-            j = i + 1
-            is_last_arg = false
-            while j <= length(childs) && !is_last_arg
-                k = kind(childs[j])
-                if !JuliaSyntax.is_whitespace(k)
-                    k === K"]" && (is_last_arg = true)
-                    break
-                end
-                j += 1
-            end
-            if !is_last_arg && j <= length(childs)
+            if i > first_arg_idx
                 add_node!(t, Placeholder(1), s)
             end
+
+            add_node!(t, n, s, join_lines = true)
         end
     end
     t
@@ -2504,44 +2495,9 @@ p_typedhcat(
 ) where {S<:AbstractStyle} = p_typedhcat(DefaultStyle(style), cst, s; kwargs...)
 
 function p_ncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ds)
-    t = FST(Ncat, cst, nspaces(s))
-    st = kind(cst) === K"ncat" ? 2 : 3
-    args = get_args(cst)
-    nest =
-        length(args) > 0 && !(
-            length(args) == 1 &&
-            (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
-        )
-    last_was_semicolon = false
-
-    childs = children(cst)
-    for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs...)
-        diff_line = t.endline != t.startline
-        diff_line && (t.nest_behavior = AlwaysNest)
-
-        if kind(a) === K"["
-            add_node!(t, n, s, join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
-        elseif kind(a) === K"]"
-            nest && add_node!(t, Placeholder(0), s)
-            add_node!(t, n, s, join_lines = true)
-        else
-            if kind(a) === K";"
-                add_node!(t, n, s, join_lines = true)
-                last_was_semicolon = true
-            elseif JuliaSyntax.is_whitespace(a)
-            else
-                if last_was_semicolon
-                    add_node!(t, Placeholder(1), s)
-                    last_was_semicolon = false
-                end
-                add_node!(t, n, s, join_lines = true)
-            end
-        end
-    end
-    t
+    t = p_vcat(ds, cst, s; kwargs...)
+    t.typ = Ncat
+    return t
 end
 p_ncat(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
     p_ncat(DefaultStyle(style), cst, s; kwargs...)
@@ -2663,7 +2619,7 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs..., from_for = has_for_kw)
-        if JuliaSyntax.is_keyword(a)
+        if JuliaSyntax.is_keyword(a) && !haschildren(a)
             # for keyword can only be on the following line
             # if this expression is within an iterable expression
             if kind(a) === K"for" && from_iterable
