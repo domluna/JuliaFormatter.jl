@@ -60,20 +60,17 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         return
     end
 
-
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
-        !isnothing(fst.metadata) &&
+       !isnothing(fst.metadata) &&
        fst.metadata.is_long_form_function
-
         long_to_short_function_def!(fst, s)
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
            line_margin > s.opts.margin &&
-            !isnothing(fst.metadata) &&
+           !isnothing(fst.metadata) &&
            fst.metadata.is_short_form_function
-
             short_to_long_function_def!(fst, s, lineage)
         end
     elseif fst.typ === Conditional
@@ -82,7 +79,6 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
             conditional_to_if_block!(fst, s)
         end
     end
-
 
     if fst.typ === Import
         n_import!(style, fst, s; kwargs...)
@@ -877,7 +873,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
     indent >= 0 && (fst.indent = indent)
 
     if fst.typ === Chain &&
-        !isnothing(fst.metadata) &&
+       !isnothing(fst.metadata) &&
        fst.metadata.is_standalone_shortcircuit
         fst.indent += s.opts.indent
     end

@@ -247,7 +247,11 @@ function f(arg2, arg2)
 end
 ```
 """
-function short_to_long_function_def!(fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function short_to_long_function_def!(
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
     for i in length(lineage)-1:-1:1
@@ -255,7 +259,8 @@ function short_to_long_function_def!(fst::FST, s::State, lineage::Vector{Tuple{F
         # maybe need to know metadata too?
         if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
             continue
-        elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) || !isnothing(parent[2]) && parent[2].is_short_form_function
+        elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) ||
+               !isnothing(parent[2]) && parent[2].is_short_form_function
             return false
         else
             break
@@ -826,7 +831,8 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
         if is_leaf(n)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
-            !isnothing(n.metadata) && n.metadata.is_standalone_shortcircuit
+               !isnothing(n.metadata) &&
+               n.metadata.is_standalone_shortcircuit
             _short_circuit_to_if!(n, s)
         else
             short_circuit_to_if_pass!(n, s)

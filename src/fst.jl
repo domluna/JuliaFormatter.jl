@@ -549,9 +549,9 @@ function is_block(x::JuliaSyntax.GreenNode)
     return false
 end
 
-
 function is_block(x::FST)
-    x.typ in (Block, If, Do, Try, Begin, For, While, Let) || x.typ === Quote && x[1].val == "quote"
+    x.typ in (Block, If, Do, Try, Begin, For, While, Let) ||
+        x.typ === Quote && x[1].val == "quote"
 end
 
 function is_typedef(fst::FST)
@@ -898,8 +898,7 @@ end
 next_node_is(nn, k::JuliaSyntax.Kind) =
     kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
 
-next_node_is(nn, f::Function) =
-    f(nn) || (haschildren(nn) && next_node_is(nn[1], f))
+next_node_is(nn, f::Function) = f(nn) || (haschildren(nn) && next_node_is(nn[1], f))
 
 """
     add_node!(

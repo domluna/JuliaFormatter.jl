@@ -6,31 +6,31 @@
 
         str_ = "[a,]"
         str = "[a]"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "T[a,]"
         str = "T[a]"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "{a,}"
         str = "{a}"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "T{a,}"
         str = "T{a}"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "T(a,)"
         str = "T(a)"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "(a,)"
         str = "(a,)"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "@foo(a,)"
         str = "@foo(a,)"
-        @test yasfmt(str_,4, 92) == str
+        @test yasfmt(str_, 4, 92) == str
 
         str_ = "a = (arg1, arg2, arg3)"
         str = """

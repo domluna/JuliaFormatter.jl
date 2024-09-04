@@ -121,7 +121,8 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
     end
 
     idx = findfirst(n -> kind(n) === K"(", childs)
-    first_arg_idx = idx === nothing ? - 1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx+1)
+    first_arg_idx =
+        idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
         n = pretty(
@@ -167,7 +168,8 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
             max_padding = is_block(n) ? 0 : -1
             join_lines = t.endline == n.startline
 
-            if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") || next_node_is(childs[i], nn -> kind(nn) in KSet"NewlineWs Whitespace")
+            if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
+               next_node_is(childs[i], nn -> kind(nn) in KSet"NewlineWs Whitespace")
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s; join_lines, max_padding)

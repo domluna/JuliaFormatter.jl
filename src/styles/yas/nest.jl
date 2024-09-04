@@ -21,7 +21,6 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
         end
     end
 
-
     function find_next_ph_or_nl(nodes::Vector{FST}, idx::Int)
         while idx < length(nodes)
             n = nodes[idx]
@@ -50,7 +49,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             # si = findnext(find_next_ph_or_nl, nodes, i + 1)
-            si = find_next_ph_or_nl(nodes, i+1)
+            si = find_next_ph_or_nl(nodes, i + 1)
             nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_gen(n)
             n.indent = fst.indent
@@ -61,7 +60,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
             add_indent!(n, s, diff)
             n.extra_margin = 1
             if n.typ === Parameters
-                nest!(style, n, s; kwargs..., indent=fst.indent)
+                nest!(style, n, s; kwargs..., indent = fst.indent)
             else
                 nest!(style, n, s; kwargs...)
             end
@@ -115,7 +114,8 @@ n_comprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
     n_tuple!(ys, fst, s; kwargs...)
 n_vcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_bracescat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_cartesian_iterator!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
+n_cartesian_iterator!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+    n_tuple!(ys, fst, s; kwargs...)
 
 function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ys)
