@@ -29,7 +29,7 @@ function options(::SciMLStyle)
         normalize_line_endings = "unix",
         pipe_to_function_call = false,
         remove_extra_newlines = true,
-        short_to_long_function_def = false,
+        short_to_long_function_def = true,
         long_to_short_function_def = false,
         whitespace_in_kwargs = true,
         whitespace_ops_in_indices = true,
@@ -77,8 +77,7 @@ for f in [
     :p_filter,
 ]
     @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-        style = getstyle(ss)
-        $f(YASStyle(style), cst, s; kwargs...)
+        $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
     end
 end
 
@@ -93,138 +92,98 @@ for f in [
     :p_bracescat,
 ]
     @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-        style = getstyle(ss)
         if s.opts.yas_style_nesting
-            $f(YASStyle(style), cst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
         else
-            $f(DefaultStyle(style), cst, s; kwargs...)
+            $f(DefaultStyle(getstyle(ss)), cst, s; kwargs...)
         end
     end
 end
 
 function p_tuple(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ss)
     if s.opts.yas_style_nesting
-        p_tuple(YASStyle(style), cst, s; kwargs...)
+        p_tuple(YASStyle(getstyle(ss)), cst, s; kwargs...)
     else
-        p_tuple(DefaultStyle(style), cst, s; kwargs...)
+        p_tuple(DefaultStyle(getstyle(ss)), cst, s; kwargs...)
     end
 end
 
-function p_tuple(ss::SciMLStyle, nodes::Vector{JuliaSyntax.GreenNode}, s::State; kwargs...)
+function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ss)
-    p_tuple(YASStyle(style), nodes, s; kwargs...)
-end
-
-function p_begin(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ss)
-    t = FST(Begin, cst, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s), s)
-    if length(cst) == 2
-        add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
-    else
-        nodes = children(cst)[2:end-1]
-        s.indent += s.opts.indent
-        add_node!(t, p_block(style, nodes, s), s, max_padding = s.opts.indent)
-        s.indent -= s.opts.indent
-        add_node!(t, pretty(style, cst[end], s), s)
-    end
-    t
-end
-
-function p_macrocall(ys::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ys)
     t = FST(MacroCall, cst, nspaces(s))
 
-    args = get_args(cst)
-    nest =
-        length(args) > 0 && !(
-            length(args) == 1 &&
-            (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
+    childs = children(cst)
+    has_closer = is_closer(childs[end])
+    is_macroblock = !has_closer
+
+    if is_macroblock
+        t.typ = MacroBlock
+    end
+
+    idx = findfirst(n -> kind(n) === K"(", childs)
+    first_arg_idx = idx === nothing ? - 1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx+1)
+
+    for (i, a) in enumerate(childs)
+        n = pretty(
+            style,
+            a,
+            s;
+            kwargs...,
+            can_separate_kwargs = false,
+            standalone_binary_circuit = false,
+            # nospace = kind(a) === K"=" && haschildren(a),
         )
-    has_closer = is_closer(cst[end])
 
-    !has_closer && (t.typ = MacroBlock)
-    nospace = length(2:length(cst)-1) > 1
+        override = (i == first_arg_idx) || kind(a) === K")"
 
-    for (i, a) in enumerate(children(cst))
-        # Yes:
-        # `@parameters a=a b=b`
-        #
-        # No:
-        # `@parameters a = a b = b`
-        n = pretty(style, a, s; nospace = nospace)
-        if JuliaSyntax.is_macro_name(a)
+        if JuliaSyntax.is_macro_name(a) || kind(a) === K"("
             add_node!(t, n, s, join_lines = true)
-            if JuliaSyntax.is_whitespace(kind(cst[i+1]))
+        elseif kind(a) === K","
+            add_node!(t, n, s; join_lines = true)
+            if needs_placeholder(childs, i + 1, K")")
+                add_node!(t, Placeholder(1), s)
+            end
+        elseif kind(a) === K"parameters"
+            if n_args(cst) == n_args(a)
+                # There are no arguments prior to params
+                # so we can remove the initial placeholder.
+                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
+                idx !== nothing && (t[idx] = Whitespace(0))
+            end
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
+        elseif JuliaSyntax.is_whitespace(a)
+            add_node!(t, n, s, join_lines = true)
+        elseif is_macroblock
+            if n.typ === MacroBlock && t[end].typ === WHITESPACE
+                t[end] = Placeholder(length(t[end].val))
+            end
+
+            max_padding = is_block(n) ? 0 : -1
+            join_lines = t.endline == n.startline
+
+            if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") || next_node_is(childs[i], nn -> kind(nn) in KSet"NewlineWs Whitespace")
                 add_node!(t, Whitespace(1), s)
             end
-        elseif kind(a) === "," && i < length(cst) && !is_punc(cst[i+1])
-            add_node!(t, n, s, join_lines = true)
-            add_node!(t, Placeholder(1), s)
-        elseif is_closer(n)
-            add_node!(
-                t,
-                n,
-                s,
-                join_lines = true,
-                override_join_lines_based_on_source = true,
-            )
-        elseif i > 1 && is_opener(cst[i-1])
-            add_node!(
-                t,
-                n,
-                s,
-                join_lines = true,
-                override_join_lines_based_on_source = true,
-            )
-        elseif t.typ === MacroBlock
-            if has_closer
-                add_node!(t, n, s, join_lines = true)
-                if i < length(cst) - 1 && kind(cst[i+1]) != K"parameters"
-                    add_node!(t, Whitespace(1), s)
-                end
-            else
-                padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s, join_lines = true, max_padding = padding)
-                i < length(cst) && add_node!(t, Whitespace(1), s)
-            end
+            add_node!(t, n, s; join_lines, max_padding)
         else
-            if has_closer
-                add_node!(t, n, s, join_lines = true)
-            else
-                padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s, join_lines = true, max_padding = padding)
-            end
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
         end
     end
     # move placement of @ to the end
     #
     # @Module.macro -> Module.@macro
     t[1] = move_at_sign_to_the_end(t[1], s)
-    t
-end
-
-function p_unaryopcall(ds::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    style = getstyle(ds)
-    t = FST(Unary, cst, nspaces(s))
-    for c in children(children(cst))
-        if kind(c) === K"Whitespace"
-            add_node!(t, Whitespace(1), s)
-        else
-            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
-        end
-    end
-    # if length(cst) == 1
-    #     add_node!(t, pretty(style, cst[1], s), s, join_lines = true)
-    # elseif CSTParser.isidentifier(cst[2]) && startswith(cst[2].val, "ᶜ")
-    #     add_node!(t, pretty(style, cst[1], s), s)
-    #     add_node!(t, Whitespace(1), s)
-    #     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    # else
-    #     add_node!(t, pretty(style, cst[1], s), s)
-    #     add_node!(t, pretty(style, cst[2], s), s, join_lines = true)
-    # end
     t
 end

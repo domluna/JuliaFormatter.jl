@@ -15,28 +15,28 @@ for f in [
     :n_filter!,
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
-        style = getstyle(ss)
-        $f(YASStyle(style), fst, s; kwargs...)
+        $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
     end
 end
 
-function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
-    style = getstyle(ss)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
-    if line_margin > s.opts.margin && fst.ref !== nothing && defines_function(fst.ref[])
-        transformed = short_to_long_function_def!(fst, s)
-        transformed && nest!(style, fst, s; kwargs...)
-    end
-
-    if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
-        n_binaryopcall!(DefaultStyle(style), fst, s; kwargs..., indent = indent)
-        return
-    end
-
-    start_line_offset = s.line_offset
-    walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
-    nest!(style, fst[end], s; kwargs...)
-end
+# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
+#     style = getstyle(ss)
+#     line_margin = s.line_offset + length(fst) + fst.extra_margin
+#     if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
+#         transformed = short_to_long_function_def!(fst, s)
+#         transformed && nest!(style, fst, s; kwargs...)
+#         return
+#     end
+#
+#     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
+#         n_binaryopcall!(DefaultStyle(style), fst, s; kwargs..., indent = indent)
+#         return
+#     end
+#
+#     start_line_offset = s.line_offset
+#     walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
+#     nest!(style, fst[end], s; kwargs...)
+# end
 
 function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
@@ -89,7 +89,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     if has_closer
         fst[end].indent = fst.indent
     end
-    if fst.typ !== TupleN || has_closer
+    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
         fst.indent += s.opts.indent
     end
 
@@ -103,7 +103,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     end
 
     optimal_placeholders =
-        find_optimal_nest_placeholders(fst, start_line_offset, s.opts.margin)
+        find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)
@@ -151,6 +151,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
+
                 nest!(style, n, s; kwargs...)
             end
         end
@@ -186,9 +187,9 @@ for f in [
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         style = getstyle(ss)
         if s.opts.yas_style_nesting
-            $f(YASStyle(style), fst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
         else
-            _n_tuple!(style, fst, s; kwargs...)
+            _n_tuple!(getstyle(ss), fst, s; kwargs...)
         end
     end
 end

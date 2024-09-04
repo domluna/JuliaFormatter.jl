@@ -318,9 +318,25 @@ function is_macrodoc(fst::FST)
 end
 
 function is_macrostr(t)
-    kind(t) == K"macrocall" &&
-        haschildren(t) &&
-        kind(t[1]) in KSet"StringMacroName CmdMacroName core_@cmd"
+    if kind(t) == K"macrocall" && haschildren(t)
+        return contains_macrostr(t[1])
+    end
+    return false
+end
+
+function contains_macrostr(t)
+    if kind(t) in KSet"StringMacroName CmdMacroName core_@cmd"
+        return true
+    elseif kind(t) === "quote"
+        return contains_macrostr(t[1])
+    elseif kind(t) === K"." && haschildren(t)
+        for c in reverse(children(t))
+            if contains_macrostr(c)
+                return true
+            end
+        end
+    end
+    return false
 end
 
 function is_func_call(t::JuliaSyntax.GreenNode)
@@ -533,16 +549,9 @@ function is_block(x::JuliaSyntax.GreenNode)
     return false
 end
 
+
 function is_block(x::FST)
-    x.typ === If && return true
-    x.typ === Do && return true
-    x.typ === Try && return true
-    x.typ === Begin && return true
-    x.typ === For && return true
-    x.typ === While && return true
-    x.typ === Let && return true
-    x.typ === Quote && x[1].val == "quote" && return true
-    return false
+    x.typ in (Block, If, Do, Try, Begin, For, While, Let) || x.typ === Quote && x[1].val == "quote"
 end
 
 function is_typedef(fst::FST)
@@ -616,16 +625,13 @@ end
 
 function is_chain(x::JuliaSyntax.GreenNode)
     kind(x) === K"call" || return false
-    # if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
-    #     return false
-    # end
     nops, nargs = _callinfo(x)
     return nops > 1 && nargs > 2
 end
 
 function is_assignment(x::FST)
-    if x.typ === Binary && is_assignment(op_kind(x))
-        return true
+    if x.typ === Binary
+        return !isnothing(x.metadata) && x.metadata.is_assignment
     end
 
     if (
@@ -642,7 +648,6 @@ function is_assignment(x::FST)
 end
 
 function is_assignment(t::JuliaSyntax.GreenNode)
-    # return JuliaSyntax.is_prec_assignment(t)
     if JuliaSyntax.is_prec_assignment(t)
         return !any(c -> kind(c) in KSet"in ∈", children(t))
     end
@@ -678,9 +683,11 @@ function is_function_like_lhs(node::JuliaSyntax.GreenNode)
     return false
 end
 
-function nest_block(cst::JuliaSyntax.GreenNode)
-    is_if(cst) && return true
-    kind(cst) in KSet"do try for while let" && return true
+function has_leading_whitespace(n::JuliaSyntax.GreenNode)
+    kind(n) === K"Whitespace" && return true
+    if haschildren(n) && length(children(n)) > 0
+        return has_leading_whitespace(n[1])
+    end
     return false
 end
 
@@ -723,7 +730,9 @@ function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing
     JuliaSyntax.is_operator(cst) && return cst
     if is_binary(cst) || kind(cst) === K"comparison" || is_chain(cst) || is_unary(cst)
         for c in children(cst)
-            if JuliaSyntax.is_operator(c)
+            if kind(cst) === K"dotcall" && kind(c) === K"."
+                continue
+            elseif JuliaSyntax.is_operator(c)
                 return c
             end
         end
@@ -745,13 +754,14 @@ function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
 end
 
 function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
-    if fst.metadata !== nothing
-        return fst.metadata.op_kind
-    end
-    if fst.ref === nothing
-        return nothing
-    end
-    op_kind(fst.ref[])
+    return isnothing(fst.metadata) ? nothing : fst.metadata.op_kind
+    # if fst.metadata !== nothing
+    #     return fst.metadata.op_kind
+    # end
+    # if fst.ref === nothing
+    #     return nothing
+    # end
+    # op_kind(fst.ref[])
 end
 
 # """
@@ -862,14 +872,9 @@ function caller_in_list(fst::FST, list::Vector{String})
     return false
 end
 
-# function caller_in_list(t, list::Vector{String})
-#     if is_leaf(fst[1]) && (fst[1].val) in list
-#         return true
-#     elseif !is_leaf(fst[1]) && is_leaf(fst[1][1]) && (fst[1][1].val) in list
-#         return true
-#     end
-#     return false
-# end
+function caller_in_list(caller::AbstractString, list::Vector{String})
+    return caller in list
+end
 
 function is_str_or_cmd(t)
     kind(t) in KSet"doc string cmdstring String CmdString"
@@ -888,11 +893,13 @@ function needs_placeholder(
         j += 1
     end
     return false
-    # return true  # If we reach the end without finding a non-whitespace character
 end
 
 next_node_is(nn, k::JuliaSyntax.Kind) =
     kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
+
+next_node_is(nn, f::Function) =
+    f(nn) || (haschildren(nn) && next_node_is(nn[1], f))
 
 """
     add_node!(
@@ -1120,6 +1127,13 @@ function add_node!(
         t.len = max(t.len, length(n) + max_padding)
     else
         t.len += length(n)
+    end
+
+    if n.typ === Parameters
+        for nn in n.nodes
+            push!(tnodes, nn)
+        end
+        return
     end
 
     push!(tnodes, n)

@@ -57,7 +57,7 @@ function add_indent!(fst::FST, s::State, indent::Int)
 end
 
 function gettreeval(fst::FST)
-    if fst.val !== nothing
+    if !isnothing(fst.val)
         return fst.val
     end
     ss = ""
@@ -342,7 +342,6 @@ function find_optimal_nest_placeholders(
         return best_split
     end
 
-    fst_line_offset = fst.indent
     # Calculate best splits for each number of segments s
     segments = Tuple{Int,Int}[]
     for s in 1:N
@@ -350,9 +349,9 @@ function find_optimal_nest_placeholders(
         fits = true
         for (i, s) in enumerate(segments)
             if i == 1
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= initial_offset + dp[first(s), last(s)] <= max_margin
             else
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= initial_offset + dp[first(s), last(s)] <= max_margin
             end
         end
         fits && break

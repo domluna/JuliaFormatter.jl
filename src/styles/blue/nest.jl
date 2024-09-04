@@ -147,8 +147,8 @@ end
 
 function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     style = getstyle(bs)
-    lineage = get(kwargs, :lineage, FNode[])
-    if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
+    lineage = get(kwargs, :lineage, Tuple{FNode,Metadata}[])
+    if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_binaryopcall!(
             YASStyle(style),
             fst,
@@ -163,8 +163,8 @@ end
 
 function n_chainopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     style = getstyle(bs)
-    lineage = get(kwargs, :lineage, FNode[])
-    if length(lineage) > 1 && lineage[end-1] in (If, MacroCall, MacroBlock)
+    lineage = get(kwargs, :lineage, Tuple{FNode,Metadata}[])
+    if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent)
     else
         n_block!(DefaultStyle(style), fst, s; kwargs..., indent = s.line_offset)

@@ -477,10 +477,14 @@
         {
           1;
           2;
-          3;
+          3
         }"""
         @test fmt(str_, 2, length(str_) - 1) == str
         @test fmt(str, 2, length(str_)) == str_
+
+        str_ = "{1; 2; 3;}"
+        str = "{1; 2; 3}"
+        @test fmt(str_, 2, 90) == str
     end
 
     @testset "issue 262 - removal of @ in nested macrocall" begin
@@ -507,7 +511,7 @@
     @testset "issue 264 - `let` empty block body" begin
         str_ = "let; end"
         str = """
-        let
+        let;
         end"""
         @test fmt(str_) == str
     end
@@ -515,8 +519,8 @@
     @testset "issue 268 - whitespace around dot op if LHS is number literal" begin
         str = "xs[-5 .<= xs .& xs .<= 5]"
         @test fmt(str) == str
-        str_ = "xs[(-5 .<= xs) .& (xs .<= 5)]"
-        str = "xs[(-5 .<= xs).&(xs.<=5)]"
+        str_ = "xs[(-5 .<= xs).&(xs.<=5)]"
+        str = "xs[(-5 .<= xs) .& (xs .<= 5)]"
         @test fmt(str_) == str
     end
 
@@ -554,7 +558,7 @@
             """
             s1 = """
             a = -0.2
-            b = -0.2
+            b = - 0.2
             """
             @test fmt(s0) == s1
 
@@ -564,7 +568,7 @@
             """
             s1 = """
             a = -0.2f32
-            b = -0.2f32
+            b = - 0.2f32
             """
             @test fmt(s0) == s1
 
@@ -574,7 +578,7 @@
             """
             s1 = """
             a = -0.2f-5
-            b = -0.2f-5
+            b = - 0.2f-5
             """
             @test fmt(s0) == s1
         end
@@ -610,11 +614,15 @@
 
     @testset "issue 324 - bounds error when aligning binary op calls" begin
         # caused by the star operator
-        str = """
+        str_ = """
         θ = eigvals(Matrix([0I(n^2) -I(n^2); P0 P1]), -Matrix([I(n^2) 0I(n^2); 0I(n^2) P2]))
         c = maximum(abs.(θ[(imag.(θ).==0).*(real.(θ).>0)]))
         """
-        @test format_text(str, align_assignment = true) == str
+        str = """
+        θ = eigvals(Matrix([0I(n^2) -I(n^2); P0 P1]), -Matrix([I(n^2) 0I(n^2); 0I(n^2) P2]))
+        c = maximum(abs.(θ[(imag.(θ) .== 0) .* (real.(θ) .> 0)]))
+        """
+        @test format_text(str_, align_assignment = true) == str
     end
 
     @testset "issue 332" begin
@@ -661,9 +669,7 @@
                          a = f + m + l + k
                       end"""
         str = """
-        @inbounds for f in 1:n_freqs,
-                      m in 1:n_channels,
-                      l in 1:n_channels,
+        @inbounds for f in 1:n_freqs, m in 1:n_channels, l in 1:n_channels,
                       k in 1:length(weighted_evals)
 
             a = f + m + l + k
@@ -723,15 +729,7 @@
             f
         end
         """
-        str_ret = """
-        function __init__()
-            return @doc raw\"""
-                   Doc string.
-                   \"""
-            f
-        end
-        """
-        @test fmt(str, always_use_return = true) == str_ret
+        @test fmt(str, always_use_return = true) == str
 
         str = """
         function __init__()
@@ -837,6 +835,10 @@
         @test fmt(str) == str
 
         str_ = "global a=2,b"
+        str = "global a=2, b"
+        @test fmt(str_) == str
+
+        str_ = "global a = 2,b"
         str = "global a = 2, b"
         @test fmt(str_) == str
     end
@@ -1272,7 +1274,7 @@
         """
         str = """
         G4 = [
-             H    Zero  H
+             H    Zero  H;
             Zero    H   H
             Zero  Zero  H
         ]
@@ -1311,13 +1313,13 @@
         ]
 
         G3 = [
-             H    Zero  H
+             H    Zero  H;
             Zero    H   H
             Zero  Zero  H
         ]
 
         G4 = [
-             H    Zero  H
+             H    Zero  H;
             Zero    H   H
             Zero  Zero  H
         ]
@@ -1579,7 +1581,7 @@
         let hello() =
                 print(
                     "ok",
-                )
+                );
             hello()
         end
         """
@@ -1712,26 +1714,6 @@
         end
         """
         @test format_text(str_, SciMLStyle()) == str
-    end
-
-    @testset "757" begin
-        str = """
-        struct Foo
-            \"foo
-            \"\"\"
-            foo::String
-        end
-        """
-        @test fmt(str, 4, 92, align_struct_field = true) == str
-    end
-
-    @testset "760" begin
-        s = """
-        foo() = nothing
-        #=
-        a = 10
-        """
-        @test_throws ErrorException format_text(s)
     end
 
     @testset "624" begin

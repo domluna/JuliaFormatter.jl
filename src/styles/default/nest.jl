@@ -51,10 +51,15 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         return
     end
 
+    lineage = get(kwargs, :lineage, Tuple{FNode,Union{Nothing,Metadata}}[])
+    push!(lineage, (fst.typ, fst.metadata))
+    kwargs = (; kwargs..., lineage = lineage)
+
     if cant_nest(fst)
         walk(increment_line_offset!, fst, s)
         return
     end
+
 
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
@@ -62,11 +67,22 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
        fst.metadata.is_long_form_function
 
         long_to_short_function_def!(fst, s)
+    elseif fst.typ === Binary
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.short_to_long_function_def &&
+           line_margin > s.opts.margin &&
+            !isnothing(fst.metadata) &&
+           fst.metadata.is_short_form_function
+
+            short_to_long_function_def!(fst, s, lineage)
+        end
+    elseif fst.typ === Conditional
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.conditional_to_if && line_margin > s.opts.margin
+            conditional_to_if_block!(fst, s)
+        end
     end
 
-    lineage = get(kwargs, :lineage, FNode[])
-    push!(lineage, fst.typ)
-    kwargs = (; kwargs..., lineage = lineage)
 
     if fst.typ === Import
         n_import!(style, fst, s; kwargs...)
@@ -77,27 +93,9 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     elseif fst.typ === Where
         n_whereopcall!(style, fst, s; kwargs...)
     elseif fst.typ === Conditional
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.conditional_to_if && line_margin > s.opts.margin
-            conditional_to_if_block!(fst, s)
-            nest!(style, fst, s; kwargs...)
-        else
-            n_conditionalopcall!(style, fst, s; kwargs...)
-        end
+        n_conditionalopcall!(style, fst, s; kwargs...)
     elseif fst.typ === Binary
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.short_to_long_function_def &&
-           line_margin > s.opts.margin &&
-            !isnothing(fst.metadata) &&
-           fst.metadata.is_short_form_function
-            # !parent_is(fst.ref[], n -> n.head == :let)
-            short_to_long_function_def!(fst, s)
-        end
-        if fst.typ === Binary
-            n_binaryopcall!(style, fst, s; kwargs...)
-        else
-            nest!(style, fst, s; kwargs...)
-        end
+        n_binaryopcall!(style, fst, s; kwargs...)
     elseif fst.typ === Curly
         n_curly!(style, fst, s; kwargs...)
     elseif fst.typ === Call
@@ -840,14 +838,28 @@ n_binaryopcall!(
 
 function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ds)
-    nest!(
-        style,
-        fst.nodes::Vector,
-        s,
-        fst.indent;
-        kwargs...,
-        extra_margin = fst.extra_margin,
-    )
+
+    @info "" fst.indent map(n -> (n.typ, n.indent), fst.nodes)
+
+    nest_placeholder = false
+    for (i, n) in enumerate(fst.nodes)
+        if n.typ === NEWLINE && fst.nodes[i+1].typ === Block
+            s.line_offset = fst.nodes[i+1].indent
+        elseif n.typ === NOTCODE && fst.nodes[i+1].typ === Block
+            s.line_offset = fst.nodes[i+1].indent
+        elseif n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER #&& nest_placeholder
+            @info "" s.line_offset
+            # fst[i] = Newline(length = n.len)
+            # s.line_offset = fst.indent
+            n.extra_margin = fst.extra_margin
+            nest!(style, n, s; kwargs...)
+        else
+            n.extra_margin = fst.extra_margin
+            nest!(style, n, s; kwargs...)
+        end
+    end
 end
 n_for!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s; kwargs...)
@@ -864,9 +876,8 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
     has_nl = false
     indent >= 0 && (fst.indent = indent)
 
-    # TODO: might have to set this somewhere?
     if fst.typ === Chain &&
-       fst.metadata !== nothing &&
+        !isnothing(fst.metadata) &&
        fst.metadata.is_standalone_shortcircuit
         fst.indent += s.opts.indent
     end

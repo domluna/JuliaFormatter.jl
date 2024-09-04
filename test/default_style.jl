@@ -163,9 +163,9 @@
     @testset "dot op" begin
         @test fmt("10 .^ a") == "10 .^ a"
         @test fmt("10.0 .^ a") == "10.0 .^ a"
-        @test fmt("a.^b") == "a.^b"
-        @test fmt("a.^10.") == "a.^10.0"
-        @test fmt("a.//10") == "a.//10"
+        @test fmt("a.^b") == "a .^ b"
+        @test fmt("a.^10.") == "a .^ 10.0"
+        @test fmt("a.//10") == "a .// 10"
 
         @test fmt("a .^ b") == "a .^ b"
         @test fmt("a .^ 10.") == "a .^ 10.0"
@@ -378,7 +378,7 @@
         @test fmt("a :: b::c") == "a :: b::c"
         @test fmt("a      :: b   :: c") == "a :: b :: c"
         # issue 74
-        @test fmt("0:1/3:2") == "0:1/3:2"
+        @test fmt("0:1/3:2") == "0:(1/3):2"
         @test fmt("2a") == "2a"
         # issue 251
         @test fmt("2(a   + 1)") == "2(a + 1)"

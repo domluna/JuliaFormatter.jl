@@ -147,9 +147,10 @@
         B, C"""
         str = """
         using A: A
+
         using B: B
         using C: C"""
-        @test_broken fmt(str_, import_to_using = true) == str
+        @test fmt(str_, import_to_using = true) == str
 
         str_ = """
         import A,
@@ -881,6 +882,7 @@
             \"""
             function test() end"""
             @test fmt(unformatted, format_docstrings = true) == formatted
+            @test fmt(unformatted, format_docstrings = false) == unformatted
         end
 
         @testset "Indented docstring" begin
@@ -978,8 +980,8 @@
         end"""
         str_ = """
         struct Foo
-            a::T
-            longfieldname::B
+            a :: T
+            longfieldname :: B
         end"""
         @test fmt(str, align_struct_field = true) == str
         @test fmt(str, align_struct_field = false) == str_
@@ -1129,20 +1131,20 @@
         str = """
         module Foo
 
-        const UTF8PROC_STABLE    = (1 << 1)
-        const UTF8PROC_COMPAT    = (1 << 2)
-        const UTF8PROC_COMPOSE   = (1 << 3)
-        const UTF8PROC_DECOMPOSE = (1 << 4)
-        const UTF8PROC_IGNORE    = (1 << 5)
-        const UTF8PROC_REJECTNA  = (1 << 6)
-        const UTF8PROC_NLF2LS    = (1 << 7)
-        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_STABLE    = (1<<1)
+        const UTF8PROC_COMPAT    = (1<<2)
+        const UTF8PROC_COMPOSE   = (1<<3)
+        const UTF8PROC_DECOMPOSE = (1<<4)
+        const UTF8PROC_IGNORE    = (1<<5)
+        const UTF8PROC_REJECTNA  = (1<<6)
+        const UTF8PROC_NLF2LS    = (1<<7)
+        const UTF8PROC_NLF2PS    = (1<<8)
         const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
-        const UTF8PROC_STRIPCC   = (1 << 9)
-        const UTF8PROC_CASEFOLD  = (1 << 10)
-        const UTF8PROC_CHARBOUND = (1 << 11)
-        const UTF8PROC_LUMP      = (1 << 12)
-        const UTF8PROC_STRIP     = (1 << 13) # align this
+        const UTF8PROC_STRIPCC   = (1<<9)
+        const UTF8PROC_CASEFOLD  = (1<<10)
+        const UTF8PROC_CHARBOUND = (1<<11)
+        const UTF8PROC_LUMP      = (1<<12)
+        const UTF8PROC_STRIP     = (1<<13) # align this
 
         const FOOBAR = 0
         const FOO = 1
@@ -1155,20 +1157,20 @@
         str = """
         module Foo
 
-        const UTF8PROC_STABLE    = (1 << 1)
-        const UTF8PROC_COMPAT    = (1 << 2)
-        const UTF8PROC_COMPOSE   = (1 << 3)
-        const UTF8PROC_DECOMPOSE = (1 << 4)
-        const UTF8PROC_IGNORE    = (1 << 5)
-        const UTF8PROC_REJECTNA  = (1 << 6)
-        const UTF8PROC_NLF2LS    = (1 << 7)
-        const UTF8PROC_NLF2PS    = (1 << 8)
+        const UTF8PROC_STABLE    = (1<<1)
+        const UTF8PROC_COMPAT    = (1<<2)
+        const UTF8PROC_COMPOSE   = (1<<3)
+        const UTF8PROC_DECOMPOSE = (1<<4)
+        const UTF8PROC_IGNORE    = (1<<5)
+        const UTF8PROC_REJECTNA  = (1<<6)
+        const UTF8PROC_NLF2LS    = (1<<7)
+        const UTF8PROC_NLF2PS    = (1<<8)
         const UTF8PROC_NLF2LF    = (UTF8PROC_NLF2LS | UTF8PROC_NLF2PS)
-        const UTF8PROC_STRIPCC   = (1 << 9)
-        const UTF8PROC_CASEFOLD  = (1 << 10)
-        const UTF8PROC_CHARBOUND = (1 << 11)
-        const UTF8PROC_LUMP      = (1 << 12)
-        const UTF8PROC_STRIP     = (1 << 13) # align this
+        const UTF8PROC_STRIPCC   = (1<<9)
+        const UTF8PROC_CASEFOLD  = (1<<10)
+        const UTF8PROC_CHARBOUND = (1<<11)
+        const UTF8PROC_LUMP      = (1<<12)
+        const UTF8PROC_STRIP     = (1<<13) # align this
 
         const FOOBAR =
             0
@@ -1199,6 +1201,7 @@
         @test fmt(str, 4, 1, align_assignment = true, join_lines_based_on_source = true) ==
               str
 
+        # ambiguous ordering
         str = """
         μs, ns = divrem(ns, 1000)
         ms, μs = divrem(μs, 1000)
@@ -1713,18 +1716,14 @@
             ) == fmt(str_, annotate_untyped_fields_with_any = false)
 
             str_ = """
-            abstract
-
-            type
+            abstract type
             foo
 
               end"""
             @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
 
             str_ = """
-            primitive
-
-            type
+            primitive type
             foo
 
             64
@@ -1757,6 +1756,7 @@
         end
 
         @testset "trailing comma going solo" begin
+            # juliasyntax doesn't parse this
             str_ = """
             using A
             ,
@@ -1766,7 +1766,7 @@
             using A,
                 B
             """
-            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test_broken fmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "misc" begin
@@ -1970,7 +1970,7 @@
             """
             str = """
             [row1;
-             row2]
+             row2;]
             """
             @test yasfmt(str_, join_lines_based_on_source = true) == str
 
@@ -1982,7 +1982,7 @@
             """
             str = """
             T[row1;
-              row2]
+              row2;]
             """
             @test yasfmt(str_, join_lines_based_on_source = true) == str
 

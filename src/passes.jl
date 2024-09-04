@@ -100,7 +100,7 @@ end
 
 function pipe_to_function_call(fst::FST)
     nodes = FST[]
-    dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
+    dot = !isnothing(fst.metadata) && fst.metadata.op_dotted
     arg2 = fst[end]
 
     # is RHS is an anon function?
@@ -135,6 +135,12 @@ function pipe_to_function_call(fst::FST)
                arg2[end][end].typ === IDENTIFIER
             n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
             push!(nodes, n)
+        elseif dot &&
+               arg2.typ === Accessor &&
+               arg2[end].typ === Quote &&
+               arg2[end][end].typ === IDENTIFIER
+            n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+            push!(nodes, n)
         elseif dot && arg2.typ === Brackets
             idx = findfirst(n -> n.typ === Binary && op_kind(n) === K"->", arg2.nodes)
             if idx !== nothing
@@ -161,7 +167,7 @@ function import_to_usings(fst::FST, s::State)
         return FST[]
 
     # handle #723 "import ..f" should not become "using ..f: f"
-    if length(nodes) == 3 && !is_leaf(nodes[3]) && nodes[3].nodes[1].val == "."
+    if length(nodes) == 3 && nodes[3].typ === ImportPath && length(nodes[3].nodes) > 1
         return FST[]
     end
 
@@ -241,16 +247,20 @@ function f(arg2, arg2)
 end
 ```
 """
-function short_to_long_function_def!(fst::FST, s::State)
+function short_to_long_function_def!(fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
     (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
-    # TODO: what does this mean?
-    # do not apply if parent is a function or macro definition
-    # parent_is(
-    #     fst.ref[],
-    #     n -> is_function_or_macro_def(n) || n.head == :macrocall;
-    #     ignore = n -> is_block(n),
-    # ) && return false
+    for i in length(lineage)-1:-1:1
+        parent = lineage[i]
+        # maybe need to know metadata too?
+        if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
+            continue
+        elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) || !isnothing(parent[2]) && parent[2].is_short_form_function
+            return false
+        else
+            break
+        end
+    end
 
     # 3 cases
     #
@@ -485,10 +495,7 @@ function prepend_return!(fst::FST, s::State)
     length(fst.nodes::Vector{FST}) == 0 && return
     ln = fst[end]
     is_block(ln) && return
-    ln.typ === Return && return
-    ln.typ === MacroCall && return
-    ln.typ === MacroBlock && return
-    ln.typ === MacroStr && return
+    ln.typ in (Return, MacroCall, MacroBlock, MacroStr) && return
     if length(fst.nodes::Vector) > 2 &&
        (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
         # The last node is has a docstring prior to it so a return should not be prepended
@@ -650,18 +657,19 @@ a = f(; x = 1, y = 2)
 ```
 """
 function separate_kwargs_with_semicolon!(fst::FST)
-    nodes = fst.nodes::Vector
-    kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    isnothing(kw_idx) && return
-    parameters_idx = findfirst(n -> n.typ === Parameters, nodes)
+    kw_idx = findfirst(n -> n.typ === Kw, fst.nodes)
+    parameters_idx = findfirst(n -> n.typ === Parameters, fst.nodes)
+    isnothing(kw_idx) && isnothing(parameters_idx) && return
+
+    # if Parameters node has been unrolled the semicolon will be in the current scope
+    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
     # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, nodes[1:kw_idx-1])
-    ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:kw_idx-1])
+    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
 
     if !isnothing(parameters_idx) && parameters_idx > kw_idx
-        params_node = nodes[parameters_idx]
+        params_node = fst.nodes[parameters_idx]
         sc_idx = findfirst(n -> n.typ === SEMICOLON, params_node.nodes)
-        # move ; prior to first kwarg
         params_node[sc_idx].val = ","
         params_node[sc_idx].typ = PUNCTUATION
         if isnothing(comma_idx)
@@ -676,7 +684,22 @@ function separate_kwargs_with_semicolon!(fst::FST)
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
         end
-    elseif isnothing(parameters_idx) && isnothing(comma_idx)
+    elseif !isnothing(sc_idx) && sc_idx > kw_idx
+        fst[sc_idx].val = ","
+        fst[sc_idx].typ = PUNCTUATION
+        if isnothing(comma_idx)
+            if !isnothing(ph_idx)
+                fst[ph_idx] = Placeholder(1)
+                insert!(fst, ph_idx, Semicolon())
+            else
+                insert!(fst, kw_idx, Placeholder(1))
+                insert!(fst, kw_idx, Semicolon())
+            end
+        else
+            fst[comma_idx].val = ";"
+            fst[comma_idx].typ = SEMICOLON
+        end
+    elseif isnothing(parameters_idx) && isnothing(sc_idx) && isnothing(comma_idx)
         if !isnothing(ph_idx)
             fst[ph_idx] = Placeholder(1)
             insert!(fst, ph_idx, Semicolon())
@@ -684,7 +707,7 @@ function separate_kwargs_with_semicolon!(fst::FST)
             insert!(fst, kw_idx, Placeholder(1))
             insert!(fst, kw_idx, Semicolon())
         end
-    elseif isnothing(parameters_idx)
+    elseif !isnothing(comma_idx)
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
     end

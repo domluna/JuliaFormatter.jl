@@ -223,6 +223,7 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
     # We need to iterate to a fixpoint because the result of short to long
     # form isn't properly formatted
     formatted_text = format_text(text, style, opts)
+    maxiters == 0 && return formatted_text
     iter = 1
     while formatted_text != text
         iter > maxiters &&
