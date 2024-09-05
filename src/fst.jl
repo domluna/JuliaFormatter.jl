@@ -755,13 +755,6 @@ end
 
 function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
     return isnothing(fst.metadata) ? nothing : fst.metadata.op_kind
-    # if fst.metadata !== nothing
-    #     return fst.metadata.op_kind
-    # end
-    # if fst.ref === nothing
-    #     return nothing
-    # end
-    # op_kind(fst.ref[])
 end
 
 # """
@@ -824,7 +817,7 @@ for i = 1:10 body end
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
-        idx === nothing && return
+        isnothing(idx) && return
         op = fst[idx]
         valid_for_in_op(op.val) || return
 
@@ -846,7 +839,7 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         end
     elseif fst.typ === Block || fst.typ === Brackets || fst.typ === Filter
         past_if = false
-        for (i, n) in enumerate(fst.nodes::Vector)
+        for n in fst.nodes::Vector
             if n.typ === KEYWORD && n.val == "if"
                 # [x for x in xs if x in 1:length(ys)]
                 # we do not want to convert the binary operations after an "if" keyword.

@@ -60,22 +60,22 @@
         @test yasfmt(str_, 4, 15) == str
         @test yasfmt(str_, 4, 1) == str
 
-        str_ = "a = {arg1, arg2, arg3}"
+        str_ = "a = {arg1,arg2,arg3}"
         str = """
-        a = {arg1,arg2,arg3}"""
-        @test yasfmt(str_, 4, 20) == str
+        a = {arg1, arg2, arg3}"""
+        @test yasfmt(str_, 4, 22) == str
 
         str = """
-        a = {arg1,arg2,
+        a = {arg1, arg2,
              arg3}"""
-        @test yasfmt(str_, 4, 19) == str
-        @test yasfmt(str_, 4, 15) == str
+        @test yasfmt(str_, 4, 21) == str
+        @test yasfmt(str_, 4, 16) == str
 
         str = """
         a = {arg1,
              arg2,
              arg3}"""
-        @test yasfmt(str_, 4, 14) == str
+        @test yasfmt(str_, 4, 15) == str
         @test yasfmt(str_, 4, 1) == str
 
         str_ = "a = Union{arg1, arg2, arg3}"

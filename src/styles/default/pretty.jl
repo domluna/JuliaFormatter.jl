@@ -1234,7 +1234,7 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
             s.indent -= s.opts.indent
 
             if t.nodes[end-2].typ !== NOTCODE
-                insert!(t, length(t.nodes) - 1, Placeholder(0))
+                insert!(t, length(t.nodes)-1, Placeholder(0))
             end
         elseif !JuliaSyntax.is_whitespace(c)
             add_node!(t, Whitespace(1), s)
@@ -1463,6 +1463,12 @@ function p_chainopcall(
         nonest = true
     end
     nws = nospace && kind(cst) !== K"dotcall" ? 0 : 1
+    op_dotted = kind(cst) === K"dotcall"
+
+    t.metadata = Metadata(
+        opkind,
+        op_dotted,
+    )
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
@@ -1868,6 +1874,15 @@ p_conditionalopcall(
 function p_unaryopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Unary, cst, nspaces(s))
+
+    opkind = op_kind(cst)
+    op_dotted = kind(cst) === K"dotcall"
+
+    t.metadata = Metadata(
+        opkind,
+        op_dotted,
+    )
+
     for (i, c) in enumerate(children(cst))
         if i > 1 && kind(c) in KSet"Whitespace"
             add_node!(t, Whitespace(1), s)
