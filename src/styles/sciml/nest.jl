@@ -40,8 +40,9 @@ end
 
 function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
+    nested = false
     if s.opts.yas_style_nesting
-        nest!(
+        nested |= nest!(
             YASStyle(style),
             fst.nodes::Vector,
             s,
@@ -53,7 +54,7 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         base_indent = fst.indent
         add_indent!(fst[3], s, s.opts.indent)
 
-        nest!(
+        nested |= nest!(
             ss,
             fst.nodes::Vector,
             s,
@@ -72,6 +73,7 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         walk(f, fst[3], s)
         s.line_offset = lo
     end
+    return nested
 end
 
 function n_macro!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
@@ -82,7 +84,6 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
-    idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     has_closer = is_closer(fst[end])
     start_line_offset = s.line_offset
 
@@ -102,7 +103,11 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         false
     end
 
+    nested = false
     optimal_placeholders = find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
+    if length(optimal_placeholders) > 0
+        nested = true
+    end
 
     for i in optimal_placeholders
         fst[i] = Newline(length = fst[i].len)
@@ -123,6 +128,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     if fst.typ !== MacroCall && has_closer && length(placeholder_inds) > 0
         fst[placeholder_inds[end]] = Whitespace(0)
     end
+    idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
 
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         for (i, n) in enumerate(nodes)
@@ -130,8 +136,9 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
                 si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
-                if has_closer && !nested && n.startline == fst[end].startline
+                nested2 = nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+                nested |= nested2
+                if has_closer && !nested2 && n.startline == fst[end].startline
                     # trailing types are automatically converted, undo this if
                     # there is no nest and the closer is on the same in the
                     # original source.
@@ -143,15 +150,15 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s; kwargs...)
             elseif has_closer && (i == 1 || i == length(nodes))
-                nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s; kwargs...)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
 
-                nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s; kwargs...)
             end
         end
 
@@ -161,7 +168,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     else
         extra_margin = fst.extra_margin
         has_closer && (extra_margin += 1)
-        nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
+        nested |= nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
     end
 
     s.line_offset = start_line_offset
@@ -169,7 +176,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     s.line_offset = start_line_offset
     walk(increment_line_offset!, fst, s)
 
-    return
+    return nested
 end
 
 for f in [
@@ -184,7 +191,6 @@ for f in [
     :n_bracescat!,
 ]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
-        style = getstyle(ss)
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
         else
@@ -194,22 +200,20 @@ for f in [
 end
 
 function n_vect!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
-    style = getstyle(ss)
     if s.opts.yas_style_nesting
         # Allow a line break after the opening brackets without aligning
-        n_vect!(DefaultStyle(style), fst, s; kwargs...)
+        n_vect!(DefaultStyle(getstyle(ss)), fst, s; kwargs...)
     else
-        _n_tuple!(style, fst, s; kwargs...)
+        _n_tuple!(getstyle(ss), fst, s; kwargs...)
     end
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
-        style = getstyle(ss)
         if s.opts.yas_style_nesting
-            $f(YASStyle(style), fst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
         else
-            $f(DefaultStyle(style), fst, s; kwargs...)
+            $f(DefaultStyle(getstyle(ss)), fst, s; kwargs...)
         end
     end
 end

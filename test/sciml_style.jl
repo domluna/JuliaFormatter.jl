@@ -49,10 +49,26 @@
     @test format_text(str, SciMLStyle()) == formatted_str
 
     str = raw"""
+    @parameters a = b b = c
+    """
+    formatted_str = raw"""
+    @parameters a=b b=c
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = raw"""
     @parameters a=b
     """
     formatted_str = raw"""
+    @parameters a=b
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = raw"""
     @parameters a = b
+    """
+    formatted_str = raw"""
+    @parameters a=b
     """
     @test format_text(str, SciMLStyle()) == formatted_str
 

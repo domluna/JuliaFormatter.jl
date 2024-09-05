@@ -36,6 +36,7 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
 
     nodes = fst.nodes::Vector
 
+    nested = false
     for (i, n) in enumerate(nodes)
         if is_opener(n)
             # The indent is set here to handle the edge
@@ -50,22 +51,23 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
         elseif n.typ === PLACEHOLDER
             # si = findnext(find_next_ph_or_nl, nodes, i + 1)
             si = find_next_ph_or_nl(nodes, i + 1)
-            nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+            nested |= nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         else
             diff = fst.indent - fst[i].indent
             add_indent!(n, s, diff)
             n.extra_margin = 1
             if n.typ === Parameters
-                nest!(style, n, s; kwargs..., indent = fst.indent)
+                nested |= nest!(style, n, s; kwargs..., indent = fst.indent)
             else
-                nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s; kwargs...)
             end
         end
     end
+    return nested
 end
 
 n_curly!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
@@ -87,23 +89,25 @@ function n_tuple!(ys::YASStyle, fst::FST, s::State; indent = -1, kwargs...)
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 
+    nested = false
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(f, nodes, i + 1)
-            nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+            nested |= nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         else
             diff = fst.indent - fst[i].indent
             add_indent!(n, s, diff)
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         end
     end
+    return nested
 end
 n_braces!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
 n_vect!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
@@ -127,21 +131,23 @@ function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     add_indent!(fst[1], s, diff)
 
     nodes = fst.nodes::Vector
+    nested = false
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
-            nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+            nested |= nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_gen(n)
             n.indent = fst.indent
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         else
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         end
     end
+    return nested
 end
 n_filter!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_generator!(ys, fst, s; kwargs...)
 
@@ -153,22 +159,25 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
     fst[1].extra_margin = Blen + fst.extra_margin
 
     nodes = fst.nodes::Vector
+
+    nested = false
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
-            nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+            nested |= nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif is_opener(n) && n.val == "{"
             fst.indent = s.line_offset + 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         elseif i == 1 || i == length(nodes)
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         else
             n.extra_margin = 1
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         end
     end
+    return nested
 end
 
 function n_using!(ys::YASStyle, fst::FST, s::State; kwargs...)
@@ -181,16 +190,18 @@ function n_using!(ys::YASStyle, fst::FST, s::State; kwargs...)
     else
         fst.indent += sum(length.(fst[1:idx+1]))
     end
+    nested = false
     for (i, n) in enumerate(nodes)
         if n.typ === PLACEHOLDER
             si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
-            nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+            nested |= nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         else
-            nest!(style, n, s; kwargs...)
+            nested |= nest!(style, n, s; kwargs...)
         end
     end
+    return nested
 end
 n_export!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_using!(ys, fst, s; kwargs...)
 n_import!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_using!(ys, fst, s; kwargs...)
@@ -209,8 +220,7 @@ function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1, kwa
     style = getstyle(ys)
     nodes = fst.nodes::Vector
     if findfirst(n -> n.typ === PLACEHOLDER, nodes) !== nothing
-        n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
-        return
+        return n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
     end
 
     walk(increment_line_offset!, nodes[1:end-1], s, fst.indent)

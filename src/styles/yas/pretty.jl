@@ -669,14 +669,7 @@ function p_whereopcall(
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         else
-            n = pretty(
-                style,
-                a,
-                s;
-                kwargs...,
-                nospace = !s.opts.whitespace_typedefs,
-                from_typedef = after_where,
-            )
+            n = pretty(style, a, s; kwargs..., from_typedef = after_where)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "{")

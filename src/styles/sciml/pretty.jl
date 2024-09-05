@@ -108,6 +108,8 @@ function p_tuple(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     end
 end
 
+function p_kw_in_macro(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...) end
+
 function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ss)
     t = FST(MacroCall, cst, nspaces(s))
@@ -124,16 +126,28 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
     first_arg_idx =
         idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
+    n_kw_args = count(n -> kind(n) === K"=" && haschildren(n), childs)
+
     for (i, a) in enumerate(childs)
-        n = pretty(
-            style,
-            a,
-            s;
-            kwargs...,
-            can_separate_kwargs = false,
-            standalone_binary_circuit = false,
-            # nospace = kind(a) === K"=" && haschildren(a),
-        )
+        n = if kind(a) == K"=" && haschildren(a)
+            p_kw_in_macro(
+                style,
+                a,
+                s;
+                kwargs...,
+                can_separate_kwargs = false,
+                standalone_binary_circuit = false,
+            )
+        else
+            pretty(
+                style,
+                a,
+                s;
+                kwargs...,
+                can_separate_kwargs = false,
+                standalone_binary_circuit = false,
+            )
+        end
 
         override = (i == first_arg_idx) || kind(a) === K")"
 

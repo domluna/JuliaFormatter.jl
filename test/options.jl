@@ -127,10 +127,10 @@
         str = "a:(b+c):(d-e)"
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
 
-        # issue 180
         str_ = "s[m+i+1]"
+        # issue 180
         str = "s[m+i+1]"
-        @test fmt(str, m = 1) == str
+        @test fmt(str, m = 1, whitespace_ops_in_indices = false) == str
 
         str = "s[m + i + 1]"
         @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str

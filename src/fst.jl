@@ -656,8 +656,8 @@ end
 is_assignment(::Nothing) = false
 
 function is_pairarrow(cst::JuliaSyntax.GreenNode)
-    op = get_binary_op(cst)
-    kind(op) === K"=>"
+    op = get_op(cst)
+    isnothing(op) ? false : kind(op) === K"=>"
 end
 
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
@@ -738,11 +738,6 @@ function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing
         end
     end
     return nothing
-end
-
-function get_binary_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
-    !is_binary(cst) && return nothing
-    return get_op(cst)
 end
 
 function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}

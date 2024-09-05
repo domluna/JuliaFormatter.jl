@@ -16,11 +16,13 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     else
         false
     end
+    nested = false
 
     if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         fidx = fidx::Int
         args_range = fidx+1:lidx-1
         args_margin = sum(length.(fst[args_range]))
+        nested = true
 
         nest_to_oneline =
             if can_nest(fst) && (fst.indent + s.opts.indent + args_margin <= s.opts.margin)
@@ -51,7 +53,6 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
             false
         end
 
-        line_offset = s.line_offset
         if has_closer
             fst[end].indent = fst.indent
         end
@@ -75,8 +76,8 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
                         nodes,
                         i + 1,
                     )
-                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
-                    if has_closer && !nested && n.startline == fst[end].startline
+                    nested2 = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    if has_closer && !nested2 && n.startline == fst[end].startline
                         # trailing types are automatically converted, undo this if
                         # there is no nest and the closer is on the same in the
                         # original source.
@@ -117,8 +118,9 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     else
         extra_margin = fst.extra_margin
         has_closer && (extra_margin += 1)
-        nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
+        nested |= nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
     end
+    return nested
 end
 n_call!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
 n_curly!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
@@ -142,7 +144,6 @@ function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     else
         n_conditionalopcall!(DefaultStyle(style), fst, s; kwargs...)
     end
-    return
 end
 
 function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)

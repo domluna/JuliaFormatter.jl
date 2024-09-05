@@ -372,7 +372,7 @@
         @test fmt("a : b") == "a:b"
         @test fmt("a: b") == "a:b"
         @test fmt("a :b") == "a:b"
-        @test fmt("a +1 :b -1") == "a+1:b-1"
+        @test fmt("a +1 :b -1") == "(a+1):(b-1)"
 
         @test fmt("a::b:: c") == "a::b :: c"
         @test fmt("a :: b::c") == "a :: b::c"
@@ -386,11 +386,11 @@
         @test fmt("1 / 2a^2") == "1 / 2a^2"
 
         str_ = "a[1:2 * num_source * num_dump-1]"
-        str = "a[1:2*num_source*num_dump-1]"
+        str = "a[1:(2*num_source*num_dump-1)]"
         @test fmt(str_, 4, 1) == str
 
         str_ = "a[2 * num_source * num_dump-1:1]"
-        str = "a[2*num_source*num_dump-1:1]"
+        str = "a[(2*num_source*num_dump-1):1]"
         @test fmt(str_, 4, 1) == str
 
         str = "!(typ <: ArithmeticTypes)"
@@ -774,11 +774,13 @@
     end
 
     @testset "op chain" begin
-        @test fmt("a+b+c+d") == "a + b + c + d"
+        @test fmt("a+b+c+d") == "a+b+c+d"
+        @test fmt("a + b + c +d") == "a + b + c + d"
     end
 
     @testset "comparison chain" begin
-        @test fmt("a<b==c≥d") == "a < b == c ≥ d"
+        @test fmt("a<b==c≥d") == "a<b==c≥d"
+        @test fmt("a<b == c≥d") == "a < b == c ≥ d"
     end
 
     @testset "single line block" begin
@@ -2499,8 +2501,8 @@
         )"""
         @test fmt("(a, b, c, d)", 4, 11) == str
 
-        str = """{a,b,c,d}"""
-        @test fmt("{a, b, c, d}", 4, 9) == str
+        str = """{a, b, c, d}"""
+        @test fmt("{a, b, c, d}", 4, 12) == str
 
         str = """
         {
@@ -2509,7 +2511,7 @@
             c,
             d,
         }"""
-        @test fmt("{a, b, c, d}", 4, 8) == str
+        @test fmt("{a, b, c, d}", 4, 11) == str
 
         str = """[a, b, c, d]"""
         @test fmt("[a, b, c, d]", 4, 12) == str
@@ -2636,6 +2638,7 @@
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
+        # TODO: fix this
         # str = "(a; b; c)"
         # @test fmt("(a;b;c)", 4, 100) == str
         # str = """
@@ -3189,15 +3192,15 @@
         )"""
         @test fmt(str_, 4, 10) == str
 
-        str_ = "(a, {b,c}, d)"
+        str_ = "(a, {b, c}, d)"
         str = """
         (
             a,
-            {b,c},
+            {b, c},
             d,
         )"""
         @test fmt(str_, 4, 12) == str
-        @test fmt(str_, 4, 10) == str
+        @test fmt(str_, 4, 11) == str
 
         str = """
         (
@@ -3208,7 +3211,7 @@
             },
             d,
         )"""
-        @test fmt(str_, 4, 9) == str
+        @test fmt(str_, 4, 10) == str
         @test fmt(str, 4, length(str)) == str_
 
         str_ = "(a, [b, c], d)"

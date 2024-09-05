@@ -35,11 +35,11 @@
         """
         str = """
         var = {
-            arg1,arg2
+            arg1, arg2
         }
         """
-        @test bluefmt(str_, 4, 16) == str
-        @test bluefmt(str_, 4, 13) == str
+        @test bluefmt(str_, 4, 17) == str
+        @test bluefmt(str_, 4, 14) == str
 
         str_ = """
         var = call(arg1,
