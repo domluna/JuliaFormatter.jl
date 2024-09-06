@@ -63,7 +63,7 @@ end
     include("default_style.jl")
     include("yas_style.jl")
     include("blue_style.jl")
-    # include("sciml_style.jl")
+    include("sciml_style.jl")
     if VERSION >= v"1.7"
         include("multidimensional_array.jl")
     end

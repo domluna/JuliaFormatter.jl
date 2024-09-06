@@ -1460,15 +1460,8 @@ p_if(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abstra
     p_if(DefaultStyle(style), cst, s; kwargs...)
 
 # Chain/Comparison
-function p_chainopcall(
-    ds::DefaultStyle,
-    cst::JuliaSyntax.GreenNode,
-    s::State;
-    nonest = false,
-    nospace = false,
-    kwargs...,
-)
-    t = p_binaryopcall(ds, cst, s; nospace, nonest, kwargs...)
+function p_chainopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    t = p_binaryopcall(ds, cst, s; kwargs...)
     t.typ = Chain
     t
 end
@@ -1536,11 +1529,11 @@ function p_binaryopcall(
     cst::JuliaSyntax.GreenNode,
     s::State;
     nonest = false,
-    nospace = false,
     from_typedef = false,
     standalone_binary_circuit = true,
     from_let = false,
     from_ref = false,
+    from_colon = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1577,6 +1570,7 @@ function p_binaryopcall(
 
     if opkind === K":"
         nospace = true
+        from_colon = true
     elseif opkind in KSet"in ∈ isa ."
         nospace = false
     elseif from_typedef && opkind in KSet"<: >:"
@@ -1595,6 +1589,10 @@ function p_binaryopcall(
             nospace = true
             has_ws = false
         end
+    elseif from_colon
+        nospace = true
+    else
+        nospace = false
     end
     nws = !nospace && has_ws ? 1 : 0
 
@@ -1612,32 +1610,53 @@ function p_binaryopcall(
             c,
             s;
             nonest,
-            nospace,
             from_typedef,
             from_ref,
+            from_colon,
             kwargs...,
             can_separate_kwargs = can_separate_kwargs,
             standalone_binary_circuit = false,
         )
 
-        if JuliaSyntax.is_operator(c) && !haschildren(c)
-            is_dot = kind(c) === K"."
+        is_dot = kind(c) === K"."
+        if is_dot && haschildren(c) && length(children(c)) == 2
+            # [.]
+            #   .
+            #   <=
+            ns = is_dot ? 1 : nws
 
             # Add whitespace before the operator, unless it's a dot in a dotted operator
-            if nws > 0
+            if ns > 0
+                add_node!(t, Whitespace(ns), s)
+            end
+            add_node!(t, n, s, join_lines = true)
+            # Add whitespace after the operator
+            if ns > 0
+                if nest
+                    add_node!(t, Placeholder(ns), s)
+                else
+                    add_node!(t, Whitespace(ns), s)
+                end
+            end
+            after_op = true
+        elseif JuliaSyntax.is_operator(c) && !haschildren(c)
+            ns = is_dot ? 1 : nws
+
+            # Add whitespace before the operator, unless it's a dot in a dotted operator
+            if ns > 0
                 if i > 1 && !(kind(childs[i-1]) === K".")  # Don't add space if previous was a dot
-                    add_node!(t, Whitespace(nws), s)
+                    add_node!(t, Whitespace(ns), s)
                 end
             end
 
             add_node!(t, n, s, join_lines = true)
 
             # Add whitespace after the operator
-            if !is_dot && nws > 0
+            if !is_dot && ns > 0
                 if nest
-                    add_node!(t, Placeholder(nws), s)
+                    add_node!(t, Placeholder(ns), s)
                 else
-                    add_node!(t, Whitespace(nws), s)
+                    add_node!(t, Whitespace(ns), s)
                 end
             end
 

@@ -252,14 +252,7 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
 end
 
 # Brackets
-function p_invisbrackets(
-    ys::YASStyle,
-    cst::JuliaSyntax.GreenNode,
-    s::State;
-    nonest = false,
-    nospace = false,
-    kwargs...,
-)
+function p_invisbrackets(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Brackets, cst, nspaces(s))
 
@@ -279,7 +272,7 @@ function p_invisbrackets(
         elseif kind(c) === K"block"
             pretty(style, c, s; kwargs..., from_quote = true)
         elseif is_opcall(c)
-            pretty(style, c, s; nonest = nonest, nospace = nospace, kwargs...)
+            pretty(style, c, s; kwargs...)
         else
             pretty(style, c, s; kwargs...)
         end
@@ -464,7 +457,6 @@ end
 function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(RefN, cst, nspaces(s))
-    nospace = !s.opts.whitespace_ops_in_indices
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)
@@ -472,7 +464,7 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
 
     for (i, a) in enumerate(childs)
         n = if is_opcall(a)
-            pretty(style, a, s; nonest = true, nospace = nospace, kwargs...)
+            pretty(style, a, s; nonest = true, kwargs...)
         else
             pretty(style, a, s; kwargs...)
         end

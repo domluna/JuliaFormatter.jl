@@ -129,25 +129,15 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
     n_kw_args = count(n -> kind(n) === K"=" && haschildren(n), childs)
 
     for (i, a) in enumerate(childs)
-        n = if kind(a) == K"=" && haschildren(a)
-            p_kw_in_macro(
-                style,
-                a,
-                s;
-                kwargs...,
-                can_separate_kwargs = false,
-                standalone_binary_circuit = false,
-            )
-        else
-            pretty(
-                style,
-                a,
-                s;
-                kwargs...,
-                can_separate_kwargs = false,
-                standalone_binary_circuit = false,
-            )
-        end
+        # kind(a) == K"=" && haschildren(a)
+        n = pretty(
+            style,
+            a,
+            s;
+            kwargs...,
+            can_separate_kwargs = false,
+            standalone_binary_circuit = false,
+        )
 
         override = (i == first_arg_idx) || kind(a) === K")"
 
