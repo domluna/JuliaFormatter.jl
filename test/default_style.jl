@@ -4527,4 +4527,9 @@ some_function(
         """
         @test fmt(str_, 4, 78) == str
     end
+
+    @testset "operators as arguments" begin
+        s = "a .* %"
+        fmt(s, 4, 100) == s
+    end
 end

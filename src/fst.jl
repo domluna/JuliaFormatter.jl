@@ -732,7 +732,7 @@ end
 
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     JuliaSyntax.is_operator(cst) && return cst
-    if is_binary(cst) || kind(cst) === K"comparison" || is_chain(cst) || is_unary(cst)
+    if is_binary(cst) || kind(cst) in KSet"comparison dotcall" || is_chain(cst) || is_unary(cst)
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue

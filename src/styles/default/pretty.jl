@@ -110,6 +110,8 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_comparison(style, t, s; kwargs...)
     elseif JuliaSyntax.is_operator(t) && haschildren(t)
         p_binaryopcall(style, t, s; kwargs...)
+    elseif kind(t) === K"dotcall"
+        p_binaryopcall(style, t, s; kwargs...)
     elseif k === K"parameters"
         p_parameters(style, t, s; kwargs...)
     elseif k === K"local"
@@ -1698,7 +1700,11 @@ function p_binaryopcall(
                 end
             end
             after_op = true
-        elseif kind(c) === opkind && !haschildren(c)
+        elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
+            # there are some weird cases where we can assign an operator a value so that
+            # the arguments are operators as well.
+            #
+            # a .* %
             ns = is_dot ? 1 : nws
 
             # Add whitespace before the operator, unless it's a dot in a dotted operator
