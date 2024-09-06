@@ -405,7 +405,7 @@ function p_literal(
                 ""
             else
                 fs = val[fidx:end]
-                val = val[1:fidx-1]
+                val = val[1:(fidx-1)]
                 fs
             end
             if findfirst(c -> c == 'e' || c == 'E', val) === nothing
@@ -1141,7 +1141,7 @@ function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
     empty_body = length(filter(n -> !JuliaSyntax.is_whitespace(n), childs)) == 2
 
     if empty_body
-        for c in childs[2:end-1]
+        for c in childs[2:(end-1)]
             pretty(style, c, s; kwargs...)
         end
         add_node!(t, Whitespace(1), s)
@@ -1150,7 +1150,7 @@ function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
         s.indent += s.opts.indent
         add_node!(
             t,
-            p_block(style, childs[2:end-1], s; kwargs...),
+            p_block(style, childs[2:(end-1)], s; kwargs...),
             s,
             max_padding = s.opts.indent,
         )
@@ -1496,7 +1496,6 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                     s;
                     kwargs...,
                     ignore_single_line = true,
-                    standalone_binary_circuit = false,
                 ),
                 s,
                 max_padding = s.opts.indent,
@@ -1700,7 +1699,7 @@ function p_binaryopcall(
                 end
             end
             after_op = true
-        # elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
+            # elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
         elseif JuliaSyntax.is_operator(c) && !haschildren(c)
             # there are some weird cases where we can assign an operator a value so that
             # the arguments are operators as well.
@@ -1814,7 +1813,7 @@ function p_whereopcall(
         from_typedef
     else
         from_typedef ||
-            any(c -> kind(c) in KSet"curly bracescat braces", childs[where_idx+1:end])
+        any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
     end
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 
