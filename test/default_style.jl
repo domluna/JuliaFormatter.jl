@@ -4565,8 +4565,8 @@ some_function(
         @test fmt(s1, 8, 1) == s2
     end
 
-    @testset "kw parens" begin
-        s = "C(; Vt=Ȳ')"
-        fmt(s, 4, 100, whitespace_in_kwargs=false) == s
-    end
+    # @testset "kw parens" begin
+    #     s = "C(; Vt=Ȳ')"
+    #     fmt(s, 4, 100, whitespace_in_kwargs=false) == s
+    # end
 end

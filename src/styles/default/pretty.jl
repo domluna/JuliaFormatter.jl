@@ -1490,13 +1490,7 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             s.indent += s.opts.indent
             add_node!(
                 t,
-                pretty(
-                    style,
-                    c,
-                    s;
-                    kwargs...,
-                    ignore_single_line = true,
-                ),
+                pretty(style, c, s; kwargs..., ignore_single_line = true),
                 s,
                 max_padding = s.opts.indent,
             )
@@ -1730,6 +1724,7 @@ function p_binaryopcall(
             add_node!(t, n, s; join_lines = true)
         else
             if opkind === K":" &&
+                # !s.whitespace_ops_in_indices &&
                is_opcall(c) &&
                kind(c) !== K"parens" &&
                op_kind(c) !== K"::"
