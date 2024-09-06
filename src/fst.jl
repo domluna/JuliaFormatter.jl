@@ -93,6 +93,10 @@ import Base: show
     As,
     NonStdIdentifier, # i.e. var"##iv369"
     ImportPath,
+    Juxtapose,
+    Break,
+    Continue,
+    Inert,
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)

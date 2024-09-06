@@ -108,6 +108,8 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_call(style, t, s; kwargs...)
     elseif k === K"comparison"
         p_comparison(style, t, s; kwargs...)
+    elseif JuliaSyntax.is_operator(t) && haschildren(t)
+        p_binaryopcall(style, t, s; kwargs...)
     elseif k === K"parameters"
         p_parameters(style, t, s; kwargs...)
     elseif k === K"local"
@@ -152,8 +154,14 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_filter(style, t, s; kwargs...)
     elseif k === K"juxtapose"
         p_juxtapose(style, t, s; kwargs...)
+    elseif k === K"break"
+        p_break(style, t, s; kwargs...)
+    elseif k === K"continue"
+        p_continue(style, t, s; kwargs...)
+    elseif k === K"inert"
+        p_inert(style, t, s; kwargs...)
     else
-        @warn "unknown node" kind(t) t s.offset span(t)
+        @warn "unknown node" kind(t) t cursor_loc(s)
         if is_leaf(t)
             s.offset += span(t)
             FST(NONE, 0, 0, 0, "")
@@ -284,7 +292,7 @@ p_punctuation(
 
 function p_juxtapose(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
-    t = FST(Unknown, cst, nspaces(s))
+    t = FST(Juxtapose, cst, nspaces(s))
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
@@ -298,6 +306,58 @@ p_juxtapose(
     s::State;
     kwargs...,
 ) where {S<:AbstractStyle} = p_juxtapose(DefaultStyle(style), cst, s; kwargs...)
+
+function p_continue(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    style = getstyle(ds)
+    t = FST(Continue, cst, nspaces(s))
+
+    for c in children(cst)
+        add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+    end
+
+    return t
+end
+p_continue(
+    style::S,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    kwargs...,
+) where {S<:AbstractStyle} = p_continue(DefaultStyle(style), cst, s; kwargs...)
+
+function p_break(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    style = getstyle(ds)
+    t = FST(Break, cst, nspaces(s))
+
+    for c in children(cst)
+        add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+    end
+
+    return t
+end
+p_break(
+    style::S,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    kwargs...,
+) where {S<:AbstractStyle} = p_break(DefaultStyle(style), cst, s; kwargs...)
+
+# $
+function p_inert(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+    style = getstyle(ds)
+    t = FST(Inert, cst, nspaces(s))
+
+    for c in children(cst)
+        add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+    end
+
+    return t
+end
+p_inert(
+    style::S,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    kwargs...,
+) where {S<:AbstractStyle} = p_inert(DefaultStyle(style), cst, s; kwargs...)
 
 function p_macrostr(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
@@ -1638,7 +1698,7 @@ function p_binaryopcall(
                 end
             end
             after_op = true
-        elseif JuliaSyntax.is_operator(c) && !haschildren(c)
+        elseif kind(c) === opkind && !haschildren(c)
             ns = is_dot ? 1 : nws
 
             # Add whitespace before the operator, unless it's a dot in a dotted operator
