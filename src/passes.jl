@@ -28,7 +28,7 @@ function flatten_binaryopcall(fst::FST; top = true)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
-    append!(nodes, fst[2:idx-1])
+    append!(nodes, fst[2:(idx-1)])
 
     if rhs_same_op
         append!(nodes, flatten_binaryopcall(rhs, top = false))
@@ -254,7 +254,7 @@ function short_to_long_function_def!(
 )
     (fst[1].typ !== Call && fst[1].typ !== Where) && return false
 
-    for i in length(lineage)-1:-1:1
+    for i in (length(lineage)-1):-1:1
         parent = lineage[i]
         # maybe need to know metadata too?
         if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
@@ -333,7 +333,6 @@ function short_to_long_function_def!(
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
-
 
     return true
 end
@@ -581,7 +580,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
     # Find the last occurrence of . and insert @ after it
     last_dot_index = findlast('.', val)
     if last_dot_index !== nothing
-        val = val[1:last_dot_index] * "@" * val[last_dot_index+1:end]
+        val = val[1:last_dot_index] * "@" * val[(last_dot_index+1):end]
     else
         # If there's no dot, add @ to the beginning
         val = "@" * val
@@ -602,7 +601,7 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     idx2 = findfirst(n -> n.typ === OPERATOR && n.val == ":", nodes)::Int
 
     block1 = FST(Block, fst.indent + s.opts.indent)
-    for n in nodes[idx1+1:idx2-1]
+    for n in nodes[(idx1+1):(idx2-1)]
         if n.typ === PLACEHOLDER ||
            n.typ === WHITESPACE ||
            n.typ === NEWLINE ||
@@ -666,38 +665,20 @@ a = f(; x = 1, y = 2)
 ```
 """
 function separate_kwargs_with_semicolon!(fst::FST)
-    kw_idx = findfirst(n -> n.typ === Kw, fst.nodes)
-    parameters_idx = findfirst(n -> n.typ === Parameters, fst.nodes)
-    isnothing(kw_idx) && isnothing(parameters_idx) && return
-
-    # if Parameters node has been unrolled the semicolon will be in the current scope
-    sc_idx = findfirst(n -> n.typ === SEMICOLON, fst.nodes)
+    nodes = fst.nodes::Vector
+    kw_idx = findfirst(n -> n.typ === Kw, nodes)
+    kw_idx === nothing && return
+    sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, fst.nodes[1:kw_idx-1])
-    ph_idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes[1:kw_idx-1])
+    comma_idx = findlast(is_comma, nodes[1:kw_idx-1])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:kw_idx-1])
 
-    if !isnothing(parameters_idx) && parameters_idx > kw_idx
-        params_node = fst.nodes[parameters_idx]
-        sc_idx = findfirst(n -> n.typ === SEMICOLON, params_node.nodes)
-        params_node[sc_idx].val = ","
-        params_node[sc_idx].typ = PUNCTUATION
-        if isnothing(comma_idx)
-            if !isnothing(ph_idx)
-                fst[ph_idx] = Placeholder(1)
-                insert!(fst, ph_idx, Semicolon())
-            else
-                insert!(fst, kw_idx, Placeholder(1))
-                insert!(fst, kw_idx, Semicolon())
-            end
-        else
-            fst[comma_idx].val = ";"
-            fst[comma_idx].typ = SEMICOLON
-        end
-    elseif !isnothing(sc_idx) && sc_idx > kw_idx
+    if sc_idx !== nothing && sc_idx > kw_idx
+        # move ; prior to first kwarg
         fst[sc_idx].val = ","
         fst[sc_idx].typ = PUNCTUATION
-        if isnothing(comma_idx)
-            if !isnothing(ph_idx)
+        if comma_idx === nothing
+            if ph_idx !== nothing
                 fst[ph_idx] = Placeholder(1)
                 insert!(fst, ph_idx, Semicolon())
             else
@@ -708,15 +689,15 @@ function separate_kwargs_with_semicolon!(fst::FST)
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
         end
-    elseif isnothing(parameters_idx) && isnothing(sc_idx) && isnothing(comma_idx)
-        if !isnothing(ph_idx)
+    elseif sc_idx === nothing && comma_idx === nothing
+        if ph_idx !== nothing
             fst[ph_idx] = Placeholder(1)
             insert!(fst, ph_idx, Semicolon())
         else
             insert!(fst, kw_idx, Placeholder(1))
             insert!(fst, kw_idx, Semicolon())
         end
-    elseif !isnothing(comma_idx)
+    elseif sc_idx === nothing
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
     end
@@ -772,7 +753,7 @@ function _short_circuit_to_if!(fst::FST, s::State)
             add_node!(brackets, Placeholder(0), s)
             # inner
             lhs = FST(Chain, fst.indent)
-            for n in nodes[1:idx-1]
+            for n in nodes[1:(idx-1)]
                 add_node!(lhs, n, s, join_lines = true)
             end
             # remove extra ws
@@ -797,7 +778,7 @@ function _short_circuit_to_if!(fst::FST, s::State)
     else
         # from idx-1 go backwards until we find a node that's not a
         lhs = FST(Chain, fst.indent)
-        for n in nodes[1:idx-1]
+        for n in nodes[1:(idx-1)]
             add_node!(lhs, n, s, join_lines = true)
         end
         # remove extra ws
@@ -808,7 +789,7 @@ function _short_circuit_to_if!(fst::FST, s::State)
     end
 
     block1 = FST(Block, fst.indent + s.opts.indent)
-    for n in nodes[idx+1:end]
+    for n in nodes[(idx+1):end]
         if n.typ === PLACEHOLDER ||
            n.typ === WHITESPACE ||
            n.typ === NEWLINE ||
