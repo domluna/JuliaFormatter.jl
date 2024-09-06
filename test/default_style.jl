@@ -4532,4 +4532,36 @@ some_function(
         s = "a .* %"
         @test fmt(s, 4, 100) == s
     end
+
+    @testset "binary shortcircuit" begin
+        s1 = """
+        if a || b
+            body
+        elseif c || d
+            body2 && body2
+        elseif e || f
+            body3 || body3
+        else
+            body4 && body4
+        end
+        """
+        s2 = """
+        if a ||
+           b
+                body
+        elseif c ||
+               d
+                body2 &&
+                        body2
+        elseif e ||
+               f
+                body3 ||
+                        body3
+        else
+                body4 &&
+                        body4
+        end
+        """
+        @test fmt(s1, 8, 1) == s2
+    end
 end

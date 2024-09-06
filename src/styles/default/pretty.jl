@@ -1480,7 +1480,7 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
                 add_node!(t, pretty(style, c, s; kwargs...), s, max_padding = 0)
             else
                 len = length(t)
-                n = pretty(style, c, s; kwargs..., standalone_binary_circuit = false)
+                n = pretty(style, c, s; kwargs...)
                 add_node!(t, n, s)
                 t.len = max(len, length(n))
             end
