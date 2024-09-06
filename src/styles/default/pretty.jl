@@ -1528,6 +1528,7 @@ function p_binaryopcall(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
+    nospace = false,
     nonest = false,
     from_typedef = false,
     standalone_binary_circuit = true,
@@ -1591,8 +1592,6 @@ function p_binaryopcall(
         end
     elseif from_colon
         nospace = true
-    else
-        nospace = false
     end
     nws = !nospace && has_ws ? 1 : 0
 

@@ -68,7 +68,7 @@
     @parameters a = b
     """
     formatted_str = raw"""
-    @parameters a=b
+    @parameters a = b
     """
     @test format_text(str, SciMLStyle()) == formatted_str
 

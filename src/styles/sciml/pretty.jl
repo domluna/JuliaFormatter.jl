@@ -126,15 +126,17 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
     first_arg_idx =
         idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
+    # https://github.com/SciML/SciMLStyle?tab=readme-ov-file#macros
     n_kw_args = count(n -> kind(n) === K"=" && haschildren(n), childs)
+    nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)
-        # kind(a) == K"=" && haschildren(a)
         n = pretty(
             style,
             a,
             s;
             kwargs...,
+            nospace,
             can_separate_kwargs = false,
             standalone_binary_circuit = false,
         )
