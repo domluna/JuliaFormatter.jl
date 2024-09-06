@@ -4530,6 +4530,6 @@ some_function(
 
     @testset "operators as arguments" begin
         s = "a .* %"
-        fmt(s, 4, 100) == s
+        @test fmt(s, 4, 100) == s
     end
 end

@@ -1700,7 +1700,8 @@ function p_binaryopcall(
                 end
             end
             after_op = true
-        elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
+        # elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
+        elseif JuliaSyntax.is_operator(c) && !haschildren(c)
             # there are some weird cases where we can assign an operator a value so that
             # the arguments are operators as well.
             #
