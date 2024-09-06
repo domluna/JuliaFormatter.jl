@@ -290,7 +290,7 @@ function short_to_long_function_def!(
 
     # body
 
-    s.opts.always_use_return && prepend_return!(fst[end], s)
+    # s.opts.always_use_return && prepend_return!(fst[end], s)
     if fst[end].typ === Block
         add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
     elseif fst[end].typ === Begin
@@ -324,6 +324,8 @@ function short_to_long_function_def!(
     end
     add_indent!(funcdef[end], s, s.opts.indent)
 
+    s.opts.always_use_return && prepend_return!(funcdef[end], s)
+
     # end
     kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
     add_node!(funcdef, kw, s)
@@ -331,6 +333,8 @@ function short_to_long_function_def!(
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
+
+
     return true
 end
 
@@ -527,9 +531,9 @@ function prepend_return!(fst::FST, s::State)
 
     ret = FST(Return, fst.indent)
     kw = FST(KEYWORD, -1, ln.startline, ln.startline, "return")
-    add_node!(ret, kw, s)
+    add_node!(ret, kw, s; join_lines = true)
     add_node!(ret, Whitespace(1), s)
-    add_node!(ret, ln, s, join_lines = true)
+    add_node!(ret, ln, s; join_lines = true)
     fst[end] = ret
     return
 end
