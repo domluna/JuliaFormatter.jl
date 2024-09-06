@@ -1051,6 +1051,7 @@ function add_node!(
                 end
             end
 
+
             t.nest_behavior = AlwaysNest
 
             # If the previous node type is WHITESPACE - reset it.
@@ -1121,8 +1122,15 @@ function add_node!(
     end
 
     if n.typ === Parameters
+        t.nest_behavior = n.nest_behavior
         for nn in n.nodes
             push!(tnodes, nn)
+            if n.startline < t.startline || t.startline == -1
+                t.startline = n.startline
+            end
+            if n.endline > t.endline || t.endline == -1
+                t.endline = n.endline
+            end
         end
         return
     end

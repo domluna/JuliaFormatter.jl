@@ -7,6 +7,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     multiline_arg = findfirst(is_block, nodes) !== nothing
     multiline_arg && (fst.nest_behavior = AlwaysNest)
     has_closer = is_closer(fst[end])
+    nested = false
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
     src_diff_line = if s.opts.join_lines_based_on_source
@@ -16,7 +17,6 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     else
         false
     end
-    nested = false
 
     if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         fidx = fidx::Int

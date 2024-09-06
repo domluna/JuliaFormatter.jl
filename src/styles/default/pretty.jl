@@ -2350,12 +2350,12 @@ function p_parameters(
         end
 
         if kind(a) in KSet", ;"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(nws), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t

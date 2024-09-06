@@ -325,4 +325,19 @@
         str = "a || return nothing"
         @test bluefmt(str_) == str
     end
+
+    @testset "parameter to call nesting" begin
+        s = raw"""
+        test_rrule(
+            SymHerm,
+            x,
+            uplo;
+            output_tangent = ΔΩ,
+            # type stability here critically relies on uplo being constant propagated,
+            # so we need to test this more carefully below
+            check_inferred = false,
+        )
+        """
+        @test fmt(s, 4, 100) == s
+    end
 end
