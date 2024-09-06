@@ -26,7 +26,8 @@ end
 BlueStyle() = BlueStyle(NoopStyle())
 
 function options(::BlueStyle)
-    return (;
+    return (
+        ;
         always_use_return = true,
         short_to_long_function_def = true,
         long_to_short_function_def = false,
@@ -66,22 +67,25 @@ end
 
 function p_return(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(bs)
-    t = FST(Return, cst, nspaces(s))
+
     childs = children(cst)
     n_args = 0
     for c in childs
         if !JuliaSyntax.is_whitespace(c)
             n_args += 1
-            if !JuliaSyntax.is_keyword(c)
-                add_node!(t, Whitespace(1), s)
-            end
         end
-        add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
     end
-    if n_args == 1
-        add_node!(t, Whitespace(1), s)
-        no = FST(KEYWORD, -1, t.endline, t.endline, "nothing")
-        add_node!(t, no, s, join_lines = true)
+
+    if n_args > 1
+        return p_return(DefaultStyle(bs), cst, s; kwargs...)
     end
+
+    t = FST(Return, cst, nspaces(s))
+    for c in childs
+        add_node!(t, pretty(style, c, s; kwargs...), s; join_lines = true)
+    end
+    add_node!(t, Whitespace(1), s)
+    no = FST(KEYWORD, -1, t.endline, t.endline, "nothing")
+    add_node!(t, no, s, join_lines = true)
     t
 end
