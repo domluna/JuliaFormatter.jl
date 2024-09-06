@@ -667,18 +667,18 @@ a = f(; x = 1, y = 2)
 function separate_kwargs_with_semicolon!(fst::FST)
     nodes = fst.nodes::Vector
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    kw_idx === nothing && return
+    isnothing(kw_idx) && return
     sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, nodes[1:kw_idx-1])
     ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:kw_idx-1])
 
-    if sc_idx !== nothing && sc_idx > kw_idx
+    if !isnothing(sc_idx) && sc_idx > kw_idx
         # move ; prior to first kwarg
         fst[sc_idx].val = ","
         fst[sc_idx].typ = PUNCTUATION
-        if comma_idx === nothing
-            if ph_idx !== nothing
+        if isnothing(comma_idx)
+            if !isnothing(ph_idx)
                 fst[ph_idx] = Placeholder(1)
                 insert!(fst, ph_idx, Semicolon())
             else
@@ -689,15 +689,15 @@ function separate_kwargs_with_semicolon!(fst::FST)
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
         end
-    elseif sc_idx === nothing && comma_idx === nothing
-        if ph_idx !== nothing
+    elseif isnothing(sc_idx) && isnothing(comma_idx)
+        if !isnothing(ph_idx)
             fst[ph_idx] = Placeholder(1)
             insert!(fst, ph_idx, Semicolon())
         else
             insert!(fst, kw_idx, Placeholder(1))
             insert!(fst, kw_idx, Semicolon())
         end
-    elseif sc_idx === nothing
+    elseif isnothing(sc_idx)
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
     end
