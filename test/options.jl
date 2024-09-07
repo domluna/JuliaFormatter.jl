@@ -491,6 +491,9 @@
         str_ = "(; g = >=(1))"
         str = "(; g=(>=(1)))"
         @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
+
+        s = "C(; Vt=Ȳ')"
+        @test fmt(s, 4, 100, whitespace_in_kwargs=false) == s
     end
 
     @testset "annotate untyped fields with `Any`" begin

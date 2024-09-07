@@ -1408,7 +1408,6 @@ function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             end
             add_node!(t, n, s, max_padding = s.opts.indent)
             s.indent -= s.opts.indent
-            # elseif JuliaSyntax.is_whitespace(c)
         else
             add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
         end
@@ -1553,7 +1552,7 @@ function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             n = pretty(style, c, s; kwargs...)
             if !s.opts.whitespace_in_kwargs && (
                 (n.typ === IDENTIFIER && endswith(n.val, "!")) ||
-                (is_opcall(c) && kind(c) !== K"parens" && op_kind(c) !== K"::")
+                (is_prefix_op_call(c))
             )
                 add_node!(
                     t,
@@ -1726,8 +1725,7 @@ function p_binaryopcall(
             if opkind === K":" &&
                 # !s.whitespace_ops_in_indices &&
                is_opcall(c) &&
-               kind(c) !== K"parens" &&
-               op_kind(c) !== K"::"
+               kind(c) !== K"parens"
                 add_node!(
                     t,
                     FST(PUNCTUATION, -1, n.startline, n.startline, "("),

@@ -581,6 +581,13 @@ function is_opcall(x)
     return false
 end
 
+function is_prefix_op_call(x)
+    is_opcall(x) || return false
+    idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(x))
+    isnothing(idx) && return false
+    return JuliaSyntax.is_operator(x[idx])
+end
+
 function is_gen(x)
     kind(x) in KSet"generator filter"
 end
