@@ -288,7 +288,7 @@ function traverse(text, ex, pos = 1)
         println(
             repr(JuliaSyntax.kind(ex)),
             " => ",
-            repr(text[pos:prevind(text, pos+JuliaSyntax.span(ex))]),
+            repr(text[pos:prevind(text, pos + JuliaSyntax.span(ex))]),
         )
         return
     end

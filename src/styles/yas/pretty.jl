@@ -22,8 +22,7 @@ end
 YASStyle() = YASStyle(NoopStyle())
 
 function options(::YASStyle)
-    return (
-        ;
+    return (;
         always_for_in = true,
         whitespace_ops_in_indices = true,
         remove_extra_newlines = true,
@@ -625,7 +624,7 @@ function p_whereopcall(
         from_typedef
     else
         from_typedef ||
-        any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
+            any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
     end
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 

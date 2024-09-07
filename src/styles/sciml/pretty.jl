@@ -19,8 +19,7 @@ end
 SciMLStyle() = SciMLStyle(NoopStyle())
 
 function options(::SciMLStyle)
-    return (
-        ;
+    return (;
         always_for_in = true,
         always_use_return = false,
         annotate_untyped_fields_with_any = true,
@@ -77,7 +76,6 @@ for f in [
     :p_generator,
     :p_filter,
 ]
-
     @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
     end
@@ -93,7 +91,6 @@ for f in [
     :p_invisbrackets,
     :p_bracescat,
 ]
-
     @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), cst, s; kwargs...)

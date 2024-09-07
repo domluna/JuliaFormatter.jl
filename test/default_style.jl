@@ -4476,6 +4476,30 @@ some_function(
         return arg1 ||
                arg2"""
         @test fmt(str_, 4, 1) == str
+
+        str_ = raw"""
+        @othermacro begin
+                x isa Matrix &&
+                   @testset "$MT" for MT in (Diagonal, UpperTriangular, LowerTriangular)
+                       test_rrule(fnorm, MT(x), p; kwargs..., check_inferred=VERSION >= v"1.5")
+                   end
+        end
+        """
+        str = raw"""
+        @othermacro begin
+            x isa Matrix &&
+                @testset "$MT" for MT in (Diagonal, UpperTriangular, LowerTriangular)
+                    test_rrule(
+                        fnorm,
+                        MT(x),
+                        p;
+                        kwargs...,
+                        check_inferred = VERSION >= v"1.5",
+                    )
+                end
+        end
+        """
+        @test fmt(str_, 4, 80) == str
     end
 
     @testset "source file line offset with unicode" begin

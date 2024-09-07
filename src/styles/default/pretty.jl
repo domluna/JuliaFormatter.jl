@@ -581,14 +581,7 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = pretty(
-            style,
-            a,
-            s;
-            kwargs...,
-            can_separate_kwargs = false,
-            standalone_binary_circuit = false,
-        )
+        n = pretty(style, a, s; kwargs..., can_separate_kwargs = false)
         if JuliaSyntax.is_macro_name(a)
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"("
@@ -1603,10 +1596,26 @@ function p_binaryopcall(
     op_dotted = kind(cst) === K"dotcall"
     can_separate_kwargs = !is_function_or_macro_def(cst)
 
+    lazy_op = opkind in KSet"&& ||"
+    # check if expression is a lazy circuit
+    if lazy_op && standalone_binary_circuit
+        lineage = get(kwargs, :lineage, Tuple{JuliaSyntax.Kind,Bool}[])
+        # @info "" lineage
+        for i in length(lineage)-1:-1:1
+            tt, _ = lineage[i]
+            if tt in KSet"parens macrocall return if elseif else"
+                standalone_binary_circuit = false
+                break
+            elseif tt in KSet"block"
+                break
+            end
+        end
+    end
+
     t.metadata = Metadata(
         opkind,
         op_dotted,
-        opkind in KSet"&& ||" && standalone_binary_circuit,
+        lazy_op && standalone_binary_circuit,
         is_short_form_function,
         is_assignment(cst),
         false,
@@ -1804,7 +1813,7 @@ function p_whereopcall(
         from_typedef
     else
         from_typedef ||
-        any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
+            any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
     end
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 
@@ -2660,7 +2669,7 @@ function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     has_for_kw = false
 
     from_iterable = false
-    lineage = get(kwargs, :lineage, JuliaSyntax.Kind[])
+    lineage = get(kwargs, :lineage, Tuple{JuliaSyntax.Kind,Bool}[])
     for (kind, is_itr) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"
             continue

@@ -75,8 +75,7 @@ function getstyle(s::NoopStyle)
 end
 
 function options(::DefaultStyle)
-    return (
-        ;
+    return (;
         indent = 4,
         margin = 92,
         always_for_in = false,
@@ -464,7 +463,8 @@ function format(path::AbstractString, options::Configuration)
         return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
     catch err
         if err isa JuliaSyntax.ParseError
-            @warn "Failed to format file $path due to a parsing error, skipping file" error=err
+            @warn "Failed to format file $path due to a parsing error, skipping file" error =
+                err
             return true
         end
         @info "Error in formatting file $path"
