@@ -58,7 +58,7 @@ function Document(text::AbstractString)
                 end_line = JuliaSyntax.source_line(srcfile, last(t.range))
 
                 # Capture the full string content
-                full_string = text[start_offset+1:end_offset]
+                full_string = text[(start_offset+1):end_offset]
 
                 lit_strings[start_offset] = (start_line, end_line, full_string)
             end

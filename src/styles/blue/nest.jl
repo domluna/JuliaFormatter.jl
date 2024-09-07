@@ -20,7 +20,7 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
 
     if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         fidx = fidx::Int
-        args_range = fidx+1:lidx-1
+        args_range = (fidx+1):(lidx-1)
         args_margin = sum(length.(fst[args_range]))
         nested = true
 

@@ -7,7 +7,8 @@ end
 MinimalStyle() = MinimalStyle(NoopStyle())
 
 function options(style::MinimalStyle)
-    return (;
+    return (
+        ;
         indent = 4,
         annotate_untyped_fields_with_any = false,
         join_lines_based_on_source = true,

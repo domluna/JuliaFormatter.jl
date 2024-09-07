@@ -159,7 +159,7 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
             # for instance, @call1 @call2 @call3 x = 10
             while sn.nodes !== nothing
                 binop_ind = findfirst(nn -> nn.typ === Binary, sn.nodes)
-                nlen += node_align_length(sn[1:end-1])
+                nlen += node_align_length(sn[1:(end-1)])
                 if binop_ind === nothing
                     sn = (sn.nodes::Vector{FST})[end]
                 else

@@ -169,7 +169,7 @@ function nest_if_over_margin!(
     if stop_idx === nothing
         margin += sum(length.(fst[idx:end])) + fst.extra_margin
     else
-        margin += sum(length.(fst[idx:stop_idx-1]))
+        margin += sum(length.(fst[idx:(stop_idx-1)]))
     end
 
     if margin > s.opts.margin ||
@@ -288,7 +288,7 @@ function find_optimal_nest_placeholders(
             if placeholder_inds[end] == end_idx && last_group
                 sum(length.(fst[start_idx:end])) + fst.extra_margin
             else
-                sum(length.(fst[start_idx:end_idx-1]))
+                sum(length.(fst[start_idx:(end_idx-1)]))
             end
         end
 
@@ -296,8 +296,8 @@ function find_optimal_nest_placeholders(
     dp = fill(0, n - 1, n - 1)
 
     # Initialize the lengths of segments with single placeholders
-    for i in 1:n-1
-        for j in i+1:n
+    for i in 1:(n-1)
+        for j in (i+1):n
             len = segment_length(placeholder_inds[i], placeholder_inds[j])
             dp[i, j-1] = len
         end
@@ -318,7 +318,7 @@ function find_optimal_nest_placeholders(
             local ranges = UnitRange{Int}[]
             local s = 1
             for tt in t
-                push!(ranges, s:s+tt-1)
+                push!(ranges, s:(s+tt-1))
                 s += tt
             end
             ranges
@@ -366,7 +366,7 @@ function find_optimal_nest_placeholders(
     # ex: (ph, arg, ph, arg, ph, arg, ph)
     # Convert segments to placeholder indices
     optimal_placeholders = Int[]
-    for i in 1:length(segments)-1
+    for i in 1:(length(segments)-1)
         s2 = segments[i+1]
         i1 = first(s2)
         push!(optimal_placeholders, placeholder_inds[i1])

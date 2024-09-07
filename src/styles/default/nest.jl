@@ -245,7 +245,7 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     nested = false
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         if can_nest(fst)
-            if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
+            if fst.indent + sum(length.(fst[(idx+1):end])) <= s.opts.margin
                 fst[idx] = Newline(length = fst[idx].len)
                 walk(increment_line_offset!, fst, s)
                 return nested
@@ -518,8 +518,8 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                 fst[idx] = Newline(length = fst[idx].len)
             else
                 nidx = phs[i-1]
-                l1 = sum(length.(fst[1:idx-1]))
-                l2 = sum(length.(fst[idx:nidx-1]))
+                l1 = sum(length.(fst[1:(idx-1)]))
+                l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
                     fst[idx] = Newline(length = fst[idx].len)
@@ -661,8 +661,8 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                 fst[idx] = Newline(length = fst[idx].len)
             else
                 nidx = phs[i-1]
-                l1 = sum(length.(fst[1:idx-1]))
-                l2 = sum(length.(fst[idx:nidx-1]))
+                l1 = sum(length.(fst[1:(idx-1)]))
+                l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
                     fst[idx] = Newline(length = fst[idx].len)
@@ -693,9 +693,9 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 if i == length(nodes) - 1
-                    width += sum(length.(fst[i+1:end])) + fst.extra_margin
+                    width += sum(length.(fst[(i+1):end])) + fst.extra_margin
                 else
-                    width += sum(length.(fst[i+1:i+3]))
+                    width += sum(length.(fst[(i+1):(i+3)]))
                 end
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
@@ -814,7 +814,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1,
                 if idx === nothing
                     line_margin += length(fst[end])
                 else
-                    line_margin += sum(length.(rhs[1:idx-1]))
+                    line_margin += sum(length.(rhs[1:(idx-1)]))
                 end
             else
                 rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)

@@ -188,7 +188,7 @@ function n_using!(ys::YASStyle, fst::FST, s::State; kwargs...)
     if idx === nothing
         fst.indent += sum(length.(fst[1:2]))
     else
-        fst.indent += sum(length.(fst[1:idx+1]))
+        fst.indent += sum(length.(fst[1:(idx+1)]))
     end
     nested = false
     for (i, n) in enumerate(nodes)
@@ -223,6 +223,6 @@ function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1, kwa
         return n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
     end
 
-    walk(increment_line_offset!, nodes[1:end-1], s, fst.indent)
+    walk(increment_line_offset!, nodes[1:(end-1)], s, fst.indent)
     nest!(style, fst[end], s; kwargs...)
 end

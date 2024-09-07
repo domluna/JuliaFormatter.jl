@@ -1550,10 +1550,8 @@ function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             add_node!(t, Whitespace(1), s)
         else
             n = pretty(style, c, s; kwargs...)
-            if !s.opts.whitespace_in_kwargs && (
-                (n.typ === IDENTIFIER && endswith(n.val, "!")) ||
-                (is_prefix_op_call(c))
-            )
+            if !s.opts.whitespace_in_kwargs &&
+               ((n.typ === IDENTIFIER && endswith(n.val, "!")) || (is_prefix_op_call(c)))
                 add_node!(
                     t,
                     FST(PUNCTUATION, -1, n.startline, n.startline, "("),
@@ -1723,7 +1721,7 @@ function p_binaryopcall(
             add_node!(t, n, s; join_lines = true)
         else
             if opkind === K":" &&
-                # !s.whitespace_ops_in_indices &&
+               # !s.whitespace_ops_in_indices &&
                is_opcall(c) &&
                kind(c) !== K"parens"
                 add_node!(

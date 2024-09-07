@@ -75,7 +75,8 @@ function getstyle(s::NoopStyle)
 end
 
 function options(::DefaultStyle)
-    return (;
+    return (
+        ;
         indent = 4,
         margin = 92,
         always_for_in = false,
