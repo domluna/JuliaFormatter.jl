@@ -4564,4 +4564,34 @@ some_function(
         """
         @test fmt(s1, 8, 1) == s2
     end
+
+    @testset "parameter to call nesting" begin
+        # always nest is in parameters
+        s = raw"""
+        test_rrule(
+            SymHerm,
+            x,
+            uplo;
+            output_tangent = ΔΩ,
+            # type stability here critically relies on uplo being constant propagated,
+            # so we need to test this more carefully below
+            check_inferred = false,
+        )
+        """
+        @test fmt(s, 4, 100) == s
+
+        # always nest is outsite of parameters in the call
+        s = raw"""
+        test_rrule(  # 5 arg version with scaling scalar
+            gemm,
+            tA,
+            tB,
+            randn(T),
+            A,
+            B;
+            check_inferred = false,
+        )
+        """
+        @test fmt(s, 4, 100) == s
+    end
 end

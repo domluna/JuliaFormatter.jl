@@ -288,7 +288,7 @@ function traverse(text, ex, pos = 1)
         println(
             repr(JuliaSyntax.kind(ex)),
             " => ",
-            repr(text[pos:prevind(text, pos + JuliaSyntax.span(ex))]),
+            repr(text[pos:prevind(text, pos+JuliaSyntax.span(ex))]),
         )
         return
     end
@@ -739,7 +739,10 @@ end
 
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     JuliaSyntax.is_operator(cst) && return cst
-    if is_binary(cst) || kind(cst) in KSet"comparison dotcall" || is_chain(cst) || is_unary(cst)
+    if is_binary(cst) ||
+       kind(cst) in KSet"comparison dotcall" ||
+       is_chain(cst) ||
+       is_unary(cst)
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue
@@ -1058,7 +1061,6 @@ function add_node!(
                 end
             end
 
-
             t.nest_behavior = AlwaysNest
 
             # If the previous node type is WHITESPACE - reset it.
@@ -1129,7 +1131,9 @@ function add_node!(
     end
 
     if n.typ === Parameters
-        t.nest_behavior = n.nest_behavior
+        if n.nest_behavior == AlwaysNest
+            t.nest_behavior = n.nest_behavior
+        end
         for nn in n.nodes
             push!(tnodes, nn)
             if n.startline < t.startline || t.startline == -1
