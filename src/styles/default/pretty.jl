@@ -1296,6 +1296,8 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     style = getstyle(ds)
     t = FST(For, cst, nspaces(s))
 
+    ends_in_iterable = false
+
     for c in children(cst)
         if kind(c) in KSet"for while" && !haschildren(c)
             add_node!(t, pretty(style, c, s), s)
@@ -1307,10 +1309,12 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
 
-            if t.nodes[end-2].typ !== NOTCODE
+            if !ends_in_iterable && t.nodes[end-2].typ !== NOTCODE
                 insert!(t, length(t.nodes) - 1, Placeholder(0))
             end
-        elseif !JuliaSyntax.is_whitespace(c)
+        elseif JuliaSyntax.is_whitespace(c)
+            add_node!(t, pretty(style, c, s; kwargs...), s)
+        else
             add_node!(t, Whitespace(1), s)
             n = if kind(c) === K"cartesian_iterator"
                 s.indent += s.opts.indent
@@ -1318,14 +1322,16 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
                 s.indent -= s.opts.indent
                 n
             else
-                pretty(style, c, s; kwargs..., from_for = true)
+                n = pretty(style, c, s; kwargs..., from_for = true)
+                if !is_leaf(n) && length(n.nodes) > 1 && is_iterable(n[end])
+                    ends_in_iterable = true
+                end
+                n
             end
             if kind(cst) === K"for"
                 eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
             end
             add_node!(t, n, s, join_lines = true)
-        else
-            add_node!(t, pretty(style, c, s; kwargs...), s)
         end
     end
 

@@ -4644,7 +4644,6 @@ some_function(
         @test fmt(s, 4, 100) == s
     end
 
-
     @testset "no args before kwargs ; placement" begin
         str_ = """(; a = b, c = d)"""
         str = """
