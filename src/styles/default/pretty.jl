@@ -110,7 +110,7 @@ function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
         p_comparison(style, t, s; kwargs...)
     elseif JuliaSyntax.is_operator(t) && haschildren(t)
         p_binaryopcall(style, t, s; kwargs...)
-    elseif kind(t) === K"dotcall"
+    elseif kind(t) in KSet"dotcall call"
         p_binaryopcall(style, t, s; kwargs...)
     elseif k === K"parameters"
         p_parameters(style, t, s; kwargs...)
@@ -1036,7 +1036,7 @@ p_baremodule(
 ) where {S<:AbstractStyle} = p_baremodule(DefaultStyle(style), cst, s; kwargs...)
 
 function p_return(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
-    t = p_const(ds, cst, s; kwargs..., standalone_binary_circuit = false)
+    t = p_const(ds, cst, s; kwargs...)
     t.typ = Return
     t
 end
@@ -1664,6 +1664,9 @@ function p_binaryopcall(
     nlws_count = 0
     after_op = false
 
+
+    op_indices = extract_operator_indices(childs)
+
     for (i, c) in enumerate(childs)
         n = pretty(
             style,
@@ -1700,7 +1703,7 @@ function p_binaryopcall(
             end
             after_op = true
             # elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
-        elseif JuliaSyntax.is_operator(c) && !haschildren(c)
+        elseif JuliaSyntax.is_operator(c) && !haschildren(c) && i in op_indices
             # there are some weird cases where we can assign an operator a value so that
             # the arguments are operators as well.
             #

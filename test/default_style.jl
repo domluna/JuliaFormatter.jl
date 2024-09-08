@@ -4553,8 +4553,13 @@ some_function(
     end
 
     @testset "operators as arguments" begin
-        s = "a .* %"
-        @test fmt(s, 4, 100) == s
+        str_ = "a    .*     %"
+        str = "a .* %"
+        @test fmt(str_, 4, 100) == str
+
+        str_ = "a    *     %"
+        str = "a * %"
+        @test fmt(str_, 4, 100) == str
     end
 
     @testset "binary shortcircuit" begin
@@ -4617,5 +4622,68 @@ some_function(
         )
         """
         @test fmt(s, 4, 100) == s
+    end
+
+
+    @testset "no args before kwargs ; placement" begin
+        str_ = """(; a = b, c = d)"""
+        str = """
+        (;
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(;  # inline
+            a = b, c = d)"""
+        str = """
+        (;  # inline
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(;
+            # comment
+            a = b, c = d)"""
+        str = """
+        (;
+            # comment
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg;
+            # comment
+            a = b, c = d)"""
+        str = """
+        (
+            arg;
+            # comment
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg; # inline
+            a = b, c = d)"""
+        str = """
+        (
+            arg; # inline
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg;
+            a = b, c = d)"""
+        str = """
+        (
+            arg;
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
     end
 end

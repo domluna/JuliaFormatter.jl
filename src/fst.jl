@@ -740,7 +740,7 @@ end
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     JuliaSyntax.is_operator(cst) && return cst
     if is_binary(cst) ||
-       kind(cst) in KSet"comparison dotcall" ||
+       kind(cst) in KSet"comparison dotcall call" ||
        is_chain(cst) ||
        is_unary(cst)
         for c in children(cst)
@@ -765,6 +765,24 @@ end
 function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
     return isnothing(fst.metadata) ? nothing : fst.metadata.op_kind
 end
+
+function extract_operator_indices(childs)
+    args = findall(n -> !JuliaSyntax.is_whitespace(n), childs)
+    op_indices = Int[]
+    i = 2
+    while i <= length(args)
+        push!(op_indices, args[i])
+        if i < length(args) &&
+           kind(childs[args[i]]) === K"." &&
+           !haschildren(childs[args[i]])
+            push!(op_indices, args[i+1])
+            i += 1
+        end
+        i += 2
+    end
+    return op_indices
+end
+
 
 # """
 #     is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
@@ -1122,7 +1140,9 @@ function add_node!(
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
     elseif is_multiline(n)
-        is_iterable(t) && n_args(t.ref[]) > 1 && (t.nest_behavior = AlwaysNest)
+        if is_iterable(t) && n_args(t.ref[]) > 1
+            t.nest_behavior = AlwaysNest
+        end
         t.len += length(n)
     elseif max_padding >= 0
         t.len = max(t.len, length(n) + max_padding)
@@ -1133,6 +1153,11 @@ function add_node!(
     if n.typ === Parameters
         if n.nest_behavior == AlwaysNest
             t.nest_behavior = n.nest_behavior
+        end
+        # no args before kwargs
+        placeholder_ind = findfirst(n -> n.typ === PLACEHOLDER, tnodes)
+        if placeholder_ind == length(tnodes)
+            t[placeholder_ind] = Whitespace(0)
         end
         for nn in n.nodes
             push!(tnodes, nn)
