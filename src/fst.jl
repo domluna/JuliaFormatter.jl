@@ -288,7 +288,7 @@ function traverse(text, ex, pos = 1)
         println(
             repr(JuliaSyntax.kind(ex)),
             " => ",
-            repr(text[pos:prevind(text, pos + JuliaSyntax.span(ex))]),
+            repr(text[pos:prevind(text, pos+JuliaSyntax.span(ex))]),
         )
         return
     end
@@ -782,7 +782,6 @@ function extract_operator_indices(childs)
     end
     return op_indices
 end
-
 
 # """
 #     is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
