@@ -4705,4 +4705,23 @@ some_function(
         )"""
         @test fmt(str_, 4, 1) == str
     end
+
+    @testset "for loop, extra placeholder not added" begin
+        str_ = """
+        for i in [a,b,c]
+            body
+        end
+        """
+        str = """
+        for i in
+            [
+            a,
+            b,
+            c,
+        ]
+            body
+        end
+        """
+        @test fmt(str_, 4, 1) == str
+    end
 end
