@@ -550,7 +550,6 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
             s;
             kwargs...,
             can_separate_kwargs = false,
-            standalone_binary_circuit = false,
         )
 
         override = (i == first_arg_idx) || kind(a) === K")"

@@ -138,7 +138,6 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
             kwargs...,
             nospace,
             can_separate_kwargs = false,
-            standalone_binary_circuit = false,
         )
 
         override = (i == first_arg_idx) || kind(a) === K")"

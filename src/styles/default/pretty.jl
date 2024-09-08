@@ -1543,9 +1543,14 @@ p_comparison(
 ) where {S<:AbstractStyle} = p_comparison(DefaultStyle(style), cst, s; kwargs...)
 
 # Kw
-function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+# this is only called on it's own so we need to add the lineage
+function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State;
+    lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+              kwargs...)
     style = getstyle(ds)
     t = FST(Kw, cst, nspaces(s))
+
+    push!(lineage, (kind(cst), false, true))
 
     for c in children(cst)
         if kind(c) === K"=" && s.opts.whitespace_in_kwargs
@@ -1574,6 +1579,8 @@ function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
             end
         end
     end
+
+    pop!(lineage)
 
     t
 end
