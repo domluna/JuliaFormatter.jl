@@ -149,20 +149,6 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
-        elseif kind(a) === K"parameters"
-            if n_args(cst) == n_args(a)
-                # There are no arguments prior to params
-                # so we can remove the initial placeholder.
-                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
-                idx !== nothing && (t[idx] = Whitespace(0))
-            end
-            add_node!(
-                t,
-                n,
-                s;
-                join_lines = true,
-                override_join_lines_based_on_source = override,
-            )
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s, join_lines = true)
         elseif is_macroblock

@@ -600,16 +600,8 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
-        elseif kind(a) === K"parameters"
-            if n_args(cst) == n_args(a)
-                # There are no arguments prior to params
-                # so we can remove the initial placeholder.
-                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
-                idx !== nothing && (t[idx] = Whitespace(0))
-            end
-            add_node!(t, n, s; join_lines = true)
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
             if n.typ === MacroBlock && t[end].typ === WHITESPACE
                 t[end] = Placeholder(length(t[end].val))
