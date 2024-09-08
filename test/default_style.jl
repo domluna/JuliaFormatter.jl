@@ -4592,6 +4592,26 @@ some_function(
         end
         """
         @test fmt(s1, 8, 1) == s2
+
+        str_ = """
+        a =     if where_idx === nothing
+               from_typedef
+           else
+               from_typedef ||
+               b
+           end
+        """
+        str = """
+        a =
+            if where_idx ===
+               nothing
+                from_typedef
+            else
+                from_typedef ||
+                    b
+            end
+        """
+        @test fmt(str_, 4, 1) == str
     end
 
     @testset "parameter to call nesting" begin

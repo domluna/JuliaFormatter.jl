@@ -1,9 +1,8 @@
-function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; kwargs...)
+function pretty(ds::DefaultStyle, t::JuliaSyntax.GreenNode, s::State; lineage=Tuple{JuliaSyntax.Kind,Bool,Bool}[], kwargs...)
     k = kind(t)
     style = getstyle(ds)
 
-    lineage = get(kwargs, :lineage, Tuple{JuliaSyntax.Kind,Bool}[])
-    push!(lineage, (k, is_iterable(t)))
+    push!(lineage, (k, is_iterable(t), is_assignment(t)))
     kwargs = (; kwargs..., lineage = lineage)
 
     ret = if k == K"Identifier" && !haschildren(t)
@@ -1580,6 +1579,7 @@ function p_binaryopcall(
     from_let = false,
     from_ref = false,
     from_colon = false,
+    lineage=Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
     style = getstyle(ds)
@@ -1596,14 +1596,12 @@ function p_binaryopcall(
     op_dotted = kind(cst) === K"dotcall"
     can_separate_kwargs = !is_function_or_macro_def(cst)
 
-    lazy_op = opkind in KSet"&& ||"
+    lazy_op = is_lazy_op(opkind)
     # check if expression is a lazy circuit
     if lazy_op && standalone_binary_circuit
-        lineage = get(kwargs, :lineage, Tuple{JuliaSyntax.Kind,Bool}[])
-        # @info "" lineage
         for i in length(lineage)-1:-1:1
-            tt, _ = lineage[i]
-            if tt in KSet"parens macrocall return if elseif else"
+            tt, _, is_assign = lineage[i]
+            if tt in KSet"parens macrocall return if elseif else" || is_assign
                 standalone_binary_circuit = false
                 break
             elseif tt in KSet"block"
@@ -1677,8 +1675,8 @@ function p_binaryopcall(
             from_ref,
             from_colon,
             kwargs...,
+            standalone_binary_circuit = standalone_binary_circuit && !(is_lazy_op(c) && kind(c) !== opkind),
             can_separate_kwargs = can_separate_kwargs,
-            standalone_binary_circuit = false,
         )
 
         is_dot = kind(c) === K"."
@@ -2666,14 +2664,15 @@ end
 p_nrow(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
     p_nrow(DefaultStyle(style), cst, s; kwargs...)
 
-function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_generator(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State;
+lineage=Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+                     kwargs...)
     style = getstyle(ds)
     t = FST(Generator, cst, nspaces(s))
     has_for_kw = false
 
     from_iterable = false
-    lineage = get(kwargs, :lineage, Tuple{JuliaSyntax.Kind,Bool}[])
-    for (kind, is_itr) in Iterators.reverse(lineage)
+    for (kind, is_itr, _) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"
             continue
         elseif is_itr

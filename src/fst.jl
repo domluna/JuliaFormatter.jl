@@ -900,6 +900,10 @@ function is_str_or_cmd(t)
     kind(t) in KSet"doc string cmdstring String CmdString"
 end
 
+function is_lazy_op(t)
+    kind(t) in KSet"|| &&"
+end
+
 function needs_placeholder(
     childs::Vector{JuliaSyntax.GreenNode{T}},
     start_index::Int,

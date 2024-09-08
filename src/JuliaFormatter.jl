@@ -240,7 +240,7 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
     t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
-    # @info "parsed" t
+    @info "parsed" t
     return format_text(t, style, State(Document(text), opts))
 end
 
