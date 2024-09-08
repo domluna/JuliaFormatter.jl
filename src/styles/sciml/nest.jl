@@ -14,7 +14,6 @@ for f in [
     :n_generator!,
     :n_filter!,
 ]
-
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
     end
@@ -191,7 +190,6 @@ for f in [
     :n_invisbrackets!,
     :n_bracescat!,
 ]
-
     @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
