@@ -100,10 +100,6 @@ import Base: show
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode, AllowNestButDontRemove)
-must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
-cant_nest(fst::FST) = fst.nest_behavior === NeverNest
-can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
-can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 struct Metadata
     op_kind::JuliaSyntax.Kind
@@ -251,6 +247,12 @@ function Base.insert!(fst::FST, ind::Int, node::FST)
     fst.len += node.len
     return
 end
+
+# nesting behaviors
+must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
+can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)

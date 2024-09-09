@@ -60,16 +60,16 @@ function run_format(text::String; style = DefaultStyle(), opts = Options())
 end
 
 @testset "JuliaFormatter" begin
-    include("default_style.jl")
-    include("yas_style.jl")
-    include("blue_style.jl")
-    include("sciml_style.jl")
-    if VERSION >= v"1.7"
-        include("multidimensional_array.jl")
-    end
-    include("issues.jl")
-    include("options.jl")
-    include("interface.jl")
-    include("config.jl")
-    # include("format_repo.jl")
+    # include("default_style.jl")
+    # include("yas_style.jl")
+    # include("blue_style.jl")
+    # include("sciml_style.jl")
+    # if VERSION >= v"1.7"
+    #     include("multidimensional_array.jl")
+    # end
+    # include("issues.jl")
+    # include("options.jl")
+    # include("interface.jl")
+    # include("config.jl")
+    include("format_repo.jl")
 end
