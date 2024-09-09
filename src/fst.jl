@@ -99,7 +99,11 @@ import Base: show
     Inert,
 )
 
-@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode)
+@enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode, AllowNestButDontRemove)
+must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
+cant_nest(fst::FST) = fst.nest_behavior === NeverNest
+can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
+can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 struct Metadata
     op_kind::JuliaSyntax.Kind
@@ -261,10 +265,6 @@ Notcode(startline, endline) =
     FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
 InlineComment(line) =
     FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
-
-must_nest(fst::FST) = fst.nest_behavior === AlwaysNest
-cant_nest(fst::FST) = fst.nest_behavior === NeverNest
-can_nest(fst::FST) = fst.nest_behavior === AllowNest
 
 is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = fst.nodes === nothing

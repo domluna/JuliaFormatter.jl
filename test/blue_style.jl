@@ -325,4 +325,53 @@
         str = "a || return nothing"
         @test bluefmt(str_) == str
     end
+
+    @testset "weird line removal case" begin
+        str = raw"""
+        const FASTABLE_AST = quote
+            @testset "Unary complex functions" begin
+                for f in (abs, abs2, conj), z in (-4.1 - 0.02im, 6.4, 3 + im)
+                    @testset "Unary complex functions f = $f, z = $z" begin
+                        complex_jacobian_test(f, z)
+                    end
+                end
+                # As per PR #196, angle gives a ZeroTangent() pullback for Real z and ΔΩ, rather than
+                # the one you'd get from considering the reals as embedded in the complex plane
+                # so we need to special case it's tests
+                for z in (-4.1 - 0.02im, 6.4 + 0im, 3 + im)
+                    complex_jacobian_test(angle, z)
+                end
+                @test frule((ZeroTangent(), randn()), angle, randn())[2] === ZeroTangent()
+                @test rrule(angle, randn())[2](randn())[2] === ZeroTangent()
+            end
+
+            @testset "Unary functions" begin
+                for x in (-4.1, 6.4, 0.0, 0.0 + 0.0im, 0.5 + 0.25im)
+                    test_scalar(+, x)
+                    test_scalar(-, x)
+                    test_scalar(atan, x)
+                end
+            end
+
+            @testset "binary functions" begin
+                @testset "$f(x, y)" for f in (atan, rem, max, min)
+                    # be careful not to sample near singularities for `rem`
+                    base = rand() + 1
+                    test_frule(f, (rand(0:10) + 0.6rand() + 0.2) * base, base)
+                    base = rand() + 1
+                    test_rrule(f, (rand(0:10) + 0.6rand() + 0.2) * base, base)
+                end
+
+                @testset "$f(x::$T, y::$T)" for f in (/, +, -, hypot), T in (Float64, ComplexF64)
+                    test_frule(f, 10rand(T), rand(T))
+                    test_rrule(f, 10rand(T), rand(T))
+                end
+            end
+        end
+        """
+        s1 = format_text(str, BlueStyle())
+        @test s1 == str
+        s2 = format_text(s1, BlueStyle())
+        @test s2 == str
+    end
 end
