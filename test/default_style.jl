@@ -4741,4 +4741,19 @@ some_function(
         @test fmt(str_, 4, 27) == str
         @test fmt(str, 4, 27, join_lines_based_on_source = true) == str
     end
+
+    @testset "block automatically assume nested when join_lines_based_on_source" begin
+        str_ = """
+        let y = a, z = b
+            body
+        end"""
+        str = """
+        let y = a,
+            z = b
+
+            body
+        end"""
+        @test fmt(str_, 4, 16, join_lines_based_on_source = true) == str_
+        @test fmt(str_, 4, 15, join_lines_based_on_source = true) == str
+    end
 end

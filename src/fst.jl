@@ -520,11 +520,9 @@ the case of a function call, which is of type `Call`:
 This would return `true` for `a`, `b`, `c` and `k1=v1` and `false` for all other nodes.
 """
 function is_iterable_arg(fst::FST)
-    fst.typ === PUNCTUATION && return false
-    fst.typ === KEYWORD && return false
-    fst.typ === OPERATOR && return false
-    fst.typ === SEMICOLON && return false
-    is_custom_leaf(fst) && return false
+    if fst.typ in (PUNCTUATION, KEYWORD, OPERATOR, SEMICOLON) || is_custom_leaf(fst)
+        return false
+    end
     return true
 end
 

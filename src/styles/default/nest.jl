@@ -303,7 +303,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
-    src_diff_line = if s.opts.join_lines_based_on_source
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
         last_arg_idx = findlast(is_iterable_arg, nodes)
         last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
         fst[1].endline != last_arg.startline
@@ -497,8 +497,18 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     fst.indent = s.line_offset
 
     nodes = fst.nodes::Vector
+
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
     nested = false
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
+
+    if line_margin > s.opts.margin || must_nest(fst) || src_diff_line
         nested = true
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, nodes))
         if s.opts.join_lines_based_on_source
@@ -640,8 +650,16 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     fst.indent = s.line_offset
 
     nodes = fst.nodes::Vector
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
     nested = false
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
+
+    if line_margin > s.opts.margin || must_nest(fst) || src_diff_line
         nested = true
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, nodes))
         if s.opts.join_lines_based_on_source
@@ -891,10 +909,18 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
         fst.indent += s.opts.indent
     end
 
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
     nested = false
 
     if idx !== nothing &&
-       (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)
+       (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         nested = true
 
         for (i, n) in enumerate(nodes)
