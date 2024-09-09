@@ -328,20 +328,6 @@ function p_call(
                 add_node!(t, n, s; join_lines = true)
                 add_node!(t, Placeholder(1), s)
             end
-        elseif k === K"parameters"
-            if n_args(cst) == n_args(a)
-                # There are no arguments prior to params
-                # so we can remove the initial placeholder.
-                idx = findfirst(n -> n.typ === PLACEHOLDER, t.nodes)
-                idx !== nothing && (t[idx] = Whitespace(0))
-            end
-            add_node!(
-                t,
-                n,
-                s;
-                join_lines = true,
-                override_join_lines_based_on_source = override,
-            )
         else
             add_node!(
                 t,
