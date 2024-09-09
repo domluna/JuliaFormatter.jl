@@ -299,7 +299,8 @@ function traverse(text, ex, pos = 1)
 end
 
 function is_multiline(fst::FST)
-    fst.endline > fst.startline && fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
+    fst.endline > fst.startline &&
+        fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
 end
 
 is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock

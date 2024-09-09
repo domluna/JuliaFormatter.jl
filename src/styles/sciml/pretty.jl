@@ -131,14 +131,7 @@ function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwarg
     nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)
-        n = pretty(
-            style,
-            a,
-            s;
-            kwargs...,
-            nospace,
-            can_separate_kwargs = false,
-        )
+        n = pretty(style, a, s; kwargs..., nospace, can_separate_kwargs = false)
 
         override = (i == first_arg_idx) || kind(a) === K")"
 

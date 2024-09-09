@@ -1535,9 +1535,13 @@ p_comparison(
 
 # Kw
 # this is only called on it's own so we need to add the lineage
-function p_kw(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State;
+function p_kw(
+    ds::DefaultStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
     lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-              kwargs...)
+    kwargs...,
+)
     style = getstyle(ds)
     t = FST(Kw, cst, nspaces(s))
 

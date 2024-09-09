@@ -530,13 +530,7 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
         idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = pretty(
-            style,
-            a,
-            s;
-            kwargs...,
-            can_separate_kwargs = false,
-        )
+        n = pretty(style, a, s; kwargs..., can_separate_kwargs = false)
 
         override = (i == first_arg_idx) || kind(a) === K")"
 
