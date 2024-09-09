@@ -1,3 +1,4 @@
+#! format: off
 module PProf
 
 export pprof, @pprof

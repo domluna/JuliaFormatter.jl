@@ -468,7 +468,7 @@ function p_stringh(
     endline = -1
 
     for a in children(cst)
-        n = pretty(style, a, s; from_docstring = from_docstring, kwargs...)
+        n = pretty(style, a, s; from_docstring, kwargs...)
         val *= gettreeval(n)
 
         if startline == -1
@@ -542,7 +542,7 @@ function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; 
     args = children(cst)
     for (i, c) in enumerate(args)
         if i == 1
-            add_node!(t, p_stringh(style, c, s; from_docstring = true), s, max_padding = 0)
+            add_node!(t, pretty(style, c, s; kwargs..., from_docstring = true), s, max_padding = 0)
         elseif i == length(args)
             add_node!(t, pretty(style, c, s; kwargs...), s, max_padding = 0)
         else
