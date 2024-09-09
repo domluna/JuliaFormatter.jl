@@ -1,7 +1,9 @@
 - id: julia-formatter
   name: "Julia Formatter"
-  entry: "julia -e 'import JuliaFormatter: format; format(\".\")'"
-  pass_filenames: false
-  always_run: true
+  entry: "julia -e 'import JuliaFormatter: format; format(ARGS)'"
+  pass_filenames: true
+  always_run: false
+  types: [file]
+  files: \.(jl|[jq]?md)$
   language: "system"
   description: "An opinionated code formatter for Julia. Plot twist - the opinion is your own."

@@ -6,7 +6,7 @@ end
 
 using JuliaSyntax
 using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
-using Pkg.TOML: parsefile
+using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
 import Base: get, pairs
@@ -404,7 +404,8 @@ end
         options...,
     )::Bool
 
-Recursively descend into files and directories, formatting any `.jl` files.
+Recursively descend into files and directories, formatting any `.jl`, `.md`, `.jmd`,
+or `.qmd` files.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
@@ -449,6 +450,7 @@ function format(path::AbstractString, options::Configuration)
         formatted = Threads.Atomic{Bool}(true)
         Threads.@threads for subpath in readdir(path)
             subpath = joinpath(path, subpath)
+            !ispath(subpath) && continue
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
         end

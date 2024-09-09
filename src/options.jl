@@ -12,6 +12,7 @@ Base.@kwdef struct Options
     pipe_to_function_call::Bool = false
     short_to_long_function_def::Bool = false
     long_to_short_function_def::Bool = false
+    force_long_function_def::Bool = false
     always_use_return::Bool = false
     whitespace_in_kwargs::Bool = true
     annotate_untyped_fields_with_any::Bool = true
@@ -35,6 +36,22 @@ Base.@kwdef struct Options
     yas_style_nesting::Bool = false
     short_circuit_to_if::Bool = false
     disallow_single_arg_nesting::Bool = false
+    function Options(args...)
+        opts = new(args...)
+        if (opts.force_long_function_def === true) &&
+           (opts.short_to_long_function_def === false)
+            msg = """
+            The combination `force_long_function_def = true` and `short_to_long_function_def = false` is invalid.
+            """
+            throw(ArgumentError(msg))
+        end
+        return opts
+    end
+end
+
+function Base.show(io::IO, opt::Options)
+    print(io, "Options")
+    print(io, NamedTuple(key => getproperty(opt, key) for key in fieldnames(Options)))
 end
 
 function needs_alignment(opts::Options)

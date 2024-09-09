@@ -394,6 +394,10 @@ p_macrostr(
 #      3:7      │      String             ✔
 #      8:8      │      "
 #      9:9      │    String               ✔
+#
+        # if cst.head === :FLOAT && !startswith(val, "0x")
+        #     if (fidx = findlast(==('f'), val)) === nothing
+        #         float_suffix = ""
 function p_literal(
     ::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
