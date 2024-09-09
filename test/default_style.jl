@@ -4739,6 +4739,6 @@ some_function(
             b
         end"""
         @test fmt(str_, 4, 27) == str
-        @test fmt(str, 4, 27, join_lines_based_on_source=true) == str
+        @test fmt(str, 4, 27, join_lines_based_on_source = true) == str
     end
 end
