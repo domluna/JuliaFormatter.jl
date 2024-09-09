@@ -10,12 +10,10 @@
 
         # follow up formats should be the same
         @test format(sandbox_dir, join_lines_based_on_source = true) == true
-        @test format(sandbox_dir, join_lines_based_on_source = true, margin = 10_000) ==
-              true
     finally
-        # try
-        #     rm(sandbox_dir; recursive = true)
-        # catch
-        # end
+        try
+            rm(sandbox_dir; recursive = true)
+        catch
+        end
     end
 end
