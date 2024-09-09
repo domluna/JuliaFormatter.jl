@@ -70,7 +70,7 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
-            (line_margin > s.opts.margin || s.opts.force_long_function_def) &&
+           (line_margin > s.opts.margin || s.opts.force_long_function_def) &&
            !isnothing(fst.metadata) &&
            fst.metadata.is_short_form_function
             short_to_long_function_def!(fst, s, lineage)

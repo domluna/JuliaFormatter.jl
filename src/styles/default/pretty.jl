@@ -395,21 +395,20 @@ p_macrostr(
 #      8:8      │      "
 #      9:9      │    String               ✔
 #
-        # if cst.head === :FLOAT && !startswith(val, "0x")
-        #     if (fidx = findlast(==('f'), val)) === nothing
-        #         float_suffix = ""
+# if cst.head === :FLOAT && !startswith(val, "0x")
+#     if (fidx = findlast(==('f'), val)) === nothing
+#         float_suffix = ""
 function p_literal(
     ::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_docstring = false,
     kwargs...,
 )
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
 
     if !is_str_or_cmd(cst)
-        if kind(cst) in KSet"Float Float32"
+        if kind(cst) in KSet"Float Float32" && !startswith(val, "0x")
             float_suffix = if (fidx = findlast(==('f'), val)) === nothing
                 ""
             else
@@ -434,18 +433,14 @@ function p_literal(
 
     s.offset += span(cst)
     return FST(LITERAL, loc[2], loc[1], loc[1], val)
-    # if from_docstring && s.opts.format_docstrings
-    #     str = format_docstring(ds, s, str)
-    # end
 end
 p_literal(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_docstring = false,
     kwargs...,
 ) where {S<:AbstractStyle} =
-    p_literal(DefaultStyle(style), cst, s; from_docstring = from_docstring, kwargs...)
+    p_literal(DefaultStyle(style), cst, s; kwargs...)
 
 function p_accessor(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
