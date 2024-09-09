@@ -4724,4 +4724,21 @@ some_function(
         """
         @test fmt(str_, 4, 1) == str
     end
+
+    @testset "for loop, placeholder not removed" begin
+        str_ = """
+        for f in (A, B), T in (C, D)
+            a
+            b
+        end"""
+        str = """
+        for f in (A, B),
+            T in (C, D)
+
+            a
+            b
+        end"""
+        @test fmt(str_, 4, 27) == str
+        @test fmt(str, 4, 27, join_lines_based_on_source=true) == str
+    end
 end

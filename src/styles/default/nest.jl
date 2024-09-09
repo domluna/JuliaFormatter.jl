@@ -860,7 +860,7 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER && nested
-            fst[i] = Newline(length = n.len)
+            fst[i] = Newline(; length = n.len, nest_behavior = AlwaysNest)
             s.line_offset = fst.indent
         else
             n.extra_margin = fst.extra_margin

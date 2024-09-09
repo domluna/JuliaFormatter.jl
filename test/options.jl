@@ -2526,6 +2526,7 @@
         @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
         @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
     end
+
     @testset "disallow single arg nesting" begin
         s1 = raw"""
         function_call(

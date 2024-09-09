@@ -715,6 +715,7 @@ function remove_superfluous_whitespace!(fst::FST)
     nodes = fst.nodes::Vector
     for (i, n) in enumerate(nodes)
         if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
+            !must_nest(n) &&
            i < length(nodes) &&
            (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
             fst[i] = Whitespace(0)
