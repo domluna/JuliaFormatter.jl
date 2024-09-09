@@ -919,8 +919,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
 
     nested = false
 
-    if idx !== nothing &&
-       (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         nested = true
 
         for (i, n) in enumerate(nodes)
