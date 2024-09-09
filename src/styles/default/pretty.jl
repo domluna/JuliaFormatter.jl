@@ -398,12 +398,7 @@ p_macrostr(
 # if cst.head === :FLOAT && !startswith(val, "0x")
 #     if (fidx = findlast(==('f'), val)) === nothing
 #         float_suffix = ""
-function p_literal(
-    ::DefaultStyle,
-    cst::JuliaSyntax.GreenNode,
-    s::State;
-    kwargs...,
-)
+function p_literal(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
 
@@ -439,8 +434,7 @@ p_literal(
     cst::JuliaSyntax.GreenNode,
     s::State;
     kwargs...,
-) where {S<:AbstractStyle} =
-    p_literal(DefaultStyle(style), cst, s; kwargs...)
+) where {S<:AbstractStyle} = p_literal(DefaultStyle(style), cst, s; kwargs...)
 
 function p_accessor(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
