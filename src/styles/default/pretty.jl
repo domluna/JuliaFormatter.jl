@@ -1503,7 +1503,6 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         end
     end
 
-    # @info "length" t.len
     return t
 end
 p_if(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =

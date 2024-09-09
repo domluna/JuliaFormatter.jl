@@ -349,16 +349,7 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
-
-                if n.typ === Parameters
-                    nb = n.nest_behavior
-                    n.nest_behavior = AlwaysNest
-                    nest!(style, n, s; kwargs...)
-                    n.nest_behavior = nb
-
-                else
-                    nest!(style, n, s; kwargs...)
-                end
+                nest!(style, n, s; kwargs...)
             end
         end
 

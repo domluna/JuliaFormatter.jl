@@ -298,16 +298,8 @@ function traverse(text, ex, pos = 1)
     end
 end
 
-# TODO: fix this
 function is_multiline(fst::FST)
-    fst.endline > fst.startline && (
-        fst.typ === StringN ||
-        fst.typ === Vcat ||
-        fst.typ === TypedVcat ||
-        fst.typ === Ncat ||
-        fst.typ === TypedNcat ||
-        fst.typ === MacroStr
-    )
+    fst.endline > fst.startline && fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
 end
 
 is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
@@ -1154,7 +1146,7 @@ function add_node!(
     end
 
     if n.typ === Parameters
-        if n.nest_behavior == AlwaysNest
+        if n.nest_behavior === AlwaysNest
             t.nest_behavior = n.nest_behavior
         end
         # no args before kwargs
@@ -1175,4 +1167,5 @@ function add_node!(
     end
 
     push!(tnodes, n)
+    return
 end
