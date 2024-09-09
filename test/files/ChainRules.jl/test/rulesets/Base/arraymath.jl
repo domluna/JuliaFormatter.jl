@@ -148,11 +148,11 @@
     end
 
     @testset "/ and \\ Scalar-AbstractArray" begin
-        A = round.(10 .* randn(3, 4, 5), digits=1)
+        A = round.(10 .* randn(3, 4, 5); digits=1)
         test_rrule(/, A, 7.2)
         test_rrule(\, 7.2, A)
 
-        C = round.(10 .* randn(6) .+ im .* 10 .* randn(6), digits=1)
+        C = round.(10 .* randn(6) .+ im .* 10 .* randn(6); digits=1)
         test_rrule(/, C, 7.2 + 8.3im)
         test_rrule(\, 7.2 + 8.3im, C)
     end

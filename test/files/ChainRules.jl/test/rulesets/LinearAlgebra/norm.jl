@@ -102,8 +102,7 @@
     @testset "$fnorm(x::Array{$T,$(length(sz))}, $p) with size $sz" for fnorm in (
             norm, LinearAlgebra.normp
         ),
-        p in (1.0, 2.0, Inf, -Inf, 2.5),
-        T in (Float64, ComplexF64),
+        p in (1.0, 2.0, Inf, -Inf, 2.5), T in (Float64, ComplexF64),
         sz in (fnorm === norm ? [(0,), (3,), (3, 3), (3, 2, 1)] : [(3,), (3, 3), (3, 2, 1)])
 
         x = randn(T, sz)

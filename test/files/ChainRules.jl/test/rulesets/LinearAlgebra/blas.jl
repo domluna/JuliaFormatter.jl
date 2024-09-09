@@ -56,10 +56,7 @@
 
     @testset "gemm" begin
         for m in 3:5,
-            n in 3:5,
-            p in 3:5,
-            tA in ('N', 'C', 'T'),
-            tB in ('N', 'C', 'T'),
+            n in 3:5, p in 3:5, tA in ('N', 'C', 'T'), tB in ('N', 'C', 'T'),
             T in (Float64, ComplexF64)
 
             A = randn(T, tA === 'N' ? (m, n) : (n, m))

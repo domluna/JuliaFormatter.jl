@@ -256,7 +256,7 @@ function calculated_attributes!(::Type{<:Union{Lines,LineSegments}}, plot)
        iseven(length(pos)) &&
        (length(pos) ÷ 2) == length(plot[:color][])
         plot[:color] = lift(plot[:color]) do cols
-            return map(i -> cols[(i + 1) ÷ 2], 1:(length(cols) * 2))
+            return map(i -> cols[(i + 1) ÷ 2], 1:(length(cols)*2))
         end
     end
 end

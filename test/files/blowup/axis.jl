@@ -499,7 +499,7 @@ function draw_axis3d(textbuffer, linebuffer, limits, ranges_labels, args...)
         if showgrid[i]
             c = gridcolors[i]
             thickness = gridthickness[i]
-            for _j in (i + 1):(i + N - 1)
+            for _j in (i+1):(i+N-1)
                 j = mod1(_j, N)
                 dir = unit(Point{N,Float32}, j)
                 range = ranges[j]
