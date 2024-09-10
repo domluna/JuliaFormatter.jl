@@ -12,9 +12,7 @@ struct Document
     # the print stage to know if the contents of the block (recursive) should not be indented.
     noindent_blocks::Vector{Int}
 
-    lit_strings::Dict{Int,Tuple{Int,Int,String}}
     comments::Dict{Int,Tuple{Int,String}}
-    semicolons::Dict{Int,Vector{Int}}
 
     ends_on_nl::Bool
 end
@@ -24,48 +22,15 @@ function Document(text::AbstractString)
     noindent_blocks = Int[]
     stack = Tuple{Int,Int}[]
     comments = Dict{Int,Tuple{Int,String}}()
-    semicolons = Dict{Int,Vector{Int}}()
-    lit_strings = Dict{Int,Tuple{Int,Int,String}}()
 
     srcfile = JuliaSyntax.SourceFile(text)
     tokens = JuliaSyntax.tokenize(text)
-    string_stack = Tuple{Int,Int,String}[]
 
     ends_on_nl = tokens[end].head.kind === K"NewlineWs"
 
     for (i, t) in enumerate(tokens)
         kind = t.head.kind
-
-        if kind in (K"\"\"\"", K"```", K"\"", K"`")
-            if isempty(string_stack)
-                # Opening quote
-                start_offset = first(t.range)
-                start_line = JuliaSyntax.source_line(srcfile, first(t.range))
-                opening_quote = if kind === K"\"\"\""
-                    "\"\"\""
-                elseif kind === K"```"
-                    "```"
-                elseif kind === K"\""
-                    "\""
-                elseif kind === K"`"
-                    "`"
-                end
-                push!(string_stack, (start_offset, start_line, opening_quote))
-            else
-                # Closing quote
-                start_offset, start_line, opening_quote = pop!(string_stack)
-                end_offset = last(t.range)
-                end_line = JuliaSyntax.source_line(srcfile, last(t.range))
-
-                # Capture the full string content
-                full_string = text[(start_offset+1):end_offset]
-
-                lit_strings[start_offset] = (start_line, end_line, full_string)
-            end
-        elseif !isempty(string_stack)
-            # We're inside a string, continue to next token
-            continue
-        elseif kind === K"Comment"
+        if kind === K"Comment"
             ws = 0
             if i > 1 && (
                 tokens[i-1].head.kind === K"Whitespace" ||
@@ -164,17 +129,6 @@ function Document(text::AbstractString)
                     """Unable to format. Multi-line comment on line $l is not closed.""",
                 ),
             )
-        elseif kind === K";"
-            line = JuliaSyntax.source_line(srcfile, first(t.range))
-            if haskey(semicolons, line)
-                if i > 1 && tokens[i-1].head.kind === K";"
-                    semicolons[line][end] += 1
-                else
-                    push!(semicolons[line], 1)
-                end
-            else
-                semicolons[line] = Int[1]
-            end
         end
     end
 
@@ -193,9 +147,7 @@ function Document(text::AbstractString)
         srcfile,
         format_skips,
         noindent_blocks,
-        lit_strings,
         comments,
-        semicolons,
         ends_on_nl,
     )
 end

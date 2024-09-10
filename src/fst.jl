@@ -108,10 +108,11 @@ struct Metadata
     is_short_form_function::Bool
     is_assignment::Bool
     is_long_form_function::Bool
+    has_multiline_argument::Bool
 end
 
 function Metadata(k::JuliaSyntax.Kind, dotted::Bool)
-    return Metadata(k, dotted, false, false, false, false)
+    return Metadata(k, dotted, false, false, false, true, false)
 end
 
 """
@@ -129,7 +130,6 @@ mutable struct FST
     len::Int
     val::Union{Nothing,AbstractString}
     nodes::Union{Nothing,Vector{FST}}
-    ref::Union{Nothing,Ref{<:JuliaSyntax.GreenNode}}
     nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
@@ -171,15 +171,15 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
     end
 end
 
-FST(typ::FNode, cst::JuliaSyntax.GreenNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], Ref(cst), AllowNest, 0, -1, nothing)
+FST(typ::FNode, node::JuliaSyntax.GreenNode, indent::Int) =
+    FST(typ, -1, -1, indent, 0, nothing, FST[], AllowNest, 0, -1, nothing)
 
 FST(typ::FNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], nothing, AllowNest, 0, -1, nothing)
+    FST(typ, -1, -1, indent, 0, nothing, FST[], AllowNest, 0, -1, nothing)
 
 function FST(
     typ::FNode,
-    cst::JuliaSyntax.GreenNode,
+    node::JuliaSyntax.GreenNode,
     line_offset::Int,
     startline::Int,
     endline::Int,
@@ -193,7 +193,6 @@ function FST(
         length(val),
         val,
         nothing,
-        Ref(cst),
         AllowNest,
         0,
         line_offset,
@@ -215,7 +214,6 @@ function FST(
         0,
         length(val),
         val,
-        nothing,
         nothing,
         AllowNest,
         0,
@@ -255,18 +253,18 @@ can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
 can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nothing, nest_behavior, 0, -1, nothing)
-Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nest_behavior, 0, -1, nothing)
+Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, AllowNest, 0, -1, nothing)
 TrailingComma() =
-    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
 Whitespace(n) =
-    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
 Placeholder(n) =
-    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
 Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(NOTCODE, startline, endline, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
 InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, nothing, AllowNest, 0, -1, nothing)
+    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
 
 is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = fst.nodes === nothing
@@ -426,12 +424,25 @@ function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     end
     nodes
 end
-
+n_args(x) = length(get_args(x))
 function get_args(::Nothing)
     return JuliaSyntax.GreenNode[]
 end
 
-n_args(x) = length(get_args(x))
+function is_arg(fst::FST)
+    if fst.typ in (PUNCTUATION, SEMICOLON) || is_custom_leaf(fst)
+        return false
+    end
+    return true
+end
+
+function n_args(fst::FST)
+    isnothing(fst.nodes) && return nothing
+    _idx = findfirst(is_opener, fst.nodes)
+    idx = isnothing(_idx) ? 1 : _idx
+    n = length(filter(is_arg, fst.nodes[idx:end]))
+    return n
+end
 
 function is_prev_newline(fst::FST)
     if fst.typ === NEWLINE
@@ -969,7 +980,7 @@ function add_node!(
            en.typ === Binary && (en[end].typ === MacroCall || en[end].typ === MacroBlock)
 
             # don't add trailing comma in these cases
-        elseif is_comma(en) && t.typ === TupleN && n_args(t.ref[]) == 1
+        elseif is_comma(en) && t.typ === TupleN && n_args(t) == 1
             # preserve comma
         elseif s.opts.trailing_comma === nothing
         elseif !s.opts.trailing_comma::Bool
@@ -1135,8 +1146,13 @@ function add_node!(
         # only considered "in the positive" when it's past
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
-    elseif is_multiline(n)
-        if is_iterable(t) && n_args(t.ref[]) > 1
+    elseif is_multiline(n) || (!isnothing(t.metadata) && t.metadata.has_multiline_argument)
+        if isnothing(t.metadata)
+            t.metadata = Metadata(K"begin", false, false, false, false, true, true)
+        else
+            t.metadata = Metadata(t.metadata.op_kind, t.metadata.op_dotted, t.metadata.is_standalone_shortcircuit, t.metadata.is_short_form_function, t.metadata.is_assignment, t.metadata.is_long_form_function, true)
+        end
+        if is_iterable(t) && n_args(t) > 1
             t.nest_behavior = AlwaysNest
         end
         t.len += length(n)

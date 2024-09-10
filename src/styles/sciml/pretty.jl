@@ -112,7 +112,7 @@ function p_kw_in_macro(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
 
 function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ss)
-    t = FST(MacroCall, cst, nspaces(s))
+    t = FST(MacroCall, nspaces(s))
 
     childs = children(cst)
     has_closer = is_closer(childs[end])

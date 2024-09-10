@@ -79,7 +79,7 @@ function p_return(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         return p_return(DefaultStyle(bs), cst, s; kwargs...)
     end
 
-    t = FST(Return, cst, nspaces(s))
+    t = FST(Return, nspaces(s))
     for c in childs
         add_node!(t, pretty(style, c, s; kwargs...), s; join_lines = true)
     end
