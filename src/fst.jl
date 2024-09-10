@@ -255,12 +255,9 @@ can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 Newline(; length = 0, nest_behavior = AllowNest) =
     FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nest_behavior, 0, -1, nothing)
 Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, AllowNest, 0, -1, nothing)
-TrailingComma() =
-    FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
-Whitespace(n) =
-    FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
-Placeholder(n) =
-    FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
+TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
+Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
+Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
 Notcode(startline, endline) =
     FST(NOTCODE, startline, endline, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
 InlineComment(line) =
@@ -1150,7 +1147,15 @@ function add_node!(
         if isnothing(t.metadata)
             t.metadata = Metadata(K"begin", false, false, false, false, true, true)
         else
-            t.metadata = Metadata(t.metadata.op_kind, t.metadata.op_dotted, t.metadata.is_standalone_shortcircuit, t.metadata.is_short_form_function, t.metadata.is_assignment, t.metadata.is_long_form_function, true)
+            t.metadata = Metadata(
+                t.metadata.op_kind,
+                t.metadata.op_dotted,
+                t.metadata.is_standalone_shortcircuit,
+                t.metadata.is_short_form_function,
+                t.metadata.is_assignment,
+                t.metadata.is_long_form_function,
+                true,
+            )
         end
         if is_iterable(t) && n_args(t) > 1
             t.nest_behavior = AlwaysNest

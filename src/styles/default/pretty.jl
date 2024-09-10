@@ -504,19 +504,7 @@ function p_stringh(
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        n = FST(
-            LITERAL,
-            ln,
-            ln,
-            sidx - 1,
-            length(l),
-            l,
-            nothing,
-            AllowNest,
-            0,
-            -1,
-            nothing,
-        )
+        n = FST(LITERAL, ln, ln, sidx - 1, length(l), l, nothing, AllowNest, 0, -1, nothing)
         add_node!(t, n, s)
     end
 
@@ -541,7 +529,12 @@ function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; 
     args = children(cst)
     for (i, c) in enumerate(args)
         if i == 1
-            add_node!(t, pretty(style, c, s; kwargs..., from_docstring = true), s, max_padding = 0)
+            add_node!(
+                t,
+                pretty(style, c, s; kwargs..., from_docstring = true),
+                s,
+                max_padding = 0,
+            )
         elseif i == length(args)
             add_node!(t, pretty(style, c, s; kwargs...), s, max_padding = 0)
         else

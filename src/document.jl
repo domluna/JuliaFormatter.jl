@@ -143,13 +143,7 @@ function Document(text::AbstractString)
         push!(format_skips, FormatSkip(v[1], line, v[2], last(r)))
     end
 
-    return Document(
-        srcfile,
-        format_skips,
-        noindent_blocks,
-        comments,
-        ends_on_nl,
-    )
+    return Document(srcfile, format_skips, noindent_blocks, comments, ends_on_nl)
 end
 
 function has_noindent_block(d::Document, r::Tuple{Int,Int})
