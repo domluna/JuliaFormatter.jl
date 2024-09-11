@@ -156,7 +156,7 @@ end
 numlines(sf::JuliaSyntax.SourceFile) = length(sf.line_starts) - 1
 numlines(d::Document) = numlines(d.srcfile)
 
-function getsrcval(d::Document, r::UnitRange{Int})
+function getsrcval(d::Document, r::UnitRange{T}) where T <: Union{Int,UInt}
     try
         d.srcfile.code[r]
     catch
