@@ -1604,6 +1604,7 @@
         @test bluefmt(s1, 4, 92) == s2
     end
 
+    if VERSION >= "v1.8"
     @testset "703" begin
         s = """
         mutable struct A
@@ -1612,6 +1613,7 @@
         end
         """
         @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
     end
 
     @testset "713" begin
