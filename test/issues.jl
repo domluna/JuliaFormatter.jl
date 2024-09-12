@@ -1604,7 +1604,7 @@
         @test bluefmt(s1, 4, 92) == s2
     end
 
-    if VERSION >= "v1.8"
+    if VERSION >= v"1.8"
     @testset "703" begin
         s = """
         mutable struct A
