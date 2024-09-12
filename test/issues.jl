@@ -1605,15 +1605,15 @@
     end
 
     if VERSION >= v"1.8"
-    @testset "703" begin
-        s = """
-        mutable struct A
-            const a :: Int
-            bcd     :: String
+        @testset "703" begin
+            s = """
+            mutable struct A
+                const a :: Int
+                bcd     :: String
+            end
+            """
+            @test fmt(s, 4, 92, align_struct_field = true) == s
         end
-        """
-        @test fmt(s, 4, 92, align_struct_field = true) == s
-    end
     end
 
     @testset "713" begin
@@ -1676,11 +1676,11 @@
     end
 
     if VERSION >= v"1.7"
-    @testset "745" begin
-        s = "[;;;]"
-        @test fmt(s, 4, 92) == s
-        @test fmt(s, 4, 1) == s
-    end
+        @testset "745" begin
+            s = "[;;;]"
+            @test fmt(s, 4, 92) == s
+            @test fmt(s, 4, 1) == s
+        end
     end
 
     @testset "748" begin
@@ -1742,16 +1742,15 @@
         fmt(s) == s
     end
 
-
     if VERSION >= v"1.8"
-    @testset "802" begin
-        s = """
-        mutable struct Foo
-            const a
+        @testset "802" begin
+            s = """
+            mutable struct Foo
+                const a
+            end
+            """
+            @test fmt(s, 4, 92, align_struct_field = true) == s
         end
-        """
-        @test fmt(s, 4, 92, align_struct_field = true) == s
-    end
     end
 
     @testset "810" begin
