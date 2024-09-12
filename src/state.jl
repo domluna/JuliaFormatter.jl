@@ -24,13 +24,13 @@ function cursor_loc(s::State, offset::Integer)
 end
 cursor_loc(s::State) = cursor_loc(s, s.offset)
 
-function on_same_line(s::State, offset1::Int, offset2::Int)
+function on_same_line(s::State, offset1::Integer, offset2::Integer)
     l1 = JuliaSyntax.source_line(s.doc.srcfile, offset1)
     l2 = JuliaSyntax.source_line(s.doc.srcfile, offset2)
     return l1 == l2
 end
 
-function linerange(s::State, line::Int)
+function linerange(s::State, line::Integer)
     f = s.doc.srcfile.line_starts[line]
     r = JuliaSyntax.source_line_range(s.doc.srcfile, f)
     return (first(r), last(r))

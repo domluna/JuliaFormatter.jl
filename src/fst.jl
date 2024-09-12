@@ -171,34 +171,8 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
     end
 end
 
-FST(typ::FNode, node::JuliaSyntax.GreenNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], AllowNest, 0, -1, nothing)
-
 FST(typ::FNode, indent::Int) =
     FST(typ, -1, -1, indent, 0, nothing, FST[], AllowNest, 0, -1, nothing)
-
-function FST(
-    typ::FNode,
-    node::JuliaSyntax.GreenNode,
-    line_offset::Int,
-    startline::Int,
-    endline::Int,
-    val::AbstractString,
-)
-    FST(
-        typ,
-        startline,
-        endline,
-        0,
-        length(val),
-        val,
-        nothing,
-        AllowNest,
-        0,
-        line_offset,
-        nothing,
-    )
-end
 
 function FST(
     typ::FNode,
