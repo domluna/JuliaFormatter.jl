@@ -1675,10 +1675,12 @@
         @test format_text(s, SciMLStyle()) == s
     end
 
+    if VERSION >= v"1.7"
     @testset "745" begin
         s = "[;;;]"
         @test fmt(s, 4, 92) == s
         @test fmt(s, 4, 1) == s
+    end
     end
 
     @testset "748" begin
@@ -1740,6 +1742,8 @@
         fmt(s) == s
     end
 
+
+    if VERSION >= v"1.8"
     @testset "802" begin
         s = """
         mutable struct Foo
@@ -1747,6 +1751,7 @@
         end
         """
         @test fmt(s, 4, 92, align_struct_field = true) == s
+    end
     end
 
     @testset "810" begin
