@@ -564,10 +564,12 @@
         @test yasfmt(str) == str
     end
 
-    @testset "issue 582 - vcat" begin
-        @test yasfmt("[sts...;]") == "[sts...;]"
-        @test yasfmt("[a;b;]") == "[a; b;]"
-        @test yasfmt("[a;b;;]") == "[a; b;;]"
+    if VERSION >= v"1.7"
+        @testset "issue 582 - vcat" begin
+            @test yasfmt("[sts...;]") == "[sts...;]"
+            @test yasfmt("[a;b;]") == "[a; b;]"
+            @test yasfmt("[a;b;;]") == "[a; b;;]"
+        end
     end
 
     @testset "variable_call_indent" begin
