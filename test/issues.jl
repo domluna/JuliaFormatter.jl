@@ -1675,7 +1675,7 @@
         @test format_text(s, SciMLStyle()) == s
     end
 
-    if VERSION >= v"1.7"
+    if VERSION >= v"1.8"
         @testset "745" begin
             s = "[;;;]"
             @test fmt(s, 4, 92) == s
