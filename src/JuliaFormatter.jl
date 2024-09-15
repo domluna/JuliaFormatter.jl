@@ -9,7 +9,7 @@ using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
-import Base: get, pairs
+import Base: get, pairs, count
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -109,28 +109,6 @@ function options(::DefaultStyle)
     )
 end
 
-if VERSION < v"1.3"
-    # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
-    function count(t::Union{AbstractString,Regex}, s::AbstractString; overlap::Bool = false)
-        n = 0
-        i, e = firstindex(s), lastindex(s)
-        while true
-            r = findnext(t, s, i)
-            r === nothing && break
-            n += 1
-            j = overlap || isempty(r) ? first(r) : last(r)
-            j > e && break
-            @inbounds i = nextind(s, j)
-        end
-        return n
-    end
-end
-count(args...; kwargs...) = Base.count(args...; kwargs...)
-
-# multidimensional array syntax has nodes that appear as
-# Symbol("integer_value"), i.e. Symbol("2") for ";;"
-const SEMICOLON_LOOKUP = Dict(Symbol(n) => n for n in 1:20)
-
 include("document.jl")
 include("options.jl")
 include("state.jl")
@@ -173,33 +151,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
         style::AbstractStyle = DefaultStyle(),
         indent::Int = 4,
         margin::Int = 92,
-        always_for_in::Union{Bool,Nothing} = false,
-        for_in_replacement::String = "in",
-        whitespace_typedefs::Bool = false,
-        whitespace_ops_in_indices::Bool = false,
-        remove_extra_newlines::Bool = false,
-        import_to_using::Bool = false,
-        pipe_to_function_call::Bool = false,
-        short_to_long_function_def::Bool = false,
-        long_to_short_function_def::Bool = false,
-        always_use_return::Bool = false,
-        whitespace_in_kwargs::Bool = true,
-        annotate_untyped_fields_with_any::Bool = true,
-        format_docstrings::Bool = false,
-        align_struct_field::Bool = false,
-        align_conditional::Bool = false,
-        align_assignment::Bool = false,
-        align_pair_arrow::Bool = false,
-        conditional_to_if = false,
-        normalize_line_endings = "auto",
-        align_matrix::Bool = false,
-        trailing_comma::Bool = false,
-        trailing_zero::Bool = true,
-        indent_submodule::Bool = false,
-        separate_kwargs_with_semicolon::Bool = false,
-        surround_whereop_typeparameters::Bool = true,
-        variable_call_indent::Vector{String} = []
-        short_circuit_to_if::Bool = false,
+        options...,
     )::String
 
 Formats a Julia source passed in as a string, returning the formatted

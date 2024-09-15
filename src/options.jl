@@ -36,6 +36,7 @@ Base.@kwdef struct Options
     yas_style_nesting::Bool = false
     short_circuit_to_if::Bool = false
     disallow_single_arg_nesting::Bool = false
+
     function Options(args...)
         opts = new(args...)
         if (opts.force_long_function_def === true) &&
