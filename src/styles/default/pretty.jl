@@ -1535,10 +1535,10 @@ function p_kw(
     for c in children(cst)
         if kind(c) === K"=" && s.opts.whitespace_in_kwargs
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
+            add_node!(t, pretty(style, c, s; lineage, kwargs...), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
-            n = pretty(style, c, s; kwargs...)
+            n = pretty(style, c, s; lineage, kwargs...)
             if !s.opts.whitespace_in_kwargs &&
                ((n.typ === IDENTIFIER && endswith(n.val, "!")) || (is_prefix_op_call(c)))
                 add_node!(
@@ -1573,8 +1573,8 @@ function p_binaryopcall(
     s::State;
     nospace::Bool = false,
     nonest::Bool = false,
-    from_typedef::Bool = false,
     standalone_binary_circuit::Bool = true,
+    from_typedef::Bool = false,
     from_let::Bool = false,
     from_ref::Bool = false,
     from_colon::Bool = false,
@@ -1673,9 +1673,11 @@ function p_binaryopcall(
             from_typedef,
             from_ref,
             from_colon,
+            from_let,
+            lineage,
             kwargs...,
             standalone_binary_circuit = standalone_binary_circuit &&
-                !(is_lazy_op(c) && kind(c) !== opkind),
+                                        !(is_lazy_op(c) && kind(c) !== opkind),
             can_separate_kwargs = can_separate_kwargs,
         )
 
@@ -2682,7 +2684,7 @@ function p_generator(
     has_for_kw = findfirst(n -> kind(n) === K"for", childs) !== nothing
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs..., from_for = has_for_kw)
+        n = pretty(style, a, s; lineage, kwargs..., from_for = has_for_kw)
         if JuliaSyntax.is_keyword(a) && !haschildren(a)
             # for keyword can only be on the following line
             # if this expression is within an iterable expression

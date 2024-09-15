@@ -664,6 +664,7 @@ function p_generator(
     has_for_kw = false
 
     from_iterable = false
+
     for (kind, is_itr, _) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"
             continue
@@ -677,7 +678,7 @@ function p_generator(
     has_for_kw = findfirst(n -> kind(n) === K"for", childs) !== nothing
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs..., from_for = has_for_kw)
+        n = pretty(style, a, s; lineage, kwargs..., from_for = has_for_kw)
         if JuliaSyntax.is_keyword(a) && !haschildren(a)
             idx = findprev(n -> !JuliaSyntax.is_whitespace(n), childs, i - 1)
             if !isnothing(idx) && is_block(childs[idx])

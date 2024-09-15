@@ -162,11 +162,12 @@ function n_binaryopcall!(
             YASStyle(style),
             fst,
             s;
+            lineage,
             kwargs...,
             indent = fst.indent + s.opts.indent,
         )
     else
-        n_binaryopcall!(YASStyle(style), fst, s; kwargs...)
+        n_binaryopcall!(YASStyle(style), fst, s; lineage, kwargs...)
     end
 end
 
@@ -182,9 +183,16 @@ function n_chainopcall!(
 )
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
-        n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent)
+        n_block!(
+            YASStyle(style),
+            fst,
+            s;
+            lineage,
+            kwargs...,
+            indent = fst.indent + s.opts.indent,
+        )
     else
-        n_block!(DefaultStyle(style), fst, s; kwargs..., indent = s.line_offset)
+        n_block!(DefaultStyle(style), fst, s; lineage, kwargs..., indent = s.line_offset)
     end
 end
 
