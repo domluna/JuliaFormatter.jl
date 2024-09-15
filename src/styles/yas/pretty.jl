@@ -138,7 +138,7 @@ function p_braces(
     ys::YASStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_typedef = false,
+    from_typedef::Bool = false,
     kwargs...,
 )
     style = getstyle(ys)
@@ -177,7 +177,7 @@ function p_bracescat(
     ys::YASStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_typedef = false,
+    from_typedef::Bool = false,
     kwargs...,
 )
     style = getstyle(ys)
@@ -652,14 +652,19 @@ function p_whereopcall(
     t
 end
 
-function p_generator(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_generator(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+    kwargs...,
+)
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
     has_for_kw = false
 
     from_iterable = false
-    lineage = get(kwargs, :lineage, JuliaSyntax.Kind[])
-    for (kind, is_itr) in Iterators.reverse(lineage)
+    for (kind, is_itr, _) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"
             continue
         elseif is_itr

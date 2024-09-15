@@ -19,7 +19,7 @@ function nest!(
     nodes::Vector{FST},
     s::State,
     indent::Int;
-    extra_margin = 0,
+    extra_margin::Int = 0,
     kwargs...,
 )
     style = getstyle(ds)
@@ -48,7 +48,16 @@ nest!(
     kwargs...,
 ) where {S<:AbstractStyle} = nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
 
-function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function nest!(
+    ds::DefaultStyle,
+    fst::FST,
+    s::State;
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}} = Tuple{
+        FNode,
+        Union{Nothing,Metadata},
+    }[],
+    kwargs...,
+)
     if is_leaf(fst)
         s.line_offset += length(fst)
         return false
@@ -58,7 +67,6 @@ function nest!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
 
     style = getstyle(ds)
-    lineage = get(kwargs, :lineage, Tuple{FNode,Union{Nothing,Metadata}}[])
     push!(lineage, (fst.typ, fst.metadata))
     kwargs = (; kwargs..., lineage = lineage)
 

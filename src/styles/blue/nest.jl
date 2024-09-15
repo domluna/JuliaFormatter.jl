@@ -146,9 +146,17 @@ function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     end
 end
 
-function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
+function n_binaryopcall!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State;
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}} = Tuple{
+        FNode,
+        Union{Nothing,Metadata},
+    }[],
+    kwargs...,
+)
     style = getstyle(bs)
-    lineage = get(kwargs, :lineage, Tuple{FNode,Metadata}[])
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_binaryopcall!(
             YASStyle(style),
@@ -162,9 +170,17 @@ function n_binaryopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     end
 end
 
-function n_chainopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
+function n_chainopcall!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State;
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}} = Tuple{
+        FNode,
+        Union{Nothing,Metadata},
+    }[],
+    kwargs...,
+)
     style = getstyle(bs)
-    lineage = get(kwargs, :lineage, Tuple{FNode,Metadata}[])
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_block!(YASStyle(style), fst, s; kwargs..., indent = fst.indent + s.opts.indent)
     else

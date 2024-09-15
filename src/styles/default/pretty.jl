@@ -2,7 +2,7 @@ function pretty(
     ds::DefaultStyle,
     t::JuliaSyntax.GreenNode,
     s::State;
-    lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
     k = kind(t)
@@ -629,9 +629,9 @@ function p_block(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    ignore_single_line = false,
-    from_quote = false,
-    join_body = false,
+    ignore_single_line::Bool = false,
+    from_quote::Bool = false,
+    join_body::Bool = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1321,7 +1321,7 @@ function p_cartesian_iterator(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_for = false,
+    from_for::Bool = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -1524,7 +1524,7 @@ function p_kw(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
     style = getstyle(ds)
@@ -1571,14 +1571,14 @@ function p_binaryopcall(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    nospace = false,
-    nonest = false,
-    from_typedef = false,
-    standalone_binary_circuit = true,
-    from_let = false,
-    from_ref = false,
-    from_colon = false,
-    lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+    nospace::Bool = false,
+    nonest::Bool = false,
+    from_typedef::Bool = false,
+    standalone_binary_circuit::Bool = true,
+    from_let::Bool = false,
+    from_ref::Bool = false,
+    from_colon::Bool = false,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
     style = getstyle(ds)
@@ -2136,7 +2136,7 @@ function p_braces(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_typedef = false,
+    from_typedef::Bool = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -2186,7 +2186,7 @@ function p_bracescat(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_typedef = false,
+    from_typedef::Bool = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -2331,7 +2331,7 @@ function p_parameters(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    from_typedef = false,
+    from_typedef::Bool = false,
     kwargs...,
 )
     style = getstyle(ds)
@@ -2513,7 +2513,7 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, st + 1)
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs..., from_matrix = true)
+        n = pretty(style, a, s; kwargs...)
         diff_line = t.endline != t.startline
         # If arguments are on different lines then always nest
         diff_line && (t.nest_behavior = AlwaysNest)
@@ -2660,7 +2660,7 @@ function p_generator(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    lineage = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
     style = getstyle(ds)
