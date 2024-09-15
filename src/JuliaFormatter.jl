@@ -543,8 +543,6 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-if Base.VERSION >= v"1.5"
-    include("other/precompile.jl")
-end
+# include("other/precompile.jl")
 
 end
