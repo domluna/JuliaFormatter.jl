@@ -148,8 +148,8 @@ function show(io::IO, fst::FST)
 end
 
 function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
-    if fst.nodes !== nothing
-        println(io, indent, "FST: $(fst.typ) $(length(fst.nodes))")
+    if !isnothing(fst.nodes)
+        println(io, indent, "FST: $(fst.typ) $(length(fst.nodes::Vector{FST}))")
         println(
             io,
             indent,
@@ -202,8 +202,8 @@ function Base.setindex!(fst::FST, node::FST, ind::Int)
     nodes[ind] = node
     fst.len += node.len
 end
-Base.getindex(fst::FST, inds...) = (fst.nodes::Vector{FST})[inds...]
-Base.lastindex(fst::FST) = length(fst.nodes::Vector{FST})
+Base.getindex(fst::FST, inds...)::Vector{FST} = (fst.nodes::Vector{FST})[inds...]
+Base.lastindex(fst::FST) = isnothing(fst.nodes) ? 0 : length(fst.nodes::Vector{FST})
 Base.firstindex(fst::FST) = 1
 Base.length(fst::FST) = fst.len
 function Base.iterate(fst::FST, state = 1)
@@ -741,7 +741,7 @@ function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
     return isnothing(fst.metadata) ? nothing : fst.metadata.op_kind
 end
 
-function extract_operator_indices(childs)
+function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     args = findall(n -> !JuliaSyntax.is_whitespace(n), childs)
     op_indices = Int[]
     i = 2
@@ -879,7 +879,7 @@ function is_lazy_op(t)
 end
 
 function needs_placeholder(
-    childs::Vector{JuliaSyntax.GreenNode{T}},
+    childs::Union{Tuple{},Vector{JuliaSyntax.GreenNode{T}}},
     start_index::Int,
     stop_kind::JuliaSyntax.Kind,
 ) where {T}

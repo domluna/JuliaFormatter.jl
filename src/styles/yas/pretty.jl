@@ -108,7 +108,7 @@ function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     t = FST(Curly, nspaces(s))
 
     childs = children(cst)
-    idx = findfirst(n -> kind(n) === K"{", childs)
+    idx = findfirst(n -> kind(n) === K"{", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
@@ -145,7 +145,7 @@ function p_braces(
     t = FST(Braces, nspaces(s))
 
     childs = children(cst)
-    idx = findfirst(n -> kind(n) === K"{", childs)
+    idx = findfirst(n -> kind(n) === K"{", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     nws = from_typedef && !s.opts.whitespace_typedefs ? 0 : 1
@@ -184,7 +184,7 @@ function p_bracescat(
     t = FST(BracesCat, nspaces(s))
 
     childs = children(cst)
-    idx = findfirst(n -> kind(n) === K"{", childs)
+    idx = findfirst(n -> kind(n) === K"{", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     nws = from_typedef && !s.opts.whitespace_typedefs ? 0 : 1
@@ -309,7 +309,7 @@ function p_call(
     t = FST(Call, nspaces(s))
     childs = children(cst)
 
-    idx = findfirst(n -> kind(n) === K"(", childs)
+    idx = findfirst(n -> kind(n) === K"(", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
@@ -352,7 +352,7 @@ function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     t = FST(Vect, nspaces(s))
 
     childs = children(cst)
-    idx = findfirst(n -> kind(n) === K"[", childs)
+    idx = findfirst(n -> kind(n) === K"[", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
@@ -445,7 +445,7 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     t = FST(RefN, nspaces(s))
 
     childs = children(cst)
-    idx = findfirst(n -> kind(n) === K"[", childs)
+    idx = findfirst(n -> kind(n) === K"[", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
@@ -595,7 +595,7 @@ function p_whereopcall(
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
-    idx = findfirst(n -> kind(n) === K"{", childs)
+    idx = findfirst(n -> kind(n) === K"{", childs)::Int
     first_arg_idx =
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 

@@ -72,7 +72,7 @@ function Document(text::AbstractString)
                 end
             else
                 # multiline comment
-                idx = findfirst(x -> x == '\n', val) + 1
+                idx = findfirst(x -> x == '\n', val)::Int + 1
                 fc2 = findfirst(c -> !isspace(c), val[idx:end])
 
                 lr = JuliaSyntax.source_line_range(srcfile, first(t.range))

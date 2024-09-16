@@ -878,11 +878,12 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     style = getstyle(ds)
 
     nested = false
-    for (i, n) in enumerate(fst.nodes)
-        if n.typ === NEWLINE && fst.nodes[i+1].typ === Block
-            s.line_offset = fst.nodes[i+1].indent
-        elseif n.typ === NOTCODE && fst.nodes[i+1].typ === Block
-            s.line_offset = fst.nodes[i+1].indent
+    nodes = fst.nodes::Vector{FST}
+    for (i, n) in enumerate(nodes)
+        if n.typ === NEWLINE && nodes[i+1].typ === Block
+            s.line_offset = nodes[i+1].indent
+        elseif n.typ === NOTCODE && nodes[i+1].typ === Block
+            s.line_offset = nodes[i+1].indent
         elseif n.typ === NEWLINE
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER && nested
