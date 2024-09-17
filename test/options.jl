@@ -1772,20 +1772,6 @@
             @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
         end
 
-        @testset "trailing comma going solo" begin
-            # juliasyntax doesn't parse this
-            str_ = """
-            using A
-            ,
-              B
-            """
-            str = """
-            using A,
-                B
-            """
-            @test_broken fmt(str_, join_lines_based_on_source = true) == str
-        end
-
         @testset "misc" begin
             str = raw"""
             @testset "T=$T, m=$m, n=$n" for T in (Float64, ComplexF64), m in (2, 3), n in (1, 3)
@@ -2080,9 +2066,9 @@
             T[ a b Expr();
             d e Expr();]"""
             str = """
-            T[a b Expr()
-                d e Expr()]"""
-            @test_broken fmt(str_, join_lines_based_on_source = true) == str
+            T[a b Expr();
+                d e Expr();]"""
+            @test fmt(str_, join_lines_based_on_source = true) == str
         end
 
         @testset "function defs" begin

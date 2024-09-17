@@ -641,7 +641,7 @@ function p_macrocall(
             join_lines = t.endline == n.startline
 
             if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
-               next_node_is(childs[i], nn -> kind(nn) in KSet"NewlineWs Whitespace")
+               next_node_is(nn -> kind(nn) in KSet"NewlineWs Whitespace", childs[i])
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s; join_lines, max_padding)

@@ -897,10 +897,10 @@ function needs_placeholder(
     return false
 end
 
-next_node_is(nn, k::JuliaSyntax.Kind) =
-    kind(nn) === k || (haschildren(nn) && next_node_is(nn[1], k))
+next_node_is(k::JuliaSyntax.Kind, nn) =
+    kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
 
-next_node_is(nn, f::Function) = f(nn) || (haschildren(nn) && next_node_is(nn[1], f))
+next_node_is(f::Function, nn) = f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
 
 """
     add_node!(

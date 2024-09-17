@@ -688,7 +688,7 @@ function p_macrocall(
             join_lines = t.endline == n.startline
 
             if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
-               next_node_is(childs[i], nn -> kind(nn) in KSet"NewlineWs Whitespace")
+               next_node_is(nn -> kind(nn) in KSet"NewlineWs Whitespace", childs[i])
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s; join_lines, max_padding)
@@ -1586,11 +1586,12 @@ function p_do(
     t = FST(Do, nspaces(s))
     !haschildren(cst) && return t
 
-    for (i, c) in enumerate(children(cst))
+    childs = children(cst)
+    for (i, c) in enumerate(childs)
         if kind(c) === K"do" && !haschildren(c)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, c, s; kwargs...), s, join_lines = true)
-            if !next_node_is(cst[i+1], K"NewlineWs")
+            if !next_node_is(K"NewlineWs", childs[i+1])
                 add_node!(t, Whitespace(1), s)
             end
         elseif kind(c) === K"end"
