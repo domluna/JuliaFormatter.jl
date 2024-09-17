@@ -254,21 +254,6 @@ is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
 
 is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 
-function traverse(text, ex, pos = 1)
-    if !haschildren(ex)
-        println(
-            repr(JuliaSyntax.kind(ex)),
-            " => ",
-            repr(text[pos:prevind(text, pos+JuliaSyntax.span(ex))]),
-        )
-        return
-    end
-    for e in children(ex)
-        traverse(text, e, pos)
-        pos += JuliaSyntax.span(e)
-    end
-end
-
 function is_multiline(fst::FST)
     fst.endline > fst.startline &&
         fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
@@ -315,7 +300,7 @@ function is_func_call(t::JuliaSyntax.GreenNode)::Bool
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
         isnothing(idx) && return false
         return is_func_call(childs[idx])
-    elseif kind(t) == K"parens" && haschildren(t)
+    elseif kind(t) === K"parens" && haschildren(t)
         childs = children(t)
         idx =
             findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)

@@ -1821,6 +1821,7 @@ function p_binaryopcall(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
+    nospace::Bool = false,
     nonest::Bool = false,
     standalone_binary_circuit::Bool = true,
     from_typedef::Bool = false,
@@ -1830,7 +1831,7 @@ function p_binaryopcall(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
-    @nospecialize kwargs lineage from_ref from_colon from_let from_typedef standalone_binary_circuit nonest
+    @nospecialize kwargs lineage from_ref from_colon from_let from_typedef standalone_binary_circuit nonest nospace
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
     !haschildren(cst) && return t
@@ -1904,8 +1905,6 @@ function p_binaryopcall(
         end
     elseif from_colon
         nospace = true
-    else
-        nospace = false
     end
     nws = !nospace && has_ws ? 1 : 0
 

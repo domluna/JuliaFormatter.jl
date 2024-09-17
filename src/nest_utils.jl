@@ -164,6 +164,7 @@ function nest_if_over_margin!(
     stop_idx::Union{Int,Nothing} = nothing,
     kwargs...,
 )::Bool where {S<:AbstractStyle}
+    @nospecialize kwargs stop_idx
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing

@@ -196,9 +196,9 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     return format_text(t, style, State(Document(text), opts))
 end
 
-function format_text(cst::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
+function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
     fst = try
-        pretty(style, cst, s)
+        pretty(style, node, s)
     catch e
         loc = cursor_loc(s, s.offset)
         @warn "Error occurred during prettification" line = loc[1] offset = loc[2] goffset =
