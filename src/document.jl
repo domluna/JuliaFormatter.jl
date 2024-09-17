@@ -154,9 +154,10 @@ numlines(sf::JuliaSyntax.SourceFile) = length(sf.line_starts) - 1
 numlines(d::Document) = numlines(d.srcfile)
 
 function getsrcval(d::Document, r::UnitRange{T}) where {T<:Union{Int,UInt}}
+    code = JuliaSyntax.sourcetext(d.srcfile)
     try
-        d.srcfile.code[r]
+        code[r]
     catch
-        d.srcfile.code[first(r):prevind(d.srcfile.code, last(r))]
+        code[first(r):prevind(code, last(r))]
     end
 end
