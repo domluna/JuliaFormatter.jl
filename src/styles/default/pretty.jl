@@ -7,166 +7,164 @@ function pretty(
 )
     k = kind(t)
     style = getstyle(ds)
-
     push!(lineage, (k, is_iterable(t), is_assignment(t)))
-    kwargs = (; kwargs..., lineage = lineage)
 
     ret = if k == K"Identifier" && !haschildren(t)
-        p_identifier(style, t, s; kwargs...)
+        p_identifier(style, t, s; kwargs..., lineage)
     elseif JuliaSyntax.is_operator(t) && !haschildren(t)
-        p_operator(style, t, s; kwargs...)
+        p_operator(style, t, s; kwargs..., lineage)
     elseif kind(t) == K"Comment"
-        p_comment(style, t, s; kwargs...)
+        p_comment(style, t, s; kwargs..., lineage)
     elseif JuliaSyntax.is_whitespace(t)
-        p_whitespace(style, t, s; kwargs...)
+        p_whitespace(style, t, s; kwargs..., lineage)
     elseif kind(t) == K";"
-        p_semicolon(style, t, s; kwargs...)
+        p_semicolon(style, t, s; kwargs..., lineage)
     elseif is_punc(t) && !haschildren(t)
-        p_punctuation(style, t, s; kwargs...)
+        p_punctuation(style, t, s; kwargs..., lineage)
     elseif JuliaSyntax.is_keyword(t) && !haschildren(t)
-        p_keyword(style, t, s; kwargs...)
+        p_keyword(style, t, s; kwargs..., lineage)
     elseif k == K"as"
-        p_as(style, t, s; kwargs...)
+        p_as(style, t, s; kwargs..., lineage)
     elseif k in KSet"string cmdstring char"
-        p_stringh(style, t, s; kwargs...)
+        p_stringh(style, t, s; kwargs..., lineage)
     elseif JuliaSyntax.is_literal(t) || k in KSet"\" \"\"\" ` ```"
-        p_literal(style, t, s; kwargs...)
+        p_literal(style, t, s; kwargs..., lineage)
     elseif k === K"." && haschildren(t)
-        p_accessor(style, t, s; kwargs...)
+        p_accessor(style, t, s; kwargs..., lineage)
     elseif k === K"block" && length(children(t)) > 1 && kind(t[1]) === K"begin"
-        p_begin(style, t, s; kwargs...)
+        p_begin(style, t, s; kwargs..., lineage)
     elseif k === K"block"
-        p_block(style, t, s; kwargs...)
+        p_block(style, t, s; kwargs..., lineage)
     elseif k === K"module"
-        p_module(style, t, s; kwargs...)
+        p_module(style, t, s; kwargs..., lineage)
     elseif k === K"baremodule"
-        p_baremodule(style, t, s; kwargs...)
+        p_baremodule(style, t, s; kwargs..., lineage)
     elseif k === K"function"
-        p_functiondef(style, t, s; kwargs...)
+        p_functiondef(style, t, s; kwargs..., lineage)
     elseif k in KSet"MacroName StringMacroName CmdMacroName core_@cmd"
-        p_macroname(style, t, s; kwargs...)
+        p_macroname(style, t, s; kwargs..., lineage)
     elseif k === K"macro"
-        p_macro(style, t, s; kwargs...)
+        p_macro(style, t, s; kwargs..., lineage)
     elseif k === K"struct" && !JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        p_struct(style, t, s; kwargs...)
+        p_struct(style, t, s; kwargs..., lineage)
     elseif k === K"struct" && JuliaSyntax.has_flags(t, JuliaSyntax.MUTABLE_FLAG)
-        p_mutable(style, t, s; kwargs...)
+        p_mutable(style, t, s; kwargs..., lineage)
     elseif k === K"abstract"
-        p_abstract(style, t, s; kwargs...)
+        p_abstract(style, t, s; kwargs..., lineage)
     elseif k === K"primitive"
-        p_primitive(style, t, s; kwargs...)
+        p_primitive(style, t, s; kwargs..., lineage)
     elseif k === K"for"
-        p_for(style, t, s; kwargs...)
+        p_for(style, t, s; kwargs..., lineage)
     elseif k === K"while"
-        p_while(style, t, s; kwargs...)
+        p_while(style, t, s; kwargs..., lineage)
     elseif k === K"do"
-        p_do(style, t, s; kwargs...)
+        p_do(style, t, s; kwargs..., lineage)
     elseif k === K"var"
-        p_var(style, t, s; kwargs...)
+        p_var(style, t, s; kwargs..., lineage)
     elseif is_if(t)
-        p_if(style, t, s; kwargs...)
+        p_if(style, t, s; kwargs..., lineage)
     elseif is_try(t)
-        p_try(style, t, s; kwargs...)
+        p_try(style, t, s; kwargs..., lineage)
     elseif k === K"toplevel"
-        p_toplevel(style, t, s; kwargs...)
+        p_toplevel(style, t, s; kwargs..., lineage)
     elseif k === K"quote" && haschildren(t) && kind(t[1]) === K":"
-        p_quotenode(style, t, s; kwargs...)
+        p_quotenode(style, t, s; kwargs..., lineage)
     elseif k === K"quote" && haschildren(t)
-        p_quote(style, t, s; kwargs...)
+        p_quote(style, t, s; kwargs..., lineage)
     elseif k === K"let"
-        p_let(style, t, s; kwargs...)
+        p_let(style, t, s; kwargs..., lineage)
     elseif k === K"vect"
-        p_vect(style, t, s; kwargs...)
+        p_vect(style, t, s; kwargs..., lineage)
     elseif k === K"comprehension"
-        p_comprehension(style, t, s; kwargs...)
+        p_comprehension(style, t, s; kwargs..., lineage)
     elseif k === K"typed_comprehension"
-        p_typedcomprehension(style, t, s; kwargs...)
+        p_typedcomprehension(style, t, s; kwargs..., lineage)
     elseif k === K"braces"
-        p_braces(style, t, s; kwargs...)
+        p_braces(style, t, s; kwargs..., lineage)
     elseif k === K"bracescat"
-        p_bracescat(style, t, s; kwargs...)
+        p_bracescat(style, t, s; kwargs..., lineage)
     elseif k === K"tuple"
-        p_tuple(style, t, s; kwargs...)
+        p_tuple(style, t, s; kwargs..., lineage)
     elseif k === K"cartesian_iterator"
-        p_cartesian_iterator(style, t, s; kwargs...)
+        p_cartesian_iterator(style, t, s; kwargs..., lineage)
     elseif k === K"parens"
-        p_invisbrackets(style, t, s; kwargs...)
+        p_invisbrackets(style, t, s; kwargs..., lineage)
     elseif k === K"curly"
-        p_curly(style, t, s; kwargs...)
+        p_curly(style, t, s; kwargs..., lineage)
     elseif is_macrostr(t)
-        p_macrostr(style, t, s; kwargs...)
+        p_macrostr(style, t, s; kwargs..., lineage)
     elseif k === K"doc"
-        p_globalrefdoc(style, t, s; kwargs...)
+        p_globalrefdoc(style, t, s; kwargs..., lineage)
     elseif k === K"macrocall"
-        p_macrocall(style, t, s; kwargs...)
+        p_macrocall(style, t, s; kwargs..., lineage)
     elseif k === K"where"
-        p_whereopcall(style, t, s; kwargs...)
+        p_whereopcall(style, t, s; kwargs..., lineage)
     elseif k === K"?" && haschildren(t)
-        p_conditionalopcall(style, t, s; kwargs...)
+        p_conditionalopcall(style, t, s; kwargs..., lineage)
     elseif is_binary(t)
-        p_binaryopcall(style, t, s; kwargs...)
+        p_binaryopcall(style, t, s; kwargs..., lineage)
     elseif is_chain(t)
-        p_chainopcall(style, t, s; kwargs...)
+        p_chainopcall(style, t, s; kwargs..., lineage)
     elseif is_unary(t)
-        p_unaryopcall(style, t, s; kwargs...)
+        p_unaryopcall(style, t, s; kwargs..., lineage)
     elseif is_func_call(t)
-        p_call(style, t, s; kwargs...)
+        p_call(style, t, s; kwargs..., lineage)
     elseif k === K"comparison"
-        p_comparison(style, t, s; kwargs...)
+        p_comparison(style, t, s; kwargs..., lineage)
     elseif JuliaSyntax.is_operator(t) && haschildren(t)
-        p_binaryopcall(style, t, s; kwargs...)
+        p_binaryopcall(style, t, s; kwargs..., lineage)
     elseif kind(t) in KSet"dotcall call"
-        p_binaryopcall(style, t, s; kwargs...)
+        p_binaryopcall(style, t, s; kwargs..., lineage)
     elseif k === K"parameters"
-        p_parameters(style, t, s; kwargs...)
+        p_parameters(style, t, s; kwargs..., lineage)
     elseif k === K"local"
-        p_local(style, t, s; kwargs...)
+        p_local(style, t, s; kwargs..., lineage)
     elseif k === K"global"
-        p_global(style, t, s; kwargs...)
+        p_global(style, t, s; kwargs..., lineage)
     elseif k === K"const"
-        p_const(style, t, s; kwargs...)
+        p_const(style, t, s; kwargs..., lineage)
     elseif k === K"return"
-        p_return(style, t, s; kwargs...)
+        p_return(style, t, s; kwargs..., lineage)
     elseif k === K"outer"
-        p_outer(style, t, s; kwargs...)
+        p_outer(style, t, s; kwargs..., lineage)
     elseif k === K"import"
-        p_import(style, t, s; kwargs...)
+        p_import(style, t, s; kwargs..., lineage)
     elseif k === K"export"
-        p_export(style, t, s; kwargs...)
+        p_export(style, t, s; kwargs..., lineage)
     elseif k === K"using"
-        p_using(style, t, s; kwargs...)
+        p_using(style, t, s; kwargs..., lineage)
     elseif k === K"importpath"
-        p_importpath(style, t, s; kwargs...)
+        p_importpath(style, t, s; kwargs..., lineage)
     elseif k === K"row"
-        p_row(style, t, s; kwargs...)
+        p_row(style, t, s; kwargs..., lineage)
     elseif k === K"nrow"
-        p_nrow(style, t, s; kwargs...)
+        p_nrow(style, t, s; kwargs..., lineage)
     elseif k === K"ncat"
-        p_ncat(style, t, s; kwargs...)
+        p_ncat(style, t, s; kwargs..., lineage)
     elseif k === K"typed_ncat"
-        p_typedncat(style, t, s; kwargs...)
+        p_typedncat(style, t, s; kwargs..., lineage)
     elseif k === K"vcat"
-        p_vcat(style, t, s; kwargs...)
+        p_vcat(style, t, s; kwargs..., lineage)
     elseif k === K"typed_vcat"
-        p_typedvcat(style, t, s; kwargs...)
+        p_typedvcat(style, t, s; kwargs..., lineage)
     elseif k === K"hcat"
-        p_hcat(style, t, s; kwargs...)
+        p_hcat(style, t, s; kwargs..., lineage)
     elseif k === K"typed_hcat"
-        p_typedhcat(style, t, s; kwargs...)
+        p_typedhcat(style, t, s; kwargs..., lineage)
     elseif k === K"ref"
-        p_ref(style, t, s; kwargs...)
+        p_ref(style, t, s; kwargs..., lineage)
     elseif k === K"generator"
-        p_generator(style, t, s; kwargs...)
+        p_generator(style, t, s; kwargs..., lineage)
     elseif k === K"filter"
-        p_filter(style, t, s; kwargs...)
+        p_filter(style, t, s; kwargs..., lineage)
     elseif k === K"juxtapose"
-        p_juxtapose(style, t, s; kwargs...)
+        p_juxtapose(style, t, s; kwargs..., lineage)
     elseif k === K"break"
-        p_break(style, t, s; kwargs...)
+        p_break(style, t, s; kwargs..., lineage)
     elseif k === K"continue"
-        p_continue(style, t, s; kwargs...)
+        p_continue(style, t, s; kwargs..., lineage)
     elseif k === K"inert"
-        p_inert(style, t, s; kwargs...)
+        p_inert(style, t, s; kwargs..., lineage)
     else
         @warn "unknown node" kind(t) t cursor_loc(s)
         if is_leaf(t)
@@ -175,13 +173,13 @@ function pretty(
         else
             tt = FST(Unknown, nspaces(s))
             for a in children(t)
-                add_node!(tt, pretty(style, a, s; kwargs...), s, join_lines = true)
+                add_node!(tt, pretty(style, a, s; kwargs..., lineage), s, join_lines = true)
             end
             tt
         end
     end
 
-    pop!(kwargs[:lineage])
+    pop!(lineage)
 
     return ret
 end

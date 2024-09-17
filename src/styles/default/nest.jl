@@ -68,7 +68,6 @@ function nest!(
 
     style = getstyle(ds)
     push!(lineage, (fst.typ, fst.metadata))
-    kwargs = (; kwargs..., lineage = lineage)
 
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
@@ -91,79 +90,79 @@ function nest!(
     end
 
     nested = if fst.typ === Import
-        n_import!(style, fst, s; kwargs...)
+        n_import!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Export
-        n_export!(style, fst, s; kwargs...)
+        n_export!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Using
-        n_using!(style, fst, s; kwargs...)
+        n_using!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Where
-        n_whereopcall!(style, fst, s; kwargs...)
+        n_whereopcall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Conditional
-        n_conditionalopcall!(style, fst, s; kwargs...)
+        n_conditionalopcall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Binary
-        n_binaryopcall!(style, fst, s; kwargs...)
+        n_binaryopcall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Curly
-        n_curly!(style, fst, s; kwargs...)
+        n_curly!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Call
-        n_call!(style, fst, s; kwargs...)
+        n_call!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === MacroCall
-        n_macrocall!(style, fst, s; kwargs...)
+        n_macrocall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === RefN
-        n_ref!(style, fst, s; kwargs...)
+        n_ref!(style, fst, s; kwargs..., lineage)
         # elseif fst.typ === Row
         #     n_row!(style, fst, s)
     elseif fst.typ === TypedVcat
-        n_typedvcat!(style, fst, s; kwargs...)
+        n_typedvcat!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === TypedNcat
-        n_typedvcat!(style, fst, s; kwargs...)
+        n_typedvcat!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === TupleN && length(fst.nodes) > 0
-        n_tuple!(style, fst, s; kwargs...)
+        n_tuple!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === CartesianIterator
-        n_cartesian_iterator!(style, fst, s; kwargs...)
+        n_cartesian_iterator!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Parameters
-        n_parameters!(style, fst, s; kwargs...)
+        n_parameters!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Vect
-        n_vect!(style, fst, s; kwargs...)
+        n_vect!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Vcat
-        n_vcat!(style, fst, s; kwargs...)
+        n_vcat!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Ncat
-        n_vcat!(style, fst, s; kwargs...)
+        n_vcat!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Braces
-        n_braces!(style, fst, s; kwargs...)
+        n_braces!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === BracesCat
-        n_bracescat!(style, fst, s; kwargs...)
+        n_bracescat!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Brackets
-        n_invisbrackets!(style, fst, s; kwargs...)
+        n_invisbrackets!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Comprehension
-        n_comprehension!(style, fst, s; kwargs...)
+        n_comprehension!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === TypedComprehension
-        n_typedcomprehension!(style, fst, s; kwargs...)
+        n_typedcomprehension!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Do
-        n_do!(style, fst, s; kwargs...)
+        n_do!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Generator
-        n_generator!(style, fst, s; kwargs...)
+        n_generator!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Filter
-        n_filter!(style, fst, s; kwargs...)
+        n_filter!(style, fst, s; kwargs..., lineage)
         # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
         #     n_tuple!(style, fst, s; kwargs...)
     elseif fst.typ === Block
-        n_block!(style, fst, s; kwargs...)
+        n_block!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Chain
-        n_chainopcall!(style, fst, s; kwargs...)
+        n_chainopcall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Comparison
-        n_comparison!(style, fst, s; kwargs...)
+        n_comparison!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === For
-        n_for!(style, fst, s; kwargs...)
+        n_for!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Let
-        n_let!(style, fst, s; kwargs...)
+        n_let!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Unary && length(fst.nodes::Vector) > 1 && fst[2].typ === OPERATOR
-        n_unaryopcall!(style, fst, s; kwargs...)
+        n_unaryopcall!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === StringN
-        n_string!(style, fst, s; kwargs...)
+        n_string!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === FunctionN
-        n_functiondef!(style, fst, s; kwargs...)
+        n_functiondef!(style, fst, s; kwargs..., lineage)
     elseif fst.typ === Macro
-        n_macro!(style, fst, s; kwargs...)
+        n_macro!(style, fst, s; kwargs..., lineage)
     else
         nest!(
             style,
@@ -172,6 +171,7 @@ function nest!(
             fst.indent;
             kwargs...,
             extra_margin = fst.extra_margin,
+            lineage,
         )
     end
 

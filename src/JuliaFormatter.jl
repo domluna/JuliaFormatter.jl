@@ -251,29 +251,11 @@ function format_text(cst::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
     end
     text = normalize_line_ending(text, replacer)
 
-    srcfile = JuliaSyntax.SourceFile(text)
-    toks = JuliaSyntax.tokenize(text)
-    for t in toks
-        if t.head == K"error"
-            offset = first(t.range)
-            line = JuliaSyntax.source_line(srcfile, offset)
-
-            lines = split(text, '\n')
-            padding = ndigits(JuliaSyntax.source_line(srcfile, first(toks[end].range)))
-            buf = IOBuffer()
-            for (i, l) in enumerate(lines)
-                write(buf, "$i", repeat(" ", (padding - ndigits(i) + 1)), l, "\n")
-                if i == line
-                    write(buf, "\n...")
-                    break
-                end
-            end
-            error_text = String(take!(buf))
-            error(
-                "Error while PARSING formatted text:\n\n$error_text\n\nError occurred on line $line, offset $offset of formatted text.\n\nThe error might not be precisely on this line but it should be in the region of the code block. Try commenting the region out and see if that removes the error.",
-            )
-            break
-        end
+    try
+        _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
+    catch err
+        @warn "Error in parsing formatted text"
+        rethrow(err)
     end
     return text
 end

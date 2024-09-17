@@ -26,15 +26,14 @@ function Document(text::AbstractString)
     srcfile = JuliaSyntax.SourceFile(text)
     tokens = JuliaSyntax.tokenize(text)
 
-    ends_on_nl = tokens[end].head.kind === K"NewlineWs"
+    ends_on_nl = kind(tokens[end]) === K"NewlineWs"
 
     for (i, t) in enumerate(tokens)
-        kind = t.head.kind
-        if kind === K"Comment"
+        if kind(t) === K"Comment"
             ws = 0
             if i > 1 && (
-                tokens[i-1].head.kind === K"Whitespace" ||
-                tokens[i-1].head.kind === K"NewlineWs"
+                kind(tokens[i-1]) === K"Whitespace" ||
+                kind(tokens[i-1]) === K"NewlineWs"
             )
                 pt = tokens[i-1]
                 prevval = try
@@ -122,7 +121,7 @@ function Document(text::AbstractString)
                 line = JuliaSyntax.source_line(srcfile, first(t.range))
                 push!(noindent_blocks, line)
             end
-        elseif kind === K"ErrorEofMultiComment"
+        elseif kind(t) === K"ErrorEofMultiComment"
             l = JuliaSyntax.source_line(srcfile, first(t.range))
             throw(
                 ErrorException(
