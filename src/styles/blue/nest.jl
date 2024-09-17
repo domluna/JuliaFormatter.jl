@@ -161,8 +161,9 @@ function n_binaryopcall!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_binaryopcall!(
@@ -186,8 +187,9 @@ function n_chainopcall!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
         n_block!(

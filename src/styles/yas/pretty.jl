@@ -160,8 +160,9 @@ function p_braces(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_typedef
     style = getstyle(ys)
     t = FST(Braces, nspaces(s))
     !haschildren(cst) && return t
@@ -200,8 +201,9 @@ function p_bracescat(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_typedef
     style = getstyle(ys)
     t = FST(BracesCat, nspaces(s))
     !haschildren(cst) && return t
@@ -665,8 +667,9 @@ function p_whereopcall(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_typedef
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
     !haschildren(cst) && return t
@@ -745,8 +748,9 @@ function p_generator(
     cst::JuliaSyntax.GreenNode,
     s::State;
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
     !haschildren(cst) && return t

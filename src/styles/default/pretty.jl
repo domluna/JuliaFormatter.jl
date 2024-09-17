@@ -3,8 +3,9 @@ function pretty(
     t::JuliaSyntax.GreenNode,
     s::State;
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage
     k = kind(t)
     style = getstyle(ds)
     push!(lineage, (k, is_iterable(t), is_assignment(t)))
@@ -723,8 +724,10 @@ function p_block(
     ignore_single_line::Bool = false,
     from_quote::Bool = false,
     join_body::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+
+    @nospecialize kwargs ignore_single_line from_quote join_body
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
     !haschildren(cst) && return t
@@ -1025,8 +1028,9 @@ function p_mutable(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    @nospecialize(kwargs...)
+    kwargs...,
 )
+    @nospecialize kwargs
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
 
@@ -1078,8 +1082,9 @@ function p_module(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_module::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_module
     style = getstyle(ds)
     t = FST(ModuleN, nspaces(s))
 
@@ -1822,7 +1827,6 @@ function p_binaryopcall(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    nospace::Bool = false,
     nonest::Bool = false,
     standalone_binary_circuit::Bool = true,
     from_typedef::Bool = false,
@@ -1830,8 +1834,9 @@ function p_binaryopcall(
     from_ref::Bool = false,
     from_colon::Bool = false,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage from_ref from_colon from_let from_typedef standalone_binary_circuit nonest
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
     !haschildren(cst) && return t
@@ -1905,6 +1910,8 @@ function p_binaryopcall(
         end
     elseif from_colon
         nospace = true
+    else
+        nospace = false
     end
     nws = !nospace && has_ws ? 1 : 0
 
@@ -2418,8 +2425,10 @@ function p_braces(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+
+    @nospecialize kwargs from_typedef
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))
     !haschildren(cst) && return t
@@ -2469,8 +2478,9 @@ function p_bracescat(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_typedef
     style = getstyle(ds)
     t = FST(BracesCat, nspaces(s))
     !haschildren(cst) && return t
@@ -2632,8 +2642,9 @@ function p_parameters(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs from_typedef
     style = getstyle(ds)
     t = FST(Parameters, nspaces(s))
     !haschildren(cst) && return t

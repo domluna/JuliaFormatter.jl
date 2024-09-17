@@ -20,8 +20,9 @@ function nest!(
     s::State,
     indent::Int;
     extra_margin::Int = 0,
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs extra_margin
     style = getstyle(ds)
     nested = false
 
@@ -56,8 +57,9 @@ function nest!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    @nospecialize(kwargs...),
+    kwargs...,
 )
+    @nospecialize kwargs lineage
     if is_leaf(fst)
         s.line_offset += length(fst)
         return false
@@ -819,8 +821,9 @@ function n_binaryopcall!(
     fst::FST,
     s::State;
     indent::Int = -1,
-    @nospecialize(kwargs...)
+    kwargs...,
 )
+    @nospecialize kwargs indent
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = line_offset + length(fst) + fst.extra_margin
@@ -989,8 +992,9 @@ function n_block!(
     fst::FST,
     s::State;
     indent::Int = -1,
-    @nospecialize(kwargs...)
+    kwargs...,
 )
+    @nospecialize kwargs indent
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -1087,10 +1091,9 @@ n_block!(
     style::S,
     fst::FST,
     s::State;
-    indent::Int = -1,
     @nospecialize(kwargs...)
 ) where {S<:AbstractStyle} =
-    n_block!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
+    n_block!(DefaultStyle(style), fst, s; kwargs...)
 
 n_comparison!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_block!(ds, fst, s; indent = s.line_offset, kwargs...)
