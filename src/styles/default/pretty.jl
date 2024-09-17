@@ -2057,7 +2057,8 @@ function p_invisbrackets(
     args = get_args(cst)
     nest = if length(args) > 0
         arg = args[1]
-        if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
+        if is_block(arg) ||
+           (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
         !nonest && !s.opts.disallow_single_arg_nesting && !is_iterable(arg)

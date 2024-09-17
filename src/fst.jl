@@ -317,10 +317,8 @@ function is_func_call(t::JuliaSyntax.GreenNode)::Bool
         return is_func_call(childs[idx])
     elseif kind(t) == K"parens" && haschildren(t)
         childs = children(t)
-        idx = findfirst(
-            n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"),
-            childs,
-        )
+        idx =
+            findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
         isnothing(idx) && return false
         return is_func_call(childs[idx])
     end
@@ -1138,7 +1136,8 @@ function add_node!(
         # only considered "in the positive" when it's past
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
-    elseif is_multiline(n) || (!isnothing(t.metadata) && (t.metadata::Metadata).has_multiline_argument)
+    elseif is_multiline(n) ||
+           (!isnothing(t.metadata) && (t.metadata::Metadata).has_multiline_argument)
         if isnothing(t.metadata)
             t.metadata = Metadata(K"begin", false, false, false, false, true, true)
         else

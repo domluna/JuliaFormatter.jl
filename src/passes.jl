@@ -260,7 +260,7 @@ function short_to_long_function_def!(
         if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
             continue
         elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) ||
-            (!isnothing(parent[2]) && parent[2].is_short_form_function)
+               (!isnothing(parent[2]) && parent[2].is_short_form_function)
             return false
         else
             break
@@ -818,7 +818,7 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
                !isnothing(n.metadata) &&
-            (n.metadata::Metadata).is_standalone_shortcircuit
+               (n.metadata::Metadata).is_standalone_shortcircuit
             _short_circuit_to_if!(n, s)
         else
             short_circuit_to_if_pass!(n, s)

@@ -263,7 +263,8 @@ function p_invisbrackets(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     args = get_args(cst)
     if length(args) > 0
         arg = args[1]
-        if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
+        if is_block(arg) ||
+           (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
     end
@@ -319,7 +320,6 @@ function p_call(
             return p_call(DefaultStyle(style), cst, s; can_separate_kwargs, kwargs...)
         end
     end
-
 
     idx = findfirst(n -> kind(n) === K"(", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)

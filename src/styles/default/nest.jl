@@ -73,14 +73,14 @@ function nest!(
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
        !isnothing(fst.metadata) &&
-        (fst.metadata::Metadata).is_long_form_function
+       (fst.metadata::Metadata).is_long_form_function
         long_to_short_function_def!(fst, s)
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
            (line_margin > s.opts.margin || s.opts.force_long_function_def) &&
            !isnothing(fst.metadata) &&
-            (fst.metadata::Metadata).is_short_form_function
+           (fst.metadata::Metadata).is_short_form_function
             short_to_long_function_def!(fst, s, lineage)
         end
     elseif fst.typ === Conditional
@@ -777,7 +777,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1,
             (fst.metadata !== nothing && (fst.metadata::Metadata).is_short_form_function) ||
             is_assignment(fst) ||
             op_kind(fst) in KSet"=> ->" ||
-            (fst.metadata !== nothing && (fst.metadata::Metadata).is_standalone_shortcircuit)
+            (
+                fst.metadata !== nothing &&
+                (fst.metadata::Metadata).is_standalone_shortcircuit
+            )
 
         # @info "" indent_nest defines_function(cst) is_assignment(cst) cst
 
@@ -914,7 +917,7 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
 
     if fst.typ === Chain &&
        !isnothing(fst.metadata) &&
-        (fst.metadata::Metadata).is_standalone_shortcircuit
+       (fst.metadata::Metadata).is_standalone_shortcircuit
         fst.indent += s.opts.indent
     end
 
