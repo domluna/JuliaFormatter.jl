@@ -19,7 +19,8 @@ for f in [
     end
 end
 
-# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
+# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1,
+# @nospecialize(kwargs...))
 #     style = getstyle(ss)
 #     line_margin = s.line_offset + length(fst) + fst.extra_margin
 #     if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
@@ -38,7 +39,7 @@ end
 #     nest!(style, fst[end], s; kwargs...)
 # end
 
-function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ss)
     nested = false
     if s.opts.yas_style_nesting
@@ -76,11 +77,11 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
     return nested
 end
 
-function n_macro!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+function n_macro!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
     n_functiondef!(ss, fst, s; kwargs...)
 end
 
-function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -190,7 +191,7 @@ for f in [
     :n_invisbrackets!,
     :n_bracescat!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
         else
@@ -199,7 +200,7 @@ for f in [
     end
 end
 
-function n_vect!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+function n_vect!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
     if s.opts.yas_style_nesting
         # Allow a line break after the opening brackets without aligning
         n_vect!(DefaultStyle(getstyle(ss)), fst, s; kwargs...)
@@ -209,7 +210,7 @@ function n_vect!(ss::SciMLStyle, fst::FST, s::State; kwargs...)
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
         else

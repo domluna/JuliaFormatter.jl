@@ -1,5 +1,5 @@
 
-function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_call!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
 
     # With `variable_call_indent`, check if the caller is in the list
@@ -70,14 +70,14 @@ function n_call!(ys::YASStyle, fst::FST, s::State; kwargs...)
     return nested
 end
 
-n_curly!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
-n_ref!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
-n_macrocall!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
-n_typedcomprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+n_curly!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_call!(ys, fst, s; kwargs...)
+n_ref!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_call!(ys, fst, s; kwargs...)
+n_macrocall!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_call!(ys, fst, s; kwargs...)
+n_typedcomprehension!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_call!(ys, fst, s; kwargs...)
-n_typedvcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_call!(ys, fst, s; kwargs...)
+n_typedvcat!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_call!(ys, fst, s; kwargs...)
 
-function n_tuple!(ys::YASStyle, fst::FST, s::State; indent = -1, kwargs...)
+function n_tuple!(ys::YASStyle, fst::FST, s::State; indent = -1, @nospecialize(kwargs...))
     style = getstyle(ys)
     if indent > -1
         fst.indent = indent
@@ -109,19 +109,19 @@ function n_tuple!(ys::YASStyle, fst::FST, s::State; indent = -1, kwargs...)
     end
     return nested
 end
-n_braces!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_vect!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_parameters!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_invisbrackets!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+n_braces!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ys, fst, s; kwargs...)
+n_vect!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ys, fst, s; kwargs...)
+n_parameters!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ys, fst, s; kwargs...)
+n_invisbrackets!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ys, fst, s; kwargs...)
-n_comprehension!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+n_comprehension!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ys, fst, s; kwargs...)
-n_vcat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_bracescat!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_tuple!(ys, fst, s; kwargs...)
-n_cartesian_iterator!(ys::YASStyle, fst::FST, s::State; kwargs...) =
+n_vcat!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ys, fst, s; kwargs...)
+n_bracescat!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ys, fst, s; kwargs...)
+n_cartesian_iterator!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ys, fst, s; kwargs...)
 
-function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_generator!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
     diff = s.line_offset - fst[1].indent
 
@@ -149,9 +149,9 @@ function n_generator!(ys::YASStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_filter!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_generator!(ys, fst, s; kwargs...)
+n_filter!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_generator!(ys, fst, s; kwargs...)
 
-function n_whereopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_whereopcall!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
     fst.indent = s.line_offset
     # after "A where "
@@ -180,7 +180,7 @@ function n_whereopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
     return nested
 end
 
-function n_using!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_using!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
     nodes = fst.nodes::Vector
     idx = findfirst(n -> n.val == ":", nodes)
@@ -203,20 +203,20 @@ function n_using!(ys::YASStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_export!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_using!(ys, fst, s; kwargs...)
-n_import!(ys::YASStyle, fst::FST, s::State; kwargs...) = n_using!(ys, fst, s; kwargs...)
+n_export!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_using!(ys, fst, s; kwargs...)
+n_import!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_using!(ys, fst, s; kwargs...)
 
-function n_chainopcall!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_chainopcall!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
     n_block!(DefaultStyle(style), fst, s; kwargs..., indent = s.line_offset)
 end
 
-function n_comparison!(ys::YASStyle, fst::FST, s::State; kwargs...)
+function n_comparison!(ys::YASStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ys)
     n_block!(DefaultStyle(style), fst, s; kwargs..., indent = s.line_offset)
 end
 
-function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
+function n_binaryopcall!(ys::YASStyle, fst::FST, s::State; indent::Int = -1, @nospecialize(kwargs...))
     style = getstyle(ys)
     nodes = fst.nodes::Vector
     if findfirst(n -> n.typ === PLACEHOLDER, nodes) !== nothing

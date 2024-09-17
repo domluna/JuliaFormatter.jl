@@ -20,7 +20,7 @@ function nest!(
     s::State,
     indent::Int;
     extra_margin::Int = 0,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     nested = false
@@ -45,7 +45,7 @@ nest!(
     nodes::Vector{FST},
     s::State,
     indent::Int;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = nest!(DefaultStyle(style), nodes, s, indent; kwargs...)
 
 function nest!(
@@ -56,7 +56,7 @@ function nest!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     if is_leaf(fst)
         s.line_offset += length(fst)
@@ -179,21 +179,21 @@ function nest!(
 
     return nested
 end
-nest!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+nest!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     nest!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_functiondef!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_functiondef!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     nest!(ds, fst.nodes::Vector, s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
 end
-n_functiondef!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_functiondef!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_functiondef!(DefaultStyle(style), fst, s; kwargs...)
 
-n_macro!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_macro!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_functiondef!(ds, fst, s; kwargs...)
-n_macro!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_macro!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_macro!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_string!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_string!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     # difference in positioning of the string
     # from the source document to the formatted document
@@ -209,10 +209,10 @@ function n_string!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_string!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_string!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_string!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     fst[1].extra_margin = fst.extra_margin + length(fst[2])
     nested = false
@@ -221,10 +221,10 @@ function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     nested |= nest!(style, fst[2], s; kwargs...)
     return nested
 end
-n_unaryopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_unaryopcall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_unaryopcall!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_do!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_do!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     extra_margin = sum(length.(fst[2:3]))
     # make sure there are nodes after "do"
@@ -239,11 +239,11 @@ function n_do!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
         nest!(style, fst[2:end], s, fst.indent; kwargs..., extra_margin = fst.extra_margin)
     return nested
 end
-n_do!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_do!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_do!(DefaultStyle(style), fst, s; kwargs...)
 
 # Import,Using,Export
-function n_using!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_using!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -285,18 +285,18 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_using!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_using!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_using!(DefaultStyle(style), fst, s; kwargs...)
 
-n_export!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_using!(ds, fst, s; kwargs...)
-n_export!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_export!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_using!(ds, fst, s; kwargs...)
+n_export!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_export!(DefaultStyle(style), fst, s; kwargs...)
 
-n_import!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_using!(ds, fst, s; kwargs...)
-n_import!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_import!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_using!(ds, fst, s; kwargs...)
+n_import!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_import!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_tuple!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -372,68 +372,68 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
 
     return nested
 end
-n_tuple!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_tuple!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_tuple!(DefaultStyle(style), fst, s; kwargs...)
 
-n_cartesian_iterator!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_cartesian_iterator!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_cartesian_iterator!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_cartesian_iterator!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_cartesian_iterator!(DefaultStyle(style), fst, s; kwargs...)
 
-n_vect!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_vect!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_vect!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_vect!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_vect!(DefaultStyle(style), fst, s; kwargs...)
 
-n_vcat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_vcat!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_vcat!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_vcat!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_vcat!(DefaultStyle(style), fst, s; kwargs...)
 
-n_braces!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_braces!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_braces!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_braces!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_braces!(DefaultStyle(style), fst, s; kwargs...)
 
-n_bracescat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_bracescat!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_bracescat!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_bracescat!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_bracescat!(DefaultStyle(style), fst, s; kwargs...)
 
-n_parameters!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_parameters!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_parameters!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_parameters!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_parameters!(DefaultStyle(style), fst, s; kwargs...)
 
-n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_invisbrackets!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_invisbrackets!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_invisbrackets!(DefaultStyle(style), fst, s; kwargs...)
 
-n_call!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_call!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_call!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_call!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_call!(DefaultStyle(style), fst, s; kwargs...)
 
-n_curly!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_curly!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_curly!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_curly!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_curly!(DefaultStyle(style), fst, s; kwargs...)
 
-n_macrocall!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_macrocall!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_macrocall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_macrocall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_macrocall!(DefaultStyle(style), fst, s; kwargs...)
 
-n_ref!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_ref!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_ref!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_ref!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_ref!(DefaultStyle(style), fst, s; kwargs...)
 
-n_row!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_tuple!(ds, fst, s; kwargs...)
-n_row!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_row!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(ds, fst, s; kwargs...)
+n_row!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_row!(DefaultStyle(style), fst, s; kwargs...)
 
-n_typedvcat!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_typedvcat!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(ds, fst, s; kwargs...)
-n_typedvcat!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_typedvcat!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_typedvcat!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     if s.opts.join_lines_based_on_source
         n_tuple!(ds, fst, s; kwargs...)
     else
@@ -441,7 +441,7 @@ function n_comprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
 end
 
-function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nested = false
@@ -490,15 +490,15 @@ function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     return nested
 end
 
-n_comprehension!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_comprehension!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_comprehension!(DefaultStyle(style), fst, s; kwargs...)
 
-n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_comprehension!(ds, fst, s; kwargs...)
-n_typedcomprehension!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_typedcomprehension!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_typedcomprehension!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_generator!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_generator!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
@@ -579,15 +579,15 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     return nested
 end
 
-n_generator!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_generator!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_generator!(DefaultStyle(style), fst, s; kwargs...)
 
-n_filter!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_filter!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_generator!(ds, fst, s; indent = fst.indent, kwargs...)
-n_filter!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_filter!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_filter!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # "B"
@@ -648,10 +648,10 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     )
     return nested
 end
-n_whereopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_whereopcall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_whereopcall!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
@@ -735,7 +735,7 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_conditionalopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_conditionalopcall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_conditionalopcall!(DefaultStyle(style), fst, s; kwargs...)
 
 function no_unnest(fst::FST)
@@ -748,7 +748,7 @@ function no_unnest(fst::FST)
     return false
 end
 
-function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
+function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1, @nospecialize(kwargs...))
     style = getstyle(ds)
     line_offset = s.line_offset
     line_margin = line_offset + length(fst) + fst.extra_margin
@@ -874,10 +874,10 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1,
 
     return nested
 end
-n_binaryopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_binaryopcall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_binaryopcall!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
+function n_for!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
 
     nested = false
@@ -900,14 +900,14 @@ function n_for!(ds::DefaultStyle, fst::FST, s::State; kwargs...)
 
     return nested
 end
-n_for!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_for!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_for!(DefaultStyle(style), fst, s; kwargs...)
 
-n_let!(ds::DefaultStyle, fst::FST, s::State; kwargs...) = n_for!(ds, fst, s; kwargs...)
-n_let!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_let!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_for!(ds, fst, s; kwargs...)
+n_let!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_let!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
+function n_block!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1, @nospecialize(kwargs...))
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -1000,15 +1000,15 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1, kwargs...)
     end
     return nested
 end
-n_block!(style::S, fst::FST, s::State; indent = -1, kwargs...) where {S<:AbstractStyle} =
+n_block!(style::S, fst::FST, s::State; indent::Int = -1, @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s; indent = indent, kwargs...)
 
-n_comparison!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_comparison!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_block!(ds, fst, s; indent = s.line_offset, kwargs...)
-n_comparison!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_comparison!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_comparison!(DefaultStyle(style), fst, s; kwargs...)
 
-n_chainopcall!(ds::DefaultStyle, fst::FST, s::State; kwargs...) =
+n_chainopcall!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_block!(ds, fst, s; indent = s.line_offset, kwargs...)
-n_chainopcall!(style::S, fst::FST, s::State; kwargs...) where {S<:AbstractStyle} =
+n_chainopcall!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_chainopcall!(DefaultStyle(style), fst, s; kwargs...)

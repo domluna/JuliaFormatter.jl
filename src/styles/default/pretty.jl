@@ -3,7 +3,7 @@ function pretty(
     t::JuliaSyntax.GreenNode,
     s::State;
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     k = kind(t)
     style = getstyle(ds)
@@ -183,10 +183,10 @@ function pretty(
 
     return ret
 end
-pretty(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+pretty(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     pretty(DefaultStyle(style), cst, s; kwargs...)
 
-function p_identifier(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_identifier(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -196,10 +196,10 @@ p_identifier(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_identifier(DefaultStyle(style), cst, s; kwargs...)
 
-function p_whitespace(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_whitespace(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -209,10 +209,10 @@ p_whitespace(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_whitespace(DefaultStyle(style), cst, s; kwargs...)
 
-function p_comment(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_comment(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     if startswith(val, "#=") && endswith(val, "=#")
@@ -226,10 +226,10 @@ p_comment(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_comment(DefaultStyle(style), cst, s; kwargs...)
 
-function p_semicolon(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_semicolon(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     s.offset += span(cst)
     FST(SEMICOLON, loc[2], loc[1], loc[1], ";")
@@ -238,10 +238,10 @@ p_semicolon(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_semicolon(DefaultStyle(style), cst, s; kwargs...)
 
-function p_macroname(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_macroname(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -251,10 +251,10 @@ p_macroname(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_macroname(DefaultStyle(style), cst, s; kwargs...)
 
-function p_operator(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_operator(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -266,10 +266,10 @@ p_operator(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_operator(DefaultStyle(style), cst, s; kwargs...)
 
-function p_keyword(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_keyword(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -279,10 +279,10 @@ p_keyword(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_keyword(DefaultStyle(style), cst, s; kwargs...)
 
-function p_punctuation(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_punctuation(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
@@ -292,10 +292,10 @@ p_punctuation(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_punctuation(DefaultStyle(style), cst, s; kwargs...)
 
-function p_juxtapose(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_juxtapose(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Juxtapose, nspaces(s))
 
@@ -309,10 +309,10 @@ p_juxtapose(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_juxtapose(DefaultStyle(style), cst, s; kwargs...)
 
-function p_continue(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_continue(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Continue, nspaces(s))
 
@@ -326,10 +326,10 @@ p_continue(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_continue(DefaultStyle(style), cst, s; kwargs...)
 
-function p_break(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_break(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Break, nspaces(s))
 
@@ -343,11 +343,11 @@ p_break(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_break(DefaultStyle(style), cst, s; kwargs...)
 
 # $
-function p_inert(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_inert(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Inert, nspaces(s))
 
@@ -361,10 +361,10 @@ p_inert(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_inert(DefaultStyle(style), cst, s; kwargs...)
 
-function p_macrostr(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_macrostr(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(MacroStr, nspaces(s))
 
@@ -378,7 +378,7 @@ p_macrostr(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_macrostr(DefaultStyle(style), cst, s; kwargs...)
 
 # what mean
@@ -396,7 +396,7 @@ p_macrostr(
 # if cst.head === :FLOAT && !startswith(val, "0x")
 #     if (fidx = findlast(==('f'), val)) === nothing
 #         float_suffix = ""
-function p_literal(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_literal(::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
 
@@ -431,10 +431,10 @@ p_literal(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_literal(DefaultStyle(style), cst, s; kwargs...)
 
-function p_accessor(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_accessor(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Accessor, nspaces(s))
 
@@ -447,7 +447,7 @@ p_accessor(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_accessor(DefaultStyle(style), cst, s; kwargs...)
 
 # StringH
@@ -456,7 +456,7 @@ function p_stringh(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_docstring::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     loc = cursor_loc(s)
@@ -516,11 +516,11 @@ p_stringh(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_stringh(DefaultStyle(style), cst, s; kwargs...)
 
 # GlobalRefDoc (docstring)
-function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(GlobalRefDoc, nspaces(s))
     !haschildren(cst) && return t
@@ -547,11 +547,11 @@ p_globalrefdoc(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_globalrefdoc(DefaultStyle(style), cst, s; kwargs...)
 
 # MacroCall
-function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(MacroCall, nspaces(s))
 
@@ -622,7 +622,7 @@ p_macrocall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_macrocall(DefaultStyle(style), cst, s; kwargs...)
 
 # Block
@@ -634,7 +634,7 @@ function p_block(
     ignore_single_line::Bool = false,
     from_quote::Bool = false,
     join_body::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
@@ -693,14 +693,14 @@ p_block(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_block(DefaultStyle(style), cst, s; kwargs...)
 
 function p_block(
     ds::DefaultStyle,
     nodes::Vector{JuliaSyntax.GreenNode{T}},
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {T}
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
@@ -723,13 +723,13 @@ function p_block(
     style::S,
     nodes::Vector{JuliaSyntax.GreenNode{T}},
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle,T}
     p_block(DefaultStyle(style), nodes, s; kwargs...)
 end
 
 # Abstract
-function p_abstract(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_abstract(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Abstract, nspaces(s))
 
@@ -745,11 +745,11 @@ p_abstract(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_abstract(DefaultStyle(style), cst, s; kwargs...)
 
 # Primitive
-function p_primitive(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_primitive(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Primitive, nspaces(s))
 
@@ -765,10 +765,10 @@ p_primitive(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_primitive(DefaultStyle(style), cst, s; kwargs...)
 
-function p_var(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_var(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(NonStdIdentifier, nspaces(s))
 
@@ -777,11 +777,11 @@ function p_var(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     end
     t
 end
-p_var(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_var(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_var(DefaultStyle(style), cst, s; kwargs...)
 
 # function/macro
-function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(FunctionN, nspaces(s))
     !haschildren(cst) && return t
@@ -834,10 +834,10 @@ p_functiondef(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_functiondef(DefaultStyle(style), cst, s; kwargs...)
 
-function p_macro(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_macro(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_functiondef(ds, cst, s; kwargs...)
     t.typ = Macro
     t
@@ -846,11 +846,11 @@ p_macro(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_macro(DefaultStyle(style), cst, s; kwargs...)
 
 # struct
-function p_struct(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_struct(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Struct, nspaces(s))
     !haschildren(cst) && return t
@@ -894,11 +894,11 @@ p_struct(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_struct(DefaultStyle(style), cst, s; kwargs...)
 
 # mutable
-function p_mutable(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_mutable(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
 
@@ -941,7 +941,7 @@ p_mutable(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_mutable(DefaultStyle(style), cst, s; kwargs...)
 
 # module/baremodule
@@ -950,7 +950,7 @@ function p_module(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_module::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(ModuleN, nspaces(s))
@@ -1007,10 +1007,10 @@ p_module(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_module(DefaultStyle(style), cst, s; kwargs...)
 
-function p_baremodule(style::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_baremodule(style::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_module(style, cst, s; kwargs...)
     t.typ = BareModule
     t
@@ -1019,10 +1019,10 @@ p_baremodule(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_baremodule(DefaultStyle(style), cst, s; kwargs...)
 
-function p_return(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_return(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_const(ds, cst, s; kwargs...)
     t.typ = Return
     t
@@ -1031,11 +1031,11 @@ p_return(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_return(DefaultStyle(style), cst, s; kwargs...)
 
 # const/local/global/outer/return
-function p_const(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_const(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Const, nspaces(s))
     for c in children(cst)
@@ -1053,10 +1053,10 @@ p_const(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_const(DefaultStyle(style), cst, s; kwargs...)
 
-function p_local(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_local(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_const(ds, cst, s; kwargs...)
     t.typ = Local
     t
@@ -1065,10 +1065,10 @@ p_local(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_local(DefaultStyle(style), cst, s; kwargs...)
 
-function p_global(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_global(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_const(ds, cst, s; kwargs...)
     t.typ = Global
     t
@@ -1077,10 +1077,10 @@ p_global(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_global(DefaultStyle(style), cst, s; kwargs...)
 
-function p_outer(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_outer(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_const(ds, cst, s; kwargs...)
     t.typ = Outer
     t
@@ -1089,10 +1089,10 @@ p_outer(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_outer(DefaultStyle(style), cst, s; kwargs...)
 
-function p_toplevel(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_toplevel(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(TopLevel, nspaces(s))
     for a in children(cst)
@@ -1109,10 +1109,10 @@ p_toplevel(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_toplevel(DefaultStyle(style), cst, s; kwargs...)
 
-function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Begin, nspaces(s))
     !haschildren(cst) && return t
@@ -1144,10 +1144,10 @@ p_begin(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_begin(DefaultStyle(style), cst, s; kwargs...)
 
-function p_quote(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_quote(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
 
     t = FST(Quote, nspaces(s))
@@ -1169,10 +1169,10 @@ p_quote(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_quote(DefaultStyle(style), cst, s; kwargs...)
 
-function p_quotenode(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_quotenode(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Quotenode, nspaces(s))
     for a in children(cst)
@@ -1189,7 +1189,7 @@ p_quotenode(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_quotenode(DefaultStyle(style), cst, s; kwargs...)
 
 # Let
@@ -1210,7 +1210,7 @@ p_quotenode(
 # ...
 # [block]
 # end
-function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Let, nspaces(s))
     !haschildren(cst) && return t
@@ -1272,11 +1272,11 @@ function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     end
     t
 end
-p_let(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_let(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_let(DefaultStyle(style), cst, s; kwargs...)
 
 # For/While
-function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(For, nspaces(s))
 
@@ -1321,7 +1321,7 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
 
     t
 end
-p_for(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_for(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_for(DefaultStyle(style), cst, s; kwargs...)
 
 function p_cartesian_iterator(
@@ -1329,7 +1329,7 @@ function p_cartesian_iterator(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_for::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(CartesianIterator, nspaces(s))
@@ -1359,10 +1359,10 @@ p_cartesian_iterator(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_cartesian_iterator(DefaultStyle(style), cst, s; kwargs...)
 
-function p_while(style::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_while(style::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_for(style, cst, s; kwargs...)
     t.typ = While
     t
@@ -1371,12 +1371,12 @@ p_while(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_while(DefaultStyle(style), cst, s; kwargs...)
 
 # Do
 # node [nodes] do [nodes] node node end
-function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Do, nspaces(s))
     !haschildren(cst) && return t
@@ -1404,11 +1404,11 @@ function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     end
     t
 end
-p_do(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_do(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_do(DefaultStyle(style), cst, s; kwargs...)
 
 # Try
-function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Try, nspaces(s))
 
@@ -1455,11 +1455,11 @@ function p_try(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     end
     t
 end
-p_try(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_try(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_try(DefaultStyle(style), cst, s; kwargs...)
 
 # If
-function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(If, nspaces(s))
 
@@ -1499,11 +1499,11 @@ function p_if(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
 
     return t
 end
-p_if(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_if(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_if(DefaultStyle(style), cst, s; kwargs...)
 
 # Chain/Comparison
-function p_chainopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_chainopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_binaryopcall(ds, cst, s; kwargs...)
     t.typ = Chain
     t
@@ -1512,10 +1512,10 @@ p_chainopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_chainopcall(DefaultStyle(style), cst, s; kwargs...)
 
-function p_comparison(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_comparison(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_chainopcall(ds, cst, s; kwargs...)
     t.typ = Comparison
     t
@@ -1524,7 +1524,7 @@ p_comparison(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_comparison(DefaultStyle(style), cst, s; kwargs...)
 
 # Kw
@@ -1534,7 +1534,7 @@ function p_kw(
     cst::JuliaSyntax.GreenNode,
     s::State;
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Kw, nspaces(s))
@@ -1573,7 +1573,7 @@ function p_kw(
 
     t
 end
-p_kw(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_kw(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_kw(DefaultStyle(style), cst, s; kwargs...)
 
 function p_binaryopcall(
@@ -1588,7 +1588,7 @@ function p_binaryopcall(
     from_ref::Bool = false,
     from_colon::Bool = false,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
@@ -1802,7 +1802,7 @@ p_binaryopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_binaryopcall(DefaultStyle(style), cst, s; kwargs...)
 
 function p_whereopcall(
@@ -1810,7 +1810,7 @@ function p_whereopcall(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Where, nspaces(s))
@@ -1881,14 +1881,14 @@ p_whereopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_whereopcall(DefaultStyle(style), cst, s; kwargs...)
 
 function p_conditionalopcall(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Conditional, nspaces(s))
@@ -1909,10 +1909,10 @@ p_conditionalopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_conditionalopcall(DefaultStyle(style), cst, s; kwargs...)
 
-function p_unaryopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_unaryopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Unary, nspaces(s))
     !haschildren(cst) && return t
@@ -1934,10 +1934,10 @@ p_unaryopcall(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_unaryopcall(DefaultStyle(style), cst, s; kwargs...)
 
-function p_curly(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_curly(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Curly, nspaces(s))
     !haschildren(cst) && return t
@@ -1981,7 +1981,7 @@ p_curly(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_curly(DefaultStyle(style), cst, s; kwargs...)
 
 function p_call(
@@ -1989,7 +1989,7 @@ function p_call(
     cst::JuliaSyntax.GreenNode,
     s::State;
     can_separate_kwargs::Bool = true,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Call, nspaces(s))
@@ -2040,7 +2040,7 @@ function p_call(
 
     t
 end
-p_call(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_call(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_call(DefaultStyle(style), cst, s; kwargs...)
 
 function p_invisbrackets(
@@ -2048,7 +2048,7 @@ function p_invisbrackets(
     cst::JuliaSyntax.GreenNode,
     s::State;
     nonest::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Brackets, nspaces(s))
@@ -2096,10 +2096,10 @@ p_invisbrackets(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_invisbrackets(DefaultStyle(style), cst, s; kwargs...)
 
-function p_tuple(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_tuple(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(TupleN, nspaces(s))
     !haschildren(cst) && return t
@@ -2149,7 +2149,7 @@ p_tuple(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_tuple(DefaultStyle(style), cst, s; kwargs...)
 
 function p_braces(
@@ -2157,7 +2157,7 @@ function p_braces(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))
@@ -2200,7 +2200,7 @@ p_braces(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_braces(DefaultStyle(style), cst, s; kwargs...)
 
 function p_bracescat(
@@ -2208,7 +2208,7 @@ function p_bracescat(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(BracesCat, nspaces(s))
@@ -2250,10 +2250,10 @@ p_bracescat(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_bracescat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_vect(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_vect(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Vect, nspaces(s))
     !haschildren(cst) && return t
@@ -2289,10 +2289,10 @@ function p_vect(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
     end
     t
 end
-p_vect(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_vect(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_vect(DefaultStyle(style), cst, s; kwargs...)
 
-function p_comprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_comprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Comprehension, nspaces(s))
     !haschildren(cst) && return t
@@ -2332,14 +2332,14 @@ p_comprehension(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_comprehension(DefaultStyle(style), cst, s; kwargs...)
 
 function p_typedcomprehension(
     ds::DefaultStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     t = p_comprehension(ds, cst, s; kwargs...)
     t.typ = TypedComprehension
@@ -2349,7 +2349,7 @@ p_typedcomprehension(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_typedcomprehension(DefaultStyle(style), cst, s; kwargs...)
 
 function p_parameters(
@@ -2357,7 +2357,7 @@ function p_parameters(
     cst::JuliaSyntax.GreenNode,
     s::State;
     from_typedef::Bool = false,
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Parameters, nspaces(s))
@@ -2388,10 +2388,10 @@ p_parameters(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_parameters(DefaultStyle(style), cst, s; kwargs...)
 
-function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_import(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
 
@@ -2422,10 +2422,10 @@ p_import(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_import(DefaultStyle(style), cst, s; kwargs...)
 
-function p_export(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_export(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_import(ds, cst, s; kwargs...)
     t.typ = Export
     t
@@ -2434,10 +2434,10 @@ p_export(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_export(DefaultStyle(style), cst, s; kwargs...)
 
-function p_using(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_using(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_import(ds, cst, s; kwargs...)
     t.typ = Using
     t
@@ -2446,10 +2446,10 @@ p_using(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_using(DefaultStyle(style), cst, s; kwargs...)
 
-function p_importpath(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_importpath(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(ImportPath, nspaces(s))
 
@@ -2463,10 +2463,10 @@ p_importpath(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_importpath(DefaultStyle(style), cst, s; kwargs...)
 
-function p_as(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_as(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(As, nspaces(s))
 
@@ -2483,10 +2483,10 @@ function p_as(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
 
     t
 end
-p_as(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_as(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_as(DefaultStyle(style), cst, s; kwargs...)
 
-function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(RefN, nspaces(s))
     !haschildren(cst) && return t
@@ -2523,10 +2523,10 @@ function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     end
     t
 end
-p_ref(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_ref(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_ref(DefaultStyle(style), cst, s; kwargs...)
 
-function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Vcat, nspaces(s))
     !haschildren(cst) && return t
@@ -2575,10 +2575,10 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
     end
     t
 end
-p_vcat(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_vcat(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_vcat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_typedvcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_typedvcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_vcat(ds, cst, s; kwargs...)
     t.typ = TypedVcat
     t
@@ -2587,10 +2587,10 @@ p_typedvcat(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_typedvcat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_hcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_hcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Hcat, nspaces(s))
     !haschildren(cst) && return t
@@ -2614,10 +2614,10 @@ function p_hcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
     end
     t
 end
-p_hcat(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_hcat(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_hcat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_typedhcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_typedhcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_hcat(ds, cst, s; kwargs...)
     t.typ = TypedHcat
     t
@@ -2626,18 +2626,18 @@ p_typedhcat(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_typedhcat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_ncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_ncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_vcat(ds, cst, s; kwargs...)
     t.typ = Ncat
     return t
 end
-p_ncat(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_ncat(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_ncat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_typedncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_typedncat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_ncat(ds, cst, s; kwargs...)
     t.typ = TypedNcat
     t
@@ -2646,10 +2646,10 @@ p_typedncat(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_typedncat(DefaultStyle(style), cst, s; kwargs...)
 
-function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     style = getstyle(ds)
     t = FST(Row, nspaces(s))
     !haschildren(cst) && return t
@@ -2678,16 +2678,16 @@ function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
     t.nest_behavior = NeverNest
     t
 end
-p_row(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_row(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_row(DefaultStyle(style), cst, s; kwargs...)
 
-function p_nrow(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_nrow(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_row(ds, cst, s; kwargs...)
     t.typ = NRow
     t
 end
 
-p_nrow(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:AbstractStyle} =
+p_nrow(style::S, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     p_nrow(DefaultStyle(style), cst, s; kwargs...)
 
 function p_generator(
@@ -2695,7 +2695,7 @@ function p_generator(
     cst::JuliaSyntax.GreenNode,
     s::State;
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(ds)
     t = FST(Generator, nspaces(s))
@@ -2747,10 +2747,10 @@ p_generator(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_generator(DefaultStyle(style), cst, s; kwargs...)
 
-function p_filter(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
+function p_filter(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
     t = p_generator(ds, cst, s; kwargs...)
     t.typ = Filter
     t
@@ -2759,5 +2759,5 @@ p_filter(
     style::S,
     cst::JuliaSyntax.GreenNode,
     s::State;
-    kwargs...,
+    @nospecialize(kwargs...),
 ) where {S<:AbstractStyle} = p_filter(DefaultStyle(style), cst, s; kwargs...)

@@ -31,10 +31,8 @@ function Document(text::AbstractString)
     for (i, t) in enumerate(tokens)
         if kind(t) === K"Comment"
             ws = 0
-            if i > 1 && (
-                kind(tokens[i-1]) === K"Whitespace" ||
-                kind(tokens[i-1]) === K"NewlineWs"
-            )
+            if i > 1 &&
+               (kind(tokens[i-1]) === K"Whitespace" || kind(tokens[i-1]) === K"NewlineWs")
                 pt = tokens[i-1]
                 prevval = try
                     srcfile.code[first(pt.range):last(pt.range)]

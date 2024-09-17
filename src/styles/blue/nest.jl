@@ -1,4 +1,4 @@
-function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
+function n_tuple!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(bs)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -122,21 +122,21 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; kwargs...)
     end
     return nested
 end
-n_call!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_curly!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_macrocall!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_ref!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_braces!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_vect!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_parameters!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+n_call!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_curly!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_macrocall!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_ref!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_braces!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_vect!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_parameters!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
-n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
-n_bracescat!(bs::BlueStyle, fst::FST, s::State; kwargs...) = n_tuple!(bs, fst, s; kwargs...)
-n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+n_bracescat!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
 
-function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; kwargs...)
+function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(bs)
     if fst[end].typ === Conditional
         conditional_to_if_block!(fst, s)
@@ -154,7 +154,7 @@ function n_binaryopcall!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
@@ -179,7 +179,7 @@ function n_chainopcall!(
         FNode,
         Union{Nothing,Metadata},
     }[],
-    kwargs...,
+    @nospecialize(kwargs...),
 )
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
@@ -196,5 +196,5 @@ function n_chainopcall!(
     end
 end
 
-n_comparison!(bs::BlueStyle, fst::FST, s::State; kwargs...) =
+n_comparison!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_chainopcall!(bs, fst, s; kwargs...)
