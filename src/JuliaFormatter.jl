@@ -483,6 +483,6 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-# include("other/precompile.jl")
+include("other/precompile.jl")
 
 end
