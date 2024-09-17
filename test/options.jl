@@ -299,6 +299,20 @@
             bodybodybodybodybodybodybody
         end"""
         @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(
+            str_,
+            4,
+            length(str_),
+            short_to_long_function_def = true,
+            force_long_function_def = true,
+        ) == str
+        @test fmt(
+            str_,
+            4,
+            length(str_),
+            short_to_long_function_def = false,
+            force_long_function_def = false,
+        ) == str_
         @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
     end
 
@@ -2322,10 +2336,12 @@
         @test fmt("1e-2", trailing_zero = true) == "1e-2"
         @test fmt("1f0", trailing_zero = true) == "1.0f0"
         @test fmt("1.", trailing_zero = true) == "1.0"
+        @test fmt("0x1.fp0", trailing_zero = true) == "0x1.fp0"
 
         @test fmt("1e-2", trailing_zero = false) == "1e-2"
         @test fmt("1f0", trailing_zero = false) == "1f0"
         @test fmt("1.", trailing_zero = false) == "1."
+        @test fmt("0x1.fp0", trailing_zero = false) == "0x1.fp0"
     end
 
     @testset "noindent blocks" begin

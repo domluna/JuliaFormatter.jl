@@ -371,7 +371,7 @@ function p_literal(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; from_docstri
     if !is_str_or_cmd(cst)
         (val = cst.val) === nothing && return FST(LITERAL, loc[2], loc[1], loc[1], "")
 
-        if cst.head === :FLOAT
+        if cst.head === :FLOAT && !startswith(val, "0x")
             if (fidx = findlast(==('f'), val)) === nothing
                 float_suffix = ""
             else

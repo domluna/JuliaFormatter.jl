@@ -8,10 +8,10 @@ end
 using JuliaSyntax
 using CSTParser
 using Tokenize
-using Pkg.TOML: parsefile
+using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
-import Base: get, pairs
+import Base: get, pairs, count
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -110,24 +110,6 @@ function options(s::DefaultStyle)
         disallow_single_arg_nesting = false,
     )
 end
-
-if VERSION < v"1.3"
-    # https://github.com/JuliaLang/julia/blob/1b93d53fc4bb59350ada898038ed4de2994cce33/base/regex.jl#L416-L428
-    function count(t::Union{AbstractString,Regex}, s::AbstractString; overlap::Bool = false)
-        n = 0
-        i, e = firstindex(s), lastindex(s)
-        while true
-            r = findnext(t, s, i)
-            r === nothing && break
-            n += 1
-            j = overlap || isempty(r) ? first(r) : last(r)
-            j > e && break
-            @inbounds i = nextind(s, j)
-        end
-        return n
-    end
-end
-count(args...; kwargs...) = Base.count(args...; kwargs...)
 
 # multidimensional array syntax has nodes that appear as
 # Symbol("integer_value"), i.e. Symbol("2") for ";;"
@@ -410,7 +392,8 @@ end
         options...,
     )::Bool
 
-Recursively descend into files and directories, formatting any `.jl` files.
+Recursively descend into files and directories, formatting any `.jl`, `.md`, `.jmd`,
+or `.qmd` files.
 
 See [`format_file`](@ref) and [`format_text`](@ref) for a description of the options.
 
@@ -455,6 +438,7 @@ function format(path::AbstractString, options::Configuration)
         formatted = Threads.Atomic{Bool}(true)
         Threads.@threads for subpath in readdir(path)
             subpath = joinpath(path, subpath)
+            !ispath(subpath) && continue
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
         end
@@ -542,8 +526,6 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-if Base.VERSION >= v"1.5"
-    include("other/precompile.jl")
-end
+include("other/precompile.jl")
 
 end

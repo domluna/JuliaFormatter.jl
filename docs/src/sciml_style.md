@@ -56,8 +56,8 @@ Setting it to `true` makes the `SciMLStyle` use the `YASStyle` nesting rules:
 ```julia
 # With `yas_style_nesting = false`
 function my_large_function(argument1, argument2,
-    argument3, argument4,
-    argument5, x, y, z)
+        argument3, argument4,
+        argument5, x, y, z)
     foo(x) + goo(y)
 end
 
