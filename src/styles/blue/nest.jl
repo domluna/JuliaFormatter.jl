@@ -146,7 +146,7 @@ n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...
 function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...))
     style = getstyle(bs)
     if fst[end].typ === Conditional
-        conditional_to_if_block!(fst, s)
+        conditional_to_if_block!(fst, s, true)
         nest!(style, fst, s; kwargs...)
     else
         n_conditionalopcall!(DefaultStyle(style), fst, s; kwargs...)

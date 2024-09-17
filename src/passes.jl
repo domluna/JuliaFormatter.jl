@@ -589,7 +589,7 @@ function move_at_sign_to_the_end(fst::FST, s::State)
     return FST(MACRONAME, -33, fst.startline, fst.startline, val)
 end
 
-function conditional_to_if_block!(fst::FST, s::State; top = true)
+function conditional_to_if_block!(fst::FST, s::State, top::Bool)
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
     add_node!(t, kw, s, max_padding = 0)
@@ -615,7 +615,7 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
     block2 = FST(Block, fst.indent)
     padding = 0
     if fst[end].typ === Conditional
-        conditional_to_if_block!(fst[end], s, top = false)
+        conditional_to_if_block!(fst[end], s, false)
     else
         block2.indent += s.opts.indent
         padding = s.opts.indent

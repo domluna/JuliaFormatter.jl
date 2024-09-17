@@ -87,7 +87,7 @@ function nest!(
     elseif fst.typ === Conditional
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.conditional_to_if && line_margin > s.opts.margin
-            conditional_to_if_block!(fst, s)
+            conditional_to_if_block!(fst, s, true)
         end
     end
 
