@@ -59,7 +59,12 @@ function is_binaryop_nestable(::YASStyle, cst::JuliaSyntax.GreenNode)
     return !(defines_function(cst) || is_assignment(cst) || op_kind(cst) in KSet"=> ->")
 end
 
-function p_import(ds::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_import(
+    ds::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
 
@@ -90,19 +95,34 @@ function p_import(ds::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecial
     t
 end
 
-function p_using(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_using(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_import(ys, cst, s; kwargs...)
     t.typ = Using
     t
 end
 
-function p_export(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_export(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_import(ys, cst, s; kwargs...)
     t.typ = Export
     t
 end
 
-function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_curly(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, nspaces(s))
@@ -215,7 +235,12 @@ function p_bracescat(
     t
 end
 
-function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_tuple(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
     !haschildren(cst) && return t
@@ -256,7 +281,12 @@ function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospeciali
 end
 
 # Brackets
-function p_invisbrackets(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_invisbrackets(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(Brackets, nspaces(s))
 
@@ -358,7 +388,12 @@ function p_call(
     t
 end
 
-function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_vect(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(Vect, nspaces(s))
     !haschildren(cst) && return t
@@ -391,7 +426,12 @@ function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecializ
     t
 end
 
-function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_vcat(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
     !haschildren(cst) && return t
@@ -436,18 +476,33 @@ function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecializ
     end
     t
 end
-function p_typedvcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_typedvcat(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_vcat(ys, cst, s; kwargs...)
     t.typ = TypedVcat
     t
 end
 
-function p_ncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_ncat(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_vcat(ys, cst, s; kwargs...)
     t.typ = Ncat
     t
 end
-function p_typedncat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_typedncat(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_ncat(ys, cst, s; kwargs...)
     t.typ = TypedNcat
     t
@@ -489,7 +544,12 @@ function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize
     t
 end
 
-function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_comprehension(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(Comprehension, nspaces(s))
     !haschildren(cst) && return t
@@ -523,13 +583,23 @@ function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @no
     t
 end
 
-function p_typedcomprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_typedcomprehension(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_comprehension(ys, cst, s; kwargs...)
     t.typ = TypedComprehension
     t
 end
 
-function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_macrocall(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ys)
     t = FST(MacroCall, nspaces(s))
     !haschildren(cst) && return t
@@ -725,7 +795,12 @@ function p_generator(
     t
 end
 
-function p_filter(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_filter(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     t = p_generator(ys, cst, s; kwargs...)
     t.typ = Filter
     t

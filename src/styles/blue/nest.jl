@@ -122,17 +122,24 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...))
     end
     return nested
 end
-n_call!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
-n_curly!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
-n_macrocall!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
-n_ref!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
-n_braces!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
-n_vect!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_call!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_curly!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_macrocall!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_ref!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_braces!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
+n_vect!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
 n_parameters!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
 n_invisbrackets!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
-n_bracescat!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) = n_tuple!(bs, fst, s; kwargs...)
+n_bracescat!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
+    n_tuple!(bs, fst, s; kwargs...)
 n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
     n_tuple!(bs, fst, s; kwargs...)
 

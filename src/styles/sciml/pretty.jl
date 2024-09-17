@@ -76,7 +76,12 @@ for f in [
     :p_generator,
     :p_filter,
 ]
-    @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+    @eval function $f(
+        ss::SciMLStyle,
+        cst::JuliaSyntax.GreenNode,
+        s::State;
+        @nospecialize(kwargs...)
+    )
         $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
     end
 end
@@ -91,7 +96,12 @@ for f in [
     :p_invisbrackets,
     :p_bracescat,
 ]
-    @eval function $f(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+    @eval function $f(
+        ss::SciMLStyle,
+        cst::JuliaSyntax.GreenNode,
+        s::State;
+        @nospecialize(kwargs...)
+    )
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
         else
@@ -100,7 +110,12 @@ for f in [
     end
 end
 
-function p_tuple(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_tuple(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     if s.opts.yas_style_nesting
         p_tuple(YASStyle(getstyle(ss)), cst, s; kwargs...)
     else
@@ -108,7 +123,12 @@ function p_tuple(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecia
     end
 end
 
-function p_macrocall(ss::SciMLStyle, cst::JuliaSyntax.GreenNode, s::State; @nospecialize(kwargs...))
+function p_macrocall(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State;
+    @nospecialize(kwargs...)
+)
     style = getstyle(ss)
     t = FST(MacroCall, nspaces(s))
     !haschildren(cst) && return t
