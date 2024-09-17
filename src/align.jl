@@ -1,3 +1,23 @@
+# we need to use ncodeunits
+function node_align_length(n::FST)
+    if is_leaf(n)
+        return ncodeunits(n.val)
+    end
+    margin = 0
+    for nn in n.nodes
+        margin += node_align_length(nn)
+    end
+    return margin
+end
+
+function node_align_length(nodes::Vector{FST})
+    margin = 0
+    for nn in nodes
+        margin += node_align_length(nn)
+    end
+    return margin
+end
+
 function align_fst!(fst::FST, opts::Options)
     is_leaf(fst) && return
     assignment_inds = Int[]
@@ -127,7 +147,7 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
         end
 
         binop, nlen, ws = if n.typ === Binary || n.typ === Kw
-            nlen = length(n[1])
+            nlen = node_align_length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
         else
             binop::Union{FST,Nothing} = nothing
@@ -139,12 +159,12 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
             # for instance, @call1 @call2 @call3 x = 10
             while sn.nodes !== nothing
                 binop_ind = findfirst(nn -> nn.typ === Binary, sn.nodes)
-                nlen += sum(length.(sn[1:end-1]))
+                nlen += node_align_length(sn[1:(end-1)])
                 if binop_ind === nothing
                     sn = (sn.nodes::Vector{FST})[end]
                 else
                     binop = (sn.nodes::Vector{FST})[binop_ind]
-                    nlen += length(binop[1])
+                    nlen += node_align_length(binop[1])
                     ws = (binop[3].line_offset - n.line_offset) - nlen
                     break
                 end
@@ -200,7 +220,7 @@ function align_struct!(fst::FST)
                 g = AlignGroup()
             end
 
-            nlen = length(n[1])
+            nlen = node_align_length(n[1])
             ind = findfirst(x -> x.typ === OPERATOR, n.nodes)
             # issue 757
             # "foo
@@ -220,9 +240,9 @@ function align_struct!(fst::FST)
                 g = AlignGroup()
             end
 
-            nlen = length(n[1]) + length(n[2])
+            nlen = node_align_length(n[1]) + node_align_length(n[2])
             binop = n[end]
-            nlen += length(binop[1])
+            nlen += node_align_length(binop[1])
             ind = findfirst(x -> x.typ === OPERATOR, binop.nodes)
             ind === nothing && continue
             ws = binop[ind].line_offset - (n.line_offset + nlen)
@@ -262,14 +282,14 @@ function align_conditional!(fst::FST)
     for (i, n) in enumerate(nodes)
         if n.typ === OPERATOR && n.val == "?"
             if cond_prev_endline != n.endline
-                nlen = length(nodes[i-2])
+                nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
                 push!(cond_group, n, i, n.line_offset, nlen, ws)
             end
             cond_prev_endline = n.endline
         elseif n.typ === OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
-                nlen = length(nodes[i-2])
+                nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
                 push!(colon_group, n, i, n.line_offset, nlen, ws)
             end
@@ -341,9 +361,7 @@ function align_matrix!(fst::FST)
                 n1 = r[i-1]
                 n2 = r[i+1]
 
-                # diff = n2.line_offset - n1.line_offset - length(n1)
-                diff = n2.line_offset - n1.line_offset - length(n1)
-                @info "" diff
+                diff = n2.line_offset - n1.line_offset - node_align_length(n1)
 
                 # fix #694 and #713
                 if diff > 0

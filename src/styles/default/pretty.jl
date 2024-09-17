@@ -1,5 +1,6 @@
 # Creates a _prettified_ version of a CST.
 function pretty(ds::DefaultStyle, cst::CSTParser.EXPR, s::State; kwargs...)
+    @nospecialize kwargs
     style = getstyle(ds)
     if cst.head === :NONSTDIDENTIFIER
         return p_nonstdidentifier(style, cst, s)
@@ -719,6 +720,8 @@ function p_block(
     from_quote = false,
     join_body = false,
 )
+
+    @nospecialize ignore_single_line from_quote join_body
     style = getstyle(ds)
     t = FST(Block, cst, nspaces(s))
 
@@ -1374,6 +1377,7 @@ function p_chainopcall(
     nonest = false,
     nospace = false,
 )
+    @nospecialize nonest nospace
     style = getstyle(ds)
     t = FST(Chain, cst, nspaces(s))
 
@@ -1554,6 +1558,7 @@ function p_binaryopcall(
     nonest = false,
     nospace = false,
 )
+    @nospecialize nonest nospace
     style = getstyle(ds)
     t = FST(Binary, cst, nspaces(s))
     op = cst[2]
@@ -1860,6 +1865,7 @@ function p_invisbrackets(
     nonest = false,
     nospace = false,
 )
+    @nospecialize nonest nospace
     style = getstyle(ds)
     t = FST(Brackets, cst, nspaces(s))
     nest = !is_iterable(cst[2]) && !nonest && !s.opts.disallow_single_arg_nesting
