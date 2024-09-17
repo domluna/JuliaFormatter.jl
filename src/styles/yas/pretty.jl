@@ -106,6 +106,7 @@ function p_curly(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"{", childs)::Int
@@ -143,6 +144,7 @@ function p_braces(
 )
     style = getstyle(ys)
     t = FST(Braces, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"{", childs)::Int
@@ -182,6 +184,7 @@ function p_bracescat(
 )
     style = getstyle(ys)
     t = FST(BracesCat, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"{", childs)::Int
@@ -215,6 +218,7 @@ end
 function p_tuple(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
+    !haschildren(cst) && return t
 
     nargs = length(get_args(cst))
     childs = children(cst)
@@ -259,7 +263,7 @@ function p_invisbrackets(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     args = get_args(cst)
     if length(args) > 0
         arg = args[1]
-        if is_block(arg) || (kind(arg) === K"generator" && is_block(arg[1]))
+        if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
     end
@@ -290,15 +294,25 @@ function p_call(
     kwargs...,
 )
     style = getstyle(ys)
+    t = FST(Call, nspaces(s))
+    !haschildren(cst) && return t
+    childs = children(cst)
 
     # # With `variable_call_indent`, check if the caller is in the list
     # and use `p_call` from `DefaultStyle` instead to allow both
     # `caller(something,...)` and `caller(\n,...)`.
     if length(s.opts.variable_call_indent) > 0
-        offset = if kind(cst[1]) === K"curly"
-            span(cst[1][1]) + span(cst[2]) - 2
+        offset = if kind(childs[1]) === K"curly" && haschildren(childs[1])
+            childs2 = children(childs[1])::Vector{JuliaSyntax.GreenNode{JuliaSyntax.SyntaxHead}}
+            if length(childs2) > 0
+                span(childs2[1]) + span(childs[2]) - 2
+            else
+                0
+            end
+        elseif length(childs) > 1
+            span(childs[1]) + span(childs[2]) - 2
         else
-            span(cst[1]) + span(cst[2]) - 2
+            0
         end
         val = getsrcval(s.doc, s.offset:s.offset+offset)
         if val in s.opts.variable_call_indent
@@ -306,8 +320,6 @@ function p_call(
         end
     end
 
-    t = FST(Call, nspaces(s))
-    childs = children(cst)
 
     idx = findfirst(n -> kind(n) === K"(", childs)::Int
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
@@ -348,8 +360,8 @@ end
 
 function p_vect(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
-
     t = FST(Vect, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)::Int
@@ -382,10 +394,11 @@ end
 function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
-    st = kind(cst) === K"vcat" ? 1 : 2
+    !haschildren(cst) && return t
 
     childs = children(cst)
-    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, st + 1)
+    idx = findfirst(n -> kind(n) === K"[", childs)::Int
+    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
@@ -408,7 +421,7 @@ function p_vcat(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
         else
             join_lines = i == first_arg_idx ? true : t.endline == n.startline
 
-            if i > first_arg_idx && join_lines
+            if !isnothing(first_arg_idx) && i > first_arg_idx && join_lines
                 add_node!(t, Placeholder(1), s)
             end
 
@@ -443,6 +456,7 @@ end
 function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(RefN, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)::Int
@@ -478,18 +492,20 @@ end
 function p_comprehension(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(Comprehension, nspaces(s))
+    !haschildren(cst) && return t
 
+    childs = children(cst)
     idx = findfirst(
         n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"[ ]"),
-        children(cst),
+        childs,
     )
-    arg = cst[idx]
+    arg = childs[idx]
 
-    if is_block(arg) || (kind(arg) === K"generator" && is_block(arg[1]))
+    if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
         t.nest_behavior = AlwaysNest
     end
 
-    for c in children(cst)
+    for c in childs
         n = pretty(style, c, s; kwargs...)
         if kind(c) === K"["
             add_node!(t, n, s, join_lines = true)
@@ -516,6 +532,7 @@ end
 function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ys)
     t = FST(MacroCall, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     has_closer = is_closer(childs[end])
@@ -527,7 +544,7 @@ function p_macrocall(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs.
 
     idx = findfirst(n -> kind(n) === K"(", childs)
     first_arg_idx =
-        idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
+        isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs..., can_separate_kwargs = false)
@@ -582,6 +599,7 @@ function p_whereopcall(
 )
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     where_idx = findfirst(c -> kind(c) === K"where" && !haschildren(c), childs)
@@ -595,7 +613,7 @@ function p_whereopcall(
 
     nws = s.opts.whitespace_typedefs ? 1 : 0
 
-    idx = findfirst(n -> kind(n) === K"{", childs)::Int
+    idx = findfirst(n -> kind(n) === K"{", childs)
     first_arg_idx =
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
@@ -661,6 +679,7 @@ function p_generator(
 )
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
+    !haschildren(cst) && return t
     has_for_kw = false
 
     from_iterable = false

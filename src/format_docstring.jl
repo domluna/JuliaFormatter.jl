@@ -57,8 +57,9 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
     state_indent = state.indent
     start_boundary = findfirst(!=('"'), text)
     # if the docstring is non-empty
-    if start_boundary !== nothing
-        end_boundary = findlast(!=('"'), text)
+    if !isnothing(start_boundary)
+        _end_boundary = findlast(!=('"'), text)
+        end_boundary = isnothing(_end_boundary) ? length(text) : _end_boundary
         # first, we need to remove any user indent
         # only some lines will "count" towards increasing the user indent
         # start at a very big guess

@@ -47,16 +47,16 @@ Group of FST node indices and required metadata to potentially align them.
     manually added by the user since the formatter would only use 0 or 1 whitespaces.
 """
 struct AlignGroup
-    nodes::Vector{Ref{FST}}
+    nodes::Vector{FST}
     node_inds::Vector{Int}
     line_offsets::Vector{Int}
     lens::Vector{Int}
     whitespaces::Vector{Int}
 end
-AlignGroup() = AlignGroup(Vector{Ref{FST}}[], Int[], Int[], Int[], Int[])
+AlignGroup() = AlignGroup(FST[], Int[], Int[], Int[], Int[])
 
 function Base.push!(g::AlignGroup, n::FST, ind::Int, line_offset::Int, len::Int, ws::Int)
-    push!(g.nodes, Ref(n))
+    push!(g.nodes, n)
     push!(g.node_inds, ind)
     push!(g.line_offsets, line_offset)
     push!(g.lens, len)
@@ -186,10 +186,8 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
         align_len = align_to(g)
         isnothing(align_len) && continue
 
-        for (i, nr) in enumerate(g.nodes)
+        for (i, n) in enumerate(g.nodes)
             diff = align_len - g.lens[i] + 1
-            # reference to node
-            n = nr[]
             align_binaryopcall!(n, diff)
             n.nest_behavior = NeverNest
         end
@@ -205,7 +203,7 @@ Aligns struct fields.
 """
 function align_struct!(fst::FST)
     ind = findfirst(n -> n.typ === Block, fst.nodes)
-    ind === nothing && return
+    isnothing(ind) && return
     length(fst[ind]) == 0 && return
 
     block_fst = fst[ind]
@@ -256,8 +254,7 @@ function align_struct!(fst::FST)
     for g in groups
         align_len = align_to(g)
         align_len === nothing && continue
-        for (i, nr) in enumerate(g.nodes)
-            n = nr[]
+        for (i, n) in enumerate(g.nodes)
             diff = align_len - g.lens[i] + 1
             align_binaryopcall!(n, diff)
             n.nest_behavior = NeverNest

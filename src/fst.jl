@@ -128,8 +128,8 @@ mutable struct FST
 
     indent::Int
     len::Int
-    val::Union{Nothing,AbstractString}
-    nodes::Union{Nothing,Vector{FST}}
+    val::AbstractString
+    nodes::Union{Tuple{},Vector{FST}}
     nest_behavior::NestBehavior
 
     # Extra margin caused by parent nodes.
@@ -148,7 +148,7 @@ function show(io::IO, fst::FST)
 end
 
 function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
-    if !isnothing(fst.nodes)
+    if !is_leaf(fst)
         println(io, indent, "FST: $(fst.typ) $(length(fst.nodes::Vector{FST}))")
         println(
             io,
@@ -172,7 +172,7 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
 end
 
 FST(typ::FNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, nothing, FST[], AllowNest, 0, -1, nothing)
+    FST(typ, -1, -1, indent, 0, "", FST[], AllowNest, 0, -1, nothing)
 
 function FST(
     typ::FNode,
@@ -188,7 +188,7 @@ function FST(
         0,
         length(val),
         val,
-        nothing,
+        (),
         AllowNest,
         0,
         line_offset,
@@ -202,8 +202,8 @@ function Base.setindex!(fst::FST, node::FST, ind::Int)
     nodes[ind] = node
     fst.len += node.len
 end
-Base.getindex(fst::FST, inds...)::Vector{FST} = (fst.nodes::Vector{FST})[inds...]
-Base.lastindex(fst::FST) = isnothing(fst.nodes) ? 0 : length(fst.nodes::Vector{FST})
+Base.getindex(fst::FST, inds...) = (fst.nodes::Vector{FST})[inds...]
+Base.lastindex(fst::FST) = length(fst.nodes::Vector{FST})
 Base.firstindex(fst::FST) = 1
 Base.length(fst::FST) = fst.len
 function Base.iterate(fst::FST, state = 1)
@@ -227,18 +227,18 @@ can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
 can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", nothing, nest_behavior, 0, -1, nothing)
-Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", nothing, AllowNest, 0, -1, nothing)
-TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
-Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
-Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, nothing, AllowNest, 0, -1, nothing)
+    FST(NEWLINE, -1, -1, 0, length, "\n", (), nest_behavior, 0, -1, nothing)
+Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", (), AllowNest, 0, -1, nothing)
+TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", (), AllowNest, 0, -1, nothing)
+Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
+Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
 Notcode(startline, endline) =
-    FST(NOTCODE, startline, endline, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
+    FST(NOTCODE, startline, endline, 0, 0, "", (), AllowNest, 0, -1, nothing)
 InlineComment(line) =
-    FST(INLINECOMMENT, line, line, 0, 0, "", nothing, AllowNest, 0, -1, nothing)
+    FST(INLINECOMMENT, line, line, 0, 0, "", (), AllowNest, 0, -1, nothing)
 
 is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
-is_leaf(fst::FST) = fst.nodes === nothing
+is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 is_punc(cst::JuliaSyntax.GreenNode) =
     kind(cst) in KSet", ( ) [ ] { } @" || kind(cst) === K"." && !haschildren(cst)
@@ -295,7 +295,7 @@ end
 function contains_macrostr(t)
     if kind(t) in KSet"StringMacroName CmdMacroName core_@cmd"
         return true
-    elseif kind(t) === "quote"
+    elseif kind(t) === "quote" && haschildren(t)
         return contains_macrostr(t[1])
     elseif kind(t) === K"." && haschildren(t)
         for c in reverse(children(t))
@@ -307,19 +307,22 @@ function contains_macrostr(t)
     return false
 end
 
-function is_func_call(t::JuliaSyntax.GreenNode)
-    kind(t) in KSet"call dotcall" && JuliaSyntax.is_prefix_call(t) && return true
-    if kind(t) in KSet":: where"
-        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(t))
-        idx === nothing && return false
-        return is_func_call(t[idx])
-    elseif kind(t) == K"parens"
+function is_func_call(t::JuliaSyntax.GreenNode)::Bool
+    if kind(t) in KSet"call dotcall"
+        return JuliaSyntax.is_prefix_call(t)
+    elseif kind(t) in KSet":: where" && haschildren(t)
+        childs = children(t)
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
+        isnothing(idx) && return false
+        return is_func_call(childs[idx])
+    elseif kind(t) == K"parens" && haschildren(t)
+        childs = children(t)
         idx = findfirst(
             n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"),
-            children(t),
+            childs,
         )
-        idx === nothing && return false
-        return is_func_call(t[idx])
+        isnothing(idx) && return false
+        return is_func_call(childs[idx])
     end
     return false
 end
@@ -327,8 +330,11 @@ end
 function defines_function(x::JuliaSyntax.GreenNode)
     kind(x) in KSet"function macro" && haschildren(x) && return true
     if is_assignment(x)
-        idx = findfirst(n -> !JuliaSyntax.is_whitespace(kind(n)), children(x))
-        return is_func_call(x[idx])
+        childs = children(x)
+        childs === () && return false
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
+        c = is_func_call(childs[idx])
+        return c
     end
     return false
 end
@@ -358,24 +364,34 @@ end
 
 function get_args(t::JuliaSyntax.GreenNode)
     nodes = JuliaSyntax.GreenNode[]
+    if !haschildren(t)
+        return nodes
+    end
+    childs = children(t)
+    if childs === ()
+        return nodes
+    end
+
     k = kind(t)
 
     ret = if k == K"where"
-        if is_leaf(t[end])
-            JuliaSyntax.GreenNode[t[end]]
+        if is_leaf(childs[end])
+            JuliaSyntax.GreenNode[childs[end]]
         else
-            get_args(children(t)[end])
+            get_args(childs[end])
         end
-    elseif k in KSet"typed_vcat typed_ncat ref curly typed_comprehension call"
-        get_args(children(t)[2:end])
-    elseif k in KSet"dotcall macrocall"
-        get_args(children(t)[3:end])
     else
-        get_args(children(t))
+        _idx = findfirst(n -> kind(n) in KSet"( { [", childs)
+        idx = isnothing(_idx) ? 1 : _idx + 1
+        get_args(childs[idx:end])
     end
-    append!(nodes, ret)
 
-    nodes
+    if ret === ()
+        return nodes
+    end
+
+    append!(nodes, ret)
+    return nodes
 end
 
 function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
@@ -395,10 +411,8 @@ function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     end
     nodes
 end
+get_args(_) = ()
 n_args(x) = length(get_args(x))
-function get_args(::Nothing)
-    return JuliaSyntax.GreenNode[]
-end
 
 function is_arg(fst::FST)
     if fst.typ in (PUNCTUATION, SEMICOLON) || is_custom_leaf(fst)
@@ -408,10 +422,11 @@ function is_arg(fst::FST)
 end
 
 function n_args(fst::FST)
-    isnothing(fst.nodes) && return nothing
-    _idx = findfirst(is_opener, fst.nodes)
+    is_leaf(fst) && return 0
+    nodes = fst.nodes::Vector{FST}
+    _idx = findfirst(is_opener, nodes)
     idx = isnothing(_idx) ? 1 : _idx
-    n = length(filter(is_arg, fst.nodes[idx:end]))
+    n = length(filter(is_arg, nodes[idx:end]))
     return n
 end
 
@@ -524,7 +539,7 @@ function is_block(x::JuliaSyntax.GreenNode)
     is_if(x) && return true
     kind(x) in KSet"do try for while let" && return true
     (kind(x) == K"block" && haschildren(x)) && return true
-    (kind(x) == K"quote" && is_block(x[1])) && return true
+    (kind(x) == K"quote" && haschildren(x) && is_block(x[1])) && return true
     return false
 end
 
@@ -546,18 +561,21 @@ function is_opcall(x)
     kind(x) == K"comparison" && return true
     is_chain(x) && return true
     is_unary(x) && return true
-    if kind(x) === K"parens"
+    if kind(x) === K"parens" && haschildren(x)
+        childs = children(x)
         idx = findfirst(
             n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"( )"),
-            children(x),
+            childs,
         )
-        return is_opcall(x[idx])
+        isnothing(idx) && return false
+        return is_opcall(childs[idx])
     end
     return false
 end
 
 function is_prefix_op_call(x)
     is_opcall(x) || return false
+    haschildren(x) || return false
     idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(x))
     isnothing(idx) && return false
     return JuliaSyntax.is_operator(x[idx])
@@ -617,7 +635,11 @@ end
 
 function is_assignment(x::FST)
     if x.typ === Binary
-        return !isnothing(x.metadata) && x.metadata.is_assignment
+        if isnothing(x.metadata)
+            return false
+        else
+            return (x.metadata::Metadata).is_assignment
+        end
     end
 
     if (
@@ -653,6 +675,7 @@ function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
 
     if JuliaSyntax.is_operator(cst) && k === K"="
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(cst))
+        isnothing(idx) && return false
         return is_function_like_lhs(cst[idx])
     end
 
@@ -694,9 +717,10 @@ function unnestable_node(cst::JuliaSyntax.GreenNode)
 end
 
 function is_binaryop_nestable(::S, cst::JuliaSyntax.GreenNode) where {S<:AbstractStyle}
-    if is_assignment(cst) || is_pairarrow(cst)
-        idx = findlast(n -> !JuliaSyntax.is_whitespace(n), children(cst))
-        return !is_str_or_cmd(cst[idx])
+    if (is_assignment(cst) || is_pairarrow(cst)) && haschildren(cst)
+        childs = children(cst)
+        idx = findlast(n -> !JuliaSyntax.is_whitespace(n), childs)::Int
+        return !is_str_or_cmd(childs[idx])
     end
     true
 end
@@ -729,16 +753,13 @@ function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing
     return nothing
 end
 
-function op_kind(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.Kind,Nothing}
+function op_kind(cst::JuliaSyntax.GreenNode)::JuliaSyntax.Kind
     op = get_op(cst)
-    if op !== nothing
-        return kind(op)
-    end
-    return nothing
+    isnothing(op) ? K"None" : kind(op)
 end
 
-function op_kind(fst::FST)::Union{JuliaSyntax.Kind,Nothing}
-    return isnothing(fst.metadata) ? nothing : fst.metadata.op_kind
+function op_kind(fst::FST)::JuliaSyntax.Kind
+    return isnothing(fst.metadata) ? K"None" : (fst.metadata::Metadata).op_kind
 end
 
 function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) where {T}
@@ -1117,17 +1138,18 @@ function add_node!(
         # only considered "in the positive" when it's past
         # the hits the initial """ offset, i.e. `t.indent`.
         t.len = max(t.len, n.indent + length(n) - t.indent)
-    elseif is_multiline(n) || (!isnothing(t.metadata) && t.metadata.has_multiline_argument)
+    elseif is_multiline(n) || (!isnothing(t.metadata) && (t.metadata::Metadata).has_multiline_argument)
         if isnothing(t.metadata)
             t.metadata = Metadata(K"begin", false, false, false, false, true, true)
         else
+            metadata = t.metadata::Metadata
             t.metadata = Metadata(
-                t.metadata.op_kind,
-                t.metadata.op_dotted,
-                t.metadata.is_standalone_shortcircuit,
-                t.metadata.is_short_form_function,
-                t.metadata.is_assignment,
-                t.metadata.is_long_form_function,
+                metadata.op_kind,
+                metadata.op_dotted,
+                metadata.is_standalone_shortcircuit,
+                metadata.is_short_form_function,
+                metadata.is_assignment,
+                metadata.is_long_form_function,
                 true,
             )
         end

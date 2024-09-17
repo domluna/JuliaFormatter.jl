@@ -100,7 +100,7 @@ end
 
 function pipe_to_function_call(fst::FST)
     nodes = FST[]
-    dot = !isnothing(fst.metadata) && fst.metadata.op_dotted
+    dot = !isnothing(fst.metadata) && (fst.metadata::Metadata).op_dotted
     arg2 = fst[end]
 
     # is RHS is an anon function?
@@ -260,7 +260,7 @@ function short_to_long_function_def!(
         if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
             continue
         elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) ||
-               !isnothing(parent[2]) && parent[2].is_short_form_function
+            (!isnothing(parent[2]) && parent[2].is_short_form_function)
             return false
         else
             break
@@ -737,7 +737,7 @@ function _short_circuit_to_if!(fst::FST, s::State)
     idx = findlast(n -> n.typ === OPERATOR && (n.val == "||" || n.val == "&&"), nodes)::Int
     is_or = nodes[idx].val == "||"
 
-    wrap_with_parens = !(fst.nodes[1].typ === Brackets)
+    wrap_with_parens = !(nodes[1].typ === Brackets)
 
     if is_or
         call = FST(Unary, fst.indent)
@@ -818,7 +818,7 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
                !isnothing(n.metadata) &&
-               n.metadata.is_standalone_shortcircuit
+            (n.metadata::Metadata).is_standalone_shortcircuit
             _short_circuit_to_if!(n, s)
         else
             short_circuit_to_if_pass!(n, s)

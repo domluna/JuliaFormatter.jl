@@ -440,7 +440,7 @@ function p_accessor(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwar
     style = getstyle(ds)
     t = FST(Accessor, nspaces(s))
 
-    for (i, c) in enumerate(children(cst))
+    for c in children(cst)
         add_node!(t, pretty(style, c, s; kwargs...), s; join_lines = true)
     end
     t
@@ -481,7 +481,7 @@ function p_stringh(
     end
 
     if from_docstring && s.opts.format_docstrings
-        val = format_docstring(ds, s, val)
+        val = format_docstring(style, s, val)
     end
 
     lines = split(val, "\n")
@@ -504,7 +504,7 @@ function p_stringh(
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]
-        n = FST(LITERAL, ln, ln, sidx - 1, length(l), l, nothing, AllowNest, 0, -1, nothing)
+        n = FST(LITERAL, ln, ln, sidx - 1, length(l), l, (), AllowNest, 0, -1, nothing)
         add_node!(t, n, s)
     end
 
@@ -525,9 +525,10 @@ p_stringh(
 function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(GlobalRefDoc, nspaces(s))
+    !haschildren(cst) && return t
 
-    args = children(cst)
-    for (i, c) in enumerate(args)
+    childs = children(cst)
+    for (i, c) in enumerate(childs)
         if i == 1
             add_node!(
                 t,
@@ -535,7 +536,7 @@ function p_globalrefdoc(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; 
                 s,
                 max_padding = 0,
             )
-        elseif i == length(args)
+        elseif i == length(childs)
             add_node!(t, pretty(style, c, s; kwargs...), s, max_padding = 0)
         else
             add_node!(t, pretty(style, c, s; kwargs...), s)
@@ -556,20 +557,23 @@ function p_macrocall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwa
     style = getstyle(ds)
     t = FST(MacroCall, nspaces(s))
 
+    !haschildren(cst) && return t
+
     args = get_args(cst)
     nest =
         length(args) > 0 && !(
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
-    has_closer = is_closer(cst[end])
+    childs = children(cst)
+
+    has_closer = is_closer(childs[end])
     is_macroblock = !has_closer
 
     if is_macroblock
         t.typ = MacroBlock
     end
 
-    childs = children(cst)
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs..., can_separate_kwargs = false)
         if JuliaSyntax.is_macro_name(a)
@@ -636,6 +640,7 @@ function p_block(
 )
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
+    !haschildren(cst) && return t
 
     single_line =
         ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst))
@@ -781,6 +786,7 @@ p_var(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abstr
 function p_functiondef(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(FunctionN, nspaces(s))
+    !haschildren(cst) && return t
 
     block_has_contents = false
     childs = children(cst)
@@ -849,6 +855,7 @@ p_macro(
 function p_struct(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Struct, nspaces(s))
+    !haschildren(cst) && return t
 
     block_has_contents = false
     childs = children(cst)
@@ -1110,9 +1117,10 @@ p_toplevel(
 function p_begin(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Begin, nspaces(s))
-    add_node!(t, pretty(style, cst[1], s; kwargs...), s)
+    !haschildren(cst) && return t
 
     childs = children(cst)
+    add_node!(t, pretty(style, childs[1], s; kwargs...), s)
     empty_body = length(filter(n -> !JuliaSyntax.is_whitespace(n), childs)) == 2
 
     if empty_body
@@ -1207,6 +1215,7 @@ p_quotenode(
 function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Let, nspaces(s))
+    !haschildren(cst) && return t
     block_id = 1
 
     has_let_args = false
@@ -1239,7 +1248,7 @@ function p_let(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
                     s,
                     max_padding = s.opts.indent,
                 )
-                if has_let_args && t.nodes[end-2].typ !== NOTCODE
+                if has_let_args && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
                     insert!(t, length(t.nodes) - 1, Placeholder(0))
                 end
             end
@@ -1286,7 +1295,7 @@ function p_for(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
 
-            if !ends_in_iterable && t.nodes[end-2].typ !== NOTCODE
+            if !ends_in_iterable && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
                 insert!(t, length(t.nodes) - 1, Placeholder(0))
             end
         elseif JuliaSyntax.is_whitespace(c)
@@ -1326,6 +1335,7 @@ function p_cartesian_iterator(
 )
     style = getstyle(ds)
     t = FST(CartesianIterator, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
@@ -1371,6 +1381,7 @@ p_while(
 function p_do(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Do, nspaces(s))
+    !haschildren(cst) && return t
 
     for (i, c) in enumerate(children(cst))
         if kind(c) === K"do" && !haschildren(c)
@@ -1583,6 +1594,8 @@ function p_binaryopcall(
 )
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
+    !haschildren(cst) && return t
+
     opkind = op_kind(cst)
 
     nonest = nonest || opkind === K":"
@@ -1621,6 +1634,7 @@ function p_binaryopcall(
 
     has_ws = false
     childs = children(cst)
+
     for (i, c) in enumerate(childs)
         if i > 1 && kind(c) in KSet"Whitespace NewlineWs"
             has_ws = true
@@ -1802,6 +1816,7 @@ function p_whereopcall(
 )
     style = getstyle(ds)
     t = FST(Where, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -1902,6 +1917,7 @@ p_conditionalopcall(
 function p_unaryopcall(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Unary, nspaces(s))
+    !haschildren(cst) && return t
 
     opkind = op_kind(cst)
     op_dotted = kind(cst) === K"dotcall"
@@ -1926,6 +1942,7 @@ p_unaryopcall(
 function p_curly(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Curly, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -1978,6 +1995,7 @@ function p_call(
 )
     style = getstyle(ds)
     t = FST(Call, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -2039,7 +2057,7 @@ function p_invisbrackets(
     args = get_args(cst)
     nest = if length(args) > 0
         arg = args[1]
-        if is_block(arg) || (kind(arg) === K"generator" && is_block(arg[1]))
+        if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
         !nonest && !s.opts.disallow_single_arg_nesting && !is_iterable(arg)
@@ -2085,6 +2103,7 @@ p_invisbrackets(
 function p_tuple(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(TupleN, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -2143,6 +2162,7 @@ function p_braces(
 )
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -2193,6 +2213,7 @@ function p_bracescat(
 )
     style = getstyle(ds)
     t = FST(BracesCat, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -2236,6 +2257,7 @@ p_bracescat(
 function p_vect(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Vect, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     nest =
@@ -2274,23 +2296,25 @@ p_vect(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abst
 function p_comprehension(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Comprehension, nspaces(s))
+    !haschildren(cst) && return t
 
+    childs = children(cst)
     idx = findfirst(
         n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"[ ]"),
-        children(cst),
+        childs,
     )
-    arg = cst[idx]
+    arg = childs[idx]
 
     if is_block(arg)
         t.nest_behavior = AlwaysNest
-    elseif kind(arg) === K"generator"
+    elseif kind(arg) === K"generator" && haschildren(arg)
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(kind(n)), children(arg))
         if !isnothing(idx) && is_block(arg[idx])
             t.nest_behavior = AlwaysNest
         end
     end
 
-    for c in children(cst)
+    for c in childs
         n = pretty(style, c, s; kwargs...)
         if kind(c) === K"["
             add_node!(t, n, s, join_lines = true)
@@ -2338,6 +2362,7 @@ function p_parameters(
 )
     style = getstyle(ds)
     t = FST(Parameters, nspaces(s))
+    !haschildren(cst) && return t
 
     nws = from_typedef && !s.opts.whitespace_typedefs ? 0 : 1
 
@@ -2465,6 +2490,8 @@ p_as(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abstra
 function p_ref(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(RefN, nspaces(s))
+    !haschildren(cst) && return t
+
     args = get_args(cst)
     nest =
         length(args) > 1 && !(
@@ -2503,16 +2530,17 @@ p_ref(style::S, cst::JuliaSyntax.GreenNode, s::State; kwargs...) where {S<:Abstr
 function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Vcat, nspaces(s))
+    !haschildren(cst) && return t
+
     args = get_args(cst)
     nest =
         length(args) > 0 && !(
             length(args) == 1 &&
             (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
         )
-    st = kind(cst) in KSet"vcat ncat" ? 1 : 2
-
     childs = children(cst)
-    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, st + 1)
+    idx = findfirst(n -> kind(n) === K"[", childs)::Int
+    first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx+1)
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
@@ -2539,7 +2567,7 @@ function p_vcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs..
             # else
             #     add_node!(t, n, s, join_lines = true)
             # end
-            if i > first_arg_idx
+            if !isnothing(first_arg_idx) && i > first_arg_idx
                 add_node!(t, Placeholder(1), s)
             end
 
@@ -2566,8 +2594,12 @@ p_typedvcat(
 function p_hcat(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Hcat, nspaces(s))
-    st = kind(cst) === K"hcat" ? 1 : 2
+    !haschildren(cst) && return t
+
     childs = children(cst)
+    # st = kind(cst) === K"hcat" ? 1 : 2
+    st = findfirst(n -> kind(n) === K"[", childs)::Int
+
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s; kwargs...)
         if JuliaSyntax.is_whitespace(a)
@@ -2621,6 +2653,7 @@ p_typedncat(
 function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(ds)
     t = FST(Row, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     first_arg_idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
@@ -2637,7 +2670,7 @@ function p_row(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
         else
-            if i > first_arg_idx
+            if !isnothing(first_arg_idx) && i > first_arg_idx
                 add_node!(t, Whitespace(1), s; join_lines = true)
             end
             add_node!(t, n, s; join_lines = true)
@@ -2667,8 +2700,9 @@ function p_generator(
 )
     style = getstyle(ds)
     t = FST(Generator, nspaces(s))
-    has_for_kw = false
+    !haschildren(cst) && return t
 
+    has_for_kw = false
     from_iterable = false
     for (kind, is_itr, _) in Iterators.reverse(lineage)
         if kind in KSet"parens generator filter"

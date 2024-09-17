@@ -60,12 +60,15 @@ function options(::BlueStyle)
 end
 
 function is_binaryop_nestable(::BlueStyle, cst::JuliaSyntax.GreenNode)
-    is_assignment(cst) && is_iterable(cst[end]) && return false
+    if is_assignment(cst) && haschildren(cst) && is_iterable(cst[end]) && return false
+    end
     return is_binaryop_nestable(DefaultStyle(), cst)
 end
 
 function p_return(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     style = getstyle(bs)
+    t = FST(Return, nspaces(s))
+    !haschildren(cst) && return t
 
     childs = children(cst)
     n_args = 0
@@ -79,7 +82,6 @@ function p_return(bs::BlueStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...
         return p_return(DefaultStyle(bs), cst, s; kwargs...)
     end
 
-    t = FST(Return, nspaces(s))
     for c in childs
         add_node!(t, pretty(style, c, s; kwargs...), s; join_lines = true)
     end

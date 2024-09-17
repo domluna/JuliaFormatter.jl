@@ -47,7 +47,7 @@ end
 
 function add_indent!(fst::FST, s::State, indent::Int)
     indent == 0 && return
-    f = (fst::FST, s::State) -> begin
+    f = (fst::FST, _::State) -> begin
         fst.indent += indent
         return nothing
     end
@@ -56,8 +56,8 @@ function add_indent!(fst::FST, s::State, indent::Int)
     s.line_offset = lo
 end
 
-function gettreeval(fst::FST)
-    if !isnothing(fst.val)
+function gettreeval(fst::FST)::AbstractString
+    if is_leaf(fst)
         return fst.val
     end
     ss = ""
@@ -190,9 +190,9 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     n = size(dp, 1)
 
     if n == k
-        return Int[fill(1, k)]
+        return Vector{Int}[fill(1, k)]
     elseif k == 1
-        return Int[[n]]
+        return Vector{Int}[[n]]
     end
 
     function _backtrack(t::Vector{Int}, current_sum::Int)
