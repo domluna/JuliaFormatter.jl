@@ -726,7 +726,6 @@ function p_block(
     join_body::Bool = false,
     kwargs...,
 )
-
     @nospecialize kwargs ignore_single_line from_quote join_body
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
@@ -1024,12 +1023,7 @@ p_struct(
 ) where {S<:AbstractStyle} = p_struct(DefaultStyle(style), cst, s; kwargs...)
 
 # mutable
-function p_mutable(
-    ds::DefaultStyle,
-    cst::JuliaSyntax.GreenNode,
-    s::State;
-    kwargs...,
-)
+function p_mutable(ds::DefaultStyle, cst::JuliaSyntax.GreenNode, s::State; kwargs...)
     @nospecialize kwargs
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
@@ -2427,7 +2421,6 @@ function p_braces(
     from_typedef::Bool = false,
     kwargs...,
 )
-
     @nospecialize kwargs from_typedef
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))

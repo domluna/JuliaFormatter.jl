@@ -816,13 +816,7 @@ function no_unnest(fst::FST)
     return false
 end
 
-function n_binaryopcall!(
-    ds::DefaultStyle,
-    fst::FST,
-    s::State;
-    indent::Int = -1,
-    kwargs...,
-)
+function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
     @nospecialize kwargs indent
     style = getstyle(ds)
     line_offset = s.line_offset
@@ -987,13 +981,7 @@ n_let!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
 n_let!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_let!(DefaultStyle(style), fst, s; kwargs...)
 
-function n_block!(
-    ds::DefaultStyle,
-    fst::FST,
-    s::State;
-    indent::Int = -1,
-    kwargs...,
-)
+function n_block!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1, kwargs...)
     @nospecialize kwargs indent
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -1087,12 +1075,7 @@ function n_block!(
     end
     return nested
 end
-n_block!(
-    style::S,
-    fst::FST,
-    s::State;
-    @nospecialize(kwargs...)
-) where {S<:AbstractStyle} =
+n_block!(style::S, fst::FST, s::State; @nospecialize(kwargs...)) where {S<:AbstractStyle} =
     n_block!(DefaultStyle(style), fst, s; kwargs...)
 
 n_comparison!(ds::DefaultStyle, fst::FST, s::State; @nospecialize(kwargs...)) =
