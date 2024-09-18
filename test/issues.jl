@@ -1383,10 +1383,21 @@
         return nothing
         """
         s_ = """
-        arraycopy_common(false #=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
+        arraycopy_common(false#=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
         return nothing
         """
-        @test format_text(s) == s_
+        @test fmt(s) == s_
+
+        s1 = """
+        foo(a, b, #=c=#)
+        """
+        s2 = """
+        foo(
+            a,
+            b,#=c=#
+        )
+        """
+        @test fmt(s1, 4, 1) == s2
     end
 
     @testset "604" begin

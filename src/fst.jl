@@ -944,6 +944,7 @@ function add_node!(
            en.typ === MacroCall ||
            en.typ === MacroBlock ||
            en.typ === SEMICOLON ||
+           en.typ === HASHEQCOMMENT ||
            # arg = @macro foo
            en.typ === Kw && (en[end].typ === MacroCall || en[end].typ === MacroBlock) ||
            # arg => @macro foo
@@ -978,9 +979,10 @@ function add_node!(
         push!(tnodes::Vector{FST}, n)
         return
     elseif is_custom_leaf(n)
-        if n.typ === HASHEQCOMMENT && length(tnodes) > 0 && !(tnodes[end].typ in (PLACEHOLDER, WHITESPACE, NEWLINE))
-            add_node!(t, Whitespace(1), s)
-        end
+        # TODO: not sure about this
+        # if n.typ === HASHEQCOMMENT && length(tnodes) > 0 && !(tnodes[end].typ in (PLACEHOLDER, WHITESPACE, NEWLINE))
+        #     add_node!(t, Whitespace(1), s)
+        # end
         t.len += length(n)
         n.startline = t.endline
         n.endline = t.endline
