@@ -534,7 +534,7 @@ function is_typedef(fst::FST)
     return false
 end
 
-function is_opcall(x)
+function is_opcall(x::JuliaSyntax.GreenNode)
     is_binary(x) && return true
     kind(x) == K"comparison" && return true
     is_chain(x) && return true
@@ -551,7 +551,7 @@ function is_opcall(x)
     return false
 end
 
-function is_prefix_op_call(x)
+function is_prefix_op_call(x::JuliaSyntax.GreenNode)
     is_opcall(x) || return false
     haschildren(x) || return false
     idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(x))
@@ -559,7 +559,7 @@ function is_prefix_op_call(x)
     return JuliaSyntax.is_operator(x[idx])
 end
 
-function is_gen(x)
+function is_gen(x::JuliaSyntax.GreenNode)
     kind(x) in KSet"generator filter"
 end
 
@@ -570,7 +570,7 @@ function is_gen(x::FST)
     return false
 end
 
-function _callinfo(x)
+function _callinfo(x::JuliaSyntax.GreenNode)
     k = kind(x)
     n_operators = 0
     n_args = 0
@@ -694,7 +694,7 @@ function unnestable_node(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"tuple vect braces bracescat comprehension parens"
 end
 
-function is_binaryop_nestable(::S, cst::JuliaSyntax.GreenNode) where {S<:AbstractStyle}
+function is_binaryop_nestable(::AbstractStyle, cst::JuliaSyntax.GreenNode)
     if (is_assignment(cst) || is_pairarrow(cst)) && haschildren(cst)
         childs = children(cst)
         idx = findlast(n -> !JuliaSyntax.is_whitespace(n), childs)::Int
@@ -850,7 +850,6 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         end
     end
 end
-
 eq_to_in_normalization!(::FST, ::Nothing, ::String) = nothing
 
 # Check if the caller of a call is in `list`
@@ -869,11 +868,11 @@ function caller_in_list(caller::AbstractString, list::Vector{String})
     return caller in list
 end
 
-function is_str_or_cmd(t)
+function is_str_or_cmd(t::JuliaSyntax.GreenNode)
     kind(t) in KSet"doc string cmdstring String CmdString"
 end
 
-function is_lazy_op(t)
+function is_lazy_op(t::Union{JuliaSyntax.GreenNode,JuliaSyntax.Kind})
     kind(t) in KSet"|| &&"
 end
 
@@ -1125,7 +1124,7 @@ function add_node!(
     elseif is_multiline(n) ||
            (!isnothing(t.metadata) && (t.metadata::Metadata).has_multiline_argument)
         if isnothing(t.metadata)
-            t.metadata = Metadata(K"begin", false, false, false, false, true, true)
+            t.metadata = Metadata(K"None", false, false, false, false, true, true)
         else
             metadata = t.metadata::Metadata
             t.metadata = Metadata(

@@ -7,7 +7,7 @@ function skip_indent(fst::FST)
     false
 end
 
-function walk(f, nodes::Vector{FST}, s::State, indent::Int)
+function walk(f::Function, nodes::Vector{FST}, s::State, indent::Int)
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE && i < length(nodes)
             if is_closer(nodes[i+1])
@@ -33,7 +33,7 @@ should return a value other than `nothing`.
     This function mutates the State's (`s`) `line_offset`. If this is not desired
     you should save the value before calling this function and restore it after.
 """
-function walk(f, fst::FST, s::State)
+function walk(f::Function, fst::FST, s::State)
     stop = f(fst, s)
     (stop !== nothing || is_leaf(fst)) && return
     walk(f, fst.nodes::Vector, s, fst.indent)
@@ -91,7 +91,7 @@ function nl_to_ws!(fst::FST, s::State)
     return
 end
 
-function dedent!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
+function dedent!(::AbstractStyle, fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -101,7 +101,7 @@ function dedent!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
     end
 end
 
-function dedent!(style::YASStyle, fst::FST, s::State)
+function dedent!(::YASStyle, fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -118,7 +118,7 @@ function dedent!(style::YASStyle, fst::FST, s::State)
     end
 end
 
-function unnest!(style::S, fst::FST, s::State; dedent::Bool) where {S<:AbstractStyle}
+function unnest!(style::AbstractStyle, fst::FST, s::State; dedent::Bool)
     if is_leaf(fst)
         s.line_offset += length(fst)
     end
@@ -134,7 +134,7 @@ function unnest!(style::S, fst::FST, s::State; dedent::Bool) where {S<:AbstractS
     return
 end
 
-function unnest!(style::S; dedent::Bool) where {S<:AbstractStyle}
+function unnest!(style::AbstractStyle; dedent::Bool)
     (fst::FST, s::State) -> begin
         unnest!(style, fst, s; dedent = dedent)
     end
@@ -157,13 +157,13 @@ If `stop_idx == nothing` the range is `fst[idx:end]`.
 Returns whether nesting occurred.
 """
 function nest_if_over_margin!(
-    style::S,
+    style::AbstractStyle,
     fst::FST,
     s::State,
     idx::Int;
     stop_idx::Union{Int,Nothing} = nothing,
     kwargs...,
-)::Bool where {S<:AbstractStyle}
+)::Bool
     @nospecialize kwargs stop_idx
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset

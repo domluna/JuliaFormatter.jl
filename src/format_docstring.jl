@@ -1,5 +1,5 @@
-struct FormatRule{T<:AbstractStyle}
-    style::T
+struct FormatRule
+    style::AbstractStyle
     opts::Options
 end
 format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, fr.opts)
