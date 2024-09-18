@@ -1,8 +1,8 @@
 module JuliaFormatter
 
-if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_methods"))
-    @eval Base.Experimental.@max_methods 1
-end
+# if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_methods"))
+#     @eval Base.Experimental.@max_methods 1
+# end
 
 using JuliaSyntax
 using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
@@ -64,15 +64,10 @@ See also: [`BlueStyle`](@ref), [`YASStyle`](@ref), [`SciMLStyle`](@ref), [`Minim
 struct DefaultStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
-
 DefaultStyle() = DefaultStyle(NoopStyle())
 
-function getstyle(s::AbstractStyle)::AbstractStyle
-    s.innerstyle isa NoopStyle ? s : s.innerstyle
-end
-function getstyle(s::NoopStyle)
-    return s
-end
+getstyle(s::NoopStyle) = s
+getstyle(s::DefaultStyle) = s.innerstyle isa NoopStyle ? s : s.innerstyle
 
 function options(::DefaultStyle)
     return (;
@@ -127,13 +122,9 @@ include("styles/sciml/nest.jl")
 include("styles/minimal/pretty.jl")
 
 include("format_docstring.jl")
-
 include("nest_utils.jl")
-
 include("print.jl")
-
 include("markdown.jl")
-
 include("copied_from_documenter.jl")
 
 const UNIX_TO_WINDOWS = r"\r?\n" => "\r\n"
@@ -483,6 +474,6 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-include("other/precompile.jl")
+# include("other/precompile.jl")
 
 end
