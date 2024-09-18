@@ -61,7 +61,8 @@ function Document(text::AbstractString)
                 end
             end
 
-            if startline == endline
+            if startline == endline && startswith(val, "#=") && endswith(val, "=#")
+            elseif startline == endline
                 if ws > 0
                     comments[startline] = (ws, val)
                 else

@@ -14,14 +14,13 @@ import Base: show
     NOTCODE,
     INLINECOMMENT,
     TRAILINGCOMMA,
-    TRAILINGSEMICOLON,
-    INVERSETRAILINGSEMICOLON,
     KEYWORD,
     LITERAL,
     OPERATOR,
     PUNCTUATION,
     IDENTIFIER,
     MACRONAME,
+    HASHEQCOMMENT,
 
     # non-leaf nodes
     Accessor,
@@ -250,7 +249,7 @@ is_end(x::FST) = x.typ === KEYWORD && x.val == "end"
 is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 
 is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
-is_comment(fst::FST) = fst.typ === INLINECOMMENT || fst.typ === NOTCODE
+is_comment(fst::FST) = fst.typ in (INLINECOMMENT, NOTCODE, HASHEQCOMMENT)
 
 is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 
@@ -331,18 +330,13 @@ function is_try(cst::JuliaSyntax.GreenNode)
 end
 
 function is_custom_leaf(fst::FST)
-    fst.typ === NEWLINE ||
-        fst.typ === WHITESPACE ||
-        fst.typ === PLACEHOLDER ||
-        fst.typ === NOTCODE ||
-        fst.typ === INLINECOMMENT ||
-        fst.typ === TRAILINGCOMMA
+    fst.typ in (NEWLINE, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT, TRAILINGCOMMA, HASHEQCOMMENT)
 end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
     is_leaf(fst) && return false
-    contains_comment(fst.nodes::Vector)
+    contains_comment(fst.nodes::Vector{FST})
 end
 
 function get_args(t::JuliaSyntax.GreenNode)
@@ -939,6 +933,7 @@ function add_node!(
             t.endline = n.endline
         end
         return
+    elseif n.typ === HASHEQCOMMENT
     end
 
     if n.typ === TRAILINGCOMMA
@@ -983,6 +978,9 @@ function add_node!(
         push!(tnodes::Vector{FST}, n)
         return
     elseif is_custom_leaf(n)
+        if n.typ === HASHEQCOMMENT && length(tnodes) > 0 && !(tnodes[end].typ in (PLACEHOLDER, WHITESPACE, NEWLINE))
+            add_node!(t, Whitespace(1), s)
+        end
         t.len += length(n)
         n.startline = t.endline
         n.endline = t.endline

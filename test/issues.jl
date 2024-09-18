@@ -1383,7 +1383,7 @@
         return nothing
         """
         s_ = """
-        arraycopy_common(false, LLVM.Builder(B), orig, origops[1], gutils) #=fwd=#
+        arraycopy_common(false #=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
         return nothing
         """
         @test format_text(s) == s_
