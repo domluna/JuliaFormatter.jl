@@ -17,6 +17,7 @@ struct SciMLStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
 SciMLStyle() = SciMLStyle(NoopStyle())
+getstyle(s::SciMLStyle) = s.innerstyle isa NoopStyle ? s : s.innerstyle
 
 function options(::SciMLStyle)
     return (;

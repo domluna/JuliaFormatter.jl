@@ -24,6 +24,7 @@ struct BlueStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
 BlueStyle() = BlueStyle(NoopStyle())
+getstyle(s::BlueStyle) = s.innerstyle isa NoopStyle ? s : s.innerstyle
 
 function options(::BlueStyle)
     return (;

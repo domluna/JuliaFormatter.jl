@@ -20,6 +20,7 @@ struct YASStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
 YASStyle() = YASStyle(NoopStyle())
+getstyle(s::YASStyle) = s.innerstyle isa NoopStyle ? s : s.innerstyle
 
 function options(::YASStyle)
     return (;
