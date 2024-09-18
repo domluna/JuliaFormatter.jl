@@ -330,7 +330,8 @@ function is_try(cst::JuliaSyntax.GreenNode)
 end
 
 function is_custom_leaf(fst::FST)
-    fst.typ in (NEWLINE, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT, TRAILINGCOMMA, HASHEQCOMMENT)
+    fst.typ in
+    (NEWLINE, WHITESPACE, PLACEHOLDER, NOTCODE, INLINECOMMENT, TRAILINGCOMMA, HASHEQCOMMENT)
 end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing

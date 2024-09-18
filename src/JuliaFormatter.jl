@@ -9,7 +9,7 @@ using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
-import Base: get, pairs, count
+import Base: get, pairs
 using CommonMark:
     AdmonitionRule,
     CodeBlock,

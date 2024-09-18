@@ -185,11 +185,11 @@ function pretty(
     return ret
 end
 pretty(
-    style::S,
+    style::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State;
     @nospecialize(kwargs...)
-) where {S<:AbstractStyle} = pretty(DefaultStyle(style), cst, s; kwargs...)
+) = pretty(DefaultStyle(style), cst, s; kwargs...)
 
 function p_identifier(
     ::DefaultStyle,
