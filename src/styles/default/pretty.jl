@@ -733,7 +733,7 @@ function p_block(
     !haschildren(cst) && return t
 
     single_line =
-        ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst))
+        ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst)-1)
     before_first_arg = true
 
     childs = children(cst)
