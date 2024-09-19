@@ -1,15 +1,11 @@
 module JuliaFormatter
 
-# if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_methods"))
-#     @eval Base.Experimental.@max_methods 1
-# end
-
 using JuliaSyntax
 using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
-import Base: get, pairs
+import Base: get, pairs, show
 using CommonMark:
     AdmonitionRule,
     CodeBlock,
@@ -21,6 +17,7 @@ using CommonMark:
     Rule,
     TableRule,
     FrontMatterRule
+using PrecompileTools
 
 export format,
     format_text,
@@ -474,6 +471,6 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-# include("other/precompile.jl")
+include("other/precompile.jl")
 
 end

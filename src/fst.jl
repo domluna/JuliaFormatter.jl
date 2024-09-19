@@ -1,5 +1,3 @@
-import Base: show
-
 @enum(
     FNode,
 
