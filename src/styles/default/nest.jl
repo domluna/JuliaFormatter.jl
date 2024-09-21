@@ -22,7 +22,7 @@ function nest!(
     extra_margin::Int = 0,
     kwargs...,
 )
-    @nospecialize kwargs extra_margin
+    @nospecialize kwargs
     style = getstyle(ds)
     nested = false
 
@@ -59,7 +59,7 @@ function nest!(
     }[],
     kwargs...,
 )
-    @nospecialize kwargs lineage
+    @nospecialize kwargs
     if is_leaf(fst)
         s.line_offset += length(fst)
         return false

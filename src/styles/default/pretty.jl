@@ -5,7 +5,7 @@ function pretty(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}} = Tuple{JuliaSyntax.Kind,Bool,Bool}[],
     kwargs...,
 )
-    @nospecialize kwargs lineage
+    @nospecialize kwargs
     k = kind(node)
     style = getstyle(ds)
     push!(lineage, (k, is_iterable(node), is_assignment(node)))
