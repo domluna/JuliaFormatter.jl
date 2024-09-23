@@ -56,7 +56,7 @@ function add_indent!(fst::FST, s::State, indent::Int)
     s.line_offset = lo
 end
 
-function gettreeval(fst::FST)::AbstractString
+function gettreeval(fst::FST)::String
     if is_leaf(fst)
         return fst.val
     end
