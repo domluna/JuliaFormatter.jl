@@ -15,10 +15,10 @@
     can_separate_kwargs::Bool = true
 end
 
-function newctx(s::T; kwargs...) where {T}
-    fields = fieldnames(T)
-    new_values = NamedTuple{fields}(getfield(s, f) for f in fields)
-    return T(; new_values..., kwargs...)
+function newctx(s::PrettyContext; kwargs...)
+    fields = fieldnames(PrettyContext)
+    values = map(field -> get(kwargs, field, getfield(s, field)), fields)
+    PrettyContext(values...)
 end
 
 function pretty(
