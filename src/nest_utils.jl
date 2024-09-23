@@ -160,11 +160,10 @@ function nest_if_over_margin!(
     style::AbstractStyle,
     fst::FST,
     s::State,
-    idx::Int;
+    idx::Int,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
     stop_idx::Union{Int,Nothing} = nothing,
-    kwargs...,
 )::Bool
-    @nospecialize kwargs stop_idx
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing
@@ -181,7 +180,7 @@ function nest_if_over_margin!(
         return true
     end
 
-    nest!(style, fst[idx], s; kwargs...)
+    nest!(style, fst[idx], s, lineage)
     return false
 end
 

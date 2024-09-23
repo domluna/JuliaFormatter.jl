@@ -245,7 +245,7 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
     try
         _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
     catch err
-        @warn "Error in parsing formatted text"
+        @warn "Formatted text is not parsable ... no change made."
         rethrow(err)
     end
 

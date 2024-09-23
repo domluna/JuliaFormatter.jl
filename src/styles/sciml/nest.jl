@@ -14,32 +14,31 @@ for f in [
     :n_generator!,
     :n_filter!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State; kwargs...)
-        $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+        $f(YASStyle(getstyle(ss)), fst, s, lineage)
     end
 end
 
-# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State; indent::Int = -1,
-# @nospecialize(kwargs...))
+# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int = -1)
 #     style = getstyle(ss)
 #     line_margin = s.line_offset + length(fst) + fst.extra_margin
 #     if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
 #         transformed = short_to_long_function_def!(fst, s)
-#         transformed && nest!(style, fst, s; kwargs...)
+#         transformed && nest!(style, fst, s, lineage)
 #         return
 #     end
 #
 #     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
-#         n_binaryopcall!(DefaultStyle(style), fst, s; kwargs..., indent = indent)
+#         n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
 #         return
 #     end
 #
 #     start_line_offset = s.line_offset
 #     walk(increment_line_offset!, (fst.nodes::Vector)[1:end-1], s, fst.indent)
-#     nest!(style, fst[end], s; kwargs...)
+#     nest!(style, fst[end], s, lineage)
 # end
 
-function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
+function n_functiondef!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
     style = getstyle(ss)
     nested = false
     if s.opts.yas_style_nesting
@@ -47,8 +46,8 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs
             YASStyle(style),
             fst.nodes::Vector,
             s,
-            fst.indent;
-            kwargs...,
+            fst.indent,
+            lineage;
             extra_margin = fst.extra_margin,
         )
     else
@@ -59,8 +58,8 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs
             ss,
             fst.nodes::Vector,
             s,
-            fst.indent;
-            kwargs...,
+            fst.indent,
+            lineage;
             extra_margin = fst.extra_margin,
         )
 
@@ -77,11 +76,11 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs
     return nested
 end
 
-function n_macro!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
-    n_functiondef!(ss, fst, s; kwargs...)
+function n_macro!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+    n_functiondef!(ss, fst, s, lineage)
 end
 
-function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
+function _n_tuple!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -137,7 +136,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
                 si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested2 = nest_if_over_margin!(style, fst, s, i; stop_idx = si, kwargs...)
+                nested2 = nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                 nested |= nested2
                 if has_closer && !nested2 && n.startline == fst[end].startline
                     # trailing types are automatically converted, undo this if
@@ -151,15 +150,15 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nested |= nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s, lineage)
             elseif has_closer && (i == 1 || i == length(nodes))
-                nested |= nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s, lineage)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
 
-                nested |= nest!(style, n, s; kwargs...)
+                nested |= nest!(style, n, s, lineage)
             end
         end
 
@@ -169,7 +168,7 @@ function _n_tuple!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
     else
         extra_margin = fst.extra_margin
         has_closer && (extra_margin += 1)
-        nested |= nest!(style, nodes, s, fst.indent; kwargs..., extra_margin = extra_margin)
+        nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
     end
 
     s.line_offset = start_line_offset
@@ -191,30 +190,30 @@ for f in [
     :n_invisbrackets!,
     :n_bracescat!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
         if s.opts.yas_style_nesting
-            $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else
-            _n_tuple!(getstyle(ss), fst, s; kwargs...)
+            _n_tuple!(getstyle(ss), fst, s, lineage)
         end
     end
 end
 
-function n_vect!(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
+function n_vect!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
     if s.opts.yas_style_nesting
         # Allow a line break after the opening brackets without aligning
-        n_vect!(DefaultStyle(getstyle(ss)), fst, s; kwargs...)
+        n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
     else
-        _n_tuple!(getstyle(ss), fst, s; kwargs...)
+        _n_tuple!(getstyle(ss), fst, s, lineage)
     end
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State; @nospecialize(kwargs...))
+    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
         if s.opts.yas_style_nesting
-            $f(YASStyle(getstyle(ss)), fst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else
-            $f(DefaultStyle(getstyle(ss)), fst, s; kwargs...)
+            $f(DefaultStyle(getstyle(ss)), fst, s, lineage)
         end
     end
 end

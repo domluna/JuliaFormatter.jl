@@ -69,8 +69,9 @@ end
 function p_return(
     bs::BlueStyle,
     cst::JuliaSyntax.GreenNode,
-    s::State;
-    @nospecialize(kwargs...)
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
 )
     style = getstyle(bs)
     t = FST(Return, nspaces(s))
@@ -85,11 +86,11 @@ function p_return(
     end
 
     if n_args > 1
-        return p_return(DefaultStyle(bs), cst, s; kwargs...)
+        return p_return(DefaultStyle(bs), cst, s, ctx, lineage)
     end
 
     for c in childs
-        add_node!(t, pretty(style, c, s; kwargs...), s; join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
     add_node!(t, Whitespace(1), s)
     no = FST(KEYWORD, -1, t.endline, t.endline, "nothing")

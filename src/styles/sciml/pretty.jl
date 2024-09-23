@@ -80,10 +80,11 @@ for f in [
     @eval function $f(
         ss::SciMLStyle,
         cst::JuliaSyntax.GreenNode,
-        s::State;
-        @nospecialize(kwargs...)
+        s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
     )
-        $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
+        $f(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
     end
 end
 
@@ -100,13 +101,14 @@ for f in [
     @eval function $f(
         ss::SciMLStyle,
         cst::JuliaSyntax.GreenNode,
-        s::State;
-        @nospecialize(kwargs...)
+        s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
     )
         if s.opts.yas_style_nesting
-            $f(YASStyle(getstyle(ss)), cst, s; kwargs...)
+            $f(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
         else
-            $f(DefaultStyle(getstyle(ss)), cst, s; kwargs...)
+            $f(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
         end
     end
 end
@@ -114,21 +116,23 @@ end
 function p_tuple(
     ss::SciMLStyle,
     cst::JuliaSyntax.GreenNode,
-    s::State;
-    @nospecialize(kwargs...)
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
 )
     if s.opts.yas_style_nesting
-        p_tuple(YASStyle(getstyle(ss)), cst, s; kwargs...)
+        p_tuple(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
     else
-        p_tuple(DefaultStyle(getstyle(ss)), cst, s; kwargs...)
+        p_tuple(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
     end
 end
 
 function p_macrocall(
     ss::SciMLStyle,
     cst::JuliaSyntax.GreenNode,
-    s::State;
-    @nospecialize(kwargs...)
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
 )
     style = getstyle(ss)
     t = FST(MacroCall, nspaces(s))
@@ -151,7 +155,7 @@ function p_macrocall(
     nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s; kwargs..., nospace, can_separate_kwargs = false)
+        n = pretty(style, a, s, newctx(ctx; nospace=nospace, can_separate_kwargs = false), lineage)
 
         override = (i == first_arg_idx) || kind(a) === K")"
 
