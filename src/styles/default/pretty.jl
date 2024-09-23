@@ -603,8 +603,9 @@ function p_macrocall(
         t.typ = MacroBlock
     end
 
+    ctx = newctx(ctx; can_separate_kwargs = false)
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)::FST
+        n = pretty(style, a, s, ctx, lineage)::FST
         if JuliaSyntax.is_macro_name(a)
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"("
@@ -672,10 +673,10 @@ function p_block(
     before_first_arg = true
 
     # TODO: fix this so we can pass it through
-    ctx2 = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
+    ctx = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, ctx2, lineage)
+        n = pretty(style, a, s, ctx, lineage)
 
         if from_quote && !single_line
             if kind(a) in KSet"; ) ("
@@ -729,9 +730,9 @@ function p_block(
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
 
-    ctx2 = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
+    ctx = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
     for (i, a) in enumerate(nodes)
-        n = pretty(style, a, s, ctx2, lineage)
+        n = pretty(style, a, s, ctx, lineage)
         if i < length(nodes) && kind(a) === K"," && is_punc(nodes[i+1])
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"," && i != length(nodes)
@@ -1215,10 +1216,11 @@ function p_quotenode(
     t = FST(Quotenode, nspaces(s))
     !haschildren(cst) && return t
 
+    ctx = newctx(ctx; from_quote = true)
     for a in children(cst)
         add_node!(
             t,
-            pretty(style, a, s, newctx(ctx; from_quote = true), lineage),
+            pretty(style, a, s, ctx, lineage),
             s,
             join_lines = true,
         )
