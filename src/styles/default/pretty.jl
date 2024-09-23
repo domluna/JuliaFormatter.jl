@@ -1218,12 +1218,7 @@ function p_quotenode(
 
     ctx = newctx(ctx; from_quote = true)
     for a in children(cst)
-        add_node!(
-            t,
-            pretty(style, a, s, ctx, lineage),
-            s,
-            join_lines = true,
-        )
+        add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
     end
     t
 end

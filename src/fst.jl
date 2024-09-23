@@ -715,10 +715,12 @@ end
 
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     JuliaSyntax.is_operator(cst) && return cst
-    if (is_binary(cst) ||
-       kind(cst) in KSet"comparison dotcall call" ||
-       is_chain(cst) ||
-        is_unary(cst)) && haschildren(cst)
+    if (
+        is_binary(cst) ||
+        kind(cst) in KSet"comparison dotcall call" ||
+        is_chain(cst) ||
+        is_unary(cst)
+    ) && haschildren(cst)
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue
@@ -875,11 +877,7 @@ function is_lazy_op(t::Union{JuliaSyntax.GreenNode,JuliaSyntax.Kind})
     kind(t) in KSet"|| &&"
 end
 
-function needs_placeholder(
-    ::Tuple{},
-    _,
-    _,
-)
+function needs_placeholder(::Tuple{}, _, _)
     return false
 end
 
@@ -901,7 +899,8 @@ end
 next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode) =
     kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
 
-next_node_is(f::Function, nn::JuliaSyntax.GreenNode) = f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
+next_node_is(f::Function, nn::JuliaSyntax.GreenNode) =
+    f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
 
 """
     add_node!(
