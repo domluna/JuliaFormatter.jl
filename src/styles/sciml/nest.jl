@@ -14,7 +14,12 @@ for f in [
     :n_generator!,
     :n_filter!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+    @eval function $f(
+        ss::SciMLStyle,
+        fst::FST,
+        s::State,
+        lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+    )
         $f(YASStyle(getstyle(ss)), fst, s, lineage)
     end
 end
@@ -38,7 +43,12 @@ end
 #     nest!(style, fst[end], s, lineage)
 # end
 
-function n_functiondef!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_functiondef!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ss)
     nested = false
     if s.opts.yas_style_nesting
@@ -76,11 +86,21 @@ function n_functiondef!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tupl
     return nested
 end
 
-function n_macro!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_macro!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     n_functiondef!(ss, fst, s, lineage)
 end
 
-function _n_tuple!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function _n_tuple!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -190,7 +210,12 @@ for f in [
     :n_invisbrackets!,
     :n_bracescat!,
 ]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+    @eval function $f(
+        ss::SciMLStyle,
+        fst::FST,
+        s::State,
+        lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+    )
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else
@@ -199,7 +224,12 @@ for f in [
     end
 end
 
-function n_vect!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_vect!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     if s.opts.yas_style_nesting
         # Allow a line break after the opening brackets without aligning
         n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
@@ -209,7 +239,12 @@ function n_vect!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
-    @eval function $f(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+    @eval function $f(
+        ss::SciMLStyle,
+        fst::FST,
+        s::State,
+        lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+    )
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else

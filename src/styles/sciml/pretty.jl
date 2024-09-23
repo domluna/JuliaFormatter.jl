@@ -81,8 +81,8 @@ for f in [
         ss::SciMLStyle,
         cst::JuliaSyntax.GreenNode,
         s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+        ctx::PrettyContext,
+        lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
     )
         $f(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
     end
@@ -102,8 +102,8 @@ for f in [
         ss::SciMLStyle,
         cst::JuliaSyntax.GreenNode,
         s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+        ctx::PrettyContext,
+        lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
     )
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
@@ -118,7 +118,7 @@ function p_tuple(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     if s.opts.yas_style_nesting
         p_tuple(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
@@ -132,7 +132,7 @@ function p_macrocall(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ss)
     t = FST(MacroCall, nspaces(s))
@@ -155,7 +155,13 @@ function p_macrocall(
     nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; nospace=nospace, can_separate_kwargs = false), lineage)
+        n = pretty(
+            style,
+            a,
+            s,
+            newctx(ctx; nospace = nospace, can_separate_kwargs = false),
+            lineage,
+        )
 
         override = (i == first_arg_idx) || kind(a) === K")"
 

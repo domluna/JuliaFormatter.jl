@@ -1,4 +1,9 @@
-function n_tuple!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_tuple!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(bs)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -122,28 +127,73 @@ function n_tuple!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode
     end
     return nested
 end
-n_call!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_curly!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_macrocall!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_ref!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_braces!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_vect!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_parameters!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_invisbrackets!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_bracescat!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
-n_cartesian_iterator!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(bs, fst, s, lineage)
+n_call!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_curly!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_macrocall!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_ref!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_braces!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_vect!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_parameters!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_invisbrackets!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_bracescat!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
+n_cartesian_iterator!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(bs, fst, s, lineage)
 
-function n_conditionalopcall!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_conditionalopcall!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(bs)
     if fst[end].typ === Conditional
         conditional_to_if_block!(fst, s, true)
@@ -181,17 +231,15 @@ function n_chainopcall!(
 )
     style = getstyle(bs)
     if length(lineage) > 1 && lineage[end-1][1] in (If, MacroCall, MacroBlock)
-        n_block!(
-            YASStyle(style),
-            fst,
-            s,
-            lineage;
-            indent = fst.indent + s.opts.indent,
-        )
+        n_block!(YASStyle(style), fst, s, lineage; indent = fst.indent + s.opts.indent)
     else
         n_block!(DefaultStyle(style), fst, s, lineage; indent = s.line_offset)
     end
 end
 
-n_comparison!(bs::BlueStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_chainopcall!(bs, fst, s, lineage)
+n_comparison!(
+    bs::BlueStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_chainopcall!(bs, fst, s, lineage)

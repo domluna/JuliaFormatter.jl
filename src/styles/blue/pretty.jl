@@ -71,7 +71,7 @@ function p_return(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(bs)
     t = FST(Return, nspaces(s))

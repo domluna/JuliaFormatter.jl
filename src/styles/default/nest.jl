@@ -20,7 +20,7 @@ function nest!(
     s::State,
     indent::Int,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
-    extra_margin::Int = 0
+    extra_margin::Int = 0,
 )
     style = getstyle(ds)
     nested = false
@@ -153,14 +153,7 @@ function nest!(
     elseif fst.typ === Macro
         n_macro!(style, fst, s, lineage)
     else
-        nest!(
-            style,
-            fst.nodes::Vector,
-            s,
-            fst.indent,
-            lineage;
-            extra_margin = fst.extra_margin
-        )
+        nest!(style, fst.nodes::Vector, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
 
     pop!(lineage)
@@ -171,14 +164,28 @@ function nest!(style::AbstractStyle, fst::FST, s::State)
     nest!(style, fst, s, Tuple{FNode,Union{Nothing,Metadata}}[])
 end
 
-function n_functiondef!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_functiondef!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     nest!(ds, fst.nodes::Vector, s, fst.indent, lineage; extra_margin = fst.extra_margin)
 end
 
-n_macro!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_functiondef!(ds, fst, s, lineage)
+n_macro!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_functiondef!(ds, fst, s, lineage)
 
-function n_string!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_string!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     # difference in positioning of the string
     # from the source document to the formatted document
@@ -195,7 +202,12 @@ function n_string!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{
     return nested
 end
 
-function n_unaryopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_unaryopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     fst[1].extra_margin = fst.extra_margin + length(fst[2])
     nested = false
@@ -205,7 +217,12 @@ function n_unaryopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{T
     return nested
 end
 
-function n_do!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_do!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     extra_margin = sum(length.(fst[2:3]))
     # make sure there are nodes after "do"
@@ -216,12 +233,18 @@ function n_do!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNod
     fst[1].extra_margin = fst.extra_margin + extra_margin
     nested = false
     nested |= nest!(style, fst[1], s, lineage)
-    nested |= nest!(style, fst[2:end], s, fst.indent, lineage; extra_margin = fst.extra_margin)
+    nested |=
+        nest!(style, fst[2:end], s, fst.indent, lineage; extra_margin = fst.extra_margin)
     return nested
 end
 
 # Import,Using,Export
-function n_using!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_using!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -244,8 +267,7 @@ function n_using!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{F
             elseif n.typ === PLACEHOLDER
                 if s.opts.join_lines_based_on_source
                     si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
-                    nested |=
-                        nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+                    nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                 else
                     fst[i] = Newline(length = n.len)
                     s.line_offset = fst.indent
@@ -258,18 +280,32 @@ function n_using!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{F
             end
         end
     else
-        nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
     return nested
 end
 
-n_export!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_using!(ds, fst, s, lineage)
+n_export!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_using!(ds, fst, s, lineage)
 
-n_import!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_using!(ds, fst, s, lineage)
+n_import!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_using!(ds, fst, s, lineage)
 
-function n_tuple!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_tuple!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -306,8 +342,7 @@ function n_tuple!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{F
                         nodes,
                         i + 1,
                     )
-                    nested2 =
-                        nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+                    nested2 = nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                     if has_closer && !nested2 && n.startline == fst[end].startline
                         # trailing types are automatically converted, undo this if
                         # there is no nest and the closer is on the same in the
@@ -346,46 +381,103 @@ function n_tuple!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{F
     return nested
 end
 
-n_cartesian_iterator!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_cartesian_iterator!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_vect!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_vect!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_vcat!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_vcat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_braces!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_braces!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_bracescat!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_bracescat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_parameters!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_parameters!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_invisbrackets!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_invisbrackets!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_call!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_call!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_curly!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_curly!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_macrocall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_macrocall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_ref!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_ref!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_row!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_row!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-n_typedvcat!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_tuple!(ds, fst, s, lineage)
+n_typedvcat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_tuple!(ds, fst, s, lineage)
 
-function n_comprehension!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_comprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     if s.opts.join_lines_based_on_source
         n_tuple!(ds, fst, s, lineage)
     else
@@ -393,7 +485,12 @@ function n_comprehension!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector
     end
 end
 
-function _n_comprehension!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function _n_comprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nested = false
@@ -442,10 +539,19 @@ function _n_comprehension!(ds::AbstractStyle, fst::FST, s::State, lineage::Vecto
     return nested
 end
 
-n_typedcomprehension!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_comprehension!(ds, fst, s, lineage)
+n_typedcomprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_comprehension!(ds, fst, s, lineage)
 
-function n_generator!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_generator!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
@@ -521,15 +627,24 @@ function n_generator!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tup
         walk(increment_line_offset!, fst, s)
     else
         nested |=
-        nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
     return nested
 end
 
-n_filter!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_generator!(ds, fst, s, lineage)
+n_filter!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_generator!(ds, fst, s, lineage)
 
-function n_whereopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_whereopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # "B"
@@ -586,7 +701,7 @@ function n_whereopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{T
         s,
         fst.indent,
         lineage;
-        extra_margin=fst.extra_margin,
+        extra_margin = fst.extra_margin,
     )
     return nested
 end
@@ -675,7 +790,8 @@ function n_conditionalopcall!(
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
     else
-        nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
     return nested
 end
@@ -690,7 +806,13 @@ function no_unnest(fst::FST)
     return false
 end
 
-function n_binaryopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int = -1)
+function n_binaryopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
+    indent::Int = -1,
+)
     style = getstyle(ds)
 
     line_offset = s.line_offset
@@ -816,7 +938,12 @@ function n_binaryopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{
     return nested
 end
 
-function n_for!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}})
+function n_for!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
 
     nested = false
@@ -840,10 +967,20 @@ function n_for!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNo
     return nested
 end
 
-n_let!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_for!(ds, fst, s, lineage)
+n_let!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_for!(ds, fst, s, lineage)
 
-function n_block!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int=-1)
+function n_block!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
+    indent::Int = -1,
+)
     style = getstyle(ds)
 
     line_margin = s.line_offset + length(fst) + fst.extra_margin
@@ -932,13 +1069,22 @@ function n_block!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{F
             end
         end
     else
-        nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
     return nested
 end
 
-n_comparison!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+n_comparison!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_block!(ds, fst, s, lineage; indent = s.line_offset)
 
-n_chainopcall!(ds::AbstractStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}) =
-    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+n_chainopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+) = n_block!(ds, fst, s, lineage; indent = s.line_offset)

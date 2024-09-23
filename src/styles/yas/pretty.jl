@@ -65,7 +65,7 @@ function p_import(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
@@ -102,7 +102,7 @@ function p_using(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_import(ys, cst, s, ctx, lineage)
     t.typ = Using
@@ -114,7 +114,7 @@ function p_export(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_import(ys, cst, s, ctx, lineage)
     t.typ = Export
@@ -126,7 +126,7 @@ function p_curly(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
@@ -138,7 +138,7 @@ function p_curly(
     first_arg_idx = findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; from_typedef = true), lineage, )
+        n = pretty(style, a, s, newctx(ctx; from_typedef = true), lineage)
 
         override = (i == first_arg_idx) || kind(a) === K"}"
 
@@ -165,7 +165,7 @@ function p_braces(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Braces, nspaces(s))
@@ -206,7 +206,7 @@ function p_bracescat(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(BracesCat, nspaces(s))
@@ -247,7 +247,7 @@ function p_tuple(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
@@ -294,7 +294,7 @@ function p_invisbrackets(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Brackets, nspaces(s))
@@ -325,7 +325,7 @@ function p_call(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Call, nspaces(s))
@@ -397,7 +397,7 @@ function p_vect(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Vect, nspaces(s))
@@ -436,7 +436,7 @@ function p_vcat(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
@@ -487,7 +487,7 @@ function p_typedvcat(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_vcat(ys, cst, s, ctx, lineage)
     t.typ = TypedVcat
@@ -499,7 +499,7 @@ function p_ncat(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_vcat(ys, cst, s, ctx, lineage)
     t.typ = Ncat
@@ -510,17 +510,20 @@ function p_typedncat(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_ncat(ys, cst, s, ctx, lineage)
     t.typ = TypedNcat
     t
 end
 
-function p_ref(ys::YASStyle, cst::JuliaSyntax.GreenNode, s::State,
+function p_ref(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
-               )
+)
     style = getstyle(ys)
     t = FST(RefN, nspaces(s))
     !haschildren(cst) && return t
@@ -561,7 +564,7 @@ function p_comprehension(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Comprehension, nspaces(s))
@@ -601,7 +604,7 @@ function p_typedcomprehension(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_comprehension(ys, cst, s, ctx, lineage)
     t.typ = TypedComprehension
@@ -613,7 +616,7 @@ function p_macrocall(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(MacroCall, nspaces(s))
@@ -632,7 +635,7 @@ function p_macrocall(
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage, )
+        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)
 
         override = (i == first_arg_idx) || kind(a) === K")"
 
@@ -680,7 +683,7 @@ function p_whereopcall(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
@@ -730,7 +733,7 @@ function p_whereopcall(
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, pretty(style, a, s), s, join_lines = true)
         else
-            n = pretty(style, a, s, newctx(ctx; from_typedef = after_where), lineage, )
+            n = pretty(style, a, s, newctx(ctx; from_typedef = after_where), lineage)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "{")
@@ -816,7 +819,7 @@ function p_filter(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}}
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     t = p_generator(ys, cst, s, ctx, lineage)
     t.typ = Filter
