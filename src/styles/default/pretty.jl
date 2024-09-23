@@ -27,7 +27,7 @@ function pretty(
     s::State,
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
-)
+)::FST
     k = kind(node)
     style = getstyle(ds)
     push!(lineage, (k, is_iterable(node), is_assignment(node)))
@@ -206,7 +206,7 @@ function pretty(
 
     return ret
 end
-pretty(style::AbstractStyle, node::JuliaSyntax.GreenNode, s::State) =
+pretty(style::AbstractStyle, node::JuliaSyntax.GreenNode, s::State)::FST =
     pretty(style, node, s, PrettyContext(), Tuple{JuliaSyntax.Kind,Bool,Bool}[])
 
 function p_identifier(
@@ -257,8 +257,8 @@ function p_semicolon(
     ::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::PrettyContext,
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
     s.offset += span(cst)
@@ -269,8 +269,8 @@ function p_macroname(
     ::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::PrettyContext,
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
@@ -282,8 +282,8 @@ function p_operator(
     ::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::PrettyContext,
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
@@ -297,8 +297,8 @@ function p_keyword(
     ::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::PrettyContext,
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
@@ -310,8 +310,8 @@ function p_punctuation(
     ::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
     s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::PrettyContext,
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
@@ -328,6 +328,7 @@ function p_juxtapose(
 )
     style = getstyle(ds)
     t = FST(Juxtapose, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -345,6 +346,7 @@ function p_continue(
 )
     style = getstyle(ds)
     t = FST(Continue, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -362,6 +364,7 @@ function p_break(
 )
     style = getstyle(ds)
     t = FST(Break, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -380,6 +383,7 @@ function p_inert(
 )
     style = getstyle(ds)
     t = FST(Inert, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -397,6 +401,7 @@ function p_macrostr(
 )
     style = getstyle(ds)
     t = FST(MacroStr, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -467,6 +472,7 @@ function p_accessor(
 )
     style = getstyle(ds)
     t = FST(Accessor, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -484,6 +490,7 @@ function p_stringh(
 )
     style = getstyle(ds)
     loc = cursor_loc(s)
+    !haschildren(cst) && return FST(StringN, loc[2] - 1)
 
     val = ""
     startline = -1
@@ -597,7 +604,7 @@ function p_macrocall(
     end
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)
+        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)::FST
         if JuliaSyntax.is_macro_name(a)
             add_node!(t, n, s, join_lines = true)
         elseif kind(a) === K"("
@@ -748,6 +755,7 @@ function p_abstract(
 )
     style = getstyle(ds)
     t = FST(Abstract, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -768,6 +776,7 @@ function p_primitive(
 )
     style = getstyle(ds)
     t = FST(Primitive, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -787,6 +796,7 @@ function p_var(
 )
     style = getstyle(ds)
     t = FST(NonStdIdentifier, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
@@ -921,6 +931,7 @@ function p_mutable(
 )
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
+    !haschildren(cst) && return t
 
     block_has_contents = false
     childs = children(cst)
@@ -968,6 +979,7 @@ function p_module(
 )
     style = getstyle(ds)
     t = FST(ModuleN, nspaces(s))
+    !haschildren(cst) && return t
 
     from_module = ctx.from_module
     block_has_contents = false
@@ -1057,6 +1069,8 @@ function p_const(
 )
     style = getstyle(ds)
     t = FST(Const, nspaces(s))
+    !haschildren(cst) && return t
+
     for c in children(cst)
         if kind(c) === K","
         elseif !JuliaSyntax.is_whitespace(c) && !JuliaSyntax.is_keyword(c)
@@ -1114,6 +1128,8 @@ function p_toplevel(
 )
     style = getstyle(ds)
     t = FST(TopLevel, nspaces(s))
+    !haschildren(cst) && return t
+
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
         if kind(a) === K";"
@@ -1170,13 +1186,14 @@ function p_quote(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ds)
-
     t = FST(Quote, nspaces(s))
+    !haschildren(cst) && return t
+
     childs = children(cst)
     if kind(childs[1]) === K"block"
         add_node!(t, p_begin(style, childs[1], s, ctx, lineage), s, join_lines = true)
         for i in 2:length(childs)
-            add_node!(t, pretty(style, childs[i], s; ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, childs[i], s, ctx, lineage), s, join_lines = true)
         end
     else
         for c in childs
@@ -1196,6 +1213,8 @@ function p_quotenode(
 )
     style = getstyle(ds)
     t = FST(Quotenode, nspaces(s))
+    !haschildren(cst) && return t
+
     for a in children(cst)
         add_node!(
             t,
@@ -1309,6 +1328,7 @@ function p_for(
 )
     style = getstyle(ds)
     t = FST(For, nspaces(s))
+    !haschildren(cst) && return t
 
     ends_in_iterable = false
 
@@ -1337,7 +1357,7 @@ function p_for(
                 n
             else
                 n = pretty(style, c, s, newctx(ctx; from_for = true), lineage)
-                if !is_leaf(n) && length(n.nodes) > 1 && is_iterable(n[end])
+                if !is_leaf(n::FST) && length(n.nodes) > 1 && is_iterable(n[end])
                     ends_in_iterable = true
                 end
                 n
@@ -1444,6 +1464,7 @@ function p_try(
 )
     style = getstyle(ds)
     t = FST(Try, nspaces(s))
+    !haschildren(cst) && return t
 
     # in JuliaSyntax this is now a tree structure instead of being linear
     # since we're still picking up comments in add_node! if the comment is at
@@ -1499,6 +1520,7 @@ function p_if(
 )
     style = getstyle(ds)
     t = FST(If, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         if kind(c) in KSet"if elseif else"
@@ -1568,6 +1590,7 @@ function p_kw(
 )
     style = getstyle(ds)
     t = FST(Kw, nspaces(s))
+    !haschildren(cst) && return t
 
     push!(lineage, (kind(cst), false, true))
 
@@ -1905,6 +1928,7 @@ function p_conditionalopcall(
 )
     style = getstyle(ds)
     t = FST(Conditional, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         if kind(c) in KSet"? :" && !haschildren(c)
@@ -2057,6 +2081,8 @@ function p_invisbrackets(
 )
     style = getstyle(ds)
     t = FST(Brackets, nspaces(s))
+    !haschildren(cst) && return t
+
     args = get_args(cst)
     nest = if length(args) > 0
         arg = args[1]
@@ -2375,12 +2401,13 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
+    !haschildren(cst) && return t
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
-        elseif kind(a) === K":"
+        elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s, join_lines = true)
@@ -2433,6 +2460,7 @@ function p_importpath(
 )
     style = getstyle(ds)
     t = FST(ImportPath, nspaces(s))
+    !haschildren(cst) && return t
 
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
@@ -2450,6 +2478,7 @@ function p_as(
 )
     style = getstyle(ds)
     t = FST(As, nspaces(s))
+    !haschildren(cst) && return t
 
     for c in children(cst)
         n = pretty(style, c, s, ctx, lineage)

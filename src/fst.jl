@@ -125,7 +125,7 @@ mutable struct FST
 
     indent::Int
     len::Int
-    val::AbstractString
+    val::String
     nodes::Union{Tuple{},Vector{FST}}
     nest_behavior::NestBehavior
 
@@ -144,7 +144,7 @@ function show(io::IO, fst::FST)
     show(io, MIME("text/plain"), fst)
 end
 
-function show(io::IO, ::MIME"text/plain", fst::FST, indent = "")
+function show(io::IO, ::MIME"text/plain", fst::FST, indent::String = "")
     if !is_leaf(fst)
         println(io, indent, "FST: $(fst.typ) $(length(fst.nodes::Vector{FST}))")
         println(
@@ -258,7 +258,7 @@ end
 
 is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
-function is_macrodoc(fst::FST)
+function is_macrodoc(fst::FST)::Bool
     fst.typ === GlobalRefDoc && return true
     fst.typ === MacroBlock &&
         fst[1].typ === Macroname &&
@@ -267,14 +267,14 @@ function is_macrodoc(fst::FST)
     return false
 end
 
-function is_macrostr(t)
+function is_macrostr(t::JuliaSyntax.GreenNode)::Bool
     if kind(t) == K"macrocall" && haschildren(t)
         return contains_macrostr(t[1])
     end
     return false
 end
 
-function contains_macrostr(t)
+function contains_macrostr(t::JuliaSyntax.GreenNode)::Bool
     if kind(t) in KSet"StringMacroName CmdMacroName core_@cmd"
         return true
     elseif kind(t) === "quote" && haschildren(t)
@@ -569,6 +569,7 @@ function is_gen(x::FST)
 end
 
 function _callinfo(x::JuliaSyntax.GreenNode)
+    haschildren(x) || return 0, 0
     k = kind(x)
     n_operators = 0
     n_args = 0
@@ -632,14 +633,14 @@ function is_assignment(x::FST)
 end
 
 function is_assignment(t::JuliaSyntax.GreenNode)
-    if JuliaSyntax.is_prec_assignment(t)
+    if JuliaSyntax.is_prec_assignment(kind(t)) && haschildren(t)
         return !any(c -> kind(c) in KSet"in ∈", children(t))
     end
     return false
 end
 is_assignment(::Nothing) = false
 
-function is_pairarrow(cst::JuliaSyntax.GreenNode)
+function is_pairarrow(cst::JuliaSyntax.GreenNode)::Bool
     op = get_op(cst)
     isnothing(op) ? false : kind(op) === K"=>"
 end
@@ -702,7 +703,7 @@ function is_binaryop_nestable(::AbstractStyle, cst::JuliaSyntax.GreenNode)
 end
 
 function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
-    if defines_function(cst)
+    if defines_function(cst) && haschildren(cst)
         for c in children(cst)
             if is_if(c) || kind(c) in KSet"do try for while let" && haschildren(c)
                 return true
@@ -714,10 +715,10 @@ end
 
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     JuliaSyntax.is_operator(cst) && return cst
-    if is_binary(cst) ||
+    if (is_binary(cst) ||
        kind(cst) in KSet"comparison dotcall call" ||
        is_chain(cst) ||
-       is_unary(cst)
+        is_unary(cst)) && haschildren(cst)
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue
@@ -875,7 +876,15 @@ function is_lazy_op(t::Union{JuliaSyntax.GreenNode,JuliaSyntax.Kind})
 end
 
 function needs_placeholder(
-    childs::Union{Tuple{},Vector{JuliaSyntax.GreenNode{T}}},
+    ::Tuple{},
+    _,
+    _,
+)
+    return false
+end
+
+function needs_placeholder(
+    childs::Vector{JuliaSyntax.GreenNode{T}},
     start_index::Int,
     stop_kind::JuliaSyntax.Kind,
 ) where {T}
@@ -889,10 +898,10 @@ function needs_placeholder(
     return false
 end
 
-next_node_is(k::JuliaSyntax.Kind, nn) =
+next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode) =
     kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
 
-next_node_is(f::Function, nn) = f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
+next_node_is(f::Function, nn::JuliaSyntax.GreenNode) = f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
 
 """
     add_node!(

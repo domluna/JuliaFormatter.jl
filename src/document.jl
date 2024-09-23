@@ -35,10 +35,10 @@ function Document(text::AbstractString)
                (kind(tokens[i-1]) === K"Whitespace" || kind(tokens[i-1]) === K"NewlineWs")
                 pt = tokens[i-1]
                 prevval = try
-                    text[first(pt.range):last(pt.range)]
+                    srcfile.code[first(pt.range):last(pt.range)]
                 catch e
                     if isa(e, StringIndexError)
-                        text[first(pt.range):prevind(text, last(pt.range))]
+                        srcfile.code[first(pt.range):prevind(text, last(pt.range))]
                     else
                         rethrow(e)
                     end
@@ -52,13 +52,9 @@ function Document(text::AbstractString)
             startline = JuliaSyntax.source_line(srcfile, first(t.range))
             endline = JuliaSyntax.source_line(srcfile, last(t.range))
             val = try
-                text[first(t.range):last(t.range)]
-            catch e
-                if isa(e, StringIndexError)
-                    text[first(t.range):prevind(text, last(t.range))]
-                else
-                    rethrow(e)
-                end
+                srcfile.code[first(t.range):last(t.range)]
+            catch
+                srcfile.code[first(t.range):prevind(srcfile.code, last(t.range))]
             end
 
             if startline == endline && startswith(val, "#=") && endswith(val, "=#")

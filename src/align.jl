@@ -177,7 +177,12 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
             continue
         end
 
-        push!(g, binop, i, binop[3].line_offset, nlen, ws)
+        push!(g.nodes, binop)
+        push!(g.node_inds, i)
+        push!(g.line_offsets, binop[3].line_offset)
+        push!(g.lens, nlen)
+        push!(g.whitespaces, ws)
+
         prev_endline = n.endline
     end
     push!(groups, g)
@@ -230,7 +235,12 @@ function align_struct!(fst::FST)
 
             ws = n[ind].line_offset - (n.line_offset + nlen)
 
-            push!(g, n, i, n[ind].line_offset, nlen, ws)
+            push!(g.nodes, n)
+            push!(g.node_inds, i)
+            push!(g.line_offsets, n[ind].line_offset)
+            push!(g.lens, nlen)
+            push!(g.whitespaces, ws)
+
             prev_endline = n.endline
         elseif n.typ === Const && n[end].typ === Binary
             if n.startline - prev_endline > 1
@@ -245,7 +255,12 @@ function align_struct!(fst::FST)
             ind === nothing && continue
             ws = binop[ind].line_offset - (n.line_offset + nlen)
 
-            push!(g, binop, i, binop[ind].line_offset, nlen, ws)
+            push!(g.nodes, binop)
+            push!(g.node_inds, i)
+            push!(g.line_offsets, binop[ind].line_offset)
+            push!(g.lens, nlen)
+            push!(g.whitespaces, ws)
+
             prev_endline = n.endline
         end
     end
@@ -281,14 +296,24 @@ function align_conditional!(fst::FST)
             if cond_prev_endline != n.endline
                 nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
-                push!(cond_group, n, i, n.line_offset, nlen, ws)
+
+                push!(cond_group.nodes, n)
+                push!(cond_group.node_inds, i)
+                push!(cond_group.line_offsets, n.line_offset)
+                push!(cond_group.lens, nlen)
+                push!(cond_group.whitespaces, ws)
             end
             cond_prev_endline = n.endline
         elseif n.typ === OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
                 nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
-                push!(colon_group, n, i, n.line_offset, nlen, ws)
+
+                push!(colon_group.nodes, n)
+                push!(colon_group.node_inds, i)
+                push!(colon_group.line_offsets, n.line_offset)
+                push!(colon_group.lens, nlen)
+                push!(colon_group.whitespaces, ws)
             end
             colon_prev_endline = n.endline
         end

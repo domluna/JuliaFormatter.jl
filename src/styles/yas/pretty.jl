@@ -69,12 +69,13 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
+    !haschildren(cst) && return t
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
             add_node!(t, Whitespace(1), s)
-        elseif kind(a) === K":"
+        elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s, join_lines = true)
@@ -298,6 +299,7 @@ function p_invisbrackets(
 )
     style = getstyle(ys)
     t = FST(Brackets, nspaces(s))
+    !haschildren(cst) && return t
 
     args = get_args(cst)
     if length(args) > 0
@@ -330,6 +332,7 @@ function p_call(
     style = getstyle(ys)
     t = FST(Call, nspaces(s))
     !haschildren(cst) && return t
+
     childs = children(cst)
     can_separate_kwargs = ctx.can_separate_kwargs
 
@@ -635,7 +638,7 @@ function p_macrocall(
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)
+        n = pretty(style, a, s, newctx(ctx; can_separate_kwargs = false), lineage)::FST
 
         override = (i == first_arg_idx) || kind(a) === K")"
 
@@ -688,6 +691,7 @@ function p_whereopcall(
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
     !haschildren(cst) && return t
+
     from_typedef = ctx.from_typedef
 
     childs = children(cst)
@@ -769,6 +773,7 @@ function p_generator(
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
     !haschildren(cst) && return t
+
     has_for_kw = false
 
     from_iterable = false

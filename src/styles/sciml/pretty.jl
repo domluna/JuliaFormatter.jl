@@ -146,12 +146,12 @@ function p_macrocall(
         t.typ = MacroBlock
     end
 
-    idx = findfirst(n -> kind(n) === K"(", childs)
+    idx = findfirst(a -> kind(a) === K"(", childs)
     first_arg_idx =
-        idx === nothing ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
+        idx === nothing ? -1 : findnext(a -> !JuliaSyntax.is_whitespace(a), childs, idx + 1)
 
     # https://github.com/SciML/SciMLStyle?tab=readme-ov-file#macros
-    n_kw_args = count(n -> kind(n) === K"=" && haschildren(n), childs)
+    n_kw_args = count(a -> kind(a) === K"=" && haschildren(a), childs)
     nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)
@@ -161,7 +161,7 @@ function p_macrocall(
             s,
             newctx(ctx; nospace = nospace, can_separate_kwargs = false),
             lineage,
-        )
+        )::FST
 
         override = (i == first_arg_idx) || kind(a) === K")"
 

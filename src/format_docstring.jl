@@ -40,7 +40,7 @@ function block_modifier(rule::FormatRule)
                 write(doctests, '\n')
                 String(take!(doctests))
             elseif occursin(r"\n+# output\n+", code)
-                an_input, output = split(code, r"\n+# output\n+", limit = 2)
+                an_input, output = split(code, r"\n+# output\n+"; limit = 2)
                 string(
                     format_text(format_text(String(an_input), rule), rule),
                     "\n\n# output\n\n",
