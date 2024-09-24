@@ -6,11 +6,9 @@ format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, 
 
 function block_modifier(rule::FormatRule)
     Rule(1) do _, block
-        block.t isa CodeBlock || return
-        language = block.t.info
-        code = block.literal
+        if block.t isa CodeBlock && startswith(block.t.info, r"@example|@repl|@eval|julia|{julia}|jldoctest")
+            code = block.literal::String
 
-        if startswith(language, r"@example|@repl|@eval|julia|{julia}|jldoctest")
             block.literal = if occursin(r"^julia> "m, code)
                 doctests = IOBuffer()
                 chunks = repl_splitter(code)
