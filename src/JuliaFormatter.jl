@@ -5,7 +5,7 @@ using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
-import Base: get, pairs, show, push!
+import Base: get, pairs, show, push!, @kwdef
 using CommonMark:
     AdmonitionRule,
     CodeBlock,

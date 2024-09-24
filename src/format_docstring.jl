@@ -6,7 +6,8 @@ format_text(text::AbstractString, fr::FormatRule) = format_text(text, fr.style, 
 
 function block_modifier(rule::FormatRule)
     Rule(1) do _, block
-        if block.t isa CodeBlock && startswith(block.t.info, r"@example|@repl|@eval|julia|{julia}|jldoctest")
+        if block.t isa CodeBlock &&
+           startswith(block.t.info, r"@example|@repl|@eval|julia|{julia}|jldoctest")
             code = block.literal::String
 
             block.literal = if occursin(r"^julia> "m, code)
