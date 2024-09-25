@@ -347,8 +347,9 @@ See [Configuration File](@ref) for more details.
 Returns a boolean indicating whether the file was already formatted (`true`)
 or not (`false`).
 """
-format(paths; options...) =
+function format(paths; options...)
     format(paths, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+end
 function format(paths, options::Configuration)::Bool
     already_formatted = true
     # Don't parallelize this, since there could be a race condition on a
@@ -359,8 +360,9 @@ function format(paths, options::Configuration)::Bool
     return already_formatted
 end
 
-format(path::AbstractString; options...) =
+function format(path::AbstractString; options...)
     format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+end
 function format(path::AbstractString, options::Configuration)
     path = realpath(path)
     if !get(options, "config_applied", false)

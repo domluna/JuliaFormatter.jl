@@ -70,36 +70,46 @@ function n_call!(
     return nested
 end
 
-n_curly!(
+function n_curly!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_call!(ys, fst, s, lineage)
-n_ref!(
+)
+    n_call!(ys, fst, s, lineage)
+end
+function n_ref!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_call!(ys, fst, s, lineage)
-n_macrocall!(
+)
+    n_call!(ys, fst, s, lineage)
+end
+function n_macrocall!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_call!(ys, fst, s, lineage)
-n_typedcomprehension!(
+)
+    n_call!(ys, fst, s, lineage)
+end
+function n_typedcomprehension!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_call!(ys, fst, s, lineage)
-n_typedvcat!(
+)
+    n_call!(ys, fst, s, lineage)
+end
+function n_typedvcat!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_call!(ys, fst, s, lineage)
+)
+    n_call!(ys, fst, s, lineage)
+end
 
 function n_tuple!(
     ys::YASStyle,
@@ -139,54 +149,70 @@ function n_tuple!(
     end
     return nested
 end
-n_braces!(
+function n_braces!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_vect!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_vect!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_parameters!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_parameters!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_invisbrackets!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_invisbrackets!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_comprehension!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_comprehension!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_vcat!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_vcat!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_bracescat!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_bracescat!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
-n_cartesian_iterator!(
+)
+    n_tuple!(ys, fst, s, lineage)
+end
+function n_cartesian_iterator!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ys, fst, s, lineage)
+)
+    n_tuple!(ys, fst, s, lineage)
+end
 
 function n_generator!(
     ys::YASStyle,
@@ -221,12 +247,14 @@ function n_generator!(
     end
     return nested
 end
-n_filter!(
+function n_filter!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_generator!(ys, fst, s, lineage)
+)
+    n_generator!(ys, fst, s, lineage)
+end
 
 function n_whereopcall!(
     ys::YASStyle,
@@ -290,18 +318,22 @@ function n_using!(
     end
     return nested
 end
-n_export!(
+function n_export!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_using!(ys, fst, s, lineage)
-n_import!(
+)
+    n_using!(ys, fst, s, lineage)
+end
+function n_import!(
     ys::YASStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_using!(ys, fst, s, lineage)
+)
+    n_using!(ys, fst, s, lineage)
+end
 
 function n_chainopcall!(
     ys::YASStyle,

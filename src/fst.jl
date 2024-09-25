@@ -168,8 +168,9 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent::String = "")
     end
 end
 
-FST(typ::FNode, indent::Int) =
+function FST(typ::FNode, indent::Int)
     FST(typ, 0, 0, indent, 0, "", FST[], AllowNest, 0, -1, nothing)
+end
 
 function FST(
     typ::FNode,
@@ -223,22 +224,26 @@ cant_nest(fst::FST) = fst.nest_behavior === NeverNest
 can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
 can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
-Newline(; length = 0, nest_behavior = AllowNest) =
+function Newline(; length = 0, nest_behavior = AllowNest)
     FST(NEWLINE, 0, 0, 0, length, "\n", (), nest_behavior, 0, -1, nothing)
+end
 Semicolon() = FST(SEMICOLON, 0, 0, 0, 1, ";", (), AllowNest, 0, -1, nothing)
 TrailingComma() = FST(TRAILINGCOMMA, 0, 0, 0, 0, "", (), AllowNest, 0, -1, nothing)
 Whitespace(n) = FST(WHITESPACE, 0, 0, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
 Placeholder(n) = FST(PLACEHOLDER, 0, 0, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
-Notcode(startline, endline) =
+function Notcode(startline, endline)
     FST(NOTCODE, startline, endline, 0, 0, "", (), AllowNest, 0, -1, nothing)
-InlineComment(line) =
+end
+function InlineComment(line)
     FST(INLINECOMMENT, line, line, 0, 0, "", (), AllowNest, 0, -1, nothing)
+end
 
 is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
-is_punc(cst::JuliaSyntax.GreenNode) =
+function is_punc(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet", ( ) [ ] { } @" || kind(cst) === K"." && !haschildren(cst)
+end
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
 is_end(x::JuliaSyntax.GreenNode) = kind(x) === K"end"
@@ -435,12 +440,14 @@ function length_to(fst::FST, ntyps; start::Int = 1)
     return len, false
 end
 
-is_closer(fst::FST) =
+function is_closer(fst::FST)
     fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
+end
 is_closer(t::JuliaSyntax.GreenNode) = kind(t) in KSet"} ) ]"
 
-is_opener(fst::FST) =
+function is_opener(fst::FST)
     fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
+end
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
 function is_iterable(t::JuliaSyntax.GreenNode)
@@ -898,11 +905,13 @@ function needs_placeholder(
     return false
 end
 
-next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode) =
+function next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode)
     kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
+end
 
-next_node_is(f::Function, nn::JuliaSyntax.GreenNode) =
+function next_node_is(f::Function, nn::JuliaSyntax.GreenNode)
     f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
+end
 
 """
     add_node!(

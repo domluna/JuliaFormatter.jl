@@ -2,3 +2,4 @@ remove_extra_newlines = true
 always_for_in = true
 conditional_to_if = true
 separate_kwargs_with_semicolon = true
+short_to_long_function_def = true

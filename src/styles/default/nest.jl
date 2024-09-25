@@ -173,12 +173,14 @@ function n_functiondef!(
     nest!(ds, fst.nodes::Vector, s, fst.indent, lineage; extra_margin = fst.extra_margin)
 end
 
-n_macro!(
+function n_macro!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_functiondef!(ds, fst, s, lineage)
+)
+    n_functiondef!(ds, fst, s, lineage)
+end
 
 function n_string!(
     ds::AbstractStyle,
@@ -286,19 +288,23 @@ function n_using!(
     return nested
 end
 
-n_export!(
+function n_export!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_using!(ds, fst, s, lineage)
+)
+    n_using!(ds, fst, s, lineage)
+end
 
-n_import!(
+function n_import!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_using!(ds, fst, s, lineage)
+)
+    n_using!(ds, fst, s, lineage)
+end
 
 function n_tuple!(
     ds::AbstractStyle,
@@ -381,96 +387,122 @@ function n_tuple!(
     return nested
 end
 
-n_cartesian_iterator!(
+function n_cartesian_iterator!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_vect!(
+function n_vect!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_vcat!(
+function n_vcat!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_braces!(
+function n_braces!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_bracescat!(
+function n_bracescat!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_parameters!(
+function n_parameters!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_invisbrackets!(
+function n_invisbrackets!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_call!(
+function n_call!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_curly!(
+function n_curly!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_macrocall!(
+function n_macrocall!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_ref!(
+function n_ref!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_row!(
+function n_row!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_typedvcat!(
+function n_typedvcat!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(ds, fst, s, lineage)
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
 function n_comprehension!(
     ds::AbstractStyle,
@@ -539,12 +571,14 @@ function _n_comprehension!(
     return nested
 end
 
-n_typedcomprehension!(
+function n_typedcomprehension!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_comprehension!(ds, fst, s, lineage)
+)
+    n_comprehension!(ds, fst, s, lineage)
+end
 
 function n_generator!(
     ds::AbstractStyle,
@@ -632,12 +666,14 @@ function n_generator!(
     return nested
 end
 
-n_filter!(
+function n_filter!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_generator!(ds, fst, s, lineage)
+)
+    n_generator!(ds, fst, s, lineage)
+end
 
 function n_whereopcall!(
     ds::AbstractStyle,
@@ -967,12 +1003,14 @@ function n_for!(
     return nested
 end
 
-n_let!(
+function n_let!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_for!(ds, fst, s, lineage)
+)
+    n_for!(ds, fst, s, lineage)
+end
 
 function n_block!(
     ds::AbstractStyle,
@@ -1075,16 +1113,20 @@ function n_block!(
     return nested
 end
 
-n_comparison!(
+function n_comparison!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_block!(ds, fst, s, lineage; indent = s.line_offset)
+)
+    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+end
 
-n_chainopcall!(
+function n_chainopcall!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_block!(ds, fst, s, lineage; indent = s.line_offset)
+)
+    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+end

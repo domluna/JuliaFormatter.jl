@@ -127,66 +127,86 @@ function n_tuple!(
     end
     return nested
 end
-n_call!(
+function n_call!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_curly!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_curly!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_macrocall!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_macrocall!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_ref!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_ref!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_braces!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_braces!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_vect!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_vect!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_parameters!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_parameters!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_invisbrackets!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_invisbrackets!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_bracescat!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_bracescat!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
-n_cartesian_iterator!(
+)
+    n_tuple!(bs, fst, s, lineage)
+end
+function n_cartesian_iterator!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_tuple!(bs, fst, s, lineage)
+)
+    n_tuple!(bs, fst, s, lineage)
+end
 
 function n_conditionalopcall!(
     bs::BlueStyle,
@@ -237,9 +257,11 @@ function n_chainopcall!(
     end
 end
 
-n_comparison!(
+function n_comparison!(
     bs::BlueStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-) = n_chainopcall!(bs, fst, s, lineage)
+)
+    n_chainopcall!(bs, fst, s, lineage)
+end

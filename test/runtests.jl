@@ -3,8 +3,9 @@ using JuliaFormatter: DefaultStyle, YASStyle, Options, options, CONFIG_FILE_NAME
 using Test
 using JuliaSyntax
 
-fmt1(s; i = 4, m = 80, kwargs...) =
+function fmt1(s; i = 4, m = 80, kwargs...)
     JuliaFormatter.format_text(s; kwargs..., indent = i, margin = m)
+end
 fmt1(s, i, m; kwargs...) = fmt1(s; kwargs..., i = i, m = m)
 
 # Verifies formatting the formatted text
@@ -16,20 +17,24 @@ function fmt(s; i = 4, m = 80, kwargs...)
 end
 fmt(s, i, m; kwargs...) = fmt(s; kwargs..., i = i, m = m)
 
-yasfmt1(str; kwargs...) =
+function yasfmt1(str; kwargs...)
     fmt1(str; style = YASStyle(), options(DefaultStyle())..., kwargs...)
-yasfmt(str; i = 4, m = 80, kwargs...) =
+end
+function yasfmt(str; i = 4, m = 80, kwargs...)
     fmt(str; i = i, m = m, style = YASStyle(), kwargs...)
+end
 yasfmt(str, i::Int, m::Int; kwargs...) = yasfmt(str; i = i, m = m, kwargs...)
 
 bluefmt1(str) = fmt1(str; style = BlueStyle(), options(DefaultStyle())...)
-bluefmt(str; i = 4, m = 80, kwargs...) =
+function bluefmt(str; i = 4, m = 80, kwargs...)
     fmt(str; i = i, m = m, style = BlueStyle(), kwargs...)
+end
 bluefmt(str, i::Int, m::Int; kwargs...) = bluefmt(str; i = i, m = m, kwargs...)
 
 minimalfmt1(str) = fmt1(str; style = MinimalStyle(), options(DefaultStyle())...)
-minimalfmt(str; i = 4, m = 92, kwargs...) =
+function minimalfmt(str; i = 4, m = 92, kwargs...)
     fmt(str; i = i, m = m, style = MinimalStyle(), kwargs...)
+end
 minimalfmt(str, i::Int, m::Int; kwargs...) = minimalfmt(str; i = i, m = m, kwargs...)
 
 function run_pretty(text::String; style = DefaultStyle(), opts = Options())
