@@ -89,9 +89,17 @@ function parse_opts!(args::Vector{String})
             opts[opt] = false
             deleteat!(args, i)
         else
-            i < length(args) || error("option $arg requires and argument")
+            if !(i < length(args))
+                error("option $arg requires and argument")
+            else
+                true
+            end
             val = tryparse(Int, args[i+1])
-            val != nothing || error("invalid value for option $arg: $(args[i+1])")
+            if !(val != nothing)
+                error("invalid value for option $arg: $(args[i+1])")
+            else
+                true
+            end
             opts[opt] = val
             deleteat!(args, i:(i+1))
         end

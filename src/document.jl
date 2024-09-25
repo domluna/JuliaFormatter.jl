@@ -45,7 +45,11 @@ function Document(text::AbstractString)
                 end
 
                 idx = findlast(c -> c == '\n', prevval)
-                idx === nothing && (idx = 1)
+                if idx === nothing
+                    (idx = 1)
+                else
+                    false
+                end
                 ws = count(c -> c == ' ', prevval[idx:end])
             end
 
@@ -142,7 +146,11 @@ end
 
 function has_noindent_block(d::Document, r::Tuple{Int,Int})
     for b in d.noindent_blocks
-        b in r && return true
+        if b in r
+            return true
+        else
+            false
+        end
     end
     return false
 end

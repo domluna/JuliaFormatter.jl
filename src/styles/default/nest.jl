@@ -277,7 +277,11 @@ function n_using!(
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                i < length(nodes) && (n.extra_margin = 1)
+                if i < length(nodes)
+                    (n.extra_margin = 1)
+                else
+                    false
+                end
                 nested |= nest!(style, n, s, lineage)
             end
         end
@@ -380,7 +384,11 @@ function n_tuple!(
         end
     else
         extra_margin = fst.extra_margin
-        has_closer && (extra_margin += 1)
+        if has_closer
+            (extra_margin += 1)
+        else
+            false
+        end
         nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
     end
 
@@ -859,7 +867,11 @@ function n_binaryopcall!(
     idxs = findall(n -> n.typ === PLACEHOLDER, nodes)
 
     rhs = fst[end]
-    rhs.typ === Block && (rhs = rhs[1])
+    if rhs.typ === Block
+        (rhs = rhs[1])
+    else
+        false
+    end
 
     # is the LHS on a different line than the RHS ?
     src_diff_line =
@@ -1025,7 +1037,11 @@ function n_block!(
     nodes = fst.nodes::Vector
     idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
     has_nl = false
-    indent >= 0 && (fst.indent = indent)
+    if indent >= 0
+        (fst.indent = indent)
+    else
+        false
+    end
 
     if fst.typ === Chain &&
        !isnothing(fst.metadata) &&

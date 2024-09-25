@@ -242,7 +242,11 @@ is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 function is_punc(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet", ( ) [ ] { } @" || kind(cst) === K"." && !haschildren(cst)
+    if !(kind(cst) in KSet", ( ) [ ] { } @")
+        kind(cst) === K"." && !haschildren(cst)
+    else
+        true
+    end
 end
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
@@ -259,18 +263,26 @@ is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 is_ws(x) = kind(x) in KSet"Whitespace NewlineWs"
 
 function is_multiline(fst::FST)
-    fst.endline > fst.startline &&
+    if fst.endline > fst.startline
         fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
+    else
+        false
+    end
 end
 
 is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
 
 function is_macrodoc(fst::FST)::Bool
-    fst.typ === GlobalRefDoc && return true
-    fst.typ === MacroBlock &&
-        fst[1].typ === Macroname &&
-        fst[1][1].val == "@doc" &&
+    if fst.typ === GlobalRefDoc
         return true
+    else
+        false
+    end
+    if fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc"
+        return true
+    else
+        false
+    end
     return false
 end
 
@@ -302,23 +314,39 @@ function is_func_call(t::JuliaSyntax.GreenNode)::Bool
     elseif kind(t) in KSet":: where" && haschildren(t)
         childs = children(t)
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
-        isnothing(idx) && return false
+        if isnothing(idx)
+            return false
+        else
+            false
+        end
         return is_func_call(childs[idx])
     elseif kind(t) === K"parens" && haschildren(t)
         childs = children(t)
         idx =
             findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
-        isnothing(idx) && return false
+        if isnothing(idx)
+            return false
+        else
+            false
+        end
         return is_func_call(childs[idx])
     end
     return false
 end
 
 function defines_function(x::JuliaSyntax.GreenNode)
-    kind(x) in KSet"function macro" && haschildren(x) && return true
+    if kind(x) in KSet"function macro" && haschildren(x)
+        return true
+    else
+        false
+    end
     if is_assignment(x)
         childs = children(x)
-        childs === () && return false
+        if childs === ()
+            return false
+        else
+            false
+        end
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
         c = is_func_call(childs[idx])
         return c
@@ -327,11 +355,19 @@ function defines_function(x::JuliaSyntax.GreenNode)
 end
 
 function is_if(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet"if elseif else" && haschildren(cst)
+    if kind(cst) in KSet"if elseif else"
+        haschildren(cst)
+    else
+        false
+    end
 end
 
 function is_try(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet"try catch finally" && haschildren(cst)
+    if kind(cst) in KSet"try catch finally"
+        haschildren(cst)
+    else
+        false
+    end
 end
 
 function is_custom_leaf(fst::FST)
@@ -341,7 +377,11 @@ end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
-    is_leaf(fst) && return false
+    if is_leaf(fst)
+        return false
+    else
+        false
+    end
     contains_comment(fst.nodes::Vector{FST})
 end
 
@@ -405,7 +445,11 @@ function is_arg(fst::FST)
 end
 
 function n_args(fst::FST)
-    is_leaf(fst) && return 0
+    if is_leaf(fst)
+        return 0
+    else
+        false
+    end
     nodes = fst.nodes::Vector{FST}
     _idx = findfirst(is_opener, nodes)
     idx = isnothing(_idx) ? 1 : _idx
@@ -428,68 +472,173 @@ end
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
 function length_to(fst::FST, ntyps; start::Int = 1)
-    fst.typ in ntyps && return 0, true
-    is_leaf(fst) && return length(fst), false
+    if fst.typ in ntyps
+        return 0, true
+    else
+        false
+    end
+    if is_leaf(fst)
+        return length(fst), false
+    else
+        false
+    end
     len = 0
     nodes = fst.nodes::Vector
     for i in start:length(nodes)
         l, found = length_to(nodes[i], ntyps)
         len += l
-        found && return len, found
+        if found
+            return len, found
+        else
+            false
+        end
     end
     return len, false
 end
 
 function is_closer(fst::FST)
-    fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
+    if fst.typ === PUNCTUATION
+        (fst.val == "}" || fst.val == ")" || fst.val == "]")
+    else
+        false
+    end
 end
 is_closer(t::JuliaSyntax.GreenNode) = kind(t) in KSet"} ) ]"
 
 function is_opener(fst::FST)
-    fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
+    if fst.typ === PUNCTUATION
+        (fst.val == "{" || fst.val == "(" || fst.val == "[")
+    else
+        false
+    end
 end
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
 function is_iterable(t::JuliaSyntax.GreenNode)
-    kind(t) in
-    KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export" ||
+    if !(
+        kind(t) in
+        KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export"
+    )
         is_func_call(t)
+    else
+        true
+    end
 end
 
 function is_iterable(x::FST)
-    is_named_iterable(x) && return true
-    is_unnamed_iterable(x) && return true
-    is_import_expr(x) && return true
+    if is_named_iterable(x)
+        return true
+    else
+        false
+    end
+    if is_unnamed_iterable(x)
+        return true
+    else
+        false
+    end
+    if is_import_expr(x)
+        return true
+    else
+        false
+    end
     return false
 end
 is_iterable(::Nothing) = false
 
 function is_unnamed_iterable(x::FST)
-    x.typ === TupleN && return true
-    x.typ === Vect && return true
-    x.typ === Vcat && return true
-    x.typ === Ncat && return true
-    x.typ === Braces && return true
-    x.typ === Comprehension && return true
-    x.typ === Brackets && return true
+    if x.typ === TupleN
+        return true
+    else
+        false
+    end
+    if x.typ === Vect
+        return true
+    else
+        false
+    end
+    if x.typ === Vcat
+        return true
+    else
+        false
+    end
+    if x.typ === Ncat
+        return true
+    else
+        false
+    end
+    if x.typ === Braces
+        return true
+    else
+        false
+    end
+    if x.typ === Comprehension
+        return true
+    else
+        false
+    end
+    if x.typ === Brackets
+        return true
+    else
+        false
+    end
     return false
 end
 
 function is_named_iterable(x::FST)
-    x.typ === Call && return true
-    x.typ === Curly && return true
-    x.typ === TypedComprehension && return true
-    x.typ === MacroCall && return true
-    x.typ === RefN && return true
-    x.typ === TypedVcat && return true
-    x.typ === TypedNcat && return true
+    if x.typ === Call
+        return true
+    else
+        false
+    end
+    if x.typ === Curly
+        return true
+    else
+        false
+    end
+    if x.typ === TypedComprehension
+        return true
+    else
+        false
+    end
+    if x.typ === MacroCall
+        return true
+    else
+        false
+    end
+    if x.typ === RefN
+        return true
+    else
+        false
+    end
+    if x.typ === TypedVcat
+        return true
+    else
+        false
+    end
+    if x.typ === TypedNcat
+        return true
+    else
+        false
+    end
     return false
 end
 
 function is_import_expr(x::FST)
-    x.typ === Import && return true
-    x.typ === Using && return true
-    x.typ === Export && return true
+    if x.typ === Import
+        return true
+    else
+        false
+    end
+    if x.typ === Using
+        return true
+    else
+        false
+    end
+    if x.typ === Export
+        return true
+    else
+        false
+    end
     return false
 end
 
@@ -515,54 +664,129 @@ function is_comprehension(x::JuliaSyntax.GreenNode)
 end
 
 function is_comprehension(x::FST)
-    x.typ === Comprehension && return true
-    x.typ === TypedComprehension && return true
+    if x.typ === Comprehension
+        return true
+    else
+        false
+    end
+    if x.typ === TypedComprehension
+        return true
+    else
+        false
+    end
     return false
 end
 
 function is_block(x::JuliaSyntax.GreenNode)
-    is_if(x) && return true
-    kind(x) in KSet"do try for while let" && return true
-    (kind(x) == K"block" && haschildren(x)) && return true
-    (kind(x) == K"quote" && haschildren(x) && is_block(x[1])) && return true
+    if is_if(x)
+        return true
+    else
+        false
+    end
+    if kind(x) in KSet"do try for while let"
+        return true
+    else
+        false
+    end
+    if (kind(x) == K"block" && haschildren(x))
+        return true
+    else
+        false
+    end
+    if (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
+        return true
+    else
+        false
+    end
     return false
 end
 
 function is_block(x::FST)
-    x.typ in (Block, If, Do, Try, Begin, For, While, Let) ||
+    if !(x.typ in (Block, If, Do, Try, Begin, For, While, Let))
         x.typ === Quote && x[1].val == "quote"
+    else
+        true
+    end
 end
 
 function is_typedef(fst::FST)
-    fst.typ === Struct && return true
-    fst.typ === Mutable && return true
-    fst.typ === Primitive && return true
-    fst.typ === Abstract && return true
+    if fst.typ === Struct
+        return true
+    else
+        false
+    end
+    if fst.typ === Mutable
+        return true
+    else
+        false
+    end
+    if fst.typ === Primitive
+        return true
+    else
+        false
+    end
+    if fst.typ === Abstract
+        return true
+    else
+        false
+    end
     return false
 end
 
 function is_opcall(x::JuliaSyntax.GreenNode)
-    is_binary(x) && return true
-    kind(x) == K"comparison" && return true
-    is_chain(x) && return true
-    is_unary(x) && return true
+    if is_binary(x)
+        return true
+    else
+        false
+    end
+    if kind(x) == K"comparison"
+        return true
+    else
+        false
+    end
+    if is_chain(x)
+        return true
+    else
+        false
+    end
+    if is_unary(x)
+        return true
+    else
+        false
+    end
     if kind(x) === K"parens" && haschildren(x)
         childs = children(x)
         idx = findfirst(
             n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"( )"),
             childs,
         )
-        isnothing(idx) && return false
+        if isnothing(idx)
+            return false
+        else
+            false
+        end
         return is_opcall(childs[idx])
     end
     return false
 end
 
 function is_prefix_op_call(x::JuliaSyntax.GreenNode)
-    is_opcall(x) || return false
-    haschildren(x) || return false
+    if !(is_opcall(x))
+        return false
+    else
+        true
+    end
+    if !(haschildren(x))
+        return false
+    else
+        true
+    end
     idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(x))
-    isnothing(idx) && return false
+    if isnothing(idx)
+        return false
+    else
+        false
+    end
     return JuliaSyntax.is_operator(x[idx])
 end
 
@@ -571,14 +795,30 @@ function is_gen(x::JuliaSyntax.GreenNode)
 end
 
 function is_gen(x::FST)
-    x.typ === Generator && return true
-    x.typ === Filter && return true
-    x.typ === Flatten && return true
+    if x.typ === Generator
+        return true
+    else
+        false
+    end
+    if x.typ === Filter
+        return true
+    else
+        false
+    end
+    if x.typ === Flatten
+        return true
+    else
+        false
+    end
     return false
 end
 
 function _callinfo(x::JuliaSyntax.GreenNode)
-    haschildren(x) || return 0, 0
+    if !(haschildren(x))
+        return 0, 0
+    else
+        true
+    end
     k = kind(x)
     n_operators = 0
     n_args = 0
@@ -597,7 +837,11 @@ function _callinfo(x::JuliaSyntax.GreenNode)
 end
 
 function is_unary(x::JuliaSyntax.GreenNode)
-    JuliaSyntax.is_unary_op(x) && return true
+    if JuliaSyntax.is_unary_op(x)
+        return true
+    else
+        false
+    end
     if kind(x) === K"call" || (JuliaSyntax.is_operator(x) && haschildren(x))
         nops, nargs = _callinfo(x)
         return nops == 1 && nargs == 1
@@ -614,7 +858,11 @@ function is_binary(x)
 end
 
 function is_chain(x::JuliaSyntax.GreenNode)
-    kind(x) === K"call" || return false
+    if !(kind(x) === K"call")
+        return false
+    else
+        true
+    end
     nops, nargs = _callinfo(x)
     return nops > 1 && nargs > 2
 end
@@ -655,13 +903,25 @@ function is_pairarrow(cst::JuliaSyntax.GreenNode)::Bool
 end
 
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
-    !haschildren(cst) && return false
+    if !haschildren(cst)
+        return false
+    else
+        false
+    end
     k = kind(cst)
-    (k == K"function" || k == K"macro") && return true
+    if (k == K"function" || k == K"macro")
+        return true
+    else
+        false
+    end
 
     if JuliaSyntax.is_operator(cst) && k === K"="
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(cst))
-        isnothing(idx) && return false
+        if isnothing(idx)
+            return false
+        else
+            false
+        end
         return is_function_like_lhs(cst[idx])
     end
 
@@ -679,7 +939,11 @@ function is_function_like_lhs(node::JuliaSyntax.GreenNode)
 end
 
 function has_leading_whitespace(n::JuliaSyntax.GreenNode)
-    kind(n) === K"Whitespace" && return true
+    if kind(n) === K"Whitespace"
+        return true
+    else
+        false
+    end
     if haschildren(n) && length(children(n)) > 0
         return has_leading_whitespace(n[1])
     end
@@ -687,11 +951,31 @@ function has_leading_whitespace(n::JuliaSyntax.GreenNode)
 end
 
 function remove_empty_notcode(fst::FST)
-    is_iterable(fst) && return true
-    fst.typ === Binary && return true
-    fst.typ === Conditional && return true
-    fst.typ === Comparison && return true
-    fst.typ === Chain && return true
+    if is_iterable(fst)
+        return true
+    else
+        false
+    end
+    if fst.typ === Binary
+        return true
+    else
+        false
+    end
+    if fst.typ === Conditional
+        return true
+    else
+        false
+    end
+    if fst.typ === Comparison
+        return true
+    else
+        false
+    end
+    if fst.typ === Chain
+        return true
+    else
+        false
+    end
     return false
 end
 
@@ -723,7 +1007,11 @@ function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
 end
 
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
-    JuliaSyntax.is_operator(cst) && return cst
+    if JuliaSyntax.is_operator(cst)
+        return cst
+    else
+        false
+    end
     if (
         is_binary(cst) ||
         kind(cst) in KSet"comparison dotcall call" ||
@@ -827,9 +1115,17 @@ for i = 1:10 body end
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
-        isnothing(idx) && return
+        if isnothing(idx)
+            return
+        else
+            false
+        end
         op = fst[idx]
-        valid_for_in_op(op.val) || return
+        if !(valid_for_in_op(op.val))
+            return
+        else
+            true
+        end
 
         # surround op with ws
         if for_in_replacement != "=" && fst[idx-1].typ !== WHITESPACE
@@ -855,7 +1151,11 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
                 # we do not want to convert the binary operations after an "if" keyword.
                 past_if = true
             end
-            past_if && break
+            if past_if
+                break
+            else
+                false
+            end
             eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
     end
@@ -906,11 +1206,19 @@ function needs_placeholder(
 end
 
 function next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode)
-    kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
+    if !(kind(nn) === k)
+        (haschildren(nn) && next_node_is(k, nn[1]))
+    else
+        true
+    end
 end
 
 function next_node_is(f::Function, nn::JuliaSyntax.GreenNode)
-    f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
+    if !(f(nn))
+        (haschildren(nn) && next_node_is(f, nn[1]))
+    else
+        true
+    end
 end
 
 """
@@ -1081,7 +1389,11 @@ function add_node!(
 
             # If the previous node type is WHITESPACE - reset it.
             # This fixes cases similar to the one shown in issue #51.
-            nt === WHITESPACE && (tnodes[end]::FST = Whitespace(0))
+            if nt === WHITESPACE
+                (tnodes[end]::FST = Whitespace(0))
+            else
+                false
+            end
 
             if hascomment(s.doc, current_line)
                 add_node!(t, InlineComment(current_line), s)

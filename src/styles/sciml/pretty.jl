@@ -55,7 +55,11 @@ function options(::SciMLStyle)
 end
 
 function is_binaryop_nestable(::SciMLStyle, cst::JuliaSyntax.GreenNode)
-    (defines_function(cst) || is_assignment(cst)) && return false
+    if (defines_function(cst) || is_assignment(cst))
+        return false
+    else
+        false
+    end
     !(op_kind(cst) in KSet"=> -> in")
 end
 
@@ -136,7 +140,11 @@ function p_macrocall(
 )
     style = getstyle(ss)
     t = FST(MacroCall, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     has_closer = is_closer(childs[end])

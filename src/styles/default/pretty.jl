@@ -328,7 +328,11 @@ function p_juxtapose(
 )
     style = getstyle(ds)
     t = FST(Juxtapose, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -346,7 +350,11 @@ function p_continue(
 )
     style = getstyle(ds)
     t = FST(Continue, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -364,7 +372,11 @@ function p_break(
 )
     style = getstyle(ds)
     t = FST(Break, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -383,7 +395,11 @@ function p_inert(
 )
     style = getstyle(ds)
     t = FST(Inert, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -401,7 +417,11 @@ function p_macrostr(
 )
     style = getstyle(ds)
     t = FST(MacroStr, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -472,7 +492,11 @@ function p_accessor(
 )
     style = getstyle(ds)
     t = FST(Accessor, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -490,7 +514,11 @@ function p_stringh(
 )
     style = getstyle(ds)
     loc = cursor_loc(s)
-    !haschildren(cst) && return FST(StringN, loc[2] - 1)
+    if !haschildren(cst)
+        return FST(StringN, loc[2] - 1)
+    else
+        false
+    end
 
     val = ""
     startline = -1
@@ -554,7 +582,11 @@ function p_globalrefdoc(
 )
     style = getstyle(ds)
     t = FST(GlobalRefDoc, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
@@ -586,7 +618,11 @@ function p_macrocall(
     style = getstyle(ds)
     t = FST(MacroCall, nspaces(s))
 
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -610,9 +646,17 @@ function p_macrocall(
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"("
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K")"
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
             add_node!(t, n, s; join_lines = true)
@@ -662,7 +706,11 @@ function p_block(
 )
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     join_body = ctx.join_body
     ignore_single_line = ctx.ignore_single_line
@@ -764,7 +812,11 @@ function p_abstract(
 )
     style = getstyle(ds)
     t = FST(Abstract, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -785,7 +837,11 @@ function p_primitive(
 )
     style = getstyle(ds)
     t = FST(Primitive, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -805,7 +861,11 @@ function p_var(
 )
     style = getstyle(ds)
     t = FST(NonStdIdentifier, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -823,7 +883,11 @@ function p_functiondef(
 )
     style = getstyle(ds)
     t = FST(FunctionN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     block_has_contents = false
     childs = children(cst)
@@ -836,7 +900,11 @@ function p_functiondef(
             n = pretty(style, c, s, ctx, lineage)
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
-                join_lines && (add_node!(t, Whitespace(1), s))
+                if join_lines
+                    (add_node!(t, Whitespace(1), s))
+                else
+                    false
+                end
                 add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
@@ -888,7 +956,11 @@ function p_struct(
 )
     style = getstyle(ds)
     t = FST(Struct, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     block_has_contents = false
     childs = children(cst)
@@ -901,7 +973,11 @@ function p_struct(
             n = pretty(style, c, s, ctx, lineage)
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
-                join_lines && (add_node!(t, Whitespace(1), s))
+                if join_lines
+                    (add_node!(t, Whitespace(1), s))
+                else
+                    false
+                end
                 add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
@@ -936,7 +1012,11 @@ function p_mutable(
 )
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     block_has_contents = false
     childs = children(cst)
@@ -949,7 +1029,11 @@ function p_mutable(
             n = pretty(style, c, s, ctx, lineage)
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
-                join_lines && (add_node!(t, Whitespace(1), s))
+                if join_lines
+                    (add_node!(t, Whitespace(1), s))
+                else
+                    false
+                end
                 add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
@@ -984,7 +1068,11 @@ function p_module(
 )
     style = getstyle(ds)
     t = FST(ModuleN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     from_module = ctx.from_module
     block_has_contents = false
@@ -1000,7 +1088,11 @@ function p_module(
             n = pretty(style, c, s)
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
-                join_lines && (add_node!(t, Whitespace(1), s))
+                if join_lines
+                    (add_node!(t, Whitespace(1), s))
+                else
+                    false
+                end
                 add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
@@ -1074,7 +1166,11 @@ function p_const(
 )
     style = getstyle(ds)
     t = FST(Const, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         if kind(c) === K","
@@ -1133,7 +1229,11 @@ function p_toplevel(
 )
     style = getstyle(ds)
     t = FST(TopLevel, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
@@ -1155,7 +1255,11 @@ function p_begin(
 )
     style = getstyle(ds)
     t = FST(Begin, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     add_node!(t, pretty(style, childs[1], s, ctx, lineage), s)
@@ -1192,7 +1296,11 @@ function p_quote(
 )
     style = getstyle(ds)
     t = FST(Quote, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     if kind(childs[1]) === K"block"
@@ -1218,7 +1326,11 @@ function p_quotenode(
 )
     style = getstyle(ds)
     t = FST(Quotenode, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     ctx = newctx(ctx; from_quote = true)
     for a in children(cst)
@@ -1254,7 +1366,11 @@ function p_let(
 )
     style = getstyle(ds)
     t = FST(Let, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
     block_id = 1
 
     has_let_args = false
@@ -1329,7 +1445,11 @@ function p_for(
 )
     style = getstyle(ds)
     t = FST(For, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     ends_in_iterable = false
 
@@ -1382,7 +1502,11 @@ function p_cartesian_iterator(
 )
     style = getstyle(ds)
     t = FST(CartesianIterator, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
@@ -1428,7 +1552,11 @@ function p_do(
 )
     style = getstyle(ds)
     t = FST(Do, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
@@ -1465,7 +1593,11 @@ function p_try(
 )
     style = getstyle(ds)
     t = FST(Try, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     # in JuliaSyntax this is now a tree structure instead of being linear
     # since we're still picking up comments in add_node! if the comment is at
@@ -1521,7 +1653,11 @@ function p_if(
 )
     style = getstyle(ds)
     t = FST(If, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         if kind(c) in KSet"if elseif else"
@@ -1591,7 +1727,11 @@ function p_kw(
 )
     style = getstyle(ds)
     t = FST(Kw, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     push!(lineage, (kind(cst), false, true))
 
@@ -1637,14 +1777,22 @@ function p_binaryopcall(
 )
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     opkind = op_kind(cst)
 
     nonest = ctx.nonest || opkind === K":"
 
     nrhs = nest_rhs(cst)
-    nrhs && (t.nest_behavior = AlwaysNest)
+    if nrhs
+        (t.nest_behavior = AlwaysNest)
+    else
+        false
+    end
     nest = (is_binaryop_nestable(style, cst) && !nonest) || nrhs
 
     is_short_form_function = defines_function(cst) && !ctx.from_let
@@ -1856,7 +2004,11 @@ function p_whereopcall(
 )
     style = getstyle(ds)
     t = FST(Where, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -1870,8 +2022,11 @@ function p_whereopcall(
     curly_ctx = if where_idx === nothing
         ctx.from_typedef
     else
-        ctx.from_typedef ||
+        if !(ctx.from_typedef)
             any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
+        else
+            true
+        end
     end
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 
@@ -1929,7 +2084,11 @@ function p_conditionalopcall(
 )
     style = getstyle(ds)
     t = FST(Conditional, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         if kind(c) in KSet"? :" && !haschildren(c)
@@ -1953,7 +2112,11 @@ function p_unaryopcall(
 )
     style = getstyle(ds)
     t = FST(Unary, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     opkind = op_kind(cst)
     op_dotted = kind(cst) === K"dotcall"
@@ -1978,7 +2141,11 @@ function p_curly(
 )
     style = getstyle(ds)
     t = FST(Curly, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2025,7 +2192,11 @@ function p_call(
 )
     style = getstyle(ds)
     t = FST(Call, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2082,7 +2253,11 @@ function p_invisbrackets(
 )
     style = getstyle(ds)
     t = FST(Brackets, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest = if length(args) > 0
@@ -2091,7 +2266,11 @@ function p_invisbrackets(
            (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
-        !ctx.nonest && !s.opts.disallow_single_arg_nesting && !is_iterable(arg)
+        if !ctx.nonest && !s.opts.disallow_single_arg_nesting
+            !is_iterable(arg)
+        else
+            false
+        end
     else
         false
     end
@@ -2099,9 +2278,17 @@ function p_invisbrackets(
     for c in children(cst)
         if kind(c) === K"("
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(c) === K")"
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         elseif kind(c) === K"block"
             add_node!(
@@ -2129,7 +2316,11 @@ function p_tuple(
 )
     style = getstyle(ds)
     t = FST(TupleN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2148,7 +2339,11 @@ function p_tuple(
 
         if kind(a) === K"("
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K")"
             # An odd case but this could occur if there are no keyword arguments.
             # In which case ";," is invalid syntax.
@@ -2182,7 +2377,11 @@ function p_braces(
 )
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2199,7 +2398,11 @@ function p_braces(
 
         if kind(a) === K"{"
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K"}"
             if nest
                 add_node!(t, TrailingComma(), s)
@@ -2227,7 +2430,11 @@ function p_bracescat(
 )
     style = getstyle(ds)
     t = FST(BracesCat, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2244,7 +2451,11 @@ function p_bracescat(
 
         if kind(a) === K"{"
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K"}"
             if nest
                 add_node!(t, Placeholder(0), s)
@@ -2271,7 +2482,11 @@ function p_vect(
 )
     style = getstyle(ds)
     t = FST(Vect, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2286,7 +2501,11 @@ function p_vect(
 
         if kind(a) === K"["
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K"]"
             if nest
                 add_node!(t, TrailingComma(), s)
@@ -2314,7 +2533,11 @@ function p_comprehension(
 )
     style = getstyle(ds)
     t = FST(Comprehension, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(
@@ -2369,7 +2592,11 @@ function p_parameters(
 )
     style = getstyle(ds)
     t = FST(Parameters, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     nws = ctx.from_typedef && !s.opts.whitespace_typedefs ? 0 : 1
 
@@ -2402,7 +2629,11 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
@@ -2461,7 +2692,11 @@ function p_importpath(
 )
     style = getstyle(ds)
     t = FST(ImportPath, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
@@ -2479,7 +2714,11 @@ function p_as(
 )
     style = getstyle(ds)
     t = FST(As, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for c in children(cst)
         n = pretty(style, c, s, ctx, lineage)
@@ -2504,7 +2743,11 @@ function p_ref(
 )
     style = getstyle(ds)
     t = FST(RefN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2523,7 +2766,11 @@ function p_ref(
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
         elseif kind(a) === K"["
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K","
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"]")
@@ -2548,7 +2795,11 @@ function p_vcat(
 )
     style = getstyle(ds)
     t = FST(Vcat, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     nest =
@@ -2564,13 +2815,25 @@ function p_vcat(
         n = pretty(style, a, s, ctx, lineage)
         diff_line = t.endline != t.startline
         # If arguments are on different lines then always nest
-        diff_line && (t.nest_behavior = AlwaysNest)
+        if diff_line
+            (t.nest_behavior = AlwaysNest)
+        else
+            false
+        end
 
         if kind(a) === K"["
             add_node!(t, n, s; join_lines = true)
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
         elseif kind(a) === K"]"
-            nest && add_node!(t, Placeholder(0), s)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            else
+                false
+            end
             add_node!(t, n, s; join_lines = true)
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
@@ -2616,7 +2879,11 @@ function p_hcat(
 )
     style = getstyle(ds)
     t = FST(Hcat, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     # st = kind(cst) === K"hcat" ? 1 : 2
@@ -2683,7 +2950,11 @@ function p_row(
 )
     style = getstyle(ds)
     t = FST(Row, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     first_arg_idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
@@ -2731,7 +3002,11 @@ function p_generator(
 )
     style = getstyle(ds)
     t = FST(Generator, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     has_for_kw = false
     from_iterable = false
@@ -2770,8 +3045,11 @@ function p_generator(
             add_node!(t, n, s; join_lines = true)
         end
 
-        has_for_kw &&
+        if has_for_kw
             eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
+        else
+            false
+        end
     end
     t
 end

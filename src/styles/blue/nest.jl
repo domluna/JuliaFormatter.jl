@@ -10,7 +10,11 @@ function n_tuple!(
     lidx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
     multiline_arg = findfirst(is_block, nodes) !== nothing
-    multiline_arg && (fst.nest_behavior = AlwaysNest)
+    if multiline_arg
+        (fst.nest_behavior = AlwaysNest)
+    else
+        false
+    end
     has_closer = is_closer(fst[end])
     nested = false
 
@@ -122,7 +126,11 @@ function n_tuple!(
 
     else
         extra_margin = fst.extra_margin
-        has_closer && (extra_margin += 1)
+        if has_closer
+            (extra_margin += 1)
+        else
+            false
+        end
         nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
     end
     return nested

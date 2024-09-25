@@ -187,7 +187,11 @@ function _n_tuple!(
         end
     else
         extra_margin = fst.extra_margin
-        has_closer && (extra_margin += 1)
+        if has_closer
+            (extra_margin += 1)
+        else
+            false
+        end
         nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
     end
 

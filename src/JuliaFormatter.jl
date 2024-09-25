@@ -36,8 +36,16 @@ end
 Configuration() = Configuration(Dict{String,Any}(), Dict{String,Any}())
 Configuration(args) = Configuration(args, Dict{String,Any}())
 function get(config::Configuration, s::String, default)
-    haskey(config.args, s) && return config.args[s]
-    haskey(config.file, s) && return config.file[s]
+    if haskey(config.args, s)
+        return config.args[s]
+    else
+        false
+    end
+    if haskey(config.file, s)
+        return config.file[s]
+    else
+        false
+    end
     return default
 end
 function pairs(conf::Configuration)
@@ -154,23 +162,38 @@ end
 
 function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     @nospecialize kwargs
-    isempty(text) && return text
+    if isempty(text)
+        return text
+    else
+        false
+    end
     opts = Options(; merge(options(style), kwargs)...)
     return format_text(text, style, opts)
 end
 
 function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwargs...)
     @nospecialize kwargs
-    isempty(text) && return text
+    if isempty(text)
+        return text
+    else
+        false
+    end
     opts = Options(; merge(options(style), kwargs)...)
     # We need to iterate to a fixpoint because the result of short to long
     # form isn't properly formatted
     formatted_text = format_text(text, style, opts)
-    maxiters == 0 && return formatted_text
+    if maxiters == 0
+        return formatted_text
+    else
+        false
+    end
     iter = 1
     while formatted_text != text
-        iter > maxiters &&
+        if iter > maxiters
             error("formatted_text hasn't reached to a fixpoint in $iter iterations")
+        else
+            false
+        end
         text = formatted_text
         formatted_text = format_text(text, style, opts)
         iter += 1
@@ -195,9 +218,17 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
             s.offset
         rethrow(e)
     end
-    hascomment(s.doc, fst.endline) && (add_node!(fst, InlineComment(fst.endline), s))
+    if hascomment(s.doc, fst.endline)
+        (add_node!(fst, InlineComment(fst.endline), s))
+    else
+        false
+    end
 
-    s.opts.pipe_to_function_call && pipe_to_function_call_pass!(fst)
+    if s.opts.pipe_to_function_call
+        pipe_to_function_call_pass!(fst)
+    else
+        false
+    end
 
     flatten_fst!(fst)
 
@@ -205,13 +236,21 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
         short_circuit_to_if_pass!(fst, s)
     end
 
-    needs_alignment(s.opts) && align_fst!(fst, s.opts)
+    if needs_alignment(s.opts)
+        align_fst!(fst, s.opts)
+    else
+        false
+    end
 
     nest!(style, fst, s)
 
     # ignore maximum width can be extra whitespace at the end of lines
     # remove it all before we print.
-    s.opts.join_lines_based_on_source && remove_superfluous_whitespace!(fst)
+    if s.opts.join_lines_based_on_source
+        remove_superfluous_whitespace!(fst)
+    else
+        false
+    end
 
     s.line_offset = 0
     io = IOBuffer()
@@ -261,12 +300,24 @@ function _format_file(
     path, ext = splitext(filename)
     shebang_pattern = r"^#!\s*/.*\bjulia[0-9.-]*\b"
     formatted_str = if match(r"^\.[jq]*md$", ext) ≠ nothing
-        format_markdown || return true
-        verbose && println("Formatting $filename")
+        if !(format_markdown)
+            return true
+        else
+            true
+        end
+        if verbose
+            println("Formatting $filename")
+        else
+            false
+        end
         str = String(read(filename))
         format_md(str; format_options...)
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
-        verbose && println("Formatting $filename")
+        if verbose
+            println("Formatting $filename")
+        else
+            false
+        end
         str = String(read(filename))
         format_text(str; format_options...)
     else
@@ -371,7 +422,11 @@ function format(path::AbstractString, options::Configuration)
             Configuration(copy(options.args), Dict{String,Any}(find_config_file(path)))
         options.args["config_applied"] = true
     end
-    isignored(path, options) && return true
+    if isignored(path, options)
+        return true
+    else
+        false
+    end
     if isdir(path)
         configpath = joinpath(path, CONFIG_FILE_NAME)
         if isfile(configpath)
@@ -380,7 +435,11 @@ function format(path::AbstractString, options::Configuration)
         formatted = Threads.Atomic{Bool}(true)
         Threads.@threads for subpath in readdir(path)
             subpath = joinpath(path, subpath)
-            !ispath(subpath) && continue
+            if !ispath(subpath)
+                continue
+            else
+                false
+            end
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
         end
@@ -415,7 +474,11 @@ format(path, style::AbstractStyle; options...) = format(path; style = style, opt
 """
 function format(mod::Module, args...; options...)
     path = pkgdir(mod)
-    path === nothing && throw(ArgumentError("couldn't find a directory of module `$mod`"))
+    if path === nothing
+        throw(ArgumentError("couldn't find a directory of module `$mod`"))
+    else
+        false
+    end
     format(path, args...; options...)
 end
 
@@ -462,9 +525,17 @@ end
 
 function find_config_file(path)
     dir = dirname(path)
-    (path == dir || isempty(path)) && return NamedTuple()
+    if (path == dir || isempty(path))
+        return NamedTuple()
+    else
+        false
+    end
     configpath = joinpath(dir, CONFIG_FILE_NAME)
-    isfile(configpath) && return parse_config(configpath)
+    if isfile(configpath)
+        return parse_config(configpath)
+    else
+        false
+    end
     return find_config_file(dir)
 end
 

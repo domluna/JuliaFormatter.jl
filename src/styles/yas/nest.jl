@@ -125,7 +125,11 @@ function n_tuple!(
         fst.indent = s.line_offset
     end
     nodes = fst.nodes::Vector
-    length(nodes) > 0 && is_opener(fst[1]) && (fst.indent += 1)
+    if length(nodes) > 0 && is_opener(fst[1])
+        (fst.indent += 1)
+    else
+        false
+    end
 
     f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
 

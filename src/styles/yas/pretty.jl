@@ -69,7 +69,11 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
@@ -132,7 +136,11 @@ function p_curly(
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"{", childs)::Int
@@ -170,7 +178,11 @@ function p_braces(
 )
     style = getstyle(ys)
     t = FST(Braces, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
     from_typedef = ctx.from_typedef
 
     childs = children(cst)
@@ -211,7 +223,11 @@ function p_bracescat(
 )
     style = getstyle(ys)
     t = FST(BracesCat, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
     from_typedef = ctx.from_typedef
 
     childs = children(cst)
@@ -252,7 +268,11 @@ function p_tuple(
 )
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     nargs = length(get_args(cst))
     childs = children(cst)
@@ -299,7 +319,11 @@ function p_invisbrackets(
 )
     style = getstyle(ys)
     t = FST(Brackets, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     args = get_args(cst)
     if length(args) > 0
@@ -331,7 +355,11 @@ function p_call(
 )
     style = getstyle(ys)
     t = FST(Call, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     can_separate_kwargs = ctx.can_separate_kwargs
@@ -404,7 +432,11 @@ function p_vect(
 )
     style = getstyle(ys)
     t = FST(Vect, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)::Int
@@ -443,7 +475,11 @@ function p_vcat(
 )
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)::Int
@@ -529,7 +565,11 @@ function p_ref(
 )
     style = getstyle(ys)
     t = FST(RefN, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(n -> kind(n) === K"[", childs)::Int
@@ -571,7 +611,11 @@ function p_comprehension(
 )
     style = getstyle(ys)
     t = FST(Comprehension, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     idx = findfirst(
@@ -623,7 +667,11 @@ function p_macrocall(
 )
     style = getstyle(ys)
     t = FST(MacroCall, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     has_closer = is_closer(childs[end])
@@ -690,7 +738,11 @@ function p_whereopcall(
 )
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     from_typedef = ctx.from_typedef
 
@@ -699,8 +751,11 @@ function p_whereopcall(
     curly_ctx = if where_idx === nothing
         from_typedef
     else
-        from_typedef ||
+        if !(from_typedef)
             any(c -> kind(c) in KSet"curly bracescat braces", childs[(where_idx+1):end])
+        else
+            true
+        end
     end
     add_braces = s.opts.surround_whereop_typeparameters && !curly_ctx
 
@@ -772,7 +827,11 @@ function p_generator(
 )
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     has_for_kw = false
 
@@ -812,8 +871,11 @@ function p_generator(
             add_node!(t, n, s; join_lines = true)
         end
 
-        has_for_kw &&
+        if has_for_kw
             eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
+        else
+            false
+        end
     end
 
     t

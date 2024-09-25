@@ -75,7 +75,11 @@ function p_return(
 )
     style = getstyle(bs)
     t = FST(Return, nspaces(s))
-    !haschildren(cst) && return t
+    if !haschildren(cst)
+        return t
+    else
+        false
+    end
 
     childs = children(cst)
     n_args = 0

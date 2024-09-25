@@ -35,18 +35,30 @@ should return a value other than `nothing`.
 """
 function walk(f::Function, fst::FST, s::State)
     stop = f(fst, s)
-    (stop !== nothing || is_leaf(fst)) && return
+    if (stop !== nothing || is_leaf(fst))
+        return
+    else
+        false
+    end
     walk(f, fst.nodes::Vector, s, fst.indent)
 end
 
 function increment_line_offset!(fst::FST, s::State)
-    is_leaf(fst) || return
+    if !(is_leaf(fst))
+        return
+    else
+        true
+    end
     s.line_offset += length(fst)
     return nothing
 end
 
 function add_indent!(fst::FST, s::State, indent::Int)
-    indent == 0 && return
+    if indent == 0
+        return
+    else
+        false
+    end
     f = (fst::FST, _::State) -> begin
         fst.indent += indent
         return nothing
@@ -71,7 +83,11 @@ end
 function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
     for (i, ind) in enumerate(nl_inds)
         fst[ind] = Whitespace(fst[ind].len)
-        i == length(nl_inds) || continue
+        if !(i == length(nl_inds))
+            continue
+        else
+            true
+        end
         pn = fst[ind-1]
         if pn.typ === TRAILINGCOMMA
             pn.val = ""
@@ -85,9 +101,17 @@ end
 
 function nl_to_ws!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
-    length(nl_inds) > 0 || return
+    if !(length(nl_inds) > 0)
+        return
+    else
+        true
+    end
     margin = s.line_offset + fst.extra_margin + length(fst)
-    margin <= s.opts.margin && nl_to_ws!(fst, nl_inds)
+    if margin <= s.opts.margin
+        nl_to_ws!(fst, nl_inds)
+    else
+        false
+    end
     return
 end
 
@@ -123,7 +147,11 @@ function unnest!(style::AbstractStyle, fst::FST, s::State; dedent::Bool)
         s.line_offset += length(fst)
     end
 
-    dedent && dedent!(style, fst, s)
+    if dedent
+        dedent!(style, fst, s)
+    else
+        false
+    end
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
@@ -354,7 +382,11 @@ function find_optimal_nest_placeholders(
                 fits &= initial_offset + dp[first(s), last(s)] <= max_margin
             end
         end
-        fits && break
+        if fits
+            break
+        else
+            false
+        end
     end
     # @info "segments" segments placeholder_inds
 

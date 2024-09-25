@@ -71,7 +71,11 @@ function format_docstring(style::AbstractStyle, state::State, text::AbstractStri
             if index != 1
                 num_spaces = 0
                 for c in line
-                    isspace(c) || break
+                    if !(isspace(c))
+                        break
+                    else
+                        true
+                    end
                     num_spaces += 1
                 end
                 # if the line is only spaces, it only counts if it is the last line

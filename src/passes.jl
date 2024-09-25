@@ -53,7 +53,11 @@ function flatten_conditionalopcall(fst::FST)
 end
 
 function flatten_fst!(fst::FST)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    else
+        false
+    end
     for n in fst.nodes::Vector{FST}
         if is_leaf(n)
             continue
@@ -78,7 +82,11 @@ end
 Rewrites `x |> f` to `f(x)`.
 """
 function pipe_to_function_call_pass!(fst::FST)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    else
+        false
+    end
 
     # the RHS must be a valid type to apply a function call.
     if op_kind(fst) === K"|>" && (fst[end].typ !== PUNCTUATION)
@@ -162,9 +170,16 @@ end
 
 function import_to_usings(fst::FST, s::State)
     nodes = fst.nodes::Vector{FST}
-    findfirst(n -> is_colon(n) || n.typ === As, nodes) === nothing || return FST[]
-    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
+    if !(findfirst(n -> is_colon(n) || n.typ === As, nodes) === nothing)
         return FST[]
+    else
+        true
+    end
+    if !(findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing)
+        return FST[]
+    else
+        true
+    end
 
     # handle #723 "import ..f" should not become "using ..f: f"
     if length(nodes) == 3 && nodes[3].typ === ImportPath && length(nodes[3].nodes) > 1
@@ -205,7 +220,11 @@ Annotates fields in a type definitions with `::Any` if
 no type annotation is provided.
 """
 function annotate_typefields_with_any!(fst::FST, s::State)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    else
+        false
+    end
     for (i, n) in enumerate(fst.nodes::Vector{FST})
         if n.typ === IDENTIFIER
             nn = FST(Binary, n.indent)
@@ -252,7 +271,11 @@ function short_to_long_function_def!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    (fst[1].typ !== Call && fst[1].typ !== Where) && return false
+    if (fst[1].typ !== Call && fst[1].typ !== Where)
+        return false
+    else
+        false
+    end
 
     for i in (length(lineage)-1):-1:1
         parent = lineage[i]
@@ -305,7 +328,11 @@ function short_to_long_function_def!(
         #
         # find Block node in fs[tend]
         idx = findfirst(n -> n.typ === Block, fst[end].nodes)
-        idx === nothing && return false
+        if idx === nothing
+            return false
+        else
+            false
+        end
         bnode = fst[end][idx]
         add_indent!(bnode, s, -s.opts.indent)
         add_node!(funcdef, bnode, s; max_padding = s.opts.indent)
@@ -324,7 +351,11 @@ function short_to_long_function_def!(
     end
     add_indent!(funcdef[end], s, s.opts.indent)
 
-    s.opts.always_use_return && prepend_return!(funcdef[end], s)
+    if s.opts.always_use_return
+        prepend_return!(funcdef[end], s)
+    else
+        false
+    end
 
     # end
     kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
@@ -356,16 +387,32 @@ f(arg1, arg2) = body
 """
 function long_to_short_function_def!(fst::FST, s::State)
     nodes = fst.nodes::Vector{FST}
-    any(is_comment, nodes) && return false
+    if any(is_comment, nodes)
+        return false
+    else
+        false
+    end
 
     I = findall(n -> n.typ === Block, nodes)
-    length(I) == 1 || return false  # function must have a single block
+    if !(length(I) == 1)
+        return false  # function must have a single block
+    else  # function must have a single block
+        true  # function must have a single block
+    end  # function must have a single block
 
     block = nodes[first(I)]
-    length(block.nodes::Vector{FST}) == 1 || return false  # block must have a single statement
+    if !(length(block.nodes::Vector{FST}) == 1)
+        return false  # block must have a single statement
+    else  # block must have a single statement
+        true  # block must have a single statement
+    end  # block must have a single statement
 
     I = findfirst(n -> n.typ === Call || n.typ === Where, nodes)
-    I === nothing && return false
+    if I === nothing
+        return false
+    else
+        false
+    end
     lhs = nodes[I]
 
     rhs = first(block.nodes)
@@ -376,7 +423,11 @@ function long_to_short_function_def!(fst::FST, s::State)
 
     # length(Whitespace(1) * "=" * Whitespace(1)) = 3
     line_margin = s.line_offset + length(lhs) + 3 + length(rhs) + fst.extra_margin
-    line_margin > s.opts.margin && return false
+    if line_margin > s.opts.margin
+        return false
+    else
+        false
+    end
 
     if rhs.indent > 0
         add_indent!(rhs, s, -s.opts.indent)
@@ -499,11 +550,27 @@ end
 ```
 """
 function prepend_return!(fst::FST, s::State)
-    fst.typ === Block || return
-    length(fst.nodes::Vector{FST}) == 0 && return
+    if !(fst.typ === Block)
+        return
+    else
+        true
+    end
+    if length(fst.nodes::Vector{FST}) == 0
+        return
+    else
+        false
+    end
     ln = fst[end]
-    is_block(ln) && return
-    ln.typ in (Return, MacroCall, MacroBlock, MacroStr) && return
+    if is_block(ln)
+        return
+    else
+        false
+    end
+    if ln.typ in (Return, MacroCall, MacroBlock, MacroStr)
+        return
+    else
+        false
+    end
     if length(fst.nodes::Vector{FST}) > 2 &&
        (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
         # The last node is has a docstring prior to it so a return should not be prepended
@@ -513,7 +580,11 @@ function prepend_return!(fst::FST, s::State)
     # fix #426
     # don't add return if the last node is a throw call. throw is a built-in function
     # that shouldn't be overwritten for over purposes so this should be fine.
-    ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw" && return
+    if ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw"
+        return
+    else
+        false
+    end
 
     # check to see if the last node already has a return
     found_return = false
@@ -526,7 +597,11 @@ function prepend_return!(fst::FST, s::State)
     lo = s.line_offset
     walk(f, ln, s)
     s.line_offset = lo
-    found_return && return
+    if found_return
+        return
+    else
+        false
+    end
 
     ret = FST(Return, fst.indent)
     kw = FST(KEYWORD, -1, ln.startline, ln.startline, "return")
@@ -667,7 +742,11 @@ a = f(; x = 1, y = 2)
 function separate_kwargs_with_semicolon!(fst::FST)
     nodes = fst.nodes::Vector{FST}
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    isnothing(kw_idx) && return
+    if isnothing(kw_idx)
+        return
+    else
+        false
+    end
     sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg
     comma_idx = findlast(is_comma, nodes[1:(kw_idx-1)])
@@ -711,7 +790,11 @@ end
 Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
 """
 function remove_superfluous_whitespace!(fst::FST)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    else
+        false
+    end
     nodes = fst.nodes::Vector{FST}
     for (i, n) in enumerate(nodes)
         if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
@@ -824,7 +907,11 @@ function _short_circuit_to_if!(fst::FST, s::State)
 end
 
 function short_circuit_to_if_pass!(fst::FST, s::State)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    else
+        false
+    end
     for n in fst.nodes::Vector{FST}
         if is_leaf(n)
             continue
