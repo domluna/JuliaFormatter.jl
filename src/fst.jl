@@ -169,7 +169,7 @@ function show(io::IO, ::MIME"text/plain", fst::FST, indent::String = "")
 end
 
 FST(typ::FNode, indent::Int) =
-    FST(typ, -1, -1, indent, 0, "", FST[], AllowNest, 0, -1, nothing)
+    FST(typ, 0, 0, indent, 0, "", FST[], AllowNest, 0, -1, nothing)
 
 function FST(
     typ::FNode,
@@ -224,11 +224,11 @@ can_nest(fst::FST) = fst.nest_behavior in (AllowNest, AllowNestButDontRemove)
 can_remove(fst::FST) = fst.nest_behavior !== AllowNestButDontRemove
 
 Newline(; length = 0, nest_behavior = AllowNest) =
-    FST(NEWLINE, -1, -1, 0, length, "\n", (), nest_behavior, 0, -1, nothing)
-Semicolon() = FST(SEMICOLON, -1, -1, 0, 1, ";", (), AllowNest, 0, -1, nothing)
-TrailingComma() = FST(TRAILINGCOMMA, -1, -1, 0, 0, "", (), AllowNest, 0, -1, nothing)
-Whitespace(n) = FST(WHITESPACE, -1, -1, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
-Placeholder(n) = FST(PLACEHOLDER, -1, -1, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
+    FST(NEWLINE, 0, 0, 0, length, "\n", (), nest_behavior, 0, -1, nothing)
+Semicolon() = FST(SEMICOLON, 0, 0, 0, 1, ";", (), AllowNest, 0, -1, nothing)
+TrailingComma() = FST(TRAILINGCOMMA, 0, 0, 0, 0, "", (), AllowNest, 0, -1, nothing)
+Whitespace(n) = FST(WHITESPACE, 0, 0, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
+Placeholder(n) = FST(PLACEHOLDER, 0, 0, 0, n, " "^n, (), AllowNest, 0, -1, nothing)
 Notcode(startline, endline) =
     FST(NOTCODE, startline, endline, 0, 0, "", (), AllowNest, 0, -1, nothing)
 InlineComment(line) =
@@ -1113,10 +1113,10 @@ function add_node!(
         end
     end
 
-    if n.startline < t.startline || t.startline == -1
+    if n.startline < t.startline || t.startline == 0
         t.startline = n.startline
     end
-    if n.endline > t.endline || t.endline == -1
+    if n.endline > t.endline || t.endline == 0
         t.endline = n.endline
     end
 
@@ -1165,10 +1165,10 @@ function add_node!(
         end
         for nn in n.nodes
             push!(tnodes, nn)
-            if n.startline < t.startline || t.startline == -1
+            if n.startline < t.startline || t.startline == 0
                 t.startline = n.startline
             end
-            if n.endline > t.endline || t.endline == -1
+            if n.endline > t.endline || t.endline == 0
                 t.endline = n.endline
             end
         end
