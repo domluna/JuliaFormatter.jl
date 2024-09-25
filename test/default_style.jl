@@ -2638,7 +2638,8 @@
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
-        # TODO: fix this
+        # TODO: if this ends up being a issue fix it but it doesn't seem
+        # like it actually occurs in the wild.
         # str = "(a; b; c)"
         # @test fmt("(a;b;c)", 4, 100) == str
         # str = """

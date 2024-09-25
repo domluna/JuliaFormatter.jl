@@ -857,12 +857,7 @@ function p_functiondef(
             s.indent -= s.opts.indent
         elseif kind(c) === K"call"
             n = pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage)
-            add_node!(
-                t,
-                n,
-                s,
-                join_lines = true,
-            )
+            add_node!(t, n, s, join_lines = true)
         else
             add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
         end
