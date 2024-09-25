@@ -22,7 +22,7 @@ function flatten_binaryopcall(fst::FST; top = true)
     end
 
     if lhs_same_op
-        append!(nodes, flatten_binaryopcall(lhs, top = false))
+        append!(nodes, flatten_binaryopcall(lhs; top = false))
     else
         flatten_fst!(lhs)
         push!(nodes, lhs)
@@ -31,7 +31,7 @@ function flatten_binaryopcall(fst::FST; top = true)
     append!(nodes, fst[2:(idx-1)])
 
     if rhs_same_op
-        append!(nodes, flatten_binaryopcall(rhs, top = false))
+        append!(nodes, flatten_binaryopcall(rhs; top = false))
     else
         flatten_fst!(rhs)
         push!(nodes, rhs)
@@ -185,12 +185,12 @@ function import_to_usings(fst::FST, s::State)
         add_node!(use, FST(KEYWORD, -1, sl, el, "using"), s)
         add_node!(use, Whitespace(1), s)
 
-        add_node!(use, n, s, join_lines = true)
+        add_node!(use, n, s; join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
         colon.metadata = Metadata(K"::", false)
-        add_node!(use, colon, s, join_lines = true)
+        add_node!(use, colon, s; join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, n[end], s, join_lines = true)
+        add_node!(use, n[end], s; join_lines = true)
 
         push!(usings, use)
     end
@@ -215,12 +215,12 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             line_offset = n.line_offset + length(n)
             op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
             op.metadata = Metadata(K"::", false)
-            add_node!(nn, op, s, join_lines = true)
+            add_node!(nn, op, s; join_lines = true)
             line_offset += 2
             add_node!(
                 nn,
                 FST(IDENTIFIER, line_offset, n.startline, n.endline, "Any"),
-                s,
+                s;
                 join_lines = true,
             )
             fst[i] = nn
@@ -286,13 +286,13 @@ function short_to_long_function_def!(
     # func(a)
     # OR
     # func(a) where T
-    add_node!(funcdef, fst[1], s, join_lines = true)
+    add_node!(funcdef, fst[1], s; join_lines = true)
 
     # body
 
     # s.opts.always_use_return && prepend_return!(fst[end], s)
     if fst[end].typ === Block
-        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
+        add_node!(funcdef, fst[end], s; max_padding = s.opts.indent)
     elseif fst[end].typ === Begin
         # case where body is wrapped in a `begin` block
         # which becomes superfluous when converted to a
@@ -308,7 +308,7 @@ function short_to_long_function_def!(
         idx === nothing && return false
         bnode = fst[end][idx]
         add_indent!(bnode, s, -s.opts.indent)
-        add_node!(funcdef, bnode, s, max_padding = s.opts.indent)
+        add_node!(funcdef, bnode, s; max_padding = s.opts.indent)
     else
         # ```
         # function
@@ -320,7 +320,7 @@ function short_to_long_function_def!(
         # a `Block` node ensures the indent is correct.
         bl = FST(Block, fst[end].indent)
         add_node!(bl, fst[end], s)
-        add_node!(funcdef, bl, s, max_padding = s.opts.indent)
+        add_node!(funcdef, bl, s; max_padding = s.opts.indent)
     end
     add_indent!(funcdef[end], s, s.opts.indent)
 
@@ -461,17 +461,17 @@ function binaryop_to_whereop!(fst::FST, s::State)
         if n.typ === Where
             break
         end
-        add_node!(binop, n, s, join_lines = true)
+        add_node!(binop, n, s; join_lines = true)
     end
     # # foo(a::A)::R gets the "R"
-    add_node!(binop, oldwhereop[1], s, join_lines = true)
+    add_node!(binop, oldwhereop[1], s; join_lines = true)
 
     whereop = FST(Where, fst[1].indent)
     add_node!(whereop, binop, s)
 
     # "foo(a::A)::R where A"
     for n in oldwhereop[2:end]
-        add_node!(whereop, n, s, join_lines = true)
+        add_node!(whereop, n, s; join_lines = true)
     end
 
     fst[1] = whereop
@@ -592,9 +592,9 @@ end
 function conditional_to_if_block!(fst::FST, s::State, top::Bool)
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
-    add_node!(t, kw, s, max_padding = 0)
-    add_node!(t, Whitespace(1), s, join_lines = true)
-    add_node!(t, fst[1], s, join_lines = true)
+    add_node!(t, kw, s; max_padding = 0)
+    add_node!(t, Whitespace(1), s; join_lines = true)
+    add_node!(t, fst[1], s; join_lines = true)
 
     nodes = fst.nodes::Vector{FST}
     idx1 = findfirst(n -> n.typ === OPERATOR && n.val == "?", nodes)::Int
@@ -610,7 +610,7 @@ function conditional_to_if_block!(fst::FST, s::State, top::Bool)
         end
         add_node!(block1, n, s)
     end
-    add_node!(t, block1, s, max_padding = s.opts.indent)
+    add_node!(t, block1, s; max_padding = s.opts.indent)
 
     block2 = FST(Block, fst.indent)
     padding = 0
@@ -620,14 +620,14 @@ function conditional_to_if_block!(fst::FST, s::State, top::Bool)
         block2.indent += s.opts.indent
         padding = s.opts.indent
         kw = FST(KEYWORD, 0, 0, -1, "else")
-        add_node!(t, kw, s, max_padding = 0)
+        add_node!(t, kw, s; max_padding = 0)
     end
     add_node!(block2, fst[end], s)
-    add_node!(t, block2, s, max_padding = 0)
+    add_node!(t, block2, s; max_padding = 0)
 
     if top
         kw = FST(KEYWORD, 0, 0, -1, "end")
-        add_node!(t, kw, s, max_padding = 0)
+        add_node!(t, kw, s; max_padding = 0)
     end
 
     fst.typ = t.typ
@@ -730,8 +730,8 @@ function _short_circuit_to_if!(fst::FST, s::State)
     # change it into an if
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, "if")
-    add_node!(t, kw, s, max_padding = 0)
-    add_node!(t, Whitespace(1), s, join_lines = true)
+    add_node!(t, kw, s; max_padding = 0)
+    add_node!(t, Whitespace(1), s; join_lines = true)
 
     nodes = fst.nodes::Vector{FST}
     idx = findlast(n -> n.typ === OPERATOR && (n.val == "||" || n.val == "&&"), nodes)::Int
@@ -748,45 +748,45 @@ function _short_circuit_to_if!(fst::FST, s::State)
             add_node!(
                 brackets,
                 FST(PUNCTUATION, -1, fst.startline, fst.startline, "("),
-                s,
+                s;
                 join_lines = true,
             )
             add_node!(brackets, Placeholder(0), s)
             # inner
             lhs = FST(Chain, fst.indent)
             for n in nodes[1:(idx-1)]
-                add_node!(lhs, n, s, join_lines = true)
+                add_node!(lhs, n, s; join_lines = true)
             end
             # remove extra ws
             if lhs[end].typ === WHITESPACE
                 lhs[end] = Whitespace(0)
             end
 
-            add_node!(brackets, lhs, s, join_lines = true)
+            add_node!(brackets, lhs, s; join_lines = true)
             add_node!(brackets, Placeholder(0), s)
             add_node!(
                 brackets,
                 FST(PUNCTUATION, -1, nodes[idx-2].startline, nodes[idx-2].startline, ")"),
-                s,
+                s;
                 join_lines = true,
             )
-            add_node!(call, brackets, s, join_lines = true)
+            add_node!(call, brackets, s; join_lines = true)
         else
-            add_node!(call, fst[1], s, join_lines = true)
+            add_node!(call, fst[1], s; join_lines = true)
         end
 
-        add_node!(t, call, s, join_lines = true)
+        add_node!(t, call, s; join_lines = true)
     else
         # from idx-1 go backwards until we find a node that's not a
         lhs = FST(Chain, fst.indent)
         for n in nodes[1:(idx-1)]
-            add_node!(lhs, n, s, join_lines = true)
+            add_node!(lhs, n, s; join_lines = true)
         end
         # remove extra ws
         if lhs[end].typ === WHITESPACE
             lhs[end] = Whitespace(0)
         end
-        add_node!(t, lhs, s, join_lines = true)
+        add_node!(t, lhs, s; join_lines = true)
     end
 
     block1 = FST(Block, fst.indent + s.opts.indent)
@@ -799,10 +799,10 @@ function _short_circuit_to_if!(fst::FST, s::State)
         end
         add_node!(block1, n, s)
     end
-    add_node!(t, block1, s, max_padding = s.opts.indent)
+    add_node!(t, block1, s; max_padding = s.opts.indent)
 
     kw = FST(KEYWORD, 0, 0, -1, "end")
-    add_node!(t, kw, s, max_padding = 0)
+    add_node!(t, kw, s; max_padding = 0)
 
     fst.typ = t.typ
     fst.nodes = t.nodes

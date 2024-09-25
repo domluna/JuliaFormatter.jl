@@ -94,7 +94,7 @@ function print_tree(io::IOBuffer, fst::FST, s::State)
     if (fst.typ === Binary || fst.typ === Conditional || fst.typ === ModuleN)
         notcode_indent = fst.indent
     end
-    print_tree(io, fst.nodes::Vector{FST}, s, fst.indent, notcode_indent = notcode_indent)
+    print_tree(io, fst.nodes::Vector{FST}, s, fst.indent; notcode_indent = notcode_indent)
 end
 
 function print_tree(

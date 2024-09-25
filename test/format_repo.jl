@@ -9,8 +9,8 @@
         format(sandbox_dir)
 
         # follow up formats should be the same
-        @test format(sandbox_dir, join_lines_based_on_source = true) == true
-        @test format(sandbox_dir, join_lines_based_on_source = true, margin = 10_000) ==
+        @test format(sandbox_dir; join_lines_based_on_source = true) == true
+        @test format(sandbox_dir; join_lines_based_on_source = true, margin = 10_000) ==
               true
     finally
         try

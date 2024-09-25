@@ -166,14 +166,14 @@ function p_macrocall(
         override = (i == first_arg_idx) || kind(a) === K")"
 
         if JuliaSyntax.is_macro_name(a) || kind(a) === K"("
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
             add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
             if n.typ === MacroBlock && t[end].typ === WHITESPACE
                 t[end] = Placeholder(length(t[end].val))

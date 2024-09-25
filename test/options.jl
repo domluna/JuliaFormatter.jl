@@ -31,8 +31,8 @@
 
         # hello
         """
-        @test fmt(str_, remove_extra_newlines = true) == str
-        @test fmt(str_, remove_extra_newlines = false) == str_
+        @test fmt(str_; remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = false) == str_
 
         str_ = """
         module M
@@ -66,14 +66,14 @@
 
         end
         """
-        @test fmt(str_, remove_extra_newlines = true) == str
-        @test fmt(str_, remove_extra_newlines = false) == str_
+        @test fmt(str_; remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = false) == str_
     end
 
     @testset "whitespace in typedefs" begin
         str_ = "Foo{A,B,C}"
         str = "Foo{A, B, C}"
-        @test fmt(str_, whitespace_typedefs = true) == str
+        @test fmt(str_; whitespace_typedefs = true) == str
 
         str_ = """
         struct Foo{A<:Bar,Union{B<:Fizz,C<:Buzz},<:Any}
@@ -83,7 +83,7 @@
         struct Foo{A <: Bar, Union{B <: Fizz, C <: Buzz}, <:Any}
             a::A
         end"""
-        @test fmt(str_, whitespace_typedefs = true) == str
+        @test fmt(str_; whitespace_typedefs = true) == str
 
         str_ = """
         function foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z}
@@ -95,51 +95,51 @@
             body
         end
         """
-        @test fmt(str_, whitespace_typedefs = true) == str
+        @test fmt(str_; whitespace_typedefs = true) == str
 
         str_ = "foo() where {A,B,C{D,E,F{G,H,I},J,K},L,M<:N,Y>:Z} = body"
         str = "foo() where {A, B, C{D, E, F{G, H, I}, J, K}, L, M <: N, Y >: Z} = body"
-        @test fmt(str_, whitespace_typedefs = true) == str
+        @test fmt(str_; whitespace_typedefs = true) == str
     end
 
     @testset "whitespace ops in indices" begin
         str = "arr[1 + 2]"
-        @test fmt("arr[1+2]", m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt("arr[1+2]"; m = 1, whitespace_ops_in_indices = true) == str
 
         str = "arr[(1 + 2)]"
-        @test fmt("arr[(1+2)]", m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt("arr[(1+2)]"; m = 1, whitespace_ops_in_indices = true) == str
 
         str_ = "arr[1:2*num_source*num_dump-1]"
         str = "arr[1:(2 * num_source * num_dump - 1)]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
 
         str_ = "arr[2*num_source*num_dump-1:1]"
         str = "arr[(2 * num_source * num_dump - 1):1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
 
         str = "arr[(a + b):c]"
-        @test fmt("arr[(a+b):c]", m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt("arr[(a+b):c]"; m = 1, whitespace_ops_in_indices = true) == str
 
         str = "arr[a in b]"
-        @test fmt(str, m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt(str; m = 1, whitespace_ops_in_indices = true) == str
 
         str_ = "a:b+c:d-e"
         str = "a:(b+c):(d-e)"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
 
         str_ = "s[m+i+1]"
         # issue 180
         str = "s[m+i+1]"
-        @test fmt(str, m = 1, whitespace_ops_in_indices = false) == str
+        @test fmt(str; m = 1, whitespace_ops_in_indices = false) == str
 
         str = "s[m + i + 1]"
-        @test fmt(str_, m = 1, whitespace_ops_in_indices = true) == str
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
     end
 
     @testset "rewrite import to using" begin
         str_ = "import A"
         str = "using A: A"
-        @test fmt(str_, import_to_using = true) == str
+        @test fmt(str_; import_to_using = true) == str
 
         str_ = """
         import A,
@@ -150,7 +150,7 @@
 
         using B: B
         using C: C"""
-        @test fmt(str_, import_to_using = true) == str
+        @test fmt(str_; import_to_using = true) == str
 
         str_ = """
         import A,
@@ -161,7 +161,7 @@
         # comment
         using B: B
         using C: C"""
-        @test fmt(str_, import_to_using = true) == str
+        @test fmt(str_; import_to_using = true) == str
 
         str_ = """
         import A, # inline
@@ -172,7 +172,7 @@
         # comment
         using B: B
         using C: C # inline"""
-        @test fmt(str_, import_to_using = true) == str
+        @test fmt(str_; import_to_using = true) == str
 
         str_ = """
         import ..A, .B, ...C"""
@@ -180,25 +180,25 @@
         using ..A: A
         using .B: B
         using ...C: C"""
-        @test fmt(str_, import_to_using = true) == str
-        t = run_pretty(str_, opts = Options(margin = 80, import_to_using = true))
+        @test fmt(str_; import_to_using = true) == str
+        t = run_pretty(str_; opts = Options(; margin = 80, import_to_using = true))
         @test t.len == 13
 
         # issue 232
         str = """import A.b"""
-        @test fmt(str, import_to_using = true) == str
+        @test fmt(str; import_to_using = true) == str
 
         str = """import A.b: c"""
-        @test fmt(str, import_to_using = true) == str
+        @test fmt(str; import_to_using = true) == str
 
         str = """import A.b.c"""
-        @test fmt(str, import_to_using = true) == str
+        @test fmt(str; import_to_using = true) == str
 
         str = """import A.b.c: d"""
-        @test fmt(str, import_to_using = true) == str
+        @test fmt(str; import_to_using = true) == str
 
         str = "import ..A"
-        @test fmt(str, import_to_using = true) == str
+        @test fmt(str; import_to_using = true) == str
     end
 
     @testset "always convert `=` to `in` (for loops)" begin
@@ -210,8 +210,8 @@
         for i in 1:n
             println(i)
         end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = """
         for i = I1, j in I2
@@ -221,8 +221,8 @@
         for i in I1, j in I2
             println(i, j)
         end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = """
         for i = 1:30, j = 100:-2:1
@@ -232,49 +232,49 @@
         for i in 1:30, j in 100:-2:1
             println(i, j)
         end"""
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
-        @test fmt(str_, always_for_in = nothing) == str_
-        @test fmt(str, always_for_in = nothing) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
+        @test fmt(str_; always_for_in = nothing) == str_
+        @test fmt(str; always_for_in = nothing) == str
 
         str_ = "[(i,j) for i=I1,j=I2]"
         str = "[(i, j) for i in I1, j in I2]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = "((i,j) for i=I1,j=I2)"
         str = "((i, j) for i in I1, j in I2)"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = "[i for i = 1:10 if i == 2]"
         str = "[i for i in 1:10 if i == 2]"
-        @test fmt(str_, always_for_in = true) == str
-        @test fmt(str, always_for_in = true) == str
+        @test fmt(str_; always_for_in = true) == str
+        @test fmt(str; always_for_in = true) == str
 
         str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
         str = "[(i, j) for i in 1:2:10, j in 100:-1:10]"
-        @test yasfmt(str_, always_for_in = true) == str
-        @test yasfmt(str, always_for_in = true) == str
+        @test yasfmt(str_; always_for_in = true) == str
+        @test yasfmt(str; always_for_in = true) == str
 
         str_ = "[i for i = 1:10 if i == 2]"
         str = "[i for i in 1:10 if i == 2]"
-        @test yasfmt(str_, always_for_in = true) == str
-        @test yasfmt(str, always_for_in = true) == str
+        @test yasfmt(str_; always_for_in = true) == str
+        @test yasfmt(str; always_for_in = true) == str
     end
 
     @testset "rewrite x |> f to f(x)" begin
-        @test fmt("x |> f", pipe_to_function_call = true) == "f(x)"
+        @test fmt("x |> f"; pipe_to_function_call = true) == "f(x)"
 
         str_ = "var = func1(arg1) |> func2 |> func3 |> func4 |> func5"
         str = "var = func5(func4(func3(func2(func1(arg1)))))"
-        @test fmt(str_, pipe_to_function_call = true) == str
-        @test fmt(str_, pipe_to_function_call = true, margin = 1) == fmt(str)
+        @test fmt(str_; pipe_to_function_call = true) == str
+        @test fmt(str_; pipe_to_function_call = true, margin = 1) == fmt(str)
     end
 
     @testset "function shortdef to longdef" begin
@@ -283,38 +283,38 @@
         function foo(a)
             bodybodybody
         end"""
-        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
-        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+        @test fmt(str_, 4, length(str_); short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1; short_to_long_function_def = true) == str
 
         str_ = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
         str = """
         function foo(a::T) where {T}
             bodybodybodybodybodybodyb
         end"""
-        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
-        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+        @test fmt(str_, 4, length(str_); short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_) - 1; short_to_long_function_def = true) == str
 
         str_ = "foo(a::T)::R where {T} = bodybodybodybodybodybodybody"
         str = """
         function foo(a::T)::R where {T}
             bodybodybodybodybodybodybody
         end"""
-        @test fmt(str_, 4, length(str_), short_to_long_function_def = true) == str_
+        @test fmt(str_, 4, length(str_); short_to_long_function_def = true) == str_
         @test fmt(
             str_,
             4,
-            length(str_),
+            length(str_);
             short_to_long_function_def = true,
             force_long_function_def = true,
         ) == str
         @test fmt(
             str_,
             4,
-            length(str_),
+            length(str_);
             short_to_long_function_def = false,
             force_long_function_def = false,
         ) == str_
-        @test fmt(str_, 4, length(str_) - 1, short_to_long_function_def = true) == str
+        @test fmt(str_, 4, length(str_) - 1; short_to_long_function_def = true) == str
     end
 
     @testset "function longdef to shortdef" begin
@@ -323,38 +323,38 @@
             bodybodybody
         end"""
         str = "foo(a) = bodybodybody"
-        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
-        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt(str_, 4, length(str) - 1; long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str); long_to_short_function_def = true) == str
 
         str_ = """
         function foo(a::T) where {T}
             bodybodybodybodybodybodyb
         end"""
         str = "foo(a::T) where {T} = bodybodybodybodybodybodyb"
-        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
-        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt(str_, 4, length(str) - 1; long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str); long_to_short_function_def = true) == str
 
         str_ = """
         function foo(a::T)::R where {T}
             bodybodybodybodybodybodybody
         end"""
         str = "foo(a::T)::R where {T} = bodybodybodybodybodybodybody"
-        @test fmt(str_, 4, length(str) - 1, long_to_short_function_def = true) == str_
-        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt(str_, 4, length(str) - 1; long_to_short_function_def = true) == str_
+        @test fmt(str_, 4, length(str); long_to_short_function_def = true) == str
 
         str_ = """
         function foo(a)
             return a + 1
         end"""
         str = "foo(a) = a + 1"
-        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt(str_, 4, length(str); long_to_short_function_def = true) == str
 
         str = """
         function foo()
             expr1
             expr2
         end"""
-        @test fmt(str, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt(str, 4, length(str); long_to_short_function_def = true) == str
 
         str_ = """
         function foo(a)
@@ -372,8 +372,8 @@
             else
                 nothing
             end"""
-        @test fmt1(str_, 4, length(str), long_to_short_function_def = true) == str
-        @test fmt(str_, 4, length(str), long_to_short_function_def = true) == str
+        @test fmt1(str_, 4, length(str); long_to_short_function_def = true) == str
+        @test fmt(str_, 4, length(str); long_to_short_function_def = true) == str
     end
 
     @testset "always use return" begin
@@ -385,7 +385,7 @@
         @test fmt(
             str_,
             4,
-            length(str_) - 1,
+            length(str_) - 1;
             short_to_long_function_def = true,
             always_use_return = true,
         ) == str
@@ -400,7 +400,7 @@
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+        @test fmt(str_, 4, length(str_) - 1; always_use_return = true) == str
 
         str_ = """
         macro foo()
@@ -412,7 +412,7 @@
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+        @test fmt(str_, 4, length(str_) - 1; always_use_return = true) == str
 
         str_ = """
         map(arg1, arg2) do x, y
@@ -424,19 +424,19 @@
             expr1
             return expr2
         end"""
-        @test fmt(str_, 4, length(str_) - 1, always_use_return = true) == str
+        @test fmt(str_, 4, length(str_) - 1; always_use_return = true) == str
 
         str = """
         function foo()
             @macrocall(expr2)
         end"""
-        @test fmt(str, 4, 92, always_use_return = true) == str
+        @test fmt(str, 4, 92; always_use_return = true) == str
 
         str = """
         function foo()
             @macroblock expr2
         end"""
-        @test fmt(str, 4, 92, always_use_return = true) == str
+        @test fmt(str, 4, 92; always_use_return = true) == str
 
         str = """
         function foo()
@@ -444,7 +444,7 @@
                 println(i)
             end
         end"""
-        @test fmt(str, 4, 92, always_use_return = true) == str
+        @test fmt(str, 4, 92; always_use_return = true) == str
 
         str = """
         function f(a)
@@ -454,7 +454,7 @@
                 return 1
             end
         end"""
-        @test fmt(str, 4, 92, always_use_return = true) == str
+        @test fmt(str, 4, 92; always_use_return = true) == str
 
         @testset "426" begin
             # throw function heuristic
@@ -465,7 +465,7 @@
                 throw(ArgumentError("x must be 1 or 2"))
             end
             """
-            @test fmt(str, always_use_return = true) == str
+            @test fmt(str; always_use_return = true) == str
         end
 
         @testset "507" begin
@@ -475,39 +475,39 @@
                 (1 + 1; return 2)
             end
             """
-            @test fmt(str, always_use_return = true) == str
+            @test fmt(str; always_use_return = true) == str
         end
     end
 
     @testset "whitespace in keyword arguments" begin
         str_ = "f(; a = b)"
         str = "f(; a=b)"
-        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
+        @test fmt(str_, 4, 92; whitespace_in_kwargs = false) == str
 
         str = "f(; a!) = a!"
-        @test fmt(str, 4, 92, whitespace_in_kwargs = false) == str
+        @test fmt(str, 4, 92; whitespace_in_kwargs = false) == str
 
         # issue 242
         str_ = "f(a, b! = 1; c! = 2, d = 3, e! = 4)"
         str = "f(a, (b!)=1; (c!)=2, d=3, (e!)=4)"
-        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
+        @test fmt(str_, 4, 92; whitespace_in_kwargs = false) == str
 
         str_ = "( k1 =v1,  k2! = v2)"
         str = "(k1=v1, (k2!)=v2)"
-        @test fmt(str_, 4, 80, style = YASStyle(), whitespace_in_kwargs = false) == str
-        @test fmt(str_, 4, 80, style = DefaultStyle(), whitespace_in_kwargs = false) == str
+        @test fmt(str_, 4, 80; style = YASStyle(), whitespace_in_kwargs = false) == str
+        @test fmt(str_, 4, 80; style = DefaultStyle(), whitespace_in_kwargs = false) == str
 
         str_ = "( k1 =v1,  k2! = v2)"
         str = "(k1 = v1, k2! = v2)"
-        @test fmt(str_, 4, 80, style = YASStyle(), whitespace_in_kwargs = true) == str
-        @test fmt(str_, 4, 80, style = DefaultStyle(), whitespace_in_kwargs = true) == str
+        @test fmt(str_, 4, 80; style = YASStyle(), whitespace_in_kwargs = true) == str
+        @test fmt(str_, 4, 80; style = DefaultStyle(), whitespace_in_kwargs = true) == str
 
         str_ = "(; g = >=(1))"
         str = "(; g=(>=(1)))"
-        @test fmt(str_, 4, 92, whitespace_in_kwargs = false) == str
+        @test fmt(str_, 4, 92; whitespace_in_kwargs = false) == str
 
         s = "C(; Vt=Ȳ')"
-        @test fmt(s, 4, 100, whitespace_in_kwargs = false) == s
+        @test fmt(s, 4, 100; whitespace_in_kwargs = false) == s
     end
 
     @testset "annotate untyped fields with `Any`" begin
@@ -572,23 +572,23 @@
         struct name
             arg
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         struct name
         arg
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         struct name
                 arg
             end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         t = run_pretty(
-            str_,
-            opts = Options(margin = 80, annotate_untyped_fields_with_any = false),
+            str_;
+            opts = Options(; margin = 80, annotate_untyped_fields_with_any = false),
         )
         @test length(t) == 11
 
@@ -601,23 +601,23 @@
         mutable struct name
             reallylongfieldname
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         mutable struct name
         reallylongfieldname
         end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         str_ = """
         mutable struct name
                 reallylongfieldname
             end"""
-        @test fmt(str_, annotate_untyped_fields_with_any = false) == str
+        @test fmt(str_; annotate_untyped_fields_with_any = false) == str
 
         t = run_pretty(
-            str_,
-            opts = Options(margin = 80, annotate_untyped_fields_with_any = false),
+            str_;
+            opts = Options(; margin = 80, annotate_untyped_fields_with_any = false),
         )
         @test length(t) == 23
     end
@@ -649,7 +649,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             str = """
             \"""
@@ -658,7 +658,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             str = """
             \"""doc\"""
@@ -666,7 +666,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             str = """
             "doc
@@ -675,7 +675,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             str = """
             "
@@ -684,7 +684,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             str = """
             "doc"
@@ -692,7 +692,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == normalized
+            @test fmt(str; format_docstrings = true) == normalized
 
             # test aligning to function identation
             str_ = """
@@ -706,7 +706,7 @@
                 20
             end"""
             @test fmt(str_) == str
-            @test fmt(str_, format_docstrings = true) == normalized
+            @test fmt(str_; format_docstrings = true) == normalized
 
             str = """\"""
                      doc for Foo
@@ -724,7 +724,7 @@
                 20
             end"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             # Issue 157
             str = raw"""
@@ -733,7 +733,7 @@
             \"""
             foo() = bar()"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             str = raw"""
             @doc docϵ\"""
@@ -741,23 +741,23 @@
             \"""
             foo() = bar()"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             str = raw"""@doc "doc for foo" foo"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             str = raw"""@doc \"""doc for foo\""" foo"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             str = raw"""@doc doc\"""doc for foo\""" foo()"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             str = raw"""@doc foo"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
 
             # issue 160
             str = raw"""
@@ -772,7 +772,7 @@
 
             end # module"""
             @test fmt(str) == str
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
         end
 
         @testset "with code" begin
@@ -852,7 +852,7 @@
             function test(x)
                 x
             end"""
-            @test fmt(unformatted, format_docstrings = true) == formatted
+            @test fmt(unformatted; format_docstrings = true) == formatted
         end
 
         @testset "issue 602" begin
@@ -867,7 +867,7 @@
             \"""
             foo() = nothing
             """
-            @test fmt(s, format_docstrings = true) == s
+            @test fmt(s; format_docstrings = true) == s
         end
 
         @testset "Multi-line indented code-blocks" begin
@@ -884,7 +884,7 @@
                 )
             \"""
             function fmt() end"""
-            @test fmt(unformatted, format_docstrings = true) == formatted
+            @test fmt(unformatted; format_docstrings = true) == formatted
         end
 
         @testset "Empty line in docstring" begin
@@ -898,8 +898,8 @@
             \"""
             \"""
             function test() end"""
-            @test fmt(unformatted, format_docstrings = true) == formatted
-            @test fmt(unformatted, format_docstrings = false) == unformatted
+            @test fmt(unformatted; format_docstrings = true) == formatted
+            @test fmt(unformatted; format_docstrings = false) == unformatted
         end
 
         @testset "Indented docstring" begin
@@ -921,7 +921,7 @@
                 \"""
                 indented_item
             end"""
-            @test fmt(unformatted, format_docstrings = true) == formatted
+            @test fmt(unformatted; format_docstrings = true) == formatted
 
             short = """
             begin
@@ -937,7 +937,7 @@
                 item
             end
             """
-            @test fmt(short, format_docstrings = true) == short_formatted
+            @test fmt(short; format_docstrings = true) == short_formatted
         end
 
         @testset "issue 597" begin
@@ -960,7 +960,7 @@
             \"""
             foo() = println("hello world")
             """
-            @test fmt(str_, format_docstrings = true) == str
+            @test fmt(str_; format_docstrings = true) == str
 
             s = """
             \"\"\"
@@ -975,7 +975,7 @@
             \"\"\"
             foo() = [1]
             """
-            @test fmt(str, format_docstrings = true) == str
+            @test fmt(str; format_docstrings = true) == str
         end
     end
 
@@ -988,7 +988,7 @@
         struct Foo
             a::T
         end"""
-        @test fmt(str_, align_struct_field = true) == str
+        @test fmt(str_; align_struct_field = true) == str
 
         str = """
         struct Foo
@@ -1000,8 +1000,8 @@
             a :: T
             longfieldname :: B
         end"""
-        @test fmt(str, align_struct_field = true) == str
-        @test fmt(str, align_struct_field = false) == str_
+        @test fmt(str; align_struct_field = true) == str
+        @test fmt(str; align_struct_field = false) == str_
 
         str_ = """
         Base.@kwdef struct Options
@@ -1047,7 +1047,7 @@
 
             Options() = new()
         end"""
-        @test fmt(str_, align_struct_field = true) == str
+        @test fmt(str_; align_struct_field = true) == str
 
         str_ = """
         Base.@kwdef struct Options
@@ -1071,8 +1071,8 @@
 
             Options() = new()
         end"""
-        @test fmt(str, align_struct_field = true) == str
-        @test fmt(str, align_struct_field = false) == str_
+        @test fmt(str; align_struct_field = true) == str
+        @test fmt(str; align_struct_field = false) == str_
 
         str = """
         Base.@kwdef struct Options
@@ -1099,7 +1099,7 @@
             Options() =
                 new()
         end"""
-        @test fmt(str, 4, 1, align_struct_field = true) == str
+        @test fmt(str, 4, 1; align_struct_field = true) == str
     end
 
     @testset "align assignment" begin
@@ -1113,14 +1113,14 @@
         const var2      = 2
         const var3      = 3
         const var4      = 4"""
-        @test fmt(str_, align_assignment = true) == str
+        @test fmt(str_; align_assignment = true) == str
 
         str = """
         const variable1 = 1
         const variable2 = 2
         const var3 = 3
         const var4 = 4"""
-        @test fmt(str, align_assignment = true) == str
+        @test fmt(str; align_assignment = true) == str
 
         str_ = """
         module Foo
@@ -1167,8 +1167,8 @@
         const FOO = 1
 
         end"""
-        @test fmt(str_, align_assignment = true) == str
-        @test fmt(str_, align_assignment = true, join_lines_based_on_source = true) == str
+        @test fmt(str_; align_assignment = true) == str
+        @test fmt(str_; align_assignment = true, join_lines_based_on_source = true) == str
 
         # the aligned consts will NOT be nestable
         str = """
@@ -1195,8 +1195,8 @@
             1
 
         end"""
-        @test fmt(str_, 4, 1, align_assignment = true) == str
-        @test fmt(str_, 4, 1, align_assignment = true, join_lines_based_on_source = true) ==
+        @test fmt(str_, 4, 1; align_assignment = true) == str
+        @test fmt(str_, 4, 1; align_assignment = true, join_lines_based_on_source = true) ==
               str
 
         str = """
@@ -1206,7 +1206,7 @@
         long_variable = 1
         other_var     = 2
         """
-        @test fmt(str, 4, 1, align_assignment = true) == str
+        @test fmt(str, 4, 1; align_assignment = true) == str
 
         str = """
         vcat(X::T...) where {T}         = T[X[i] for i = 1:length(X)]
@@ -1214,8 +1214,8 @@
         hcat(X::T...) where {T}         = T[X[j] for i = 1:1, j = 1:length(X)]
         hcat(X::T...) where {T<:Number} = T[X[j] for i = 1:1, j = 1:length(X)]
         """
-        @test fmt(str, 4, 1, align_assignment = true) == str
-        @test fmt(str, 4, 1, align_assignment = true, join_lines_based_on_source = true) ==
+        @test fmt(str, 4, 1; align_assignment = true) == str
+        @test fmt(str, 4, 1; align_assignment = true, join_lines_based_on_source = true) ==
               str
 
         # ambiguous ordering
@@ -1224,7 +1224,7 @@
         ms, μs = divrem(μs, 1000)
         s, ms = divrem(ms, 1000)
         """
-        @test fmt(str, align_assignment = true) == str
+        @test fmt(str; align_assignment = true) == str
 
         str = """
         run = wandb.init(
@@ -1243,11 +1243,11 @@
             anonymous = anonymous ? "allow" : "never",
         )
         """
-        @test fmt(str, 4, 100, align_assignment = true, whitespace_in_kwargs = false) == str
+        @test fmt(str, 4, 100; align_assignment = true, whitespace_in_kwargs = false) == str
         @test fmt(
             str,
             4,
-            100,
+            100;
             align_assignment = true,
             whitespace_in_kwargs = false,
             join_lines_based_on_source = true,
@@ -1265,11 +1265,11 @@
         C            = s.C
         poles        = eigvals(A - K * C)
         """
-        @test fmt(str_, 4, 100, align_assignment = true) == str
+        @test fmt(str_, 4, 100; align_assignment = true) == str
         @test fmt(
             str_,
             4,
-            100,
+            100;
             align_assignment = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1286,7 +1286,7 @@
         C             = s.C
         const polesss = eigvals(A - K * C)
         """
-        @test fmt(str_, 4, 100, align_assignment = true) == str
+        @test fmt(str_, 4, 100; align_assignment = true) == str
 
         str = """
         function stabilize(model)
@@ -1305,11 +1305,11 @@
             model
         end
         """
-        @test fmt(str, 4, 100, align_assignment = true) == str
+        @test fmt(str, 4, 100; align_assignment = true) == str
         @test fmt(
             str,
             4,
-            100,
+            100;
             align_assignment = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1330,7 +1330,7 @@
             n,
         )
         """
-        @test fmt(str_, align_conditional = true) == str
+        @test fmt(str_; align_conditional = true) == str
 
         str = """
         index =
@@ -1341,7 +1341,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1; align_conditional = true) == str
 
         str_ = """
         index = zeros(n <= typemax(Int8)  ? Int8 :   # inline
@@ -1363,11 +1363,11 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1; align_conditional = true) == str
         @test fmt(
             str_,
             4,
-            1,
+            1;
             align_conditional = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1385,11 +1385,11 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1; align_conditional = true) == str
         @test fmt(
             str_,
             4,
-            1,
+            1;
             align_conditional = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1412,7 +1412,7 @@
                 n,
             )
         """
-        @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1; align_conditional = true) == str
 
         str_ = """
         val = cst.kind === Tokens.ABSTRACT ? "abstract" :
@@ -1421,7 +1421,7 @@
         str = """
         val = cst.kind === Tokens.ABSTRACT ? "abstract" : cst.kind === Tokens.BAREMODULE ? "baremodule" : ""
         """
-        @test fmt(str_, 4, 100, align_conditional = true) == str
+        @test fmt(str_, 4, 100; align_conditional = true) == str
 
         str_ = """
         val = cst.kind === Tokens.ABSTRACT ? "abstract" :
@@ -1431,11 +1431,11 @@
         val = cst.kind === Tokens.ABSTRACT  ? "abstract" :
               cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
-        @test fmt(str_, 4, 100, align_conditional = true) == str
+        @test fmt(str_, 4, 100; align_conditional = true) == str
         @test fmt(
             str_,
             4,
-            100,
+            100;
             align_conditional = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1445,11 +1445,11 @@
             cst.kind === Tokens.ABSTRACT  ? "abstract" :
             cst.kind === Tokens.BAREMODUL ? "baremodule" : ""
         """
-        @test fmt(str_, 4, 1, align_conditional = true) == str
+        @test fmt(str_, 4, 1; align_conditional = true) == str
         @test fmt(
             str_,
             4,
-            1,
+            1;
             align_conditional = true,
             join_lines_based_on_source = true,
         ) == str
@@ -1484,7 +1484,7 @@
             "API Reference"       => "api.md",
         ]
         """
-        @test fmt(str_, 4, 100, align_pair_arrow = true) == str
+        @test fmt(str_, 4, 100; align_pair_arrow = true) == str
 
         str = """
         pages =
@@ -1501,8 +1501,8 @@
                 "API Reference"       => "api.md",
             ]
         """
-        @test fmt(str_, 4, 1, align_pair_arrow = true) == str
-        @test fmt(str_, 4, 1, align_pair_arrow = true, join_lines_based_on_source = true) ==
+        @test fmt(str_, 4, 1; align_pair_arrow = true) == str
+        @test fmt(str_, 4, 1; align_pair_arrow = true, join_lines_based_on_source = true) ==
               str
     end
 
@@ -1510,7 +1510,7 @@
         str_ = """
         E ? A : B
         """
-        @test fmt(str_, 2, 9, conditional_to_if = true) == str_
+        @test fmt(str_, 2, 9; conditional_to_if = true) == str_
 
         str = """
         if E
@@ -1519,14 +1519,14 @@
           B
         end
         """
-        @test fmt(str_, 2, 8, conditional_to_if = true) == str
+        @test fmt(str_, 2, 8; conditional_to_if = true) == str
 
         str_ = """
         begin
             E1 ? A : E2 ? B : foo(E333, E444) ? D : E
         end
         """
-        @test fmt(str_, 4, 45, conditional_to_if = true) == str_
+        @test fmt(str_, 4, 45; conditional_to_if = true) == str_
 
         str = """
         begin
@@ -1541,8 +1541,8 @@
             end
         end
         """
-        @test fmt(str_, 4, 44, conditional_to_if = true) == str
-        @test fmt(str_, 4, 26, conditional_to_if = true) == str
+        @test fmt(str_, 4, 44; conditional_to_if = true) == str
+        @test fmt(str_, 4, 26; conditional_to_if = true) == str
 
         str = """
         begin
@@ -1560,7 +1560,7 @@
             end
         end
         """
-        @test fmt(str_, 4, 25, conditional_to_if = true) == str
+        @test fmt(str_, 4, 25; conditional_to_if = true) == str
 
         str_ = """
         foobar = some_big_long_thing * 10_000 == 2 ?
@@ -1579,7 +1579,7 @@
             another_big_long_thing * 10^300 / this_things_here
         end
         """
-        @test fmt(str_, conditional_to_if = true) == str
+        @test fmt(str_; conditional_to_if = true) == str
     end
 
     @testset "normalize_line_endings" begin
@@ -1588,20 +1588,20 @@
         mixed_windows_str = "a\r\nb\r\nc\nd"
         mixed_unix_str = "a\r\nb\nc\nd"
 
-        @test fmt(windows_str, normalize_line_endings = "auto") == windows_str
-        @test fmt(unix_str, normalize_line_endings = "auto") == unix_str
-        @test fmt(mixed_windows_str, normalize_line_endings = "auto") == windows_str
-        @test fmt(mixed_unix_str, normalize_line_endings = "auto") == unix_str
+        @test fmt(windows_str; normalize_line_endings = "auto") == windows_str
+        @test fmt(unix_str; normalize_line_endings = "auto") == unix_str
+        @test fmt(mixed_windows_str; normalize_line_endings = "auto") == windows_str
+        @test fmt(mixed_unix_str; normalize_line_endings = "auto") == unix_str
 
-        @test fmt(windows_str, normalize_line_endings = "unix") == unix_str
-        @test fmt(unix_str, normalize_line_endings = "unix") == unix_str
-        @test fmt(mixed_windows_str, normalize_line_endings = "unix") == unix_str
-        @test fmt(mixed_unix_str, normalize_line_endings = "unix") == unix_str
+        @test fmt(windows_str; normalize_line_endings = "unix") == unix_str
+        @test fmt(unix_str; normalize_line_endings = "unix") == unix_str
+        @test fmt(mixed_windows_str; normalize_line_endings = "unix") == unix_str
+        @test fmt(mixed_unix_str; normalize_line_endings = "unix") == unix_str
 
-        @test fmt(windows_str, normalize_line_endings = "windows") == windows_str
-        @test fmt(unix_str, normalize_line_endings = "windows") == windows_str
-        @test fmt(mixed_windows_str, normalize_line_endings = "windows") == windows_str
-        @test fmt(mixed_unix_str, normalize_line_endings = "windows") == windows_str
+        @test fmt(windows_str; normalize_line_endings = "windows") == windows_str
+        @test fmt(unix_str; normalize_line_endings = "windows") == windows_str
+        @test fmt(mixed_windows_str; normalize_line_endings = "windows") == windows_str
+        @test fmt(mixed_unix_str; normalize_line_endings = "windows") == windows_str
     end
 
     @testset "align matrix" begin
@@ -1613,13 +1613,13 @@
             2 α b
         ]
         """
-        @test fmt(fmt(str), align_matrix = true) == str
+        @test fmt(fmt(str); align_matrix = true) == str
         str_ = """
         a = [100 300 400
              1 eee 40000
              2 α b]
         """
-        @test fmt(fmt(str), align_matrix = true, style = YASStyle()) == str_
+        @test fmt(fmt(str); align_matrix = true, style = YASStyle()) == str_
 
         # left-aligned
         str = """
@@ -1629,13 +1629,13 @@
             2   α   b
         ]
         """
-        @test fmt(str, align_matrix = true) == str
+        @test fmt(str; align_matrix = true) == str
         str_ = """
         a = [100 300 400
              1   eee 40000
              2   α   b]
         """
-        @test fmt(str, align_matrix = true, style = YASStyle()) == str_
+        @test fmt(str; align_matrix = true, style = YASStyle()) == str_
 
         # right-aligned
         str = """
@@ -1645,13 +1645,13 @@
               2    α 40000
         ]
         """
-        fmt(str, align_matrix = true) == str
+        fmt(str; align_matrix = true) == str
         str_ = """
         a = [100 3000   400
                1  eee     b
                2    α 40000]
         """
-        @test fmt(str, align_matrix = true, style = YASStyle()) == str_
+        @test fmt(str; align_matrix = true, style = YASStyle()) == str_
     end
 
     @testset "trailing commas" begin
@@ -1663,15 +1663,15 @@
         )"""
 
         str_ = "funccall(arg1, arg2, arg3)"
-        @test fmt(str_, 4, 1, trailing_comma = false) == str
+        @test fmt(str_, 4, 1; trailing_comma = false) == str
 
         # last comma is removed
 
         str_ = "funccall(arg1, arg2, arg3,)"
-        @test fmt(str_, 4, 1, trailing_comma = false) == str
+        @test fmt(str_, 4, 1; trailing_comma = false) == str
 
         str = "funccall(arg1, arg2, arg3)"
-        @test fmt(str_, trailing_comma = false) == str
+        @test fmt(str_; trailing_comma = false) == str
 
         # corner case - if the comma is removed it is no longer a tuple
         str_ = "(tuple,)"
@@ -1679,7 +1679,7 @@
         (
             tuple,
         )"""
-        @test fmt(str_, 4, 1, trailing_comma = false) == str
+        @test fmt(str_, 4, 1; trailing_comma = false) == str
 
         str = """
         funccall(
@@ -1689,7 +1689,7 @@
         )"""
 
         str_ = "funccall(arg1, arg2, arg3)"
-        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
+        @test fmt(str_, 4, 1; trailing_comma = nothing) == str
 
         # last comma is stays
         str_ = "funccall(arg1, arg2, arg3,)"
@@ -1699,8 +1699,8 @@
             arg2,
             arg3,
         )"""
-        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
-        @test fmt(str_, 4, 100, trailing_comma = nothing) == str_
+        @test fmt(str_, 4, 1; trailing_comma = nothing) == str
+        @test fmt(str_, 4, 100; trailing_comma = nothing) == str_
 
         # corner case - if the comma is removed it is no longer a tuple
         str_ = "(tuple,)"
@@ -1708,36 +1708,36 @@
         (
             tuple,
         )"""
-        @test fmt(str_, 4, 1, trailing_comma = nothing) == str
+        @test fmt(str_, 4, 1; trailing_comma = nothing) == str
     end
 
     @testset "ignore maximum width" begin
         @testset "maintain original structure" begin
             for m in (:module, :baremodule)
                 str_ = "$m M body end"
-                @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+                @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
             end
 
             str_ = "struct S body end"
             @test fmt(
-                str_,
+                str_;
                 join_lines_based_on_source = true,
                 annotate_untyped_fields_with_any = false,
-            ) == fmt(str_, annotate_untyped_fields_with_any = false)
+            ) == fmt(str_; annotate_untyped_fields_with_any = false)
 
             str_ = "mutable struct S body end"
             @test fmt(
-                str_,
+                str_;
                 join_lines_based_on_source = true,
                 annotate_untyped_fields_with_any = false,
-            ) == fmt(str_, annotate_untyped_fields_with_any = false)
+            ) == fmt(str_; annotate_untyped_fields_with_any = false)
 
             str_ = """
             abstract type
             foo
 
               end"""
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             str_ = """
             primitive type
@@ -1746,30 +1746,30 @@
             64
 
               end"""
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             str_ = """
             function foo
 
               end"""
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             for f in (:function, :macro)
                 str_ = "$f foo() body end"
-                @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+                @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
             end
 
             str_ = "try a catch e finally c end"
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "if a body1 elseif b body2 elseif c body3 else body4 end"
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "begin a;b;c end"
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
 
             str_ = "function foo() a;b;c end"
-            @test fmt(str_, join_lines_based_on_source = true) == fmt(str_)
+            @test fmt(str_; join_lines_based_on_source = true) == fmt(str_)
         end
 
         @testset "misc" begin
@@ -1778,7 +1778,7 @@
                 body
             end
             """
-            @test fmt(str, 4, 84, join_lines_based_on_source = true) == str
+            @test fmt(str, 4, 84; join_lines_based_on_source = true) == str
 
             str_ = """
             function foo(
@@ -1796,8 +1796,8 @@
                 body
             end
             """
-            @test fmt(str_, join_lines_based_on_source = true) == str
-            @test bluefmt(str_, join_lines_based_on_source = true) == str
+            @test fmt(str_; join_lines_based_on_source = true) == str
+            @test bluefmt(str_; join_lines_based_on_source = true) == str
         end
 
         @testset "binary op" begin
@@ -1809,13 +1809,13 @@
             a =
                 b
             """
-            @test fmt(str_, join_lines_based_on_source = true) == str
-            @test bluefmt(str_, join_lines_based_on_source = true) == str
+            @test fmt(str_; join_lines_based_on_source = true) == str
+            @test bluefmt(str_; join_lines_based_on_source = true) == str
 
             str = """
             a = b
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             a =
@@ -1825,13 +1825,13 @@
             a =
                 (b, c)
             """
-            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test fmt(str_; join_lines_based_on_source = true) == str
 
             str = """
             a = (b, c)
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
-            @test bluefmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
+            @test bluefmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             a =
@@ -1840,9 +1840,9 @@
             str = """
             a = "hello"
             """
-            @test fmt(str_, join_lines_based_on_source = true) == str
-            @test bluefmt(str_, join_lines_based_on_source = true) == str
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test fmt(str_; join_lines_based_on_source = true) == str
+            @test bluefmt(str_; join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
         end
 
         @testset "blue style" begin
@@ -1853,8 +1853,8 @@
                 body
             end
             """
-            @test bluefmt(str, 4, 1000, join_lines_based_on_source = true) == str
-            @test bluefmt(str, 4, 1, join_lines_based_on_source = true) ==
+            @test bluefmt(str, 4, 1000; join_lines_based_on_source = true) == str
+            @test bluefmt(str, 4, 1; join_lines_based_on_source = true) ==
                   bluefmt(str, 4, 1)
 
             str = """
@@ -1865,7 +1865,7 @@
                 body
             end
             """
-            @test bluefmt(str, 4, 1000, join_lines_based_on_source = true) == str
+            @test bluefmt(str, 4, 1000; join_lines_based_on_source = true) == str
         end
 
         @testset "yas style" begin
@@ -1880,8 +1880,8 @@
                 body
             end
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) ==
-                  yasfmt(str_, 4, 1, join_lines_based_on_source = false)
+            @test yasfmt(str_; join_lines_based_on_source = true) ==
+                  yasfmt(str_, 4, 1; join_lines_based_on_source = false)
 
             str_ = """
             @foo(
@@ -1893,7 +1893,7 @@
             @foo(arg1,
                  arg2,)
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             (
@@ -1905,7 +1905,7 @@
             (arg1,
              arg2)
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1917,7 +1917,7 @@
             [arg1,
              arg2]
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             A[
@@ -1929,7 +1929,7 @@
             A[arg1,
               arg2]
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             {
@@ -1941,7 +1941,7 @@
             {arg1,
              arg2}
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             A{
@@ -1953,7 +1953,7 @@
             A{arg1,
               arg2}
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             (
@@ -1963,7 +1963,7 @@
             str = """
             (invisbrackets)
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1975,7 +1975,7 @@
             [row1;
              row2;]
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             T[
@@ -1987,7 +1987,7 @@
             T[row1;
               row2;]
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
 
             str_ = """
             [
@@ -1997,7 +1997,7 @@
             str = """
             [a for a = 1:10]
             """
-            @test yasfmt(str_, join_lines_based_on_source = true) == str
+            @test yasfmt(str_; join_lines_based_on_source = true) == str
         end
 
         @testset "imports" begin
@@ -2009,7 +2009,7 @@
             using A,  #inline
               # comment
               B, C#inline"""
-            @test fmt(str_, 2, 80, join_lines_based_on_source = true) == str
+            @test fmt(str_, 2, 80; join_lines_based_on_source = true) == str
 
             str_ = """
             using CommonMark:
@@ -2030,8 +2030,8 @@
                 Parser,
                 Rule, TableRule
             """
-            @test fmt(str_, 4, 37, join_lines_based_on_source = true) == str_
-            @test fmt(str_, 4, 36, join_lines_based_on_source = true) == str
+            @test fmt(str_, 4, 37; join_lines_based_on_source = true) == str_
+            @test fmt(str_, 4, 36; join_lines_based_on_source = true) == str
 
             str = """
             using CommonMark:
@@ -2042,7 +2042,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 51, join_lines_based_on_source = true) == str
+            @test yasfmt(str_, 4, 51; join_lines_based_on_source = true) == str
 
             str = """
             using CommonMark:
@@ -2054,7 +2054,7 @@
                               Parser,
                               Rule, TableRule
             """
-            @test yasfmt(str_, 4, 50, join_lines_based_on_source = true) == str
+            @test yasfmt(str_, 4, 50; join_lines_based_on_source = true) == str
         end
 
         # NOTE: not sure since test makes sense anymore.
@@ -2068,7 +2068,7 @@
             str = """
             T[a b Expr();
                 d e Expr();]"""
-            @test fmt(str_, join_lines_based_on_source = true) == str
+            @test fmt(str_; join_lines_based_on_source = true) == str
         end
 
         @testset "function defs" begin
@@ -2076,13 +2076,13 @@
             function foo()
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
 
             s = """
             function foo
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
         end
 
         @testset "macro defs" begin
@@ -2090,13 +2090,13 @@
             macro foo()
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
 
             s = """
             macro foo
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
         end
 
         @testset "typedefs" begin
@@ -2104,13 +2104,13 @@
             struct S
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
 
             s = """
             mutable struct S
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
         end
 
         @testset "modules" begin
@@ -2118,13 +2118,13 @@
             module M
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
 
             s = """
             baremodule BM
             end
             """
-            @test fmt(s, join_lines_based_on_source = true) == s
+            @test fmt(s; join_lines_based_on_source = true) == s
         end
     end
 
@@ -2169,7 +2169,7 @@
 
         end
         """
-        @test fmt(str_, 2, 22, indent_submodule = true) == str
+        @test fmt(str_, 2, 22; indent_submodule = true) == str
 
         str = """
         "doc"
@@ -2192,7 +2192,7 @@
 
         end
         """
-        @test fmt(str_, 2, 21, indent_submodule = true) == str
+        @test fmt(str_, 2, 21; indent_submodule = true) == str
     end
 
     @testset "`separate_kwargs_with_semicolon`" begin
@@ -2202,28 +2202,28 @@
         str = """
         f(a; b = 10)
         """
-        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_; separate_kwargs_with_semicolon = true) == str
 
         str_ = "xy = f(x, y=3)"
         str = "xy = f(x; y = 3)"
-        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_; separate_kwargs_with_semicolon = true) == str
 
         str_ = "xy = f(x=1, y=2)"
         str = "xy = f(; x = 1, y = 2)"
-        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
-        @test fmt(str, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str, separate_kwargs_with_semicolon = true) == str
+        @test fmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str; separate_kwargs_with_semicolon = true) == str
 
         str_ = "xy = f(x = 1; y = 2)"
-        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_; separate_kwargs_with_semicolon = true) == str
 
         str = """
         function g(x, y = 1)
@@ -2235,10 +2235,10 @@
         shortdef1(MatrixT, VectorT = nothing) = nothing
         shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
         """
-        @test fmt1(str, separate_kwargs_with_semicolon = true) == str
-        @test fmt(str, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt1(str, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str, separate_kwargs_with_semicolon = true) == str
+        @test fmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str; separate_kwargs_with_semicolon = true) == str
 
         str_ = """
         x = foo(var = "some really really really really really really really really really really long string")
@@ -2248,8 +2248,8 @@
             var = "some really really really really really really really really really really long string",
         )
         """
-        @test fmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test fmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test fmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str_; separate_kwargs_with_semicolon = true) == str
 
         str_ = """
         x = foo(var = "some really really really really really really really really really really long string")
@@ -2258,8 +2258,8 @@
         x = foo(;
                 var = "some really really really really really really really really really really long string")
         """
-        @test yasfmt1(str_, separate_kwargs_with_semicolon = true) == str
-        @test yasfmt(str_, separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str_; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str_; separate_kwargs_with_semicolon = true) == str
     end
 
     @testset "`surround_whereop_typeparameters`" begin
@@ -2268,24 +2268,24 @@
             foo
         end
         """
-        @test fmt(s, surround_whereop_typeparameters = false) == s
+        @test fmt(s; surround_whereop_typeparameters = false) == s
 
         s = """
         function NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM
             foo
         end
         """
-        @test fmt(s, surround_whereop_typeparameters = false, m = 100) == s
+        @test fmt(s; surround_whereop_typeparameters = false, m = 100) == s
 
         s = """
         NotificationType(method::AbstractString, ::Type{TPARAM}) where TPARAM = foo
         """
-        @test fmt(s, surround_whereop_typeparameters = false) == s
+        @test fmt(s; surround_whereop_typeparameters = false) == s
 
         s = """
         NotificationType(method::AbstractString, ::Type{TPARAM})::R where TPARAM = foo
         """
-        @test fmt(s, surround_whereop_typeparameters = false) == s
+        @test fmt(s; surround_whereop_typeparameters = false) == s
     end
 
     @testset "for_in_replacement" begin
@@ -2297,24 +2297,24 @@
         for a ∈ b
         end
         """
-        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+        @test fmt(str_; always_for_in = true, for_in_replacement = "∈") == str
 
         # generator
         str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
         str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
-        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+        @test fmt(str_; always_for_in = true, for_in_replacement = "∈") == str
 
         str_ = "[i for i = 1:10 if i == 2]"
         str = "[i for i ∈ 1:10 if i == 2]"
-        @test fmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+        @test fmt(str_; always_for_in = true, for_in_replacement = "∈") == str
 
         str_ = "[(i, j) for i = 1:2:10, j = 100:-1:10]"
         str = "[(i, j) for i ∈ 1:2:10, j ∈ 100:-1:10]"
-        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+        @test yasfmt(str_; always_for_in = true, for_in_replacement = "∈") == str
 
         str_ = "[i for i = 1:10 if i == 2]"
         str = "[i for i ∈ 1:10 if i == 2]"
-        @test yasfmt(str_, always_for_in = true, for_in_replacement = "∈") == str
+        @test yasfmt(str_; always_for_in = true, for_in_replacement = "∈") == str
 
         @test_throws AssertionError fmt(
             str_,
@@ -2324,15 +2324,15 @@
     end
 
     @testset "trailing zero" begin
-        @test fmt("1e-2", trailing_zero = true) == "1e-2"
-        @test fmt("1f0", trailing_zero = true) == "1.0f0"
-        @test fmt("1.", trailing_zero = true) == "1.0"
-        @test fmt("0x1.fp0", trailing_zero = true) == "0x1.fp0"
+        @test fmt("1e-2"; trailing_zero = true) == "1e-2"
+        @test fmt("1f0"; trailing_zero = true) == "1.0f0"
+        @test fmt("1."; trailing_zero = true) == "1.0"
+        @test fmt("0x1.fp0"; trailing_zero = true) == "0x1.fp0"
 
-        @test fmt("1e-2", trailing_zero = false) == "1e-2"
-        @test fmt("1f0", trailing_zero = false) == "1f0"
-        @test fmt("1.", trailing_zero = false) == "1."
-        @test fmt("0x1.fp0", trailing_zero = false) == "0x1.fp0"
+        @test fmt("1e-2"; trailing_zero = false) == "1e-2"
+        @test fmt("1f0"; trailing_zero = false) == "1f0"
+        @test fmt("1."; trailing_zero = false) == "1."
+        @test fmt("0x1.fp0"; trailing_zero = false) == "0x1.fp0"
     end
 
     @testset "noindent blocks" begin
@@ -2453,7 +2453,7 @@
             end
         end
         """
-        @test fmt(s_, 4, 92, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 92; short_circuit_to_if = true) == s
 
         s_ = """
             begin
@@ -2467,7 +2467,7 @@
             end
         end
         """
-        @test fmt(s_, 4, 11, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 11; short_circuit_to_if = true) == s
 
         s = """
         begin
@@ -2478,7 +2478,7 @@
             end
         end
         """
-        @test fmt(s_, 4, 10, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 10; short_circuit_to_if = true) == s
 
         # > 1
         s_ = """
@@ -2493,7 +2493,7 @@
             end
         end
         """
-        @test fmt(s_, 4, 92, short_circuit_to_if = true) == s
+        @test fmt(s_, 4, 92; short_circuit_to_if = true) == s
 
         s_ = """
             begin
@@ -2507,7 +2507,7 @@
             end
         end
         """
-        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
+        @test fmt(s_, 4, 21; short_circuit_to_if = true) == s1
 
         s2 = """
         begin
@@ -2518,15 +2518,15 @@
             end
         end
         """
-        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
+        @test fmt(s_, 4, 20; short_circuit_to_if = true) == s2
 
         s_ = """
             begin
             (a && b && c) || d
             end
         """
-        @test fmt(s_, 4, 21, short_circuit_to_if = true) == s1
-        @test fmt(s_, 4, 20, short_circuit_to_if = true) == s2
+        @test fmt(s_, 4, 21; short_circuit_to_if = true) == s1
+        @test fmt(s_, 4, 20; short_circuit_to_if = true) == s2
     end
 
     @testset "disallow single arg nesting" begin
@@ -2547,6 +2547,6 @@
         {key =>
           value("String value")}
         """
-        @test fmt(s1, 2, 1, disallow_single_arg_nesting = true) == s2
+        @test fmt(s1, 2, 1; disallow_single_arg_nesting = true) == s2
     end
 end

@@ -331,7 +331,7 @@ function p_juxtapose(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
 
     return t
@@ -349,7 +349,7 @@ function p_continue(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
 
     return t
@@ -367,7 +367,7 @@ function p_break(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
 
     return t
@@ -386,7 +386,7 @@ function p_inert(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
 
     return t
@@ -404,7 +404,7 @@ function p_macrostr(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
 
     return t
@@ -561,12 +561,12 @@ function p_globalrefdoc(
         if i == 1
             add_node!(
                 t,
-                pretty(style, c, s, newctx(ctx, from_docstring = true), lineage),
-                s,
+                pretty(style, c, s, newctx(ctx; from_docstring = true), lineage),
+                s;
                 max_padding = 0,
             )
         elseif i == length(childs)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, max_padding = 0)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; max_padding = 0)
         else
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         end
@@ -607,15 +607,15 @@ function p_macrocall(
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s, ctx, lineage)::FST
         if JuliaSyntax.is_macro_name(a)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"("
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K")"
             nest && add_node!(t, Placeholder(0), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
@@ -636,10 +636,10 @@ function p_macrocall(
             add_node!(t, n, s; join_lines, max_padding)
         else
             if has_closer
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             else
                 padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s, join_lines = true, max_padding = padding)
+                add_node!(t, n, s; join_lines = true, max_padding = padding)
             end
         end
     end
@@ -684,39 +684,39 @@ function p_block(
 
         if from_quote && !single_line
             if kind(a) in KSet"; ) ("
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             elseif kind(a) === K","
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 if needs_placeholder(childs, i + 1, K")")
                     add_node!(t, Whitespace(1), s)
                 end
             elseif JuliaSyntax.is_whitespace(a)
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             elseif before_first_arg
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 before_first_arg = false
             else
-                add_node!(t, n, s, max_padding = 0)
+                add_node!(t, n, s; max_padding = 0)
             end
         elseif single_line
             if kind(a) in KSet", ;"
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 add_node!(t, Placeholder(1), s)
             else
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         else
             if kind(a) === K","
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 if join_body && needs_placeholder(childs, i + 1, K")")
                     add_node!(t, Placeholder(1), s)
                 end
             elseif kind(a) === K";"
                 continue
             elseif join_body
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             else
-                add_node!(t, n, s, max_padding = 0)
+                add_node!(t, n, s; max_padding = 0)
             end
         end
     end
@@ -742,13 +742,13 @@ function p_block(
         end
         n = pretty(style, a, s, ctx, lineage)
         if i < length(nodes) && kind(a) === K"," && is_punc(nodes[i+1])
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"," && i != length(nodes)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
             continue
         else
-            add_node!(t, n, s, max_padding = 0)
+            add_node!(t, n, s; max_padding = 0)
         end
     end
     t
@@ -767,7 +767,7 @@ function p_abstract(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         if !JuliaSyntax.is_whitespace(c) && kind(c) !== K"end"
             add_node!(t, Whitespace(1), s)
         end
@@ -788,7 +788,7 @@ function p_primitive(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         if !JuliaSyntax.is_whitespace(c) && kind(c) !== K"end"
             add_node!(t, Whitespace(1), s)
         end
@@ -808,7 +808,7 @@ function p_var(
     !haschildren(cst) && return t
 
     for c in children(cst)
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
     t
 end
@@ -837,12 +837,12 @@ function p_functiondef(
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
                 join_lines && (add_node!(t, Whitespace(1), s))
-                add_node!(t, n, s, join_lines = join_lines)
+                add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
             else
                 add_node!(t, Whitespace(1), s)
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         elseif kind(c) === K"block" && haschildren(c)
             block_has_contents =
@@ -857,9 +857,9 @@ function p_functiondef(
             s.indent -= s.opts.indent
         elseif kind(c) === K"call"
             n = pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
     t.metadata = Metadata(kind(cst), false, false, false, false, true, false)
@@ -902,12 +902,12 @@ function p_struct(
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
                 join_lines && (add_node!(t, Whitespace(1), s))
-                add_node!(t, n, s, join_lines = join_lines)
+                add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
             else
                 add_node!(t, Whitespace(1), s)
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         elseif kind(c) === K"block" && haschildren(c)
             block_has_contents =
@@ -917,10 +917,10 @@ function p_struct(
             if s.opts.annotate_untyped_fields_with_any
                 annotate_typefields_with_any!(n, s)
             end
-            add_node!(t, n, s, max_padding = s.opts.indent)
+            add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -950,12 +950,12 @@ function p_mutable(
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
                 join_lines && (add_node!(t, Whitespace(1), s))
-                add_node!(t, n, s, join_lines = join_lines)
+                add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
             else
                 add_node!(t, Whitespace(1), s)
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         elseif kind(c) === K"block" && haschildren(c)
             block_has_contents =
@@ -965,10 +965,10 @@ function p_mutable(
             if s.opts.annotate_untyped_fields_with_any
                 annotate_typefields_with_any!(n, s)
             end
-            add_node!(t, n, s, max_padding = s.opts.indent)
+            add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -1001,12 +1001,12 @@ function p_module(
             if s.opts.join_lines_based_on_source && !block_has_contents
                 join_lines = t.endline == n.startline
                 join_lines && (add_node!(t, Whitespace(1), s))
-                add_node!(t, n, s, join_lines = join_lines)
+                add_node!(t, n, s; join_lines = join_lines)
             elseif block_has_contents
                 add_node!(t, n, s)
             else
                 add_node!(t, Whitespace(1), s)
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         elseif kind(c) === K"block" && haschildren(c)
             block_has_contents =
@@ -1026,13 +1026,13 @@ function p_module(
                 add_node!(t, n, s; max_padding = s.opts.indent)
                 s.indent -= s.opts.indent
             else
-                add_node!(t, n, s, max_padding = 0)
+                add_node!(t, n, s; max_padding = 0)
             end
         else
             add_node!(
                 t,
                 pretty(style, c, s, newctx(ctx; from_module = true), lineage),
-                s,
+                s;
                 join_lines = true,
             )
         end
@@ -1083,7 +1083,7 @@ function p_const(
         elseif !JuliaSyntax.is_whitespace(c) && JuliaSyntax.is_keyword(c) && haschildren(c)
             add_node!(t, Whitespace(1), s)
         end
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
     t
 end
@@ -1138,9 +1138,9 @@ function p_toplevel(
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
         if kind(a) === K";"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
-            add_node!(t, n, s, max_padding = 0)
+            add_node!(t, n, s; max_padding = 0)
         end
     end
     t
@@ -1166,14 +1166,14 @@ function p_begin(
             pretty(style, c, s, ctx, lineage)
         end
         add_node!(t, Whitespace(1), s)
-        add_node!(t, pretty(style, cst[end], s), s, join_lines = true)
+        add_node!(t, pretty(style, cst[end], s), s; join_lines = true)
     else
         push!(lineage, (K"block", false, false))
         s.indent += s.opts.indent
         add_node!(
             t,
             p_block(style, childs[2:(end-1)], s, ctx, lineage),
-            s,
+            s;
             max_padding = s.opts.indent,
         )
         s.indent -= s.opts.indent
@@ -1276,7 +1276,7 @@ function p_let(
                         newctx(ctx; join_body = true, from_let = true),
                         lineage,
                     ),
-                    s,
+                    s;
                     join_lines = true,
                 )
             else
@@ -1289,7 +1289,7 @@ function p_let(
                         newctx(ctx; ignore_single_line = true, from_let = true),
                         lineage,
                     ),
-                    s,
+                    s;
                     max_padding = s.opts.indent,
                 )
                 if has_let_args && (t.nodes::Vector{FST})[end-2].typ !== NOTCODE
@@ -1311,7 +1311,7 @@ function p_let(
             add_node!(
                 t,
                 pretty(style, c, s, newctx(ctx; from_let = true), lineage),
-                s,
+                s;
                 join_lines = true,
             )
         end
@@ -1366,7 +1366,7 @@ function p_for(
             if kind(cst) === K"for"
                 eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
 
@@ -1388,7 +1388,7 @@ function p_cartesian_iterator(
     for (i, c) in enumerate(childs)
         n = pretty(style, c, s, ctx, lineage)
         if kind(c) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
@@ -1396,9 +1396,9 @@ function p_cartesian_iterator(
             if ctx.from_for
                 eq_to_in_normalization!(n, s.opts.always_for_in, s.opts.for_in_replacement)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
 
@@ -1434,7 +1434,7 @@ function p_do(
     for (i, c) in enumerate(childs)
         if kind(c) === K"do" && !haschildren(c)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             if !next_node_is(K"NewlineWs", childs[i+1])
                 add_node!(t, Whitespace(1), s)
             end
@@ -1446,10 +1446,10 @@ function p_do(
             if s.opts.always_use_return
                 prepend_return!(n, s)
             end
-            add_node!(t, n, s, max_padding = s.opts.indent)
+            add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -1480,7 +1480,7 @@ function p_try(
                 if kind(c) in KSet"catch finally"
                     s.indent -= s.opts.indent
                 end
-                add_node!(t, pretty(style, c, s, ctx, lineage), s, max_padding = 0)
+                add_node!(t, pretty(style, c, s, ctx, lineage), s; max_padding = 0)
             else
                 len = length(t)
                 n = pretty(style, c, s, ctx, lineage)
@@ -1495,7 +1495,7 @@ function p_try(
             add_node!(
                 t,
                 pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage),
-                s,
+                s;
                 max_padding = s.opts.indent,
             )
         elseif !JuliaSyntax.is_whitespace(c)
@@ -1503,7 +1503,7 @@ function p_try(
             if !(kind(cst) === K"catch" && any(n -> kind(n) === K"false", childs))
                 add_node!(t, Whitespace(1), s)
             end
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         else
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         end
@@ -1526,7 +1526,7 @@ function p_if(
     for c in children(cst)
         if kind(c) in KSet"if elseif else"
             if !haschildren(c)
-                add_node!(t, pretty(style, c, s, ctx, lineage), s, max_padding = 0)
+                add_node!(t, pretty(style, c, s, ctx, lineage), s; max_padding = 0)
             else
                 len = length(t)
                 n = pretty(style, c, s, ctx, lineage)
@@ -1540,13 +1540,13 @@ function p_if(
             add_node!(
                 t,
                 pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage),
-                s,
+                s;
                 max_padding = s.opts.indent,
             )
             s.indent -= s.opts.indent
         elseif !JuliaSyntax.is_whitespace(c)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         else
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         end
@@ -1598,7 +1598,7 @@ function p_kw(
     for c in children(cst)
         if kind(c) === K"=" && s.opts.whitespace_in_kwargs
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
             n = pretty(style, c, s, ctx, lineage)
@@ -1607,18 +1607,18 @@ function p_kw(
                 add_node!(
                     t,
                     FST(PUNCTUATION, -1, n.startline, n.startline, "("),
-                    s,
+                    s;
                     join_lines = true,
                 )
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 add_node!(
                     t,
                     FST(PUNCTUATION, -1, n.startline, n.startline, ")"),
-                    s,
+                    s;
                     join_lines = true,
                 )
             else
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
             end
         end
     end
@@ -1752,7 +1752,7 @@ function p_binaryopcall(
             if ns > 0
                 add_node!(t, Whitespace(ns), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             # Add whitespace after the operator
             if ns > 0
                 if nest
@@ -1777,7 +1777,7 @@ function p_binaryopcall(
                 end
             end
 
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
 
             # Add whitespace after the operator
             if !is_dot && ns > 0
@@ -1806,7 +1806,7 @@ function p_binaryopcall(
                     add_node!(
                         t,
                         n,
-                        s,
+                        s;
                         join_lines = true,
                         override_join_lines_based_on_source = !nest,
                     )
@@ -1881,38 +1881,38 @@ function p_whereopcall(
     for (i, a) in enumerate(childs)
         if kind(a) === K"where" && !haschildren(a)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
             after_where = true
         elseif kind(a) === K"{" && nest
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Placeholder(0), s)
             s.indent += s.opts.indent
         elseif kind(a) === K"}" && nest
             add_node!(t, TrailingComma(), s)
             add_node!(t, Placeholder(0), s)
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             s.indent -= s.opts.indent
         elseif kind(a) === K","
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
                 add_node!(t, Placeholder(nws), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s; join_lines = true)
         else
             n = pretty(style, a, s, newctx(ctx; from_typedef = after_where), lineage)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "{")
-                add_node!(t, brace, s, join_lines = true)
+                add_node!(t, brace, s; join_lines = true)
             end
 
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "}")
-                add_node!(t, brace, s, join_lines = true)
+                add_node!(t, brace, s; join_lines = true)
             end
         end
     end
@@ -1934,10 +1934,10 @@ function p_conditionalopcall(
     for c in children(cst)
         if kind(c) in KSet"? :" && !haschildren(c)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
 
@@ -1964,7 +1964,7 @@ function p_unaryopcall(
         if i > 1 && kind(c) in KSet"Whitespace"
             add_node!(t, Whitespace(1), s)
         end
-        add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
     end
     t
 end
@@ -1994,7 +1994,7 @@ function p_curly(
         n = pretty(style, a, s, newctx(ctx; from_typedef = true), lineage)
 
         if kind(a) === K"{"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if nest
                 add_node!(t, Placeholder(0), s)
             end
@@ -2003,14 +2003,14 @@ function p_curly(
                 add_node!(t, TrailingComma(), s)
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
                 add_node!(t, Placeholder(nws), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2098,22 +2098,22 @@ function p_invisbrackets(
 
     for c in children(cst)
         if kind(c) === K"("
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(c) === K")"
             nest && add_node!(t, Placeholder(0), s)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         elseif kind(c) === K"block"
             add_node!(
                 t,
                 pretty(style, c, s, newctx(ctx; from_quote = true), lineage),
-                s,
+                s;
                 join_lines = true,
             )
         elseif is_opcall(c)
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         else
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
 
@@ -2147,7 +2147,7 @@ function p_tuple(
         end
 
         if kind(a) === K"("
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K")"
             # An odd case but this could occur if there are no keyword arguments.
@@ -2160,14 +2160,14 @@ function p_tuple(
                 end
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2198,21 +2198,21 @@ function p_braces(
         n = pretty(style, a, s, ctx, lineage)
 
         if kind(a) === K"{"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K"}"
             if nest
                 add_node!(t, TrailingComma(), s)
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"}")
                 add_node!(t, Placeholder(nws), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2243,20 +2243,20 @@ function p_bracescat(
         n = pretty(style, a, s, ctx, lineage)
 
         if kind(a) === K"{"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K"}"
             if nest
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
             if needs_placeholder(childs, i + 1, K"}")
-                add_node!(t, n, s, join_lines = true)
+                add_node!(t, n, s; join_lines = true)
                 add_node!(t, Placeholder(nws), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2285,21 +2285,21 @@ function p_vect(
         n = pretty(style, a, s, ctx, lineage)
 
         if kind(a) === K"["
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K"]"
             if nest
                 add_node!(t, TrailingComma(), s)
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"]")
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2335,13 +2335,13 @@ function p_comprehension(
     for c in childs
         n = pretty(style, c, s, ctx, lineage)
         if kind(c) === K"["
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Placeholder(0), s)
         elseif kind(c) === K"]"
             add_node!(t, Placeholder(0), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
 
@@ -2406,12 +2406,12 @@ function p_import(
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
-                add_node!(t, pretty(style, n, s, ctx, lineage), s, join_lines = true)
+                add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
                 if kind(n) in KSet"import export using"
                     add_node!(t, Whitespace(1), s)
                 elseif kind(n) in KSet", :"
@@ -2419,10 +2419,10 @@ function p_import(
                 end
             end
         elseif kind(a) in KSet", :"
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Placeholder(1), s)
         else
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -2465,7 +2465,7 @@ function p_importpath(
 
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
-        add_node!(t, n, s, join_lines = true)
+        add_node!(t, n, s; join_lines = true)
     end
     t
 end
@@ -2485,10 +2485,10 @@ function p_as(
         n = pretty(style, c, s, ctx, lineage)
         if kind(c) === K"as"
             add_node!(t, Whitespace(1), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
 
@@ -2520,20 +2520,20 @@ function p_ref(
                 add_node!(t, TrailingComma(), s)
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
         elseif kind(a) === K"["
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K","
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"]")
                 add_node!(t, Placeholder(1), s)
             end
         elseif is_opcall(a)
             n = pretty(style, a, s, newctx(ctx; from_ref = true, nonest = true), lineage)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -2567,15 +2567,15 @@ function p_vcat(
         diff_line && (t.nest_behavior = AlwaysNest)
 
         if kind(a) === K"["
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             nest && add_node!(t, Placeholder(0), s)
         elseif kind(a) === K"]"
             nest && add_node!(t, Placeholder(0), s)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
             # TODO: maybe we need to do something here?
             # [a b c d e f] is semantically different from [a b c; d e f]
@@ -2589,7 +2589,7 @@ function p_vcat(
                 add_node!(t, Placeholder(1), s)
             end
 
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2627,12 +2627,12 @@ function p_hcat(
         if JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
         elseif i > st
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K"]")
                 add_node!(t, Whitespace(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
     t
@@ -2759,15 +2759,15 @@ function p_generator(
                 add_node!(t, Whitespace(1), s)
             end
 
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif kind(a) === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
 
         has_for_kw &&

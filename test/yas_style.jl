@@ -165,14 +165,14 @@
         str = """
         comp = [a * b
                 for a in 1:10, b in 11:20]"""
-        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
-        @test yasfmt(str_, 2, 34, always_for_in = true) == str
+        @test yasfmt(str_, 2, length(str_) - 1; always_for_in = true) == str
+        @test yasfmt(str_, 2, 34; always_for_in = true) == str
 
         str = """
         comp = [a * b
                 for a in 1:10,
                     b in 11:20]"""
-        @test yasfmt(str_, 2, 33, always_for_in = true) == str
+        @test yasfmt(str_, 2, 33; always_for_in = true) == str
 
         str = """
         comp = [a *
@@ -181,20 +181,20 @@
                     1:10,
                     b in
                     11:20]"""
-        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 1; always_for_in = true) == str
 
         str_ = "comp = Typed[a * b for a in 1:10, b in 11:20]"
         str = """
         comp = Typed[a * b
                      for a in 1:10, b in 11:20]"""
-        @test yasfmt(str_, 2, length(str_) - 1, always_for_in = true) == str
-        @test yasfmt(str_, 2, 39, always_for_in = true) == str
+        @test yasfmt(str_, 2, length(str_) - 1; always_for_in = true) == str
+        @test yasfmt(str_, 2, 39; always_for_in = true) == str
 
         str = """
         comp = Typed[a * b
                      for a in 1:10,
                          b in 11:20]"""
-        @test yasfmt(str_, 2, 38, always_for_in = true) == str
+        @test yasfmt(str_, 2, 38; always_for_in = true) == str
 
         str = """
         comp = Typed[a *
@@ -203,14 +203,14 @@
                          1:10,
                          b in
                          11:20]"""
-        @test yasfmt(str_, 2, 1, always_for_in = true) == str
+        @test yasfmt(str_, 2, 1; always_for_in = true) == str
 
         str_ = "foo(arg1, arg2, arg3) == bar(arg1, arg2, arg3)"
         str = """
         foo(arg1, arg2, arg3) ==
         bar(arg1, arg2, arg3)"""
         # change in default behavior
-        @test yasfmt(str, 2, length(str_), join_lines_based_on_source = false) == str_
+        @test yasfmt(str, 2, length(str_); join_lines_based_on_source = false) == str_
         @test yasfmt(str_, 2, length(str_) - 1) == str
         @test yasfmt(str_, 2, 24) == str
 
@@ -305,15 +305,15 @@
         str = """
         var = fcall(arg1, arg2, arg3, # comment
                     arg4, arg5)"""
-        @test yasfmt(str_, 4, 80, join_lines_based_on_source = false) == str
-        @test yasfmt(str_, 4, 29, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 80; join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 29; join_lines_based_on_source = false) == str
 
         str = """
         var = fcall(arg1, arg2,
                     arg3, # comment
                     arg4, arg5)"""
-        @test yasfmt(str_, 4, 28, join_lines_based_on_source = false) == str
-        @test yasfmt(str_, 4, 23, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 28; join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 4, 23; join_lines_based_on_source = false) == str
 
         str = """
         var = fcall(arg1,
@@ -341,8 +341,8 @@
                 end
                 for a = 1:10,  # comment 2
                     b = 11:20, c = 300:400]"""
-        @test yasfmt(str_, 2, 80, join_lines_based_on_source = false) == str
-        @test yasfmt(str_, 2, 35, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 2, 80; join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 2, 35; join_lines_based_on_source = false) == str
 
         str = """
         comp = [begin
@@ -449,7 +449,7 @@
               (b_hat - y_hat) * delta[i] +
               (b - y) * delta_hat[i] - delta[i] * delta_hat[i]
               for i = 1:8]"""
-        @test yasfmt(str_, 2, 60, join_lines_based_on_source = false) == str
+        @test yasfmt(str_, 2, 60; join_lines_based_on_source = false) == str
     end
 
     @testset "issue 237" begin
@@ -467,14 +467,14 @@
     @testset "issue 320" begin
         str_ = "[x[i] for i = 1:length(x)]"
         str = "[x[i] for i in 1:length(x)]"
-        @test yasfmt(str_, 4, 92, always_for_in = true) == str
+        @test yasfmt(str_, 4, 92; always_for_in = true) == str
     end
 
     @testset "issue 321 - exponential inline comments !!!" begin
         str = """
         scaled_ticks, mini, maxi = optimize_ticks(scale_func(lmin), scale_func(lmax); k_min=4, # minimum number of ticks
                                                   k_max=8)"""
-        @test yasfmt(str, 4, 92, whitespace_in_kwargs = false) == str
+        @test yasfmt(str, 4, 92; whitespace_in_kwargs = false) == str
     end
 
     @testset "issue 355 - vcat/typedvcat" begin
@@ -580,7 +580,7 @@
 
         # This should be valid with and without `Dict` in `variable_call_indent`
         @test format_text(str, YASStyle()) == str
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == str
 
         str = raw"""
         SVector(1.0,
@@ -588,8 +588,8 @@
         """
 
         # Test the same with different callers
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
-        @test format_text(str, YASStyle(), variable_call_indent = ["SVector", "test2"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == str
+        @test format_text(str, YASStyle(); variable_call_indent = ["SVector", "test2"]) ==
               str
 
         str = raw"""
@@ -611,7 +611,7 @@
 
         # `variable_call_indent` keeps the line break and doesn't align
         @test format_text(str, YASStyle()) == formatted_str1
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) ==
               formatted_str2
 
         str = raw"""
@@ -632,9 +632,9 @@
         """
 
         # Test the same with different callers
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) ==
               formatted_str1
-        @test format_text(str, YASStyle(), variable_call_indent = ["test", "SVector"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["test", "SVector"]) ==
               formatted_str2
 
         str = raw"""
@@ -651,7 +651,7 @@
 
         # This is already valid with `variable_call_indent`
         @test format_text(str, YASStyle()) == formatted_str
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == str
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == str
 
         str = raw"""
         SomeLongerTypeThanJustString = String
@@ -676,8 +676,8 @@
         # Here, `variable_call_indent` forces the line break because the line is too long.
         # For some reason, this has to be formatted twice.
         @test format_text(str, YASStyle()) == formatted_str1
-        intermediate_str = format_text(str, YASStyle(), variable_call_indent = ["Dict"])
-        @test format_text(intermediate_str, YASStyle(), variable_call_indent = ["Dict"]) ==
+        intermediate_str = format_text(str, YASStyle(); variable_call_indent = ["Dict"])
+        @test format_text(intermediate_str, YASStyle(); variable_call_indent = ["Dict"]) ==
               formatted_str2
 
         str = raw"""
@@ -696,7 +696,7 @@
 
         # Test `variable_call_indent` with a comment in a separate line
         @test format_text(str, YASStyle()) == str
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) == formatted_str
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == formatted_str
 
         str = raw"""
         SVector(
@@ -714,7 +714,7 @@
 
         # Test the same with different callers
         @test format_text(str, YASStyle()) == str
-        @test format_text(str, YASStyle(), variable_call_indent = ["SVector"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["SVector"]) ==
               formatted_str
 
         str = raw"""
@@ -738,7 +738,7 @@
         # With `variable_call_indent = false`, the comment will be eaten,
         # see https://github.com/domluna/JuliaFormatter.jl/issues/609
         @test format_text(str, YASStyle()) == formatted_str1
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) ==
               formatted_str2
 
         str = raw"""
@@ -768,7 +768,7 @@
         # Test `variable_call_indent` with both an inline comment after the opening parenthesis
         # and a comment in a separate line.
         @test format_text(str, YASStyle()) == formatted_str1
-        @test format_text(str, YASStyle(), variable_call_indent = ["Dict"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) ==
               formatted_str2
 
         str = raw"""
@@ -796,9 +796,9 @@
         """
 
         # Test the same with different callers
-        @test format_text(str, YASStyle(), variable_call_indent = ["test"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["test"]) ==
               formatted_str1
-        @test format_text(str, YASStyle(), variable_call_indent = ["SVector", "test"]) ==
+        @test format_text(str, YASStyle(); variable_call_indent = ["SVector", "test"]) ==
               formatted_str2
     end
 end

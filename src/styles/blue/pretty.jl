@@ -94,6 +94,6 @@ function p_return(
     end
     add_node!(t, Whitespace(1), s)
     no = FST(KEYWORD, -1, t.endline, t.endline, "nothing")
-    add_node!(t, no, s, join_lines = true)
+    add_node!(t, no, s; join_lines = true)
     t
 end

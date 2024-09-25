@@ -336,7 +336,7 @@ function align_conditional!(fst::FST)
         # the placeholder would be i+1 if not for a possible inline comment
         nind = findnext(n -> n.typ === PLACEHOLDER, nodes, ind + 1)::Int
         if nodes[nind+1].startline != nodes[nind].startline
-            nodes[nind] = Newline(nest_behavior = AlwaysNest)
+            nodes[nind] = Newline(; nest_behavior = AlwaysNest)
         end
 
         if colon_len !== nothing

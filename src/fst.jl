@@ -1079,7 +1079,7 @@ function add_node!(
             end
 
             if nt !== PLACEHOLDER
-                add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+                add_node!(t, Newline(; nest_behavior = AlwaysNest), s)
             elseif hascomment(s.doc, current_line) && nt === PLACEHOLDER
                 # swap PLACEHOLDER (will be NEWLINE) with INLINECOMMENT node
                 idx = length(tnodes::Vector{FST})
@@ -1088,13 +1088,13 @@ function add_node!(
 
             if nest
                 add_node!(t, Notcode(notcode_startline, notcode_endline), s)
-                add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+                add_node!(t, Newline(; nest_behavior = AlwaysNest), s)
             end
         elseif !join_lines
             if hascomment(s.doc, current_line) && current_line != n.startline
                 add_node!(t, InlineComment(current_line), s)
             end
-            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+            add_node!(t, Newline(; nest_behavior = AlwaysNest), s)
         elseif nt === PLACEHOLDER &&
                current_line != n.startline &&
                hascomment(s.doc, current_line)
@@ -1109,7 +1109,7 @@ function add_node!(
             # rely on the whitespace tracked for the inline comment
             tnodes[end] = Whitespace(0)
             add_node!(t, InlineComment(current_line), s)
-            add_node!(t, Newline(nest_behavior = AlwaysNest), s)
+            add_node!(t, Newline(; nest_behavior = AlwaysNest), s)
         end
     end
 

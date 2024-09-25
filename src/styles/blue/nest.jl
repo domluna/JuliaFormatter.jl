@@ -72,7 +72,7 @@ function n_tuple!(
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif (i == fidx || i == lidx) && !src_diff_line && nest_to_oneline
-                fst[i] = Newline(length = n.len)
+                fst[i] = Newline(; length = n.len)
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
                 if src_diff_line
@@ -92,7 +92,7 @@ function n_tuple!(
                         end
                     end
                 elseif !nest_to_oneline
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                 else
                     nest!(style, n, s, lineage)

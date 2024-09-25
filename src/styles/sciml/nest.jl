@@ -130,7 +130,7 @@ function _n_tuple!(
     end
 
     for i in optimal_placeholders
-        fst[i] = Newline(length = fst[i].len)
+        fst[i] = Newline(; length = fst[i].len)
     end
 
     placeholder_inds = findall(n -> n.typ === PLACEHOLDER, fst.nodes)

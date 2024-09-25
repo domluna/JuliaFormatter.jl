@@ -73,12 +73,12 @@ function p_import(
 
     for a in children(cst)
         if kind(a) in KSet"import export using"
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
-                add_node!(t, pretty(style, n, s, ctx, lineage), s, join_lines = true)
+                add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
                 if kind(n) in KSet"import export using :"
                     add_node!(t, Whitespace(1), s)
                 elseif kind(n) in KSet","
@@ -86,13 +86,13 @@ function p_import(
                 end
             end
         elseif kind(a) === K","
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Placeholder(1), s)
         elseif kind(a) === K":"
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         else
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
         end
     end
     t
@@ -454,19 +454,19 @@ function p_vcat(
         override = i == first_arg_idx || kind(a) === K"]"
 
         if kind(a) === K"["
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"]"
             add_node!(
                 t,
                 n,
-                s,
+                s;
                 join_lines = true,
                 override_join_lines_based_on_source = override,
             )
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
             join_lines = i == first_arg_idx ? true : t.endline == n.startline
 
@@ -477,7 +477,7 @@ function p_vcat(
             add_node!(
                 t,
                 n,
-                s,
+                s;
                 join_lines = join_lines,
                 override_join_lines_based_on_source = override,
             )
@@ -587,7 +587,7 @@ function p_comprehension(
     for c in childs
         n = pretty(style, c, s, ctx, lineage)
         if kind(c) === K"["
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         else
             add_node!(
                 t,
@@ -643,14 +643,14 @@ function p_macrocall(
         override = (i == first_arg_idx) || kind(a) === K")"
 
         if JuliaSyntax.is_macro_name(a) || kind(a) === K"("
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
             add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
             if n.typ === MacroBlock && t[end].typ === WHITESPACE
                 t[end] = Placeholder(length(t[end].val))
@@ -714,11 +714,11 @@ function p_whereopcall(
     for (i, a) in enumerate(childs)
         if kind(a) === K"where" && !haschildren(a)
             add_node!(t, Whitespace(1), s)
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
             after_where = true
         elseif kind(a) === K"{"
-            add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             s.indent += s.opts.indent
         elseif kind(a) === K"}"
             add_node!(
@@ -731,17 +731,17 @@ function p_whereopcall(
             s.indent -= s.opts.indent
         elseif kind(a) === K","
             if needs_placeholder(childs, i + 1, K"}")
-                add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+                add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
                 add_node!(t, Placeholder(nws), s)
             end
         elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, pretty(style, a, s), s, join_lines = true)
+            add_node!(t, pretty(style, a, s), s; join_lines = true)
         else
             n = pretty(style, a, s, newctx(ctx; from_typedef = after_where), lineage)
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "{")
-                add_node!(t, brace, s, join_lines = true)
+                add_node!(t, brace, s; join_lines = true)
             end
 
             override = i == first_arg_idx
@@ -755,7 +755,7 @@ function p_whereopcall(
 
             if after_where && add_braces
                 brace = FST(PUNCTUATION, -1, n.endline, n.endline, "}")
-                add_node!(t, brace, s, join_lines = true)
+                add_node!(t, brace, s; join_lines = true)
             end
         end
     end
@@ -801,7 +801,7 @@ function p_generator(
             elseif !isnothing(idx)
                 add_node!(t, Whitespace(1), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K","
             if needs_placeholder(childs, i + 1, K")")

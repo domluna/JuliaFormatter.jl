@@ -255,7 +255,7 @@ function n_using!(
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         if can_nest(fst)
             if fst.indent + sum(length.(fst[(idx+1):end])) <= s.opts.margin
-                fst[idx] = Newline(length = fst[idx].len)
+                fst[idx] = Newline(; length = fst[idx].len)
                 walk(increment_line_offset!, fst, s)
                 return nested
             end
@@ -269,7 +269,7 @@ function n_using!(
                     si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
                     nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                 end
             else
@@ -353,7 +353,7 @@ function n_tuple!(
                         end
                     end
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                 end
             elseif n.typ === TRAILINGCOMMA
@@ -502,11 +502,11 @@ function _n_comprehension!(
     if closer && (line_margin > s.opts.margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
         if idx !== nothing
-            fst[idx] = Newline(length = fst[idx].len)
+            fst[idx] = Newline(; length = fst[idx].len)
         end
         idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
         if idx !== nothing
-            fst[idx] = Newline(length = fst[idx].len)
+            fst[idx] = Newline(; length = fst[idx].len)
         end
 
         add_indent!(fst, s, s.opts.indent)
@@ -519,7 +519,7 @@ function _n_comprehension!(
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             if must_nest(fst)
-                fst[i] = Newline(length = n.len)
+                fst[i] = Newline(; length = n.len)
                 s.line_offset = fst.indent
             else
                 nest_if_over_margin!(style, fst, s, i, lineage)
@@ -577,14 +577,14 @@ function n_generator!(
         end
         for (i, idx) in enumerate(phs)
             if i == 1
-                fst[idx] = Newline(length = fst[idx].len)
+                fst[idx] = Newline(; length = fst[idx].len)
             else
                 nidx = phs[i-1]
                 l1 = sum(length.(fst[1:(idx-1)]))
                 l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
-                    fst[idx] = Newline(length = fst[idx].len)
+                    fst[idx] = Newline(; length = fst[idx].len)
                 end
             end
         end
@@ -608,7 +608,7 @@ function n_generator!(
                i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
-                w, _ = length_to(fst, (NEWLINE,), start = i + 1)
+                w, _ = length_to(fst, (NEWLINE,); start = i + 1)
                 width += w
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
@@ -675,7 +675,7 @@ function n_whereopcall!(
                 end
                 nest!(style, n, s, lineage)
             elseif n.typ === PLACEHOLDER && over
-                fst[i+1] = Newline(length = length(n))
+                fst[i+1] = Newline(; length = length(n))
                 s.line_offset = fst.indent
             elseif n.typ === TRAILINGCOMMA && over
                 n.val = ","
@@ -735,14 +735,14 @@ function n_conditionalopcall!(
         end
         for (i, idx) in enumerate(phs)
             if i == 1
-                fst[idx] = Newline(length = fst[idx].len)
+                fst[idx] = Newline(; length = fst[idx].len)
             else
                 nidx = phs[i-1]
                 l1 = sum(length.(fst[1:(idx-1)]))
                 l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
-                    fst[idx] = Newline(length = fst[idx].len)
+                    fst[idx] = Newline(; length = fst[idx].len)
                 end
             end
         end
@@ -835,7 +835,7 @@ function n_binaryopcall!(
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
         i2 = idxs[2]
-        fst[i1] = Newline(length = fst[i1].len)
+        fst[i1] = Newline(; length = fst[i1].len)
         nested = true
 
         indent_nest =
@@ -890,7 +890,7 @@ function n_binaryopcall!(
                rhs.typ === Conditional
                 line_margin += length(fst[end])
             elseif rhs.typ === Do && is_iterable(rhs[1])
-                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,); start = i2 + 1)
                 line_margin += rw
             elseif is_block(rhs)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
@@ -900,7 +900,7 @@ function n_binaryopcall!(
                     line_margin += sum(length.(rhs[1:(idx-1)]))
                 end
             else
-                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,); start = i2 + 1)
                 line_margin += rw
             end
 
@@ -1040,13 +1040,13 @@ function n_block!(
                         )
                         nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                     elseif has_nl
-                        fst[i] = Newline(length = n.len)
+                        fst[i] = Newline(; length = n.len)
                         s.line_offset = fst.indent
                     else
                         nest!(style, n, s, lineage)
                     end
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                     has_nl = true
                 end

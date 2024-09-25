@@ -1,8 +1,8 @@
 using Documenter, JuliaFormatter
 
-makedocs(
+makedocs(;
     sitename = "JuliaFormatter",
-    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
+    format = Documenter.HTML(; prettyurls = get(ENV, "CI", nothing) == "true"),
     modules = [JuliaFormatter],
     pages = [
         "Introduction" => "index.md",
@@ -20,4 +20,4 @@ makedocs(
     warnonly = true,
 )
 
-deploydocs(repo = "github.com/domluna/JuliaFormatter.jl.git", push_preview = true)
+deploydocs(; repo = "github.com/domluna/JuliaFormatter.jl.git", push_preview = true)

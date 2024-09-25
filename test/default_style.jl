@@ -346,8 +346,8 @@
         foo(
             args...,
         )"""
-        @test fmt(str_, m = 1) == str
-        @test fmt(str, m = 1) == str
+        @test fmt(str_; m = 1) == str
+        @test fmt(str; m = 1) == str
     end
 
     @testset ": op" begin
@@ -4106,7 +4106,7 @@ some_function(
 
             d,
         )"""
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4118,7 +4118,7 @@ some_function(
             c)"""
         str = """var = func(a, b, c)"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4130,7 +4130,7 @@ some_function(
         c"""
         str = """var = a && b && c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4145,7 +4145,7 @@ some_function(
         c"""
         str = """var = a ? b : c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4160,7 +4160,7 @@ some_function(
         c"""
         str = """var = a + b + c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4175,7 +4175,7 @@ some_function(
         c"""
         str = """var = a == b == c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
     end
 
     @testset "align ChainOpCall indent" begin
@@ -4232,8 +4232,8 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 74) == str
-        @test fmt(str, m = 75) == str_
+        @test fmt(str_; m = 74) == str
+        @test fmt(str; m = 75) == str_
 
         str_ = """
         if argument1 && argument2 && (argument3 || argument4 || argument5) && argument6
@@ -4248,7 +4248,7 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 43) == str
+        @test fmt(str_; m = 43) == str
 
         str = """
         if argument1 &&
@@ -4262,7 +4262,7 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 42) == str
+        @test fmt(str_; m = 42) == str
     end
 
     @testset "standalone lazy expr indent" begin
@@ -4740,7 +4740,7 @@ some_function(
             b
         end"""
         @test fmt(str_, 4, 27) == str
-        @test fmt(str, 4, 27, join_lines_based_on_source = true) == str
+        @test fmt(str, 4, 27; join_lines_based_on_source = true) == str
     end
 
     @testset "block automatically assume nested when join_lines_based_on_source" begin
@@ -4754,7 +4754,7 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, 4, 16, join_lines_based_on_source = true) == str_
-        @test fmt(str_, 4, 15, join_lines_based_on_source = true) == str
+        @test fmt(str_, 4, 16; join_lines_based_on_source = true) == str_
+        @test fmt(str_, 4, 15; join_lines_based_on_source = true) == str
     end
 end

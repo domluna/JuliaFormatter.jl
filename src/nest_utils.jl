@@ -175,7 +175,7 @@ function nest_if_over_margin!(
     if margin > s.opts.margin ||
        (idx < length(fst.nodes::Vector) && is_comment(fst[idx+1])) ||
        (idx > 1 && is_comment(fst[idx-1]))
-        fst[idx] = Newline(length = fst[idx].len)
+        fst[idx] = Newline(; length = fst[idx].len)
         s.line_offset = fst.indent
         return true
     end
@@ -265,7 +265,7 @@ function find_optimal_nest_placeholders(
             fst,
             g,
             start_line_offset,
-            max_margin,
+            max_margin;
             last_group = i == length(placeholder_groups),
         )
         push!(optimal_placeholders, optinds...)
