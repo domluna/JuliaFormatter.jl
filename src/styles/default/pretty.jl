@@ -196,7 +196,7 @@ function pretty(
         else
             tt = FST(Unknown, nspaces(s))
             for a in children(node)
-                add_node!(tt, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+                add_node!(tt, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             end
             tt
         end
@@ -230,9 +230,9 @@ function p_whitespace(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    # val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
-    FST(NONE, loc[2], loc[1], loc[1], val)
+    FST(NONE, loc[2], loc[1], loc[1], "")
 end
 
 function p_comment(
@@ -845,12 +845,13 @@ function p_functiondef(
             if s.opts.always_use_return
                 prepend_return!(n, s)
             end
-            add_node!(t, n, s, max_padding = s.opts.indent)
+            add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         elseif kind(c) === K"call"
+            n = pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage)
             add_node!(
                 t,
-                pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage),
+                n,
                 s,
                 join_lines = true,
             )
@@ -1192,13 +1193,13 @@ function p_quote(
 
     childs = children(cst)
     if kind(childs[1]) === K"block"
-        add_node!(t, p_begin(style, childs[1], s, ctx, lineage), s, join_lines = true)
+        add_node!(t, p_begin(style, childs[1], s, ctx, lineage), s; join_lines = true)
         for i in 2:length(childs)
-            add_node!(t, pretty(style, childs[i], s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, childs[i], s, ctx, lineage), s; join_lines = true)
         end
     else
         for c in childs
-            add_node!(t, pretty(style, c, s, ctx, lineage), s, join_lines = true)
+            add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
         end
     end
 
@@ -1218,7 +1219,7 @@ function p_quotenode(
 
     ctx = newctx(ctx; from_quote = true)
     for a in children(cst)
-        add_node!(t, pretty(style, a, s, ctx, lineage), s, join_lines = true)
+        add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
     end
     t
 end
@@ -2040,7 +2041,7 @@ function p_call(
         end
 
         if k === K"("
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
             if nest
                 add_node!(t, Placeholder(0), s)
             end
@@ -2049,16 +2050,16 @@ function p_call(
                 add_node!(t, TrailingComma(), s)
                 add_node!(t, Placeholder(0), s)
             end
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         elseif k === K","
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
 
             # figure out if we need to put a placeholder
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)
             end
         else
-            add_node!(t, n, s, join_lines = true)
+            add_node!(t, n, s; join_lines = true)
         end
     end
 
