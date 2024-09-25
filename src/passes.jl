@@ -801,8 +801,20 @@ function _short_circuit_to_if!(fst::FST, s::State)
     end
     add_node!(t, block1, s; max_padding = s.opts.indent)
 
-    kw = FST(KEYWORD, 0, 0, -1, "end")
-    add_node!(t, kw, s; max_padding = 0)
+    # Add the 'else' branch
+    else_kw = FST(KEYWORD, 0, 0, -1, "else")
+    add_node!(t, else_kw, s; max_padding = 0)
+
+    block2 = FST(Block, fst.indent + s.opts.indent)
+
+    # Determine the default return value based on the operator
+    default_val = is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
+    add_node!(block2, default_val, s; join_lines = true)
+    add_node!(t, block2, s; max_padding = s.opts.indent)
+
+    # Close the if statement
+    end_kw = FST(KEYWORD, 0, 0, -1, "end")
+    add_node!(t, end_kw, s; max_padding = 0)
 
     fst.typ = t.typ
     fst.nodes = t.nodes

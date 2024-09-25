@@ -2450,6 +2450,8 @@
         begin
             if a
                 b
+            else
+                false
             end
         end
         """
@@ -2464,6 +2466,8 @@
         begin
             if !(a)
                 b
+            else
+                true
             end
         end
         """
@@ -2475,6 +2479,8 @@
                 a
             )
                 b
+            else
+                true
             end
         end
         """
@@ -2490,6 +2496,8 @@
         begin
             if a && b && c
                 d
+            else
+                false
             end
         end
         """
@@ -2504,6 +2512,8 @@
         begin
             if !(a && b && c)
                 d
+            else
+                true
             end
         end
         """
@@ -2515,6 +2525,8 @@
                 a && b && c
             )
                 d
+            else
+                true
             end
         end
         """
