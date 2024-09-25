@@ -230,9 +230,9 @@ function p_whitespace(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    # val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
     s.offset += span(cst)
-    FST(NONE, loc[2], loc[1], loc[1], "")
+    FST(NONE, loc[2], loc[1], loc[1], val)
 end
 
 function p_comment(
@@ -676,6 +676,10 @@ function p_block(
     ctx = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
     childs = children(cst)
     for (i, a) in enumerate(childs)
+        if is_ws(a)
+            s.offset += span(a)
+            continue
+        end
         n = pretty(style, a, s, ctx, lineage)
 
         if from_quote && !single_line
@@ -732,6 +736,10 @@ function p_block(
 
     ctx = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
     for (i, a) in enumerate(nodes)
+        if is_ws(a)
+            s.offset += span(a)
+            continue
+        end
         n = pretty(style, a, s, ctx, lineage)
         if i < length(nodes) && kind(a) === K"," && is_punc(nodes[i+1])
             add_node!(t, n, s, join_lines = true)

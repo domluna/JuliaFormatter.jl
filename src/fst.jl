@@ -411,7 +411,7 @@ end
 function is_prev_newline(fst::FST)
     if fst.typ === NEWLINE
         return true
-    elseif is_leaf(fst) || length(fst.nodes::Vector{FST}) == 0
+    elseif is_leaf(fst) || length(fst.nodes::Vector) == 0
         return false
     end
     is_prev_newline(fst[end])
@@ -936,7 +936,7 @@ function add_node!(
     tnodes = t.nodes::Vector{FST}
 
     if n.typ === NONE
-        if length(tnodes) == 0
+        if length(tnodes::Vector{FST}) == 0
             t.startline = n.startline
             t.endline = n.endline
         end
