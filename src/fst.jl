@@ -243,7 +243,11 @@ is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 function is_punc(cst::JuliaSyntax.GreenNode)
     if !(kind(cst) in KSet", ( ) [ ] { } @")
-        kind(cst) === K"." && !haschildren(cst)
+        if kind(cst) === K"."
+            !haschildren(cst)
+        else
+            false
+        end
     else
         true
     end
@@ -703,7 +707,11 @@ end
 
 function is_block(x::FST)
     if !(x.typ in (Block, If, Do, Try, Begin, For, While, Let))
-        x.typ === Quote && x[1].val == "quote"
+        if x.typ === Quote
+            x[1].val == "quote"
+        else
+            false
+        end
     else
         true
     end
