@@ -55,8 +55,6 @@ end
 function flatten_fst!(fst::FST)
     if is_leaf(fst)
         return
-    else
-        false
     end
     for n in fst.nodes::Vector{FST}
         if is_leaf(n)
@@ -84,8 +82,6 @@ Rewrites `x |> f` to `f(x)`.
 function pipe_to_function_call_pass!(fst::FST)
     if is_leaf(fst)
         return
-    else
-        false
     end
 
     # the RHS must be a valid type to apply a function call.
@@ -172,13 +168,9 @@ function import_to_usings(fst::FST, s::State)
     nodes = fst.nodes::Vector{FST}
     if !(findfirst(n -> is_colon(n) || n.typ === As, nodes) === nothing)
         return FST[]
-    else
-        true
     end
     if !(findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing)
         return FST[]
-    else
-        true
     end
 
     # handle #723 "import ..f" should not become "using ..f: f"
@@ -222,8 +214,6 @@ no type annotation is provided.
 function annotate_typefields_with_any!(fst::FST, s::State)
     if is_leaf(fst)
         return
-    else
-        false
     end
     for (i, n) in enumerate(fst.nodes::Vector{FST})
         if n.typ === IDENTIFIER
@@ -273,8 +263,6 @@ function short_to_long_function_def!(
 )
     if (fst[1].typ !== Call && fst[1].typ !== Where)
         return false
-    else
-        false
     end
 
     for i in (length(lineage)-1):-1:1
@@ -330,8 +318,6 @@ function short_to_long_function_def!(
         idx = findfirst(n -> n.typ === Block, fst[end].nodes)
         if idx === nothing
             return false
-        else
-            false
         end
         bnode = fst[end][idx]
         add_indent!(bnode, s, -s.opts.indent)
@@ -353,8 +339,6 @@ function short_to_long_function_def!(
 
     if s.opts.always_use_return
         prepend_return!(funcdef[end], s)
-    else
-        false
     end
 
     # end
@@ -389,29 +373,21 @@ function long_to_short_function_def!(fst::FST, s::State)
     nodes = fst.nodes::Vector{FST}
     if any(is_comment, nodes)
         return false
-    else
-        false
     end
 
     I = findall(n -> n.typ === Block, nodes)
     if !(length(I) == 1)
-        return false  # function must have a single block
-    else  # function must have a single block
-        true  # function must have a single block
-    end  # function must have a single block
+        return false
+    end
 
     block = nodes[first(I)]
     if !(length(block.nodes::Vector{FST}) == 1)
-        return false  # block must have a single statement
-    else  # block must have a single statement
-        true  # block must have a single statement
-    end  # block must have a single statement
+        return false
+    end
 
     I = findfirst(n -> n.typ === Call || n.typ === Where, nodes)
     if I === nothing
         return false
-    else
-        false
     end
     lhs = nodes[I]
 
@@ -425,8 +401,6 @@ function long_to_short_function_def!(fst::FST, s::State)
     line_margin = s.line_offset + length(lhs) + 3 + length(rhs) + fst.extra_margin
     if line_margin > s.opts.margin
         return false
-    else
-        false
     end
 
     if rhs.indent > 0
@@ -550,26 +524,16 @@ end
 ```
 """
 function prepend_return!(fst::FST, s::State)
-    if !(fst.typ === Block)
+    if fst.typ !== Block || length(fst.nodes::Vector{FST}) == 0
         return
-    else
-        true
     end
-    if length(fst.nodes::Vector{FST}) == 0
-        return
-    else
-        false
-    end
+
     ln = fst[end]
     if is_block(ln)
         return
-    else
-        false
     end
     if ln.typ in (Return, MacroCall, MacroBlock, MacroStr)
         return
-    else
-        false
     end
     if length(fst.nodes::Vector{FST}) > 2 &&
        (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
@@ -582,8 +546,6 @@ function prepend_return!(fst::FST, s::State)
     # that shouldn't be overwritten for over purposes so this should be fine.
     if ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw"
         return
-    else
-        false
     end
 
     # check to see if the last node already has a return
@@ -599,8 +561,6 @@ function prepend_return!(fst::FST, s::State)
     s.line_offset = lo
     if found_return
         return
-    else
-        false
     end
 
     ret = FST(Return, fst.indent)
@@ -744,8 +704,6 @@ function separate_kwargs_with_semicolon!(fst::FST)
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
     if isnothing(kw_idx)
         return
-    else
-        false
     end
     sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg
@@ -792,8 +750,6 @@ Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLIN
 function remove_superfluous_whitespace!(fst::FST)
     if is_leaf(fst)
         return
-    else
-        false
     end
     nodes = fst.nodes::Vector{FST}
     for (i, n) in enumerate(nodes)
@@ -909,8 +865,6 @@ end
 function short_circuit_to_if_pass!(fst::FST, s::State)
     if is_leaf(fst)
         return
-    else
-        false
     end
     for n in fst.nodes::Vector{FST}
         if is_leaf(n)

@@ -12,8 +12,6 @@ end
 function format_md(text::AbstractString, style::AbstractStyle; kwargs...)
     if isempty(text)
         return text
-    else
-        false
     end
     opts = Options(; merge(options(style), kwargs)...)
     return format_md(text, style, opts)

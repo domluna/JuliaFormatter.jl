@@ -71,8 +71,6 @@ function p_import(
     t = FST(Import, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for a in children(cst)
@@ -138,8 +136,6 @@ function p_curly(
     t = FST(Curly, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -180,8 +176,6 @@ function p_braces(
     t = FST(Braces, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
     from_typedef = ctx.from_typedef
 
@@ -225,8 +219,6 @@ function p_bracescat(
     t = FST(BracesCat, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
     from_typedef = ctx.from_typedef
 
@@ -270,8 +262,6 @@ function p_tuple(
     t = FST(TupleN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     nargs = length(get_args(cst))
@@ -321,8 +311,6 @@ function p_invisbrackets(
     t = FST(Brackets, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -357,8 +345,6 @@ function p_call(
     t = FST(Call, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -434,8 +420,6 @@ function p_vect(
     t = FST(Vect, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -477,8 +461,6 @@ function p_vcat(
     t = FST(Vcat, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -567,8 +549,6 @@ function p_ref(
     t = FST(RefN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -613,8 +593,6 @@ function p_comprehension(
     t = FST(Comprehension, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -669,8 +647,6 @@ function p_macrocall(
     t = FST(MacroCall, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -740,8 +716,6 @@ function p_whereopcall(
     t = FST(Where, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     from_typedef = ctx.from_typedef
@@ -829,8 +803,6 @@ function p_generator(
     t = FST(Generator, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     has_for_kw = false

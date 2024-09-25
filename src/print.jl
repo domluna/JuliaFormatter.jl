@@ -86,8 +86,6 @@ function print_leaf(io::IOBuffer, fst::FST, s::State)
     else
         if s.on
             write(io, fst.val)
-        else
-            false
         end
     end
     s.line_offset += length(fst)
@@ -152,15 +150,11 @@ function print_tree(
             if is_closer(nodes[i+1]) || nodes[i+1].typ === Block || nodes[i+1].typ === Begin
                 if s.on
                     write(io, repeat(" ", max(nodes[i+1].indent, 0)))
-                else
-                    false
                 end
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
                 if s.on
                     write(io, ws)
-                else
-                    false
                 end
                 s.line_offset = indent
             end
@@ -185,8 +179,6 @@ end
 function print_notcode(io::IOBuffer, fst::FST, s::State)
     if !(s.on)
         return
-    else
-        true
     end
     for l in fst.startline:fst.endline
         _, v = get(s.doc.comments, l, (0, "\n"))
@@ -198,20 +190,14 @@ function print_notcode(io::IOBuffer, fst::FST, s::State)
             _, vn = get(s.doc.comments, l + 1, (0, "\n"))
             if vn == "\n" && v == "\n"
                 (v = "")
-            else
-                false
             end
         end
 
         if v == ""
             continue
-        else
-            false
         end
         if v == "\n"
             (ws = 0)
-        else
-            false
         end
 
         if l == fst.endline && v[end] == '\n'
@@ -220,8 +206,6 @@ function print_notcode(io::IOBuffer, fst::FST, s::State)
 
         if ws > 0
             write(io, repeat(" ", ws))
-        else
-            false
         end
         write(io, v)
 
@@ -234,14 +218,10 @@ end
 function print_inlinecomment(io::IOBuffer, fst::FST, s::State)
     if !(s.on)
         return
-    else
-        true
     end
     ws, v = get(s.doc.comments, fst.startline, (0, ""))
     if isempty(v)
         return
-    else
-        false
     end
     v = v[end] == '\n' ? v[firstindex(v):prevind(v, end)] : v
     if ws > 0

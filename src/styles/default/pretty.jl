@@ -330,8 +330,6 @@ function p_juxtapose(
     t = FST(Juxtapose, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -352,8 +350,6 @@ function p_continue(
     t = FST(Continue, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -374,8 +370,6 @@ function p_break(
     t = FST(Break, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -397,8 +391,6 @@ function p_inert(
     t = FST(Inert, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -419,8 +411,6 @@ function p_macrostr(
     t = FST(MacroStr, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -494,8 +484,6 @@ function p_accessor(
     t = FST(Accessor, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -516,8 +504,6 @@ function p_stringh(
     loc = cursor_loc(s)
     if !haschildren(cst)
         return FST(StringN, loc[2] - 1)
-    else
-        false
     end
 
     val = ""
@@ -584,8 +570,6 @@ function p_globalrefdoc(
     t = FST(GlobalRefDoc, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -620,8 +604,6 @@ function p_macrocall(
 
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -708,8 +690,6 @@ function p_block(
     t = FST(Block, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     join_body = ctx.join_body
@@ -814,8 +794,6 @@ function p_abstract(
     t = FST(Abstract, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -839,8 +817,6 @@ function p_primitive(
     t = FST(Primitive, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -863,8 +839,6 @@ function p_var(
     t = FST(NonStdIdentifier, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -885,8 +859,6 @@ function p_functiondef(
     t = FST(FunctionN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     block_has_contents = false
@@ -958,8 +930,6 @@ function p_struct(
     t = FST(Struct, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     block_has_contents = false
@@ -1014,8 +984,6 @@ function p_mutable(
     t = FST(Mutable, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     block_has_contents = false
@@ -1070,8 +1038,6 @@ function p_module(
     t = FST(ModuleN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     from_module = ctx.from_module
@@ -1168,8 +1134,6 @@ function p_const(
     t = FST(Const, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -1231,8 +1195,6 @@ function p_toplevel(
     t = FST(TopLevel, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for a in children(cst)
@@ -1257,8 +1219,6 @@ function p_begin(
     t = FST(Begin, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -1298,8 +1258,6 @@ function p_quote(
     t = FST(Quote, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -1328,8 +1286,6 @@ function p_quotenode(
     t = FST(Quotenode, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     ctx = newctx(ctx; from_quote = true)
@@ -1368,8 +1324,6 @@ function p_let(
     t = FST(Let, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
     block_id = 1
 
@@ -1447,8 +1401,6 @@ function p_for(
     t = FST(For, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     ends_in_iterable = false
@@ -1504,8 +1456,6 @@ function p_cartesian_iterator(
     t = FST(CartesianIterator, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -1554,8 +1504,6 @@ function p_do(
     t = FST(Do, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -1595,8 +1543,6 @@ function p_try(
     t = FST(Try, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     # in JuliaSyntax this is now a tree structure instead of being linear
@@ -1655,8 +1601,6 @@ function p_if(
     t = FST(If, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -1729,8 +1673,6 @@ function p_kw(
     t = FST(Kw, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     push!(lineage, (kind(cst), false, true))
@@ -1779,8 +1721,6 @@ function p_binaryopcall(
     t = FST(Binary, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     opkind = op_kind(cst)
@@ -1790,8 +1730,6 @@ function p_binaryopcall(
     nrhs = nest_rhs(cst)
     if nrhs
         (t.nest_behavior = AlwaysNest)
-    else
-        false
     end
     nest = (is_binaryop_nestable(style, cst) && !nonest) || nrhs
 
@@ -2006,8 +1944,6 @@ function p_whereopcall(
     t = FST(Where, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2086,8 +2022,6 @@ function p_conditionalopcall(
     t = FST(Conditional, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -2114,8 +2048,6 @@ function p_unaryopcall(
     t = FST(Unary, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     opkind = op_kind(cst)
@@ -2143,8 +2075,6 @@ function p_curly(
     t = FST(Curly, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2194,8 +2124,6 @@ function p_call(
     t = FST(Call, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2255,8 +2183,6 @@ function p_invisbrackets(
     t = FST(Brackets, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2318,8 +2244,6 @@ function p_tuple(
     t = FST(TupleN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2379,8 +2303,6 @@ function p_braces(
     t = FST(Braces, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2432,8 +2354,6 @@ function p_bracescat(
     t = FST(BracesCat, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2484,8 +2404,6 @@ function p_vect(
     t = FST(Vect, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2535,8 +2453,6 @@ function p_comprehension(
     t = FST(Comprehension, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -2594,8 +2510,6 @@ function p_parameters(
     t = FST(Parameters, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     nws = ctx.from_typedef && !s.opts.whitespace_typedefs ? 0 : 1
@@ -2631,8 +2545,6 @@ function p_import(
     t = FST(Import, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for a in children(cst)
@@ -2694,8 +2606,6 @@ function p_importpath(
     t = FST(ImportPath, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for a in children(cst)
@@ -2716,8 +2626,6 @@ function p_as(
     t = FST(As, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     for c in children(cst)
@@ -2745,8 +2653,6 @@ function p_ref(
     t = FST(RefN, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2797,8 +2703,6 @@ function p_vcat(
     t = FST(Vcat, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     args = get_args(cst)
@@ -2881,8 +2785,6 @@ function p_hcat(
     t = FST(Hcat, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -2952,8 +2854,6 @@ function p_row(
     t = FST(Row, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
@@ -3004,8 +2904,6 @@ function p_generator(
     t = FST(Generator, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     has_for_kw = false

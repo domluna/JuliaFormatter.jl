@@ -38,13 +38,9 @@ Configuration(args) = Configuration(args, Dict{String,Any}())
 function get(config::Configuration, s::String, default)
     if haskey(config.args, s)
         return config.args[s]
-    else
-        false
     end
     if haskey(config.file, s)
         return config.file[s]
-    else
-        false
     end
     return default
 end
@@ -164,8 +160,6 @@ function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     @nospecialize kwargs
     if isempty(text)
         return text
-    else
-        false
     end
     opts = Options(; merge(options(style), kwargs)...)
     return format_text(text, style, opts)
@@ -175,8 +169,6 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
     @nospecialize kwargs
     if isempty(text)
         return text
-    else
-        false
     end
     opts = Options(; merge(options(style), kwargs)...)
     # We need to iterate to a fixpoint because the result of short to long
@@ -184,15 +176,11 @@ function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwar
     formatted_text = format_text(text, style, opts)
     if maxiters == 0
         return formatted_text
-    else
-        false
     end
     iter = 1
     while formatted_text != text
         if iter > maxiters
             error("formatted_text hasn't reached to a fixpoint in $iter iterations")
-        else
-            false
         end
         text = formatted_text
         formatted_text = format_text(text, style, opts)
@@ -220,14 +208,10 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
     end
     if hascomment(s.doc, fst.endline)
         (add_node!(fst, InlineComment(fst.endline), s))
-    else
-        false
     end
 
     if s.opts.pipe_to_function_call
         pipe_to_function_call_pass!(fst)
-    else
-        false
     end
 
     flatten_fst!(fst)
@@ -238,8 +222,6 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
 
     if needs_alignment(s.opts)
         align_fst!(fst, s.opts)
-    else
-        false
     end
 
     nest!(style, fst, s)
@@ -248,8 +230,6 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
     # remove it all before we print.
     if s.opts.join_lines_based_on_source
         remove_superfluous_whitespace!(fst)
-    else
-        false
     end
 
     s.line_offset = 0
@@ -302,21 +282,15 @@ function _format_file(
     formatted_str = if match(r"^\.[jq]*md$", ext) ≠ nothing
         if !(format_markdown)
             return true
-        else
-            true
         end
         if verbose
             println("Formatting $filename")
-        else
-            false
         end
         str = String(read(filename))
         format_md(str; format_options...)
     elseif ext == ".jl" || match(shebang_pattern, readline(filename)) !== nothing
         if verbose
             println("Formatting $filename")
-        else
-            false
         end
         str = String(read(filename))
         format_text(str; format_options...)
@@ -424,8 +398,6 @@ function format(path::AbstractString, options::Configuration)
     end
     if isignored(path, options)
         return true
-    else
-        false
     end
     if isdir(path)
         configpath = joinpath(path, CONFIG_FILE_NAME)
@@ -437,8 +409,6 @@ function format(path::AbstractString, options::Configuration)
             subpath = joinpath(path, subpath)
             if !ispath(subpath)
                 continue
-            else
-                false
             end
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
@@ -476,8 +446,6 @@ function format(mod::Module, args...; options...)
     path = pkgdir(mod)
     if path === nothing
         throw(ArgumentError("couldn't find a directory of module `$mod`"))
-    else
-        false
     end
     format(path, args...; options...)
 end
@@ -527,14 +495,10 @@ function find_config_file(path)
     dir = dirname(path)
     if (path == dir || isempty(path))
         return NamedTuple()
-    else
-        false
     end
     configpath = joinpath(dir, CONFIG_FILE_NAME)
     if isfile(configpath)
         return parse_config(configpath)
-    else
-        false
     end
     return find_config_file(dir)
 end

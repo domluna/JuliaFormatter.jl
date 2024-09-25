@@ -77,8 +77,6 @@ function p_return(
     t = FST(Return, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)

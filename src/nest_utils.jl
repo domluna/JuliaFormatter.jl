@@ -37,8 +37,6 @@ function walk(f::Function, fst::FST, s::State)
     stop = f(fst, s)
     if (stop !== nothing || is_leaf(fst))
         return
-    else
-        false
     end
     walk(f, fst.nodes::Vector, s, fst.indent)
 end
@@ -46,8 +44,6 @@ end
 function increment_line_offset!(fst::FST, s::State)
     if !(is_leaf(fst))
         return
-    else
-        true
     end
     s.line_offset += length(fst)
     return nothing
@@ -56,8 +52,6 @@ end
 function add_indent!(fst::FST, s::State, indent::Int)
     if indent == 0
         return
-    else
-        false
     end
     f = (fst::FST, _::State) -> begin
         fst.indent += indent
@@ -85,8 +79,6 @@ function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
         fst[ind] = Whitespace(fst[ind].len)
         if !(i == length(nl_inds))
             continue
-        else
-            true
         end
         pn = fst[ind-1]
         if pn.typ === TRAILINGCOMMA
@@ -103,14 +95,10 @@ function nl_to_ws!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
     if !(length(nl_inds) > 0)
         return
-    else
-        true
     end
     margin = s.line_offset + fst.extra_margin + length(fst)
     if margin <= s.opts.margin
         nl_to_ws!(fst, nl_inds)
-    else
-        false
     end
     return
 end
@@ -149,8 +137,6 @@ function unnest!(style::AbstractStyle, fst::FST, s::State; dedent::Bool)
 
     if dedent
         dedent!(style, fst, s)
-    else
-        false
     end
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
@@ -384,8 +370,6 @@ function find_optimal_nest_placeholders(
         end
         if fits
             break
-        else
-            false
         end
     end
     # @info "segments" segments placeholder_inds

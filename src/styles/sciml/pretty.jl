@@ -142,8 +142,6 @@ function p_macrocall(
     t = FST(MacroCall, nspaces(s))
     if !haschildren(cst)
         return t
-    else
-        false
     end
 
     childs = children(cst)
