@@ -260,14 +260,15 @@ is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 is_ws(x) = kind(x) in KSet"Whitespace NewlineWs"
 
 function is_multiline(fst::FST)
-    fst.endline > fst.startline && fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
+    fst.endline > fst.startline &&
+        fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
 end
 
 is_macrocall(fst::FST) = fst.typ in (MacroCall, MacroBlock)
 
 function is_macrodoc(fst::FST)::Bool
     fst.typ === GlobalRefDoc ||
-    (fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc")
+        (fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc")
 end
 
 function is_macrostr(t::JuliaSyntax.GreenNode)::Bool
@@ -290,7 +291,8 @@ function is_func_call(t::JuliaSyntax.GreenNode)::Bool
         return JuliaSyntax.is_prefix_call(t)
     elseif kind(t) in KSet":: where parens" && haschildren(t)
         childs = children(t)
-        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
+        idx =
+            findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
         return !isnothing(idx) && is_func_call(childs[idx])
     end
     return false
@@ -309,7 +311,9 @@ end
 
 is_if(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"if elseif else" && haschildren(cst)
 
-is_try(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"try catch finally" && haschildren(cst)
+function is_try(cst::JuliaSyntax.GreenNode)
+    kind(cst) in KSet"try catch finally" && haschildren(cst)
+end
 
 function is_custom_leaf(fst::FST)
     fst.typ in
@@ -329,7 +333,11 @@ function get_args(t::JuliaSyntax.GreenNode)
 
     k = kind(t)
     ret = if k == K"where"
-        is_leaf(childs[end]) ? JuliaSyntax.GreenNode[childs[end]] : get_args(childs[end])
+        if is_leaf(childs[end])
+            JuliaSyntax.GreenNode[childs[end]]
+        else
+            get_args(childs[end])
+        end
     else
         _idx = findfirst(n -> kind(n) in KSet"( { [", childs)
         idx = isnothing(_idx) ? 1 : _idx + 1
@@ -339,10 +347,15 @@ function get_args(t::JuliaSyntax.GreenNode)
     return nodes
 end
 
-function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where T
+function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
     result = JuliaSyntax.GreenNode[]
     for c in args
-        if !(is_punc(c) || kind(c) == K";" || JuliaSyntax.is_whitespace(c) || kind(c) in KSet"` ``` \" \"\"\"")
+        if !(
+            is_punc(c) ||
+            kind(c) == K";" ||
+            JuliaSyntax.is_whitespace(c) ||
+            kind(c) in KSet"` ``` \" \"\"\""
+        )
             if kind(c) === K"parameters"
                 append!(result, get_args(c))
             else
@@ -460,14 +473,14 @@ end
 
 function is_block(x::JuliaSyntax.GreenNode)
     is_if(x) ||
-    kind(x) in KSet"do try for while let" ||
-    (kind(x) == K"block" && haschildren(x)) ||
-    (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
+        kind(x) in KSet"do try for while let" ||
+        (kind(x) == K"block" && haschildren(x)) ||
+        (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
 end
 
 function is_block(x::FST)
     x.typ in (Block, If, Do, Try, Begin, For, While, Let) ||
-    (x.typ === Quote && x[1].val == "quote")
+        (x.typ === Quote && x[1].val == "quote")
 end
 
 function is_typedef(fst::FST)
@@ -652,7 +665,7 @@ function has_leading_whitespace(n::JuliaSyntax.GreenNode)
 end
 
 function remove_empty_notcode(fst::FST)
-     fst.typ in (Binary, Conditional, Comparison, Chain) || is_iterable(fst)
+    fst.typ in (Binary, Conditional, Comparison, Chain) || is_iterable(fst)
 end
 
 """

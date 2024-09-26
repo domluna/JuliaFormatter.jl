@@ -848,7 +848,8 @@ function _short_circuit_to_if!(fst::FST, s::State, last_arg::Bool)
         block2 = FST(Block, fst.indent + s.opts.indent)
 
         # Determine the default return value based on the operator
-        default_val = is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
+        default_val =
+            is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
         add_node!(block2, default_val, s; join_lines = true)
         add_node!(t, block2, s; max_padding = s.opts.indent)
     end
@@ -874,7 +875,6 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
         elseif (n.typ === Binary || n.typ === Chain) &&
                !isnothing(n.metadata) &&
                (n.metadata::Metadata).is_standalone_shortcircuit
-
             last_arg = i == length(fst.nodes) && fst.typ === Block
             _short_circuit_to_if!(n, s, last_arg)
         else
