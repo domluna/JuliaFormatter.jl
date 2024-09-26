@@ -188,7 +188,7 @@ end
 ### `force_long_function_def`
 > default: `false`
 
-If `true` tweaks the behavior of `short_to_long_function_def` to force the transformation no matter 
+If `true` tweaks the behavior of `short_to_long_function_def` to force the transformation no matter
 how short the function definition is.
 
 ### `long_to_short_function_def`
@@ -528,6 +528,7 @@ You can convert short circuit expressions to the equivalent if expression.
 
 ```julia
 b0 && foo()
+
 b1 || bar()
 ```
 
@@ -536,11 +537,17 @@ respectively become
 ```julia
 if b0
     foo()
+else
+    false
 end
+
 if !b1
     bar()
+else
+    true
 end
 ```
+
 
 ### `disallow_single_arg_nesting`
 
