@@ -242,15 +242,8 @@ is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 function is_punc(cst::JuliaSyntax.GreenNode)
-    if !(kind(cst) in KSet", ( ) [ ] { } @")
-        if kind(cst) === K"."
-            !haschildren(cst)
-        else
-            false
-        end
-    else
-        true
-    end
+    punctuation = KSet", ( ) [ ] { } @"
+    return kind(cst) in punctuation || (kind(cst) === K"." && !haschildren(cst))
 end
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
@@ -267,34 +260,18 @@ is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
 is_ws(x) = kind(x) in KSet"Whitespace NewlineWs"
 
 function is_multiline(fst::FST)
-    if fst.endline > fst.startline
-        fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
-    else
-        false
-    end
+    fst.endline > fst.startline && fst.typ in (StringN, Vcat, TypedVcat, Ncat, TypedNcat, MacroStr)
 end
 
-is_macrocall(fst::FST) = fst.typ === MacroCall || fst.typ === MacroBlock
+is_macrocall(fst::FST) = fst.typ in (MacroCall, MacroBlock)
 
 function is_macrodoc(fst::FST)::Bool
-    if fst.typ === GlobalRefDoc
-        return true
-    else
-        false
-    end
-    if fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc"
-        return true
-    else
-        false
-    end
-    return false
+    fst.typ === GlobalRefDoc ||
+    (fst.typ === MacroBlock && fst[1].typ === Macroname && fst[1][1].val == "@doc")
 end
 
 function is_macrostr(t::JuliaSyntax.GreenNode)::Bool
-    if kind(t) == K"macrocall" && haschildren(t)
-        return contains_macrostr(t[1])
-    end
-    return false
+    kind(t) == K"macrocall" && haschildren(t) && contains_macrostr(t[1])
 end
 
 function contains_macrostr(t::JuliaSyntax.GreenNode)::Bool
@@ -303,11 +280,7 @@ function contains_macrostr(t::JuliaSyntax.GreenNode)::Bool
     elseif kind(t) === "quote" && haschildren(t)
         return contains_macrostr(t[1])
     elseif kind(t) === K"." && haschildren(t)
-        for c in reverse(children(t))
-            if contains_macrostr(c)
-                return true
-            end
-        end
+        return any(contains_macrostr, reverse(children(t)))
     end
     return false
 end
@@ -315,25 +288,10 @@ end
 function is_func_call(t::JuliaSyntax.GreenNode)::Bool
     if kind(t) in KSet"call dotcall"
         return JuliaSyntax.is_prefix_call(t)
-    elseif kind(t) in KSet":: where" && haschildren(t)
+    elseif kind(t) in KSet":: where parens" && haschildren(t)
         childs = children(t)
-        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
-        if isnothing(idx)
-            return false
-        else
-            false
-        end
-        return is_func_call(childs[idx])
-    elseif kind(t) === K"parens" && haschildren(t)
-        childs = children(t)
-        idx =
-            findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
-        if isnothing(idx)
-            return false
-        else
-            false
-        end
-        return is_func_call(childs[idx])
+        idx = findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
+        return !isnothing(idx) && is_func_call(childs[idx])
     end
     return false
 end
@@ -341,38 +299,17 @@ end
 function defines_function(x::JuliaSyntax.GreenNode)
     if kind(x) in KSet"function macro" && haschildren(x)
         return true
-    else
-        false
-    end
-    if is_assignment(x)
+    elseif is_assignment(x) && haschildren(x)
         childs = children(x)
-        if childs === ()
-            return false
-        else
-            false
-        end
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
-        c = is_func_call(childs[idx])
-        return c
+        return !isnothing(idx) && is_func_call(childs[idx])
     end
     return false
 end
 
-function is_if(cst::JuliaSyntax.GreenNode)
-    if kind(cst) in KSet"if elseif else"
-        haschildren(cst)
-    else
-        false
-    end
-end
+is_if(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"if elseif else" && haschildren(cst)
 
-function is_try(cst::JuliaSyntax.GreenNode)
-    if kind(cst) in KSet"try catch finally"
-        haschildren(cst)
-    else
-        false
-    end
-end
+is_try(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"try catch finally" && haschildren(cst)
 
 function is_custom_leaf(fst::FST)
     fst.typ in
@@ -381,12 +318,7 @@ end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
-    if is_leaf(fst)
-        return false
-    else
-        false
-    end
-    contains_comment(fst.nodes::Vector{FST})
+    !is_leaf(fst) && contains_comment(fst.nodes)
 end
 
 function get_args(t::JuliaSyntax.GreenNode)
@@ -742,25 +674,8 @@ function is_typedef(fst::FST)
 end
 
 function is_opcall(x::JuliaSyntax.GreenNode)
-    if is_binary(x)
+    if is_binary(x) || kind(x) == K"comparison" || is_chain(x) || is_unary(x)
         return true
-    else
-        false
-    end
-    if kind(x) == K"comparison"
-        return true
-    else
-        false
-    end
-    if is_chain(x)
-        return true
-    else
-        false
-    end
-    if is_unary(x)
-        return true
-    else
-        false
     end
     if kind(x) === K"parens" && haschildren(x)
         childs = children(x)
@@ -770,8 +685,6 @@ function is_opcall(x::JuliaSyntax.GreenNode)
         )
         if isnothing(idx)
             return false
-        else
-            false
         end
         return is_opcall(childs[idx])
     end
@@ -779,22 +692,12 @@ function is_opcall(x::JuliaSyntax.GreenNode)
 end
 
 function is_prefix_op_call(x::JuliaSyntax.GreenNode)
-    if !(is_opcall(x))
-        return false
-    else
-        true
-    end
-    if !(haschildren(x))
-        return false
-    else
-        true
-    end
-    idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(x))
-    if isnothing(idx)
-        return false
-    else
-        false
-    end
+    is_opcall(x) || return false
+    haschildren(x) || return false
+
+    idx = findfirst(!JuliaSyntax.is_whitespace, children(x))
+    isnothing(idx) && return false
+
     return JuliaSyntax.is_operator(x[idx])
 end
 
@@ -803,29 +706,12 @@ function is_gen(x::JuliaSyntax.GreenNode)
 end
 
 function is_gen(x::FST)
-    if x.typ === Generator
-        return true
-    else
-        false
-    end
-    if x.typ === Filter
-        return true
-    else
-        false
-    end
-    if x.typ === Flatten
-        return true
-    else
-        false
-    end
-    return false
+    x.typ in (Generator, Filter, Flatten)
 end
 
 function _callinfo(x::JuliaSyntax.GreenNode)
-    if !(haschildren(x))
+    if !haschildren(x)
         return 0, 0
-    else
-        true
     end
     k = kind(x)
     n_operators = 0
@@ -847,8 +733,6 @@ end
 function is_unary(x::JuliaSyntax.GreenNode)
     if JuliaSyntax.is_unary_op(x)
         return true
-    else
-        false
     end
     if kind(x) === K"call" || (JuliaSyntax.is_operator(x) && haschildren(x))
         nops, nargs = _callinfo(x)
@@ -868,8 +752,6 @@ end
 function is_chain(x::JuliaSyntax.GreenNode)
     if !(kind(x) === K"call")
         return false
-    else
-        true
     end
     nops, nargs = _callinfo(x)
     return nops > 1 && nargs > 2
@@ -913,22 +795,16 @@ end
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
     if !haschildren(cst)
         return false
-    else
-        false
     end
     k = kind(cst)
     if (k == K"function" || k == K"macro")
         return true
-    else
-        false
     end
 
     if JuliaSyntax.is_operator(cst) && k === K"="
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), children(cst))
         if isnothing(idx)
             return false
-        else
-            false
         end
         return is_function_like_lhs(cst[idx])
     end
@@ -949,8 +825,6 @@ end
 function has_leading_whitespace(n::JuliaSyntax.GreenNode)
     if kind(n) === K"Whitespace"
         return true
-    else
-        false
     end
     if haschildren(n) && length(children(n)) > 0
         return has_leading_whitespace(n[1])
@@ -959,32 +833,7 @@ function has_leading_whitespace(n::JuliaSyntax.GreenNode)
 end
 
 function remove_empty_notcode(fst::FST)
-    if is_iterable(fst)
-        return true
-    else
-        false
-    end
-    if fst.typ === Binary
-        return true
-    else
-        false
-    end
-    if fst.typ === Conditional
-        return true
-    else
-        false
-    end
-    if fst.typ === Comparison
-        return true
-    else
-        false
-    end
-    if fst.typ === Chain
-        return true
-    else
-        false
-    end
-    return false
+     fst.typ in (Binary, Conditional, Comparison, Chain) || is_iterable(fst)
 end
 
 """
@@ -1017,8 +866,6 @@ end
 function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing}
     if JuliaSyntax.is_operator(cst)
         return cst
-    else
-        false
     end
     if (
         is_binary(cst) ||
@@ -1125,14 +972,10 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
         idx = findfirst(n -> n.typ === OPERATOR, fst.nodes::Vector)
         if isnothing(idx)
             return
-        else
-            false
         end
         op = fst[idx]
         if !(valid_for_in_op(op.val))
             return
-        else
-            true
         end
 
         # surround op with ws
@@ -1161,8 +1004,6 @@ function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replaceme
             end
             if past_if
                 break
-            else
-                false
             end
             eq_to_in_normalization!(n, always_for_in, for_in_replacement)
         end
@@ -1398,9 +1239,7 @@ function add_node!(
             # If the previous node type is WHITESPACE - reset it.
             # This fixes cases similar to the one shown in issue #51.
             if nt === WHITESPACE
-                (tnodes[end]::FST = Whitespace(0))
-            else
-                false
+                tnodes[end]::FST = Whitespace(0)
             end
 
             if hascomment(s.doc, current_line)

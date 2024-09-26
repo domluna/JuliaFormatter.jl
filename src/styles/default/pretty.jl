@@ -1801,14 +1801,15 @@ function p_binaryopcall(
     end
     nws = !nospace && has_ws ? 1 : 0
 
+    has_dot = false
     if kind(cst) === K"dotcall"
         nospace = false
         nws = 1
+        has_dot = true
     end
 
     nlws_count = 0
     after_op = false
-
     op_indices = extract_operator_indices(childs)
 
     for (i, c) in enumerate(childs)
@@ -1925,7 +1926,7 @@ function p_binaryopcall(
         end
     end
 
-    if nest && is_binary(cst)
+    if nest && (length(op_indices) == 1 || (length(op_indices) == 2 && has_dot))
         # for indent, will be converted to `indent` if needed
         insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
     end
