@@ -318,79 +318,51 @@ end
 
 contains_comment(nodes::Vector{FST}) = findfirst(is_comment, nodes) !== nothing
 function contains_comment(fst::FST)
-    !is_leaf(fst) && contains_comment(fst.nodes)
+    !is_leaf(fst) && contains_comment(fst.nodes::Vector{FST})
 end
 
 function get_args(t::JuliaSyntax.GreenNode)
     nodes = JuliaSyntax.GreenNode[]
-    if !haschildren(t)
-        return nodes
-    end
+    !haschildren(t) && return nodes
     childs = children(t)
-    if childs === ()
-        return nodes
-    end
+    childs isa Tuple{} && return nodes
 
     k = kind(t)
-
     ret = if k == K"where"
-        if is_leaf(childs[end])
-            JuliaSyntax.GreenNode[childs[end]]
-        else
-            get_args(childs[end])
-        end
+        is_leaf(childs[end]) ? JuliaSyntax.GreenNode[childs[end]] : get_args(childs[end])
     else
         _idx = findfirst(n -> kind(n) in KSet"( { [", childs)
         idx = isnothing(_idx) ? 1 : _idx + 1
         get_args(childs[idx:end])
     end
-
-    if ret === ()
-        return nodes
-    end
-
     append!(nodes, ret)
     return nodes
 end
 
-function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where {T}
-    nodes = JuliaSyntax.GreenNode[]
+function get_args(args::Vector{JuliaSyntax.GreenNode{T}}) where T
+    result = JuliaSyntax.GreenNode[]
     for c in args
-        if is_punc(c) ||
-           kind(c) == K";" ||
-           JuliaSyntax.is_whitespace(c) ||
-           kind(c) in KSet"` ``` \" \"\"\""
-            continue
-        end
-        if kind(c) === K"parameters"
-            append!(nodes, get_args(c))
-        else
-            push!(nodes, c)
+        if !(is_punc(c) || kind(c) == K";" || JuliaSyntax.is_whitespace(c) || kind(c) in KSet"` ``` \" \"\"\"")
+            if kind(c) === K"parameters"
+                append!(result, get_args(c))
+            else
+                push!(result, c)
+            end
         end
     end
-    nodes
+    return result
 end
+
 get_args(_) = ()
 n_args(x) = length(get_args(x))
 
-function is_arg(fst::FST)
-    if fst.typ in (PUNCTUATION, SEMICOLON) || is_custom_leaf(fst)
-        return false
-    end
-    return true
-end
+is_arg(fst::FST) = !(fst.typ in (PUNCTUATION, SEMICOLON) || is_custom_leaf(fst))
 
 function n_args(fst::FST)
-    if is_leaf(fst)
-        return 0
-    else
-        false
-    end
+    is_leaf(fst) && return 0
     nodes = fst.nodes::Vector{FST}
-    _idx = findfirst(is_opener, nodes)
-    idx = isnothing(_idx) ? 1 : _idx
-    n = length(filter(is_arg, nodes[idx:end]))
-    return n
+    idx = findfirst(is_opener, nodes) |> x -> isnothing(x) ? 1 : x
+    count(is_arg, nodes[idx:end])
 end
 
 function is_prev_newline(fst::FST)
@@ -410,13 +382,9 @@ Returns the length to any node type in `ntyps` based off the `start` index.
 function length_to(fst::FST, ntyps; start::Int = 1)
     if fst.typ in ntyps
         return 0, true
-    else
-        false
     end
     if is_leaf(fst)
         return length(fst), false
-    else
-        false
     end
     len = 0
     nodes = fst.nodes::Vector
@@ -425,28 +393,18 @@ function length_to(fst::FST, ntyps; start::Int = 1)
         len += l
         if found
             return len, found
-        else
-            false
         end
     end
     return len, false
 end
 
 function is_closer(fst::FST)
-    if fst.typ === PUNCTUATION
-        (fst.val == "}" || fst.val == ")" || fst.val == "]")
-    else
-        false
-    end
+    fst.typ === PUNCTUATION && (fst.val == "}" || fst.val == ")" || fst.val == "]")
 end
 is_closer(t::JuliaSyntax.GreenNode) = kind(t) in KSet"} ) ]"
 
 function is_opener(fst::FST)
-    if fst.typ === PUNCTUATION
-        (fst.val == "{" || fst.val == "(" || fst.val == "[")
-    else
-        false
-    end
+    fst.typ === PUNCTUATION && (fst.val == "{" || fst.val == "(" || fst.val == "[")
 end
 is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 
@@ -462,120 +420,20 @@ function is_iterable(t::JuliaSyntax.GreenNode)
 end
 
 function is_iterable(x::FST)
-    if is_named_iterable(x)
-        return true
-    else
-        false
-    end
-    if is_unnamed_iterable(x)
-        return true
-    else
-        false
-    end
-    if is_import_expr(x)
-        return true
-    else
-        false
-    end
-    return false
+    is_named_iterable(x) || is_unnamed_iterable(x) || is_import_expr(x)
 end
 is_iterable(::Nothing) = false
 
 function is_unnamed_iterable(x::FST)
-    if x.typ === TupleN
-        return true
-    else
-        false
-    end
-    if x.typ === Vect
-        return true
-    else
-        false
-    end
-    if x.typ === Vcat
-        return true
-    else
-        false
-    end
-    if x.typ === Ncat
-        return true
-    else
-        false
-    end
-    if x.typ === Braces
-        return true
-    else
-        false
-    end
-    if x.typ === Comprehension
-        return true
-    else
-        false
-    end
-    if x.typ === Brackets
-        return true
-    else
-        false
-    end
-    return false
+    return x.typ in (TupleN, Vect, Vcat, Ncat, Braces, Comprehension, Brackets)
 end
 
 function is_named_iterable(x::FST)
-    if x.typ === Call
-        return true
-    else
-        false
-    end
-    if x.typ === Curly
-        return true
-    else
-        false
-    end
-    if x.typ === TypedComprehension
-        return true
-    else
-        false
-    end
-    if x.typ === MacroCall
-        return true
-    else
-        false
-    end
-    if x.typ === RefN
-        return true
-    else
-        false
-    end
-    if x.typ === TypedVcat
-        return true
-    else
-        false
-    end
-    if x.typ === TypedNcat
-        return true
-    else
-        false
-    end
-    return false
+    return x.typ in (Call, Curly, TypedComprehension, MacroCall, RefN, TypedVcat, TypedNcat)
 end
 
 function is_import_expr(x::FST)
-    if x.typ === Import
-        return true
-    else
-        false
-    end
-    if x.typ === Using
-        return true
-    else
-        false
-    end
-    if x.typ === Export
-        return true
-    else
-        false
-    end
-    return false
+    return x.typ in (Import, Using, Export)
 end
 
 """
@@ -589,10 +447,7 @@ the case of a function call, which is of type `Call`:
 This would return `true` for `a`, `b`, `c` and `k1=v1` and `false` for all other nodes.
 """
 function is_iterable_arg(fst::FST)
-    if fst.typ in (PUNCTUATION, KEYWORD, OPERATOR, SEMICOLON) || is_custom_leaf(fst)
-        return false
-    end
-    return true
+    !(fst.typ in (PUNCTUATION, KEYWORD, OPERATOR, SEMICOLON) || is_custom_leaf(fst))
 end
 
 function is_comprehension(x::JuliaSyntax.GreenNode)
@@ -600,77 +455,23 @@ function is_comprehension(x::JuliaSyntax.GreenNode)
 end
 
 function is_comprehension(x::FST)
-    if x.typ === Comprehension
-        return true
-    else
-        false
-    end
-    if x.typ === TypedComprehension
-        return true
-    else
-        false
-    end
-    return false
+    x.typ in (Comprehension, TypedComprehension)
 end
 
 function is_block(x::JuliaSyntax.GreenNode)
-    if is_if(x)
-        return true
-    else
-        false
-    end
-    if kind(x) in KSet"do try for while let"
-        return true
-    else
-        false
-    end
-    if (kind(x) == K"block" && haschildren(x))
-        return true
-    else
-        false
-    end
-    if (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
-        return true
-    else
-        false
-    end
-    return false
+    is_if(x) ||
+    kind(x) in KSet"do try for while let" ||
+    (kind(x) == K"block" && haschildren(x)) ||
+    (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
 end
 
 function is_block(x::FST)
-    if !(x.typ in (Block, If, Do, Try, Begin, For, While, Let))
-        if x.typ === Quote
-            x[1].val == "quote"
-        else
-            false
-        end
-    else
-        true
-    end
+    x.typ in (Block, If, Do, Try, Begin, For, While, Let) ||
+    (x.typ === Quote && x[1].val == "quote")
 end
 
 function is_typedef(fst::FST)
-    if fst.typ === Struct
-        return true
-    else
-        false
-    end
-    if fst.typ === Mutable
-        return true
-    else
-        false
-    end
-    if fst.typ === Primitive
-        return true
-    else
-        false
-    end
-    if fst.typ === Abstract
-        return true
-    else
-        false
-    end
-    return false
+    fst.typ in (Struct, Mutable, Primitive, Abstract)
 end
 
 function is_opcall(x::JuliaSyntax.GreenNode)
@@ -709,6 +510,23 @@ function is_gen(x::FST)
     x.typ in (Generator, Filter, Flatten)
 end
 
+function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) where {T}
+    args = findall(n -> !JuliaSyntax.is_whitespace(n), childs)
+    op_indices = Int[]
+    i = 2
+    while i <= length(args)
+        push!(op_indices, args[i])
+        if i < length(args) &&
+           kind(childs[args[i]]) === K"." &&
+           !haschildren(childs[args[i]])
+            push!(op_indices, args[i+1])
+            i += 1
+        end
+        i += 2
+    end
+    return op_indices
+end
+
 function _callinfo(x::JuliaSyntax.GreenNode)
     if !haschildren(x)
         return 0, 0
@@ -716,6 +534,7 @@ function _callinfo(x::JuliaSyntax.GreenNode)
     k = kind(x)
     n_operators = 0
     n_args = 0
+
     for c in children(x)
         if JuliaSyntax.is_whitespace(c) || is_punc(c)
             continue
@@ -893,23 +712,6 @@ function op_kind(fst::FST)::JuliaSyntax.Kind
     return isnothing(fst.metadata) ? K"None" : (fst.metadata::Metadata).op_kind
 end
 
-function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) where {T}
-    args = findall(n -> !JuliaSyntax.is_whitespace(n), childs)
-    op_indices = Int[]
-    i = 2
-    while i <= length(args)
-        push!(op_indices, args[i])
-        if i < length(args) &&
-           kind(childs[args[i]]) === K"." &&
-           !haschildren(childs[args[i]])
-            push!(op_indices, args[i+1])
-            i += 1
-        end
-        i += 2
-    end
-    return op_indices
-end
-
 # """
 #     is_standalone_shortcircuit(cst::JuliaSyntax.GreenNode)
 #
@@ -1055,19 +857,11 @@ function needs_placeholder(
 end
 
 function next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode)
-    if !(kind(nn) === k)
-        (haschildren(nn) && next_node_is(k, nn[1]))
-    else
-        true
-    end
+    kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
 end
 
 function next_node_is(f::Function, nn::JuliaSyntax.GreenNode)
-    if !(f(nn))
-        (haschildren(nn) && next_node_is(f, nn[1]))
-    else
-        true
-    end
+    f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
 end
 
 """

@@ -2539,6 +2539,66 @@
         """
         @test fmt(s_, 4, 21; short_circuit_to_if = true) == s1
         @test fmt(s_, 4, 20; short_circuit_to_if = true) == s2
+
+        s_ = """
+        function foo()
+            a && (b || c || d)
+        end
+        """
+        s = """
+        function foo()
+            if a
+                (b || c || d)
+            else
+                false
+            end
+        end
+        """
+        @test fmt(s_, 4, 92; short_circuit_to_if = true) == s
+
+        s_ = """
+        function foo(a)
+            a || return "bar"
+
+            "hello"
+        end
+        """
+        s = """
+        function foo(a)
+            if !(a)
+                return "bar"
+            end
+
+            "hello"
+        end
+        """
+        @test fmt(s_, 4, 92; short_circuit_to_if = true) == s
+
+        s_ = """
+        function foo(a, b)
+            a || return "bar"
+
+            "hello"
+
+            b && return "ooo"
+        end
+        """
+        s = """
+        function foo(a, b)
+            if !(a)
+                return "bar"
+            end
+
+            "hello"
+
+            if b
+                return "ooo"
+            else
+                false
+            end
+        end
+        """
+        @test fmt(s_, 4, 92; short_circuit_to_if = true) == s
     end
 
     @testset "disallow single arg nesting" begin

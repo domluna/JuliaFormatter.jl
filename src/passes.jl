@@ -765,7 +765,7 @@ function remove_superfluous_whitespace!(fst::FST)
     return
 end
 
-function _short_circuit_to_if!(fst::FST, s::State)
+function _short_circuit_to_if!(fst::FST, s::State, last_arg::Bool)
     # change it into an if
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, "if")
@@ -840,16 +840,18 @@ function _short_circuit_to_if!(fst::FST, s::State)
     end
     add_node!(t, block1, s; max_padding = s.opts.indent)
 
-    # Add the 'else' branch
-    else_kw = FST(KEYWORD, 0, 0, -1, "else")
-    add_node!(t, else_kw, s; max_padding = 0)
+    if last_arg
+        # Add the 'else' branch
+        else_kw = FST(KEYWORD, 0, 0, -1, "else")
+        add_node!(t, else_kw, s; max_padding = 0)
+        # add second block is this is not a return
+        block2 = FST(Block, fst.indent + s.opts.indent)
 
-    block2 = FST(Block, fst.indent + s.opts.indent)
-
-    # Determine the default return value based on the operator
-    default_val = is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
-    add_node!(block2, default_val, s; join_lines = true)
-    add_node!(t, block2, s; max_padding = s.opts.indent)
+        # Determine the default return value based on the operator
+        default_val = is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
+        add_node!(block2, default_val, s; join_lines = true)
+        add_node!(t, block2, s; max_padding = s.opts.indent)
+    end
 
     # Close the if statement
     end_kw = FST(KEYWORD, 0, 0, -1, "end")
@@ -866,13 +868,15 @@ function short_circuit_to_if_pass!(fst::FST, s::State)
     if is_leaf(fst)
         return
     end
-    for n in fst.nodes::Vector{FST}
+    for (i, n) in enumerate(fst.nodes::Vector{FST})
         if is_leaf(n)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
                !isnothing(n.metadata) &&
                (n.metadata::Metadata).is_standalone_shortcircuit
-            _short_circuit_to_if!(n, s)
+
+            last_arg = i == length(fst.nodes) && fst.typ === Block
+            _short_circuit_to_if!(n, s, last_arg)
         else
             short_circuit_to_if_pass!(n, s)
         end
