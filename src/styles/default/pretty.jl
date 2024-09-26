@@ -36,32 +36,28 @@ function pretty(
         p_identifier(style, node, s, ctx, lineage)
     elseif JuliaSyntax.is_operator(node) && !haschildren(node)
         p_operator(style, node, s, ctx, lineage)
-    elseif kind(node) == K"Comment"
+    elseif k == K"Comment"
         p_comment(style, node, s, ctx, lineage)
     elseif JuliaSyntax.is_whitespace(node)
         p_whitespace(style, node, s, ctx, lineage)
-    elseif kind(node) == K";"
+    elseif k == K";"
         p_semicolon(style, node, s, ctx, lineage)
     elseif is_punc(node) && !haschildren(node)
         p_punctuation(style, node, s, ctx, lineage)
     elseif JuliaSyntax.is_keyword(node) && !haschildren(node)
         p_keyword(style, node, s, ctx, lineage)
-    elseif k == K"as"
-        p_as(style, node, s, ctx, lineage)
     elseif k in KSet"string cmdstring char"
         p_stringh(style, node, s, ctx, lineage)
     elseif JuliaSyntax.is_literal(node) || k in KSet"\" \"\"\" ` ```"
         p_literal(style, node, s, ctx, lineage)
+    elseif k == K"as"
+        p_as(style, node, s, ctx, lineage)
     elseif k === K"." && haschildren(node)
         p_accessor(style, node, s, ctx, lineage)
     elseif k === K"block" && length(children(node)) > 1 && kind(node[1]) === K"begin"
         p_begin(style, node, s, ctx, lineage)
     elseif k === K"block"
         p_block(style, node, s, ctx, lineage)
-    elseif k === K"module"
-        p_module(style, node, s, ctx, lineage)
-    elseif k === K"baremodule"
-        p_baremodule(style, node, s, ctx, lineage)
     elseif k === K"function"
         p_functiondef(style, node, s, ctx, lineage)
     elseif k in KSet"MacroName StringMacroName CmdMacroName core_@cmd"
@@ -72,10 +68,6 @@ function pretty(
         p_struct(style, node, s, ctx, lineage)
     elseif k === K"struct" && JuliaSyntax.has_flags(node, JuliaSyntax.MUTABLE_FLAG)
         p_mutable(style, node, s, ctx, lineage)
-    elseif k === K"abstract"
-        p_abstract(style, node, s, ctx, lineage)
-    elseif k === K"primitive"
-        p_primitive(style, node, s, ctx, lineage)
     elseif k === K"for"
         p_for(style, node, s, ctx, lineage)
     elseif k === K"while"
@@ -136,7 +128,7 @@ function pretty(
         p_comparison(style, node, s, ctx, lineage)
     elseif JuliaSyntax.is_operator(node) && haschildren(node)
         p_binaryopcall(style, node, s, ctx, lineage)
-    elseif kind(node) in KSet"dotcall call"
+    elseif k in KSet"dotcall call"
         p_binaryopcall(style, node, s, ctx, lineage)
     elseif k === K"parameters"
         p_parameters(style, node, s, ctx, lineage)
@@ -158,6 +150,14 @@ function pretty(
         p_using(style, node, s, ctx, lineage)
     elseif k === K"importpath"
         p_importpath(style, node, s, ctx, lineage)
+    elseif k === K"abstract"
+        p_abstract(style, node, s, ctx, lineage)
+    elseif k === K"primitive"
+        p_primitive(style, node, s, ctx, lineage)
+    elseif k === K"module"
+        p_module(style, node, s, ctx, lineage)
+    elseif k === K"baremodule"
+        p_baremodule(style, node, s, ctx, lineage)
     elseif k === K"row"
         p_row(style, node, s, ctx, lineage)
     elseif k === K"nrow"
@@ -189,7 +189,7 @@ function pretty(
     elseif k === K"inert"
         p_inert(style, node, s, ctx, lineage)
     else
-        @warn "unknown node" kind(node) node cursor_loc(s)
+        @warn "unknown node" k node cursor_loc(s)
         if is_leaf(node)
             s.offset += span(node)
             FST(NONE, 0, 0, 0, "")
@@ -507,14 +507,14 @@ function p_stringh(
     end
 
     val = ""
-    startline = -1
-    endline = -1
+    startline = 0
+    endline = 0
 
     for a in children(cst)
         n = pretty(style, a, s, ctx, lineage)
         val *= gettreeval(n)
 
-        if startline == -1
+        if startline == 0
             startline = n.startline
         end
 
