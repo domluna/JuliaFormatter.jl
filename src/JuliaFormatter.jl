@@ -446,6 +446,9 @@ function format(path::AbstractString, options::Configuration)
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
         end
+        if formatted.value
+            println("Well done! ✨ 🍰 ✨")
+        end
         return formatted.value
     end
     # `path` is not a directory but a file
@@ -454,7 +457,11 @@ function format(path::AbstractString, options::Configuration)
         return true
     end
     try
-        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+        formatted = _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+        if formatted
+            println("Well done! ✨ 🍰 ✨")
+        end
+        return formatted
     catch err
         @info "Error in formatting file $path"
         @debug "formatting failed due to" exception = (err, catch_backtrace())
