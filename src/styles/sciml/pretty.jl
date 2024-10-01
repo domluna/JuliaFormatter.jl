@@ -1,18 +1,3 @@
-"""
-    SciMLStyle()
-
-Formatting style based on [SciMLStyle](https://github.com/SciML/SciMLStyle).
-
-!!! note
-    This style is still work-in-progress.
-
-Configurable options with different defaults to [`DefaultStyle`](@ref) are:
-- `whitespace_ops_in_indices` = true
-- `remove_extra_newlines` = true
-- `always_for_in` = true
-- `whitespace_typedefs` = true,
-- `normalize_line_endings` = "unix"
-"""
 struct SciMLStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
@@ -52,6 +37,19 @@ function options(style::SciMLStyle)
         disallow_single_arg_nesting = true,
     )
 end
+
+@doc """
+    SciMLStyle()
+
+Formatting style based on [SciMLStyle](https://github.com/SciML/SciMLStyle).
+
+!!! note
+    This style is still work-in-progress.
+
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
+$(list_different_defaults(SciMLStyle()))
+"""
+SciMLStyle
 
 function is_binaryop_nestable(::SciMLStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || is_assignment(cst)) && return false

@@ -1,21 +1,3 @@
-"""
-    YASStyle()
-
-Formatting style based on [YASGuide](https://github.com/jrevels/YASGuide)
-and [JuliaFormatter#198](https://github.com/domluna/JuliaFormatter.jl/issues/198).
-
-Configurable options with different defaults to [`DefaultStyle`](@ref) are:
-- `always_for_in` = true
-- `whitespace_ops_in_indices` = true
-- `remove_extra_newlines` = true
-- `import_to_using` = true
-- `pipe_to_function_call` = true
-- `short_to_long_function_def` = true
-- `always_use_return` = true
-- `whitespace_in_kwargs` = false
-- `join_lines_based_on_source` = true
-- `separate_kwargs_with_semicolon` = true
-"""
 struct YASStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
@@ -54,6 +36,17 @@ function options(style::YASStyle)
         yas_style_nesting = false,
     )
 end
+
+@doc """
+    YASStyle()
+
+Formatting style based on [YASGuide](https://github.com/jrevels/YASGuide)
+and [JuliaFormatter#198](https://github.com/domluna/JuliaFormatter.jl/issues/198).
+
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
+$(list_different_defaults(YASStyle()))
+"""
+YASStyle
 
 function is_binaryop_nestable(::YASStyle, cst::CSTParser.EXPR)
     (CSTParser.defines_function(cst) || is_assignment(cst)) && return false

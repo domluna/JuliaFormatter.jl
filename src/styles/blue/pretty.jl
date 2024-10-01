@@ -1,25 +1,3 @@
-"""
-    BlueStyle()
-
-Formatting style based on [BlueStyle](https://github.com/invenia/BlueStyle)
-and [JuliaFormatter#283](https://github.com/domluna/JuliaFormatter.jl/issues/283).
-
-!!! note
-    This style is still work-in-progress, and does not yet implement all of the
-    BlueStyle guide.
-
-Configurable options with different defaults to [`DefaultStyle`](@ref) are:
-- `always_use_return` = true
-- `short_to_long_function_def` = true
-- `whitespace_ops_in_indices` = true
-- `remove_extra_newlines` = true
-- `always_for_in` = true
-- `import_to_using` = true
-- `pipe_to_function_call` = true
-- `whitespace_in_kwargs` = false
-- `annotate_untyped_fields_with_any` = false
-- `separate_kwargs_with_semicolon` = true
-"""
 struct BlueStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
@@ -58,6 +36,21 @@ function options(style::BlueStyle)
         yas_style_nesting = false,
     )
 end
+
+@doc """
+    BlueStyle()
+
+Formatting style based on [BlueStyle](https://github.com/invenia/BlueStyle)
+and [JuliaFormatter#283](https://github.com/domluna/JuliaFormatter.jl/issues/283).
+
+!!! note
+    This style is still work-in-progress, and does not yet implement all of the
+    BlueStyle guide.
+
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
+$(list_different_defaults(BlueStyle()))
+"""
+BlueStyle
 
 function is_binaryop_nestable(::BlueStyle, cst::CSTParser.EXPR)
     is_assignment(cst) && is_iterable(cst[end]) && return false
