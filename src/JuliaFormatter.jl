@@ -138,6 +138,18 @@ include("fst.jl")
 include("passes.jl")
 include("align.jl")
 
+function list_different_defaults(style)
+    options_style = pairs(options(style))
+    options_default = pairs(options(DefaultStyle()))
+    options_changed = setdiff(options_style, options_default)
+    sort!(options_changed; by = first)
+    io = IOBuffer()
+    for (key, val) in options_changed
+        println(io, "- `$key` = $val")
+    end
+    String(take!(io))
+end
+
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
 include("styles/yas/pretty.jl")
