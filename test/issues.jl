@@ -1852,4 +1852,17 @@
             join_lines_based_on_source = true,
         ) == s2
     end
+
+    @testset "774" begin
+        str = """
+        getdata() = rand() < 0.5 ? rand() : missing
+
+        function dowork()
+            while !ismissing((val = getdata();))
+                println(val^2)
+            end
+        end
+        """
+        @test fmt(str) == str
+    end
 end

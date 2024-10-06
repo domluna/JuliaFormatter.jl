@@ -729,7 +729,9 @@ function p_block(
         elseif single_line
             if kind(a) in KSet", ;"
                 add_node!(t, n, s; join_lines = true)
-                add_node!(t, Placeholder(1), s)
+                if needs_placeholder(childs, i+1, K")")
+                    add_node!(t, Placeholder(1), s)
+                end
             else
                 add_node!(t, n, s; join_lines = true)
             end
@@ -774,7 +776,7 @@ function p_block(
         elseif kind(a) === K"," && i != length(nodes)
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K";"
-            continue
+            add_node!(t, n, s; join_lines = true)
         else
             add_node!(t, n, s; max_padding = 0)
         end

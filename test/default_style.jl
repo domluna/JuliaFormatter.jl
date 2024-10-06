@@ -2204,8 +2204,8 @@
                      c""") == str
 
         str = """begin
-                     a
-                     b
+                     a;
+                     b;
                      c
                  end"""
         @test fmt("""begin a; b; c end""") == str
@@ -2214,8 +2214,8 @@
         @test fmt("""begin \n            end""") == str
 
         str = """quote
-                     a
-                     b
+                     a;
+                     b;
                      c
                  end"""
         @test fmt("""quote a; b; c end""") == str
