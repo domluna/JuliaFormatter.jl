@@ -151,11 +151,11 @@ code as another string.
 
 See https://domluna.github.io/JuliaFormatter.jl/dev/#Formatting-Options for details on available options.
 """
-function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), @nospecialize(kwargs...))
+function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
 end
 
-function format_text(text::AbstractString, style::AbstractStyle; @nospecialize(kwargs...))
+function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     if isempty(text)
         return text
     end
@@ -163,7 +163,7 @@ function format_text(text::AbstractString, style::AbstractStyle; @nospecialize(k
     return format_text(text, style, opts)
 end
 
-function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, @nospecialize(kwargs...))
+function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwargs...)
     if isempty(text)
         return text
     end
@@ -305,7 +305,6 @@ function _format_file(
 end
 
 function _format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
-    @nospecialize kwargs
     return _format_file(filename; style = style, kwargs...)
 end
 
@@ -335,7 +334,6 @@ function format_file(
     format_markdown::Bool = false,
     format_options...,
 )
-    @nospecialize format_options
     format(
         filename;
         overwrite = overwrite,
@@ -346,7 +344,6 @@ function format_file(
 end
 
 function format_file(filename::AbstractString, style::AbstractStyle; kwargs...)
-    @nospecialize kwargs
     return format_file(filename; style = style, kwargs...)
 end
 
