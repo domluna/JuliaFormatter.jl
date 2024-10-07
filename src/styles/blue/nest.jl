@@ -10,10 +10,9 @@ function n_tuple!(
     lidx = findlast(n -> n.typ === PLACEHOLDER, nodes)
     fidx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
     multiline_arg = findfirst(is_block, nodes) !== nothing
+    indent = fst.indent
     if multiline_arg
-        (fst.nest_behavior = AlwaysNest)
-    else
-        false
+        fst.nest_behavior = AlwaysNest
     end
     has_closer = is_closer(fst[end])
     nested = false
@@ -27,14 +26,21 @@ function n_tuple!(
         false
     end
 
-    if lidx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+    if has_closer
+        fst[end].indent = fst.indent
+    end
+    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
+        fst.indent += s.opts.indent
+    end
+
+    if !isnothing(lidx) && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
         fidx = fidx::Int
         args_range = (fidx+1):(lidx-1)
         args_margin = sum(length.(fst[args_range]))
         nested = true
 
         nest_to_oneline =
-            if can_nest(fst) && (fst.indent + s.opts.indent + args_margin <= s.opts.margin)
+            if can_nest(fst) && (indent + s.opts.indent + args_margin <= s.opts.margin)
                 !contains_comment(nodes[args_range])
             else
                 false
@@ -60,13 +66,6 @@ function n_tuple!(
             first_arg.endline != last_arg.startline
         else
             false
-        end
-
-        if has_closer
-            fst[end].indent = fst.indent
-        end
-        if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
-            fst.indent += s.opts.indent
         end
 
         add_trailing_comma =

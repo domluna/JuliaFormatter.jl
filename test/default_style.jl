@@ -2097,14 +2097,18 @@
         # issue 152
         str = """
         try
+            ;
         catch
+            ;
         end   # comment"""
         str_ = """try; catch;  end   # comment"""
         @test fmt(str_) == str
 
         str = """
         try
+            ;
         catch
+            ;
         end   # comment
         a = 10"""
         str_ = """
@@ -2129,7 +2133,7 @@
         @test length(t) == 18
 
         str = """function foo()
-                     10
+                     10;
                      20
                  end"""
         @test fmt("""function foo() 10;  20 end""") == str
@@ -2148,15 +2152,15 @@
                 end""") == str
 
         str = """for i = 1:10
-                     1
-                     2
+                     1;
+                     2;
                      3
                  end"""
         @test fmt("""for i=1:10 1; 2; 3 end""") == str
 
         str = """while true
-                     1
-                     2
+                     1;
+                     2;
                      3
                  end"""
         @test fmt("""while true 1; 2; 3 end""") == str
@@ -2169,13 +2173,13 @@
         @test fmt("""try a catch e b end""") == str
 
         str = """try
-                     a1
+                     a1;
                      a2
                  catch e
-                     b1
+                     b1;
                      b2
                  finally
-                     c1
+                     c1;
                      c2
                  end"""
         @test fmt("""try a1;a2 catch e b1;b2 finally c1;c2 end""") == str
@@ -2187,8 +2191,8 @@
                      e end""") == str
 
         str = """let a=b, c = d
-                     e1
-                     e2
+                     e1;
+                     e2;
                      e3
                  end"""
         @test fmt("""let a=b,c  =  d  \ne1; e2; e3 end""") == str
@@ -2224,32 +2228,32 @@
         @test fmt("""quote \n end""") == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  end"""
         @test fmt("if cond1 e1;e2 end") == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  else
-                     e3
+                     e3;
                      e4
                  end"""
         @test fmt("if cond1 e1;e2 else e3;e4 end") == str
 
         str = """begin
                      if cond1
-                         e1
+                         e1;
                          e2
                      elseif cond2
-                         e3
+                         e3;
                          e4
                      elseif cond3
-                         e5
+                         e5;
                          e6
                      else
-                         e7
+                         e7;
                          e8
                      end
                  end"""
@@ -2258,10 +2262,10 @@
         ) == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  elseif cond2
-                     e3
+                     e3;
                      e4
                  end"""
         @test fmt("if cond1 e1;e2 elseif cond2 e3; e4 end") == str
@@ -2440,7 +2444,7 @@
                 C,
             },
         }
-            10
+            10;
             20
         end"""
         str_ = "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"
@@ -2455,7 +2459,7 @@
             A,
             F{B,C},
         }
-            10
+            10;
             20
         end"""
         @test fmt(str_, 4, 17) == str
@@ -2466,7 +2470,7 @@
             key1 = val1;
             key2 = val2,
         ) where {A,F{B,C}}
-            10
+            10;
             20
         end"""
         @test fmt(str_, 4, 18) == str

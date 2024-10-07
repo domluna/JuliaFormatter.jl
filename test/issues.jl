@@ -1865,4 +1865,34 @@
         """
         @test fmt(str) == str
     end
+
+    @testset "876" begin
+        str_ = """
+        function find_horizontal(geom::GIWrap.Polygon)::Vector{Tuple{Float64,Float64}}
+            coords = collect(GI.coordinates(geom)...)
+            first_coord = first(coords)
+            second_coord = coords[
+                (getindex.(coords, 2) .∈ first_coord[2]) .&&
+                (getindex.(coords, 1) .∉ first_coord[1])
+            ]
+
+            return [tuple(first_coord...), tuple(first(second_coord)...)]
+        end
+        """
+        str = """
+        function find_horizontal(geom::GIWrap.Polygon)::Vector{Tuple{Float64,Float64}}
+            coords = collect(GI.coordinates(geom)...)
+            first_coord = first(coords)
+            second_coord = coords[
+                (getindex.(coords, 2) .∈ first_coord[2]) .&& (getindex.(coords, 1) .∉ first_coord[1])
+            ]
+
+            return [tuple(first_coord...), tuple(first(second_coord)...)]
+        end
+        """
+        f1 = format_text(str_, BlueStyle(), join_lines_based_on_source=true)
+        @test f1 == str
+        f1 = format_text(f1, BlueStyle(), join_lines_based_on_source=true)
+        @test f1 == str
+    end
 end

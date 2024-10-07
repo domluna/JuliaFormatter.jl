@@ -742,7 +742,7 @@ function p_block(
                     add_node!(t, Placeholder(1), s)
                 end
             elseif kind(a) === K";"
-                continue
+                add_node!(t, n, s; join_lines = true)
             elseif join_body
                 add_node!(t, n, s; join_lines = true)
             else
@@ -1547,7 +1547,7 @@ function p_try(
         return t
     end
 
-    # in JuliaSyntax this is now a tree structure instead of being linear
+    # With JuliaSyntax this is now a tree structure instead of being linear
     # since we're still picking up comments in add_node! if the comment is at
     # the end of block it will be added as a comment in the parent node and hence
     # have a lower indentation than the rest of the block. To counteract that we reduce
@@ -1574,7 +1574,7 @@ function p_try(
             s.indent += s.opts.indent
             add_node!(
                 t,
-                pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage),
+                pretty(style, c, s, newctx(ctx; ignore_single_line = false), lineage),
                 s;
                 max_padding = s.opts.indent,
             )
