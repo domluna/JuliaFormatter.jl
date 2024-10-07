@@ -435,10 +435,10 @@ function format(paths, options::Configuration)::Bool
     return already_formatted
 end
 
-function format(path::AbstractString; options...)
+function format(path::AbstractString; verbose::Bool = false, options...)
     formatted =
         format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
-    if formatted
+    if verbose && formatted
         println("Well done! ✨ 🍰 ✨")
     end
     return formatted
