@@ -498,52 +498,41 @@ function p_stringh(
     cst::JuliaSyntax.GreenNode,
     s::State,
     ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+    ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     style = getstyle(ds)
     loc = cursor_loc(s)
     if !haschildren(cst)
         return FST(StringN, loc[2] - 1)
     end
+    loc2 = cursor_loc(s, s.offset+span(cst)-1)
 
-    val = ""
-    startline = 0
-    endline = 0
+    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    startline = loc[1]
+    endline = loc2[1]
 
-    for a in children(cst)
-        n = pretty(style, a, s, ctx, lineage)
-        val *= gettreeval(n)
-
-        if startline == 0
-            startline = n.startline
-        end
-
-        if n.endline > endline
-            endline = n.endline
-        end
-    end
+    s.offset += span(cst)
 
     if ctx.from_docstring && s.opts.format_docstrings
         val = format_docstring(style, s, val)
     end
 
-    lines = split(val, "\n")
-
-    if length(lines) == 1
-        t = FST(LITERAL, loc[2], startline, startline, lines[1])
-        return t
-    end
-
-    sidx = loc[2]
-    for l in lines[2:end]
-        fc = findfirst(c -> !isspace(c), l)
-        if fc !== nothing
-            sidx = min(sidx, fc)
-        end
+    if isnothing(findfirst('\n', val))
+        return FST(LITERAL, loc[2], startline, startline, val)
     end
 
     t = FST(StringN, loc[2] - 1)
     t.line_offset = loc[2]
+
+    lines = split(val, "\n")
+    sidx = loc[2]
+    for l in lines[2:end]
+        fc = findfirst(c -> !isspace(c), l)
+        if !isnothing(fc)
+            sidx = min(sidx, fc)
+        end
+    end
+
     for (i, l) in enumerate(lines)
         ln = startline + i - 1
         l = i == 1 ? l : l[sidx:end]

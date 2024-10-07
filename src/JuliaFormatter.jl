@@ -17,7 +17,7 @@ using CommonMark:
     Rule,
     TableRule,
     FrontMatterRule
-# using PrecompileTools
+using PrecompileTools
 
 export format,
     format_text,
@@ -151,13 +151,11 @@ code as another string.
 
 See https://domluna.github.io/JuliaFormatter.jl/dev/#Formatting-Options for details on available options.
 """
-function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
-    @nospecialize kwargs
+function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), @nospecialize(kwargs...))
     return format_text(text, style; kwargs...)
 end
 
-function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
-    @nospecialize kwargs
+function format_text(text::AbstractString, style::AbstractStyle; @nospecialize(kwargs...))
     if isempty(text)
         return text
     end
@@ -165,8 +163,7 @@ function format_text(text::AbstractString, style::AbstractStyle; kwargs...)
     return format_text(text, style, opts)
 end
 
-function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, kwargs...)
-    @nospecialize kwargs
+function format_text(text::AbstractString, style::SciMLStyle; maxiters = 3, @nospecialize(kwargs...))
     if isempty(text)
         return text
     end
@@ -194,7 +191,9 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
     t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
-    return format_text(t, style, State(Document(text), opts))
+    state = State(Document(text), opts)
+    text = format_text(t, style, state)
+    return text
 end
 
 function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State)
@@ -207,7 +206,7 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
         rethrow(e)
     end
     if hascomment(s.doc, fst.endline)
-        (add_node!(fst, InlineComment(fst.endline), s))
+        add_node!(fst, InlineComment(fst.endline), s)
     end
 
     if s.opts.pipe_to_function_call
@@ -508,6 +507,22 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-# include("other/precompile.jl")
+@setup_workload begin
+    dir = joinpath(@__DIR__, "..")
+    str = raw"""
+       @noinline require_complete(m::Matching) =
+           m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
+    """
+    sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
+    mkdir(sandbox_dir)
+    cp(dir, sandbox_dir; force = true)
+
+    @compile_workload begin
+        for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
+            format_text(str, style)
+        end
+        format(dir)
+    end
+end
 
 end
