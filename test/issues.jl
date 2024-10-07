@@ -1890,9 +1890,9 @@
             return [tuple(first_coord...), tuple(first(second_coord)...)]
         end
         """
-        f1 = format_text(str_, BlueStyle(), join_lines_based_on_source=true)
+        f1 = format_text(str_, BlueStyle(); join_lines_based_on_source = true)
         @test f1 == str
-        f1 = format_text(f1, BlueStyle(), join_lines_based_on_source=true)
+        f1 = format_text(f1, BlueStyle(); join_lines_based_on_source = true)
         @test f1 == str
     end
 end
