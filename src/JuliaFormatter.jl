@@ -436,8 +436,9 @@ function format(paths, options::Configuration)::Bool
 end
 
 function format(path::AbstractString; verbose::Bool = false, options...)
-    formatted =
-        format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+    config = Dict{String,Any}(String(k) => v for (k, v) in options)
+    config["verbose"] = verbose
+    formatted = format(path, Configuration(config))
     if verbose && formatted
         println("Well done! ✨ 🍰 ✨")
     end
