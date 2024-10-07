@@ -435,8 +435,14 @@ function format(paths, options::Configuration)::Bool
     return already_formatted
 end
 
-format(path::AbstractString; options...) =
-    format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(path::AbstractString; options...)
+    formatted =
+        format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+    if formatted
+        println("Well done! ✨ 🍰 ✨")
+    end
+    return formatted
+end
 function format(path::AbstractString, options::Configuration)
     path = realpath(path)
     if !get(options, "config_applied", false)
@@ -458,9 +464,6 @@ function format(path::AbstractString, options::Configuration)
             is_formatted = format(subpath, options)
             Threads.atomic_and!(formatted, is_formatted)
         end
-        if formatted.value
-            println("Well done! ✨ 🍰 ✨")
-        end
         return formatted.value
     end
     # `path` is not a directory but a file
@@ -470,9 +473,6 @@ function format(path::AbstractString, options::Configuration)
     end
     try
         formatted = _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
-        if formatted
-            println("Well done! ✨ 🍰 ✨")
-        end
         return formatted
     catch err
         @info "Error in formatting file $path"
@@ -484,7 +484,10 @@ end
 """
     format(path, style::AbstractStyle; options...)::Bool
 """
-format(path, style::AbstractStyle; options...) = format(path; style = style, options...)
+function format(path, style::AbstractStyle; options...)
+    formatted = format(path; style = style, options...)
+    formatted
+end
 
 """
     format(mod::Module, args...; options...)
