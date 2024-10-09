@@ -5,6 +5,7 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_m
     @eval Base.Experimental.@max_methods 1
 end
 
+using PrecompileTools: @setup_workload, @compile_workload
 using JuliaSyntax
 using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
@@ -22,7 +23,6 @@ using CommonMark:
     Rule,
     TableRule,
     FrontMatterRule
-using PrecompileTools
 
 export format,
     format_text,
