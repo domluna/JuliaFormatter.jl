@@ -514,16 +514,11 @@ end
     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
     mkdir(sandbox_dir)
     cp(dir, sandbox_dir; force = true)
-    str = raw"""
-    @noinline require_complete(m::Matching) =
-        m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
-    """
 
     @compile_workload begin
         for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
-            format_text(str, style)
+            format(sandbox_dir)
         end
-        format(sandbox_dir)
     end
 end
 
