@@ -516,9 +516,7 @@ end
     cp(dir, sandbox_dir; force = true)
 
     @compile_workload begin
-        for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
-            format(sandbox_dir)
-        end
+        format(sandbox_dir)
     end
 end
 
