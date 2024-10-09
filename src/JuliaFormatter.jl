@@ -540,7 +540,7 @@ end
 
     @compile_workload begin
         format(sandbox_dir)
-        for style = [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
+        for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
             format_text(str, style)
         end
     end
