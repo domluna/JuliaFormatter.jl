@@ -1646,7 +1646,7 @@ function p_comparison(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    t = p_chainopcall(ds, cst, s, ctx, lineage)
+    t = p_binaryopcall(ds, cst, s, ctx, lineage)
     t.typ = Comparison
     t
 end

@@ -514,9 +514,35 @@ end
     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
     mkdir(sandbox_dir)
     cp(dir, sandbox_dir; force = true)
+    str = """
+    true
+    false
+    10.0
+    "hello"
+    a + b
+    a == b == c
+    a^10
+    !cond
+    f(a,b,c)
+    @f(a,b,c)
+    (a,b,c)
+    [a,b,c]
+    begin
+        a
+        b
+    end
+    quote
+        a
+        b
+    end
+    :(a+b+c+d)
+    """
 
     @compile_workload begin
         format(sandbox_dir)
+        for style = [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
+            format_text(str, style)
+        end
     end
 end
 
