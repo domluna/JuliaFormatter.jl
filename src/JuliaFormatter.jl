@@ -1,5 +1,10 @@
 module JuliaFormatter
 
+# reduces compilation time
+if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@max_methods"))
+    @eval Base.Experimental.@max_methods 1
+end
+
 using JuliaSyntax
 using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
@@ -506,19 +511,19 @@ end
 
 @setup_workload begin
     dir = joinpath(@__DIR__, "..")
-    str = raw"""
-       @noinline require_complete(m::Matching) =
-           m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
-    """
     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
     mkdir(sandbox_dir)
     cp(dir, sandbox_dir; force = true)
+    str = raw"""
+    @noinline require_complete(m::Matching) =
+        m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
+    """
 
     @compile_workload begin
         for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
             format_text(str, style)
         end
-        format(dir)
+        format(sandbox_dir)
     end
 end
 
