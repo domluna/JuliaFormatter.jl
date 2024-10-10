@@ -52,7 +52,6 @@ $(list_different_defaults(YASStyle()))
 """
 YASStyle
 
-
 function p_import(
     ds::YASStyle,
     cst::JuliaSyntax.GreenNode,
