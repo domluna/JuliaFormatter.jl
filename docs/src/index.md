@@ -630,11 +630,11 @@ a = f(aaa, bbb, ccc)
 # ok
 ```
 
-If you wish to not format an entire file just add `#!: format: off` to the top of the file.
+If you wish to not format an entire file just add `#! format: off` to the top of the file.
 
 ### Stopping a block of code from indenting
 
-Sometimes you may wish for a block of code to not be indented. You can achieve this with `#!: format: noindent`.
+Sometimes you may wish for a block of code to not be indented. You can achieve this with `#! format: noindent`.
 
 ```julia
 begin
@@ -673,7 +673,7 @@ end
 
 Notice the contents of `@muladd begin` is not indented.
 
-`#!: format: noindent` can also be nested.
+`#! format: noindent` can also be nested.
 
 ## Editor Plugins
 

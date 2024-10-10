@@ -117,6 +117,18 @@ include("fst.jl")
 include("passes.jl")
 include("align.jl")
 
+function list_different_defaults(style)
+    options_style = pairs(options(style))
+    options_default = pairs(options(DefaultStyle()))
+    options_changed = setdiff(options_style, options_default)
+    sort!(options_changed; by = first)
+    io = IOBuffer()
+    for (key, val) in options_changed
+        println(io, "- `$key` = $val")
+    end
+    String(take!(io))
+end
+
 include("styles/default/pretty.jl")
 include("styles/default/nest.jl")
 include("styles/yas/pretty.jl")
@@ -386,9 +398,16 @@ function format(paths, options::Configuration)::Bool
     return already_formatted
 end
 
-function format(path::AbstractString; options...)
-    format(path, Configuration(Dict{String,Any}(String(k) => v for (k, v) in options)))
+function format(path::AbstractString; verbose::Bool = false, options...)
+    config = Dict{String,Any}(String(k) => v for (k, v) in options)
+    config["verbose"] = verbose
+    formatted = format(path, Configuration(config))
+    if verbose && formatted
+        println("Well done! ✨ 🍰 ✨")
+    end
+    return formatted
 end
+
 function format(path::AbstractString, options::Configuration)
     path = realpath(path)
     if !get(options, "config_applied", false)
@@ -422,7 +441,8 @@ function format(path::AbstractString, options::Configuration)
         return true
     end
     try
-        return _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+        formatted = _format_file(path; [Symbol(k) => v for (k, v) in pairs(options)]...)
+        return formatted
     catch err
         if err isa JuliaSyntax.ParseError
             @warn "Failed to format file $path due to a parsing error, skipping file" error =
@@ -438,7 +458,10 @@ end
 """
     format(path, style::AbstractStyle; options...)::Bool
 """
-format(path, style::AbstractStyle; options...) = format(path; style = style, options...)
+function format(path, style::AbstractStyle; options...)
+    formatted = format(path; style = style, options...)
+    formatted
+end
 
 """
     format(mod::Module, args...; options...)

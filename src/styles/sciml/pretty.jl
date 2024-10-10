@@ -1,18 +1,3 @@
-"""
-    SciMLStyle()
-
-Formatting style based on [SciMLStyle](https://github.com/SciML/SciMLStyle).
-
-!!! note
-    This style is still work-in-progress.
-
-Configurable options with different defaults to [`DefaultStyle`](@ref) are:
-- `whitespace_ops_in_indices` = true
-- `remove_extra_newlines` = true
-- `always_for_in` = true
-- `whitespace_typedefs` = true,
-- `normalize_line_endings` = "unix"
-"""
 struct SciMLStyle <: AbstractStyle
     innerstyle::AbstractStyle
 end
@@ -62,6 +47,18 @@ function is_binaryop_nestable(::SciMLStyle, cst::JuliaSyntax.GreenNode)
     end
     !(op_kind(cst) in KSet"=> -> in")
 end
+@doc """
+    SciMLStyle()
+
+Formatting style based on [SciMLStyle](https://github.com/SciML/SciMLStyle).
+
+!!! note
+    This style is still work-in-progress.
+
+Configurable options with different defaults to [`DefaultStyle`](@ref) are:
+$(list_different_defaults(SciMLStyle()))
+"""
+SciMLStyle
 
 const CST_T = [JuliaSyntax.GreenNode]
 const TUPLE_T = [JuliaSyntax.GreenNode, Vector{JuliaSyntax.GreenNode}]
