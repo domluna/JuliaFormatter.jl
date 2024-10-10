@@ -54,8 +54,7 @@
     end
     # constructing a `Matrix`/`Array` from `SymHerm`
     @testset "$(f)(::$(SymHerm){$T}) with uplo=:$uplo" for f in (Matrix, Array),
-        SymHerm in (Symmetric, Hermitian),
-        T in (Float64, ComplexF64),
+        SymHerm in (Symmetric, Hermitian), T in (Float64, ComplexF64),
         uplo in (:U, :L)
 
         x = SymHerm(randn(T, 3, 3), uplo)

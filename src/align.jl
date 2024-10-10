@@ -1,5 +1,7 @@
 function align_fst!(fst::FST, opts::Options)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    end
     assignment_inds = Int[]
     pair_arrow_inds = Int[]
 
@@ -22,7 +24,7 @@ function align_fst!(fst::FST, opts::Options)
             # Gather all assignments within the current code block
             # they will be aligned at the end
             push!(assignment_inds, i)
-        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === Tokens.PAIR_ARROW
+        elseif opts.align_pair_arrow && n.typ === Binary && op_kind(n) === K"=>"
             push!(pair_arrow_inds, i)
         end
     end
@@ -47,16 +49,16 @@ Group of FST node indices and required metadata to potentially align them.
     manually added by the user since the formatter would only use 0 or 1 whitespaces.
 """
 struct AlignGroup
-    nodes::Vector{Ref{FST}}
+    nodes::Vector{FST}
     node_inds::Vector{Int}
     line_offsets::Vector{Int}
     lens::Vector{Int}
     whitespaces::Vector{Int}
 end
-AlignGroup() = AlignGroup(Vector{Ref{FST}}[], Int[], Int[], Int[], Int[])
+AlignGroup() = AlignGroup(FST[], Int[], Int[], Int[], Int[])
 
 function Base.push!(g::AlignGroup, n::FST, ind::Int, line_offset::Int, len::Int, ws::Int)
-    push!(g.nodes, Ref(n))
+    push!(g.nodes, n)
     push!(g.node_inds, ind)
     push!(g.line_offsets, line_offset)
     push!(g.lens, len)
@@ -73,17 +75,23 @@ function Base.show(io::IO, g::AlignGroup)
 end
 
 function align_to(g::AlignGroup)::Union{Nothing,Int}
-    length(g.lens) > 0 || return nothing
+    if !(length(g.lens) > 0)
+        return nothing
+    end
     # determine whether alignment might be warranted
     max_len, max_ind = findmax(g.lens)
     max_inds = findall(==(g.line_offsets[max_ind]), g.line_offsets)
-    length(max_inds) > 1 || return nothing
+    if !(length(max_inds) > 1)
+        return nothing
+    end
 
     # Is there custom whitespace?
     # Formatter would only add 0 or 1 whitespaces.
     # > 2 implies a manual edit in the source file.
     for i in max_inds
-        g.whitespaces[i] > 1 && return max_len
+        if g.whitespaces[i] > 1
+            return max_len
+        end
     end
 
     return nothing
@@ -105,6 +113,26 @@ function align_binaryopcall!(fst::FST, diff::Int)
     end
 end
 
+# we need to use ncodeunits
+function node_align_length(n::FST)
+    if is_leaf(n)
+        return ncodeunits(n.val)
+    end
+    margin = 0
+    for nn in n.nodes
+        margin += node_align_length(nn)
+    end
+    return margin
+end
+
+function node_align_length(nodes::Vector{FST})
+    margin = 0
+    for nn in nodes
+        margin += node_align_length(nn)
+    end
+    return margin
+end
+
 """
     align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
 
@@ -114,7 +142,9 @@ Additionally handles the case where a keyword such as `const` is used
 prior to the binary op call.
 """
 function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
-    length(op_inds) > 1 || return
+    if !(length(op_inds) > 1)
+        return
+    end
     prev_endline = fst[op_inds[1]].endline
     groups = AlignGroup[]
     g = AlignGroup()
@@ -127,7 +157,7 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
         end
 
         binop, nlen, ws = if n.typ === Binary || n.typ === Kw
-            nlen = length(n[1])
+            nlen = node_align_length(n[1])
             n, nlen, (n[3].line_offset - n.line_offset) - nlen
         else
             binop::Union{FST,Nothing} = nothing
@@ -139,12 +169,12 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
             # for instance, @call1 @call2 @call3 x = 10
             while sn.nodes !== nothing
                 binop_ind = findfirst(nn -> nn.typ === Binary, sn.nodes)
-                nlen += sum(length.(sn[1:end-1]))
+                nlen += node_align_length(sn[1:(end-1)])
                 if binop_ind === nothing
                     sn = (sn.nodes::Vector{FST})[end]
                 else
                     binop = (sn.nodes::Vector{FST})[binop_ind]
-                    nlen += length(binop[1])
+                    nlen += node_align_length(binop[1])
                     ws = (binop[3].line_offset - n.line_offset) - nlen
                     break
                 end
@@ -157,19 +187,24 @@ function align_binaryopcalls!(fst::FST, op_inds::Vector{Int})
             continue
         end
 
-        push!(g, binop, i, binop[3].line_offset, nlen, ws)
+        push!(g.nodes, binop)
+        push!(g.node_inds, i)
+        push!(g.line_offsets, binop[3].line_offset)
+        push!(g.lens, nlen)
+        push!(g.whitespaces, ws)
+
         prev_endline = n.endline
     end
     push!(groups, g)
 
     for g in groups
         align_len = align_to(g)
-        align_len === nothing && continue
+        if isnothing(align_len)
+            continue
+        end
 
-        for (i, nr) in enumerate(g.nodes)
+        for (i, n) in enumerate(g.nodes)
             diff = align_len - g.lens[i] + 1
-            # reference to node
-            n = nr[]
             align_binaryopcall!(n, diff)
             n.nest_behavior = NeverNest
         end
@@ -185,8 +220,9 @@ Aligns struct fields.
 """
 function align_struct!(fst::FST)
     ind = findfirst(n -> n.typ === Block, fst.nodes)
-    ind === nothing && return
-    length(fst[ind]) == 0 && return
+    if isnothing(ind) || length(fst[ind]) == 0
+        return
+    end
 
     block_fst = fst[ind]
     prev_endline = block_fst[1].endline
@@ -200,7 +236,7 @@ function align_struct!(fst::FST)
                 g = AlignGroup()
             end
 
-            nlen = length(n[1])
+            nlen = node_align_length(n[1])
             ind = findfirst(x -> x.typ === OPERATOR, n.nodes)
             # issue 757
             # "foo
@@ -208,11 +244,18 @@ function align_struct!(fst::FST)
             # a::B
             #
             # This is parsed as a concatenated string of "foo" and ""
-            ind === nothing && continue
+            if ind === nothing
+                continue
+            end
 
             ws = n[ind].line_offset - (n.line_offset + nlen)
 
-            push!(g, n, i, n[ind].line_offset, nlen, ws)
+            push!(g.nodes, n)
+            push!(g.node_inds, i)
+            push!(g.line_offsets, n[ind].line_offset)
+            push!(g.lens, nlen)
+            push!(g.whitespaces, ws)
+
             prev_endline = n.endline
         elseif n.typ === Const && n[end].typ === Binary
             if n.startline - prev_endline > 1
@@ -220,14 +263,21 @@ function align_struct!(fst::FST)
                 g = AlignGroup()
             end
 
-            nlen = length(n[1]) + length(n[2])
+            nlen = node_align_length(n[1]) + node_align_length(n[2])
             binop = n[end]
-            nlen += length(binop[1])
+            nlen += node_align_length(binop[1])
             ind = findfirst(x -> x.typ === OPERATOR, binop.nodes)
-            ind === nothing && continue
+            if ind === nothing
+                continue
+            end
             ws = binop[ind].line_offset - (n.line_offset + nlen)
 
-            push!(g, binop, i, binop[ind].line_offset, nlen, ws)
+            push!(g.nodes, binop)
+            push!(g.node_inds, i)
+            push!(g.line_offsets, binop[ind].line_offset)
+            push!(g.lens, nlen)
+            push!(g.whitespaces, ws)
+
             prev_endline = n.endline
         end
     end
@@ -235,9 +285,10 @@ function align_struct!(fst::FST)
 
     for g in groups
         align_len = align_to(g)
-        align_len === nothing && continue
-        for (i, nr) in enumerate(g.nodes)
-            n = nr[]
+        if align_len === nothing
+            continue
+        end
+        for (i, n) in enumerate(g.nodes)
             diff = align_len - g.lens[i] + 1
             align_binaryopcall!(n, diff)
             n.nest_behavior = NeverNest
@@ -262,26 +313,40 @@ function align_conditional!(fst::FST)
     for (i, n) in enumerate(nodes)
         if n.typ === OPERATOR && n.val == "?"
             if cond_prev_endline != n.endline
-                nlen = length(nodes[i-2])
+                nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
-                push!(cond_group, n, i, n.line_offset, nlen, ws)
+
+                push!(cond_group.nodes, n)
+                push!(cond_group.node_inds, i)
+                push!(cond_group.line_offsets, n.line_offset)
+                push!(cond_group.lens, nlen)
+                push!(cond_group.whitespaces, ws)
             end
             cond_prev_endline = n.endline
         elseif n.typ === OPERATOR && n.val == ":"
             if colon_prev_endline != n.endline
-                nlen = length(nodes[i-2])
+                nlen = node_align_length(nodes[i-2])
                 ws = n.line_offset - (nodes[i-2].line_offset + nlen)
-                push!(colon_group, n, i, n.line_offset, nlen, ws)
+
+                push!(colon_group.nodes, n)
+                push!(colon_group.node_inds, i)
+                push!(colon_group.line_offsets, n.line_offset)
+                push!(colon_group.lens, nlen)
+                push!(colon_group.whitespaces, ws)
             end
             colon_prev_endline = n.endline
         end
     end
-    length(cond_group.lens) > 1 || return
+    if !(length(cond_group.lens) > 1)
+        return
+    end
 
     cond_len = align_to(cond_group)
     colon_len = align_to(colon_group)
 
-    cond_len === nothing && colon_len === nothing && return
+    if cond_len === nothing && colon_len === nothing
+        return
+    end
 
     if cond_len !== nothing
         for (i, ind) in enumerate(cond_group.node_inds)
@@ -294,7 +359,7 @@ function align_conditional!(fst::FST)
         # the placeholder would be i+1 if not for a possible inline comment
         nind = findnext(n -> n.typ === PLACEHOLDER, nodes, ind + 1)::Int
         if nodes[nind+1].startline != nodes[nind].startline
-            nodes[nind] = Newline(nest_behavior = AlwaysNest)
+            nodes[nind] = Newline(; nest_behavior = AlwaysNest)
         end
 
         if colon_len !== nothing
@@ -315,7 +380,9 @@ Adjust whitespace in between matrix elements such that it's the same as the orig
 """
 function align_matrix!(fst::FST)
     rows = filter(n -> n.typ === Row, fst.nodes::Vector{FST})
-    length(rows) == 0 && return
+    if length(rows) == 0
+        return
+    end
 
     min_offset = minimum(map(rows) do r
         r[1].line_offset
@@ -327,7 +394,9 @@ function align_matrix!(fst::FST)
     for r in rows
         if r[1].line_offset > min_offset && line != r.startline
             diff = r[1].line_offset - min_offset
-            insert!(r.nodes::Vector{FST}, 1, Whitespace(diff))
+            if diff > 0
+                insert!(r.nodes::Vector{FST}, 1, Whitespace(diff))
+            end
         end
         line = r.startline
     end
@@ -339,7 +408,7 @@ function align_matrix!(fst::FST)
                 n1 = r[i-1]
                 n2 = r[i+1]
 
-                diff = n2.line_offset - n1.line_offset - length(n1)
+                diff = n2.line_offset - n1.line_offset - node_align_length(n1)
 
                 # fix #694 and #713
                 if diff > 0

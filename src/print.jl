@@ -4,32 +4,75 @@ function format_check(io::IOBuffer, fst::FST, s::State)
         return
     end
 
-    skip = s.doc.format_skips[1]
     line_range = fst.startline:fst.endline
+    skip = s.doc.format_skips[1]
+    nlines = numlines(s.doc)
 
-    if s.on && skip[1] in line_range && skip[2] in line_range
-        # weird corner case where off and on toggle
-        # are in the same comment block
-        fst.endline = skip[1]
-        print_notcode(io, fst, s, fmttag = true)
-        write(io, skip[3])
-        fst.startline = skip[2]
-        fst.endline = skip[2]
-        print_notcode(io, fst, s, fmttag = true)
-    elseif s.on && skip[1] in line_range
-        fst.endline = skip[1]
-        print_notcode(io, fst, s, fmttag = true)
-        write(io, skip[3])
+    if s.on &&
+       skip.startline in line_range &&
+       (skip.endline in line_range || skip.endline == nlines)
+        l1 = fst.startline
+        l2 = skip.startline - 1
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
+
+        output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
+        l1 = skip.endline + 1
+        l2 = fst.endline
+
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, output)
+            output = JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)]
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        else
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        end
+
+        if nlines == skip.endline
+            s.on = false
+        end
+    elseif s.on && skip.startline in line_range
+        l1 = fst.startline
+        l2 = skip.startline - 1
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)])
+        end
         s.on = false
-    elseif !s.on && skip[2] in line_range
-        deleteat!(s.doc.format_skips, 1)
+    elseif !s.on && skip.endline in line_range
+        output = JuliaSyntax.sourcetext(s.doc.srcfile)[skip.startoffset:skip.endoffset]
+        l1 = skip.endline + 1
+        l2 = fst.endline
+
+        if l1 <= l2
+            r1 = linerange(s, l1)
+            r2 = linerange(s, l2)
+            write(io, output)
+            output = JuliaSyntax.sourcetext(s.doc.srcfile)[first(r1):last(r2)]
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        else
+            if l1 <= nlines && output[end] == '\n'
+                output = output[1:prevind(output, end)]
+            end
+            write(io, output)
+        end
+        popfirst!(s.doc.format_skips)
         s.on = true
-        # change the startline, otherwise lines
-        # prior to in the NOTCODE node prior to
-        # "format: on" will be reprinted
-        fst.startline = skip[2]
-        print_notcode(io, fst, s, fmttag = true)
-        # previous NEWLINE node won't be printed
     else
         print_notcode(io, fst, s)
     end
@@ -41,7 +84,9 @@ function print_leaf(io::IOBuffer, fst::FST, s::State)
     elseif fst.typ === INLINECOMMENT
         print_inlinecomment(io, fst, s)
     else
-        s.on && write(io, fst.val)
+        if s.on
+            write(io, fst.val)
+        end
     end
     s.line_offset += length(fst)
 end
@@ -51,7 +96,7 @@ function print_tree(io::IOBuffer, fst::FST, s::State)
     if (fst.typ === Binary || fst.typ === Conditional || fst.typ === ModuleN)
         notcode_indent = fst.indent
     end
-    print_tree(io, fst.nodes::Vector{FST}, s, fst.indent, notcode_indent = notcode_indent)
+    print_tree(io, fst.nodes::Vector{FST}, s, fst.indent; notcode_indent = notcode_indent)
 end
 
 function print_tree(
@@ -103,10 +148,14 @@ function print_tree(
 
         if n.typ === NEWLINE && s.on && i < length(nodes)
             if is_closer(nodes[i+1]) || nodes[i+1].typ === Block || nodes[i+1].typ === Begin
-                write(io, repeat(" ", max(nodes[i+1].indent, 0)))
+                if s.on
+                    write(io, repeat(" ", max(nodes[i+1].indent, 0)))
+                end
                 s.line_offset = nodes[i+1].indent
             elseif !skip_indent(nodes[i+1])
-                write(io, ws)
+                if s.on
+                    write(io, ws)
+                end
                 s.line_offset = indent
             end
         end
@@ -127,27 +176,37 @@ function print_string(io::IOBuffer, fst::FST, s::State)
     print_tree(io, fst, s)
 end
 
-function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
-    s.on || return
+function print_notcode(io::IOBuffer, fst::FST, s::State)
+    if !(s.on)
+        return
+    end
     for l in fst.startline:fst.endline
-        ws, v = get(s.doc.comments, l, (0, "\n"))
-        !fmttag && (ws = fst.indent)
+        _, v = get(s.doc.comments, l, (0, "\n"))
+        ws = fst.indent
 
         # If the current newline is followed by another newline
         # don't print the current newline.
         if s.opts.remove_extra_newlines
             _, vn = get(s.doc.comments, l + 1, (0, "\n"))
-            vn == "\n" && v == "\n" && (v = "")
+            if vn == "\n" && v == "\n"
+                (v = "")
+            end
         end
 
-        v == "" && continue
-        v == "\n" && (ws = 0)
+        if v == ""
+            continue
+        end
+        if v == "\n"
+            (ws = 0)
+        end
 
         if l == fst.endline && v[end] == '\n'
             v = v[1:prevind(v, end)]
         end
 
-        ws > 0 && write(io, repeat(" ", ws))
+        if ws > 0
+            write(io, repeat(" ", ws))
+        end
         write(io, v)
 
         if l != fst.endline && v[end] != '\n'
@@ -157,9 +216,13 @@ function print_notcode(io::IOBuffer, fst::FST, s::State; fmttag = false)
 end
 
 function print_inlinecomment(io::IOBuffer, fst::FST, s::State)
-    s.on || return
+    if !(s.on)
+        return
+    end
     ws, v = get(s.doc.comments, fst.startline, (0, ""))
-    isempty(v) && return
+    if isempty(v)
+        return
+    end
     v = v[end] == '\n' ? v[firstindex(v):prevind(v, end)] : v
     if ws > 0
         write(io, repeat(" ", ws))

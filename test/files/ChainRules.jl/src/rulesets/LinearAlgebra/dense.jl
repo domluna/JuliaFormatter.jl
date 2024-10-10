@@ -189,7 +189,7 @@ end
 @scalar_rule pinv(x) -(Ω^2)
 
 function frule(
-    (_, ẋ), ::typeof(pinv), x::AbstractVector{T}, tol::Real=0
+    (_, ẋ), ::typeof(pinv), x::AbstractVector{T}; tol::Real=0
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     Δx = unthunk(ẋ)
@@ -199,7 +199,7 @@ function frule(
 end
 
 function frule(
-    (_, ẋ), ::typeof(pinv), x::LinearAlgebra.AdjOrTransAbsVec{T}, tol::Real=0
+    (_, ẋ), ::typeof(pinv), x::LinearAlgebra.AdjOrTransAbsVec{T}; tol::Real=0
 ) where {T<:Union{Real,Complex}}
     y = pinv(x, tol)
     Δx = unthunk(ẋ)

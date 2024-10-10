@@ -7,7 +7,7 @@ function skip_indent(fst::FST)
     false
 end
 
-function walk(f, nodes::Vector{FST}, s::State, indent::Int)
+function walk(f::Function, nodes::Vector{FST}, s::State, indent::Int)
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE && i < length(nodes)
             if is_closer(nodes[i+1])
@@ -33,21 +33,27 @@ should return a value other than `nothing`.
     This function mutates the State's (`s`) `line_offset`. If this is not desired
     you should save the value before calling this function and restore it after.
 """
-function walk(f, fst::FST, s::State)
+function walk(f::Function, fst::FST, s::State)
     stop = f(fst, s)
-    (stop !== nothing || is_leaf(fst)) && return
+    if (stop !== nothing || is_leaf(fst))
+        return
+    end
     walk(f, fst.nodes::Vector, s, fst.indent)
 end
 
 function increment_line_offset!(fst::FST, s::State)
-    is_leaf(fst) || return
+    if !(is_leaf(fst))
+        return
+    end
     s.line_offset += length(fst)
     return nothing
 end
 
-function add_indent!(fst::FST, s::State, indent)
-    indent == 0 && return
-    f = (fst::FST, s::State) -> begin
+function add_indent!(fst::FST, s::State, indent::Int)
+    if indent == 0
+        return
+    end
+    f = (fst::FST, _::State) -> begin
         fst.indent += indent
         return nothing
     end
@@ -56,18 +62,28 @@ function add_indent!(fst::FST, s::State, indent)
     s.line_offset = lo
 end
 
+function gettreeval(fst::FST)::String
+    if is_leaf(fst)
+        return fst.val
+    end
+    ss = ""
+    for n in fst.nodes
+        ss *= gettreeval(n)
+    end
+    return ss
+end
+
 # unnest, converts newlines to whitespace
 function nl_to_ws!(fst::FST, nl_inds::Vector{Int})
     for (i, ind) in enumerate(nl_inds)
         fst[ind] = Whitespace(fst[ind].len)
-        i == length(nl_inds) || continue
+        if !(i == length(nl_inds))
+            continue
+        end
         pn = fst[ind-1]
-        if pn.typ === TRAILINGCOMMA || pn.typ === TRAILINGSEMICOLON
+        if pn.typ === TRAILINGCOMMA
             pn.val = ""
             pn.len = 0
-        elseif pn.typ === INVERSETRAILINGSEMICOLON
-            pn.val = ";"
-            pn.len = 1
         elseif fst.typ === Binary && fst[ind+1].typ === WHITESPACE
             # remove additional indent
             fst[ind+1] = Whitespace(0)
@@ -77,13 +93,17 @@ end
 
 function nl_to_ws!(fst::FST, s::State)
     nl_inds = findall(n -> n.typ === NEWLINE && can_nest(n), fst.nodes)
-    length(nl_inds) > 0 || return
+    if !(length(nl_inds) > 0)
+        return
+    end
     margin = s.line_offset + fst.extra_margin + length(fst)
-    margin <= s.opts.margin && nl_to_ws!(fst, nl_inds)
+    if margin <= s.opts.margin
+        nl_to_ws!(fst, nl_inds)
+    end
     return
 end
 
-function dedent!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
+function dedent!(::AbstractStyle, fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -93,7 +113,7 @@ function dedent!(style::S, fst::FST, s::State) where {S<:AbstractStyle}
     end
 end
 
-function dedent!(style::YASStyle, fst::FST, s::State)
+function dedent!(::YASStyle, fst::FST, s::State)
     if is_closer(fst) || fst.typ === NOTCODE
         fst.indent -= s.opts.indent
     elseif is_leaf(fst) || fst.typ === StringN
@@ -110,12 +130,14 @@ function dedent!(style::YASStyle, fst::FST, s::State)
     end
 end
 
-function unnest!(style::S, fst::FST, s::State; dedent::Bool) where {S<:AbstractStyle}
+function unnest!(style::AbstractStyle, fst::FST, s::State; dedent::Bool)
     if is_leaf(fst)
         s.line_offset += length(fst)
     end
 
-    dedent && dedent!(style, fst, s)
+    if dedent
+        dedent!(style, fst, s)
+    end
 
     if is_leaf(fst) || fst.typ === StringN || !can_nest(fst)
         return
@@ -126,7 +148,7 @@ function unnest!(style::S, fst::FST, s::State; dedent::Bool) where {S<:AbstractS
     return
 end
 
-function unnest!(style::S; dedent::Bool) where {S<:AbstractStyle}
+function unnest!(style::AbstractStyle; dedent::Bool)
     (fst::FST, s::State) -> begin
         unnest!(style, fst, s; dedent = dedent)
     end
@@ -149,29 +171,30 @@ If `stop_idx == nothing` the range is `fst[idx:end]`.
 Returns whether nesting occurred.
 """
 function nest_if_over_margin!(
-    style::S,
+    style::AbstractStyle,
     fst::FST,
     s::State,
-    idx::Int;
+    idx::Int,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
     stop_idx::Union{Int,Nothing} = nothing,
-)::Bool where {S<:AbstractStyle}
+)::Bool
     @assert fst[idx].typ == PLACEHOLDER
     margin = s.line_offset
     if stop_idx === nothing
         margin += sum(length.(fst[idx:end])) + fst.extra_margin
     else
-        margin += sum(length.(fst[idx:stop_idx-1]))
+        margin += sum(length.(fst[idx:(stop_idx-1)]))
     end
 
     if margin > s.opts.margin ||
        (idx < length(fst.nodes::Vector) && is_comment(fst[idx+1])) ||
        (idx > 1 && is_comment(fst[idx-1]))
-        fst[idx] = Newline(length = fst[idx].len)
+        fst[idx] = Newline(; length = fst[idx].len)
         s.line_offset = fst.indent
         return true
     end
 
-    nest!(style, fst[idx], s)
+    nest!(style, fst[idx], s, lineage)
     return false
 end
 
@@ -181,9 +204,9 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
     n = size(dp, 1)
 
     if n == k
-        return Int[fill(1, k)]
+        return Vector{Int}[fill(1, k)]
     elseif k == 1
-        return Int[[n]]
+        return Vector{Int}[[n]]
     end
 
     function _backtrack(t::Vector{Int}, current_sum::Int)
@@ -256,7 +279,7 @@ function find_optimal_nest_placeholders(
             fst,
             g,
             start_line_offset,
-            max_margin,
+            max_margin;
             last_group = i == length(placeholder_groups),
         )
         push!(optimal_placeholders, optinds...)
@@ -279,7 +302,7 @@ function find_optimal_nest_placeholders(
             if placeholder_inds[end] == end_idx && last_group
                 sum(length.(fst[start_idx:end])) + fst.extra_margin
             else
-                sum(length.(fst[start_idx:end_idx-1]))
+                sum(length.(fst[start_idx:(end_idx-1)]))
             end
         end
 
@@ -287,8 +310,8 @@ function find_optimal_nest_placeholders(
     dp = fill(0, n - 1, n - 1)
 
     # Initialize the lengths of segments with single placeholders
-    for i in 1:n-1
-        for j in i+1:n
+    for i in 1:(n-1)
+        for j in (i+1):n
             len = segment_length(placeholder_inds[i], placeholder_inds[j])
             dp[i, j-1] = len
         end
@@ -309,7 +332,7 @@ function find_optimal_nest_placeholders(
             local ranges = UnitRange{Int}[]
             local s = 1
             for tt in t
-                push!(ranges, s:s+tt-1)
+                push!(ranges, s:(s+tt-1))
                 s += tt
             end
             ranges
@@ -333,7 +356,6 @@ function find_optimal_nest_placeholders(
         return best_split
     end
 
-    fst_line_offset = fst.indent
     # Calculate best splits for each number of segments s
     segments = Tuple{Int,Int}[]
     for s in 1:N
@@ -341,12 +363,14 @@ function find_optimal_nest_placeholders(
         fits = true
         for (i, s) in enumerate(segments)
             if i == 1
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= initial_offset + dp[first(s), last(s)] <= max_margin
             else
-                fits &= fst_line_offset + dp[first(s), last(s)] <= max_margin
+                fits &= initial_offset + dp[first(s), last(s)] <= max_margin
             end
         end
-        fits && break
+        if fits
+            break
+        end
     end
     # @info "segments" segments placeholder_inds
 
@@ -358,7 +382,7 @@ function find_optimal_nest_placeholders(
     # ex: (ph, arg, ph, arg, ph, arg, ph)
     # Convert segments to placeholder indices
     optimal_placeholders = Int[]
-    for i in 1:length(segments)-1
+    for i in 1:(length(segments)-1)
         s2 = segments[i+1]
         i1 = first(s2)
         push!(optimal_placeholders, placeholder_inds[i1])

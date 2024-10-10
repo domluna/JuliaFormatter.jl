@@ -163,7 +163,7 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
             end
             parentvar = gensym()
             push!(block.args, :($parentvar = length($tapevar)))
-            for i = 1:length(x.args)-1
+            for i = 1:(length(x.args)-1)
                 arg = x.args[i+1]
                 if isexpr(arg, :...)
                     if !isa(arg.args[1], Symbol)
@@ -203,7 +203,7 @@ function _parse_NL_expr(m, x, tapevar, parent, values)
         block = _let_code_block(code)
         op = x.args[2]
         operatorid = comparison_operator_to_id[op]
-        for k = 2:2:length(x.args)-1
+        for k = 2:2:(length(x.args)-1)
             @assert x.args[k] == op # don't handle a <= b >= c
         end
         parentvar = gensym()

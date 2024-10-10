@@ -23,7 +23,7 @@
     """
     formatted_str = raw"""
     begin
-        include("hi")
+        include("hi");
         1
     end
     """
@@ -49,7 +49,23 @@
     @test format_text(str, SciMLStyle()) == formatted_str
 
     str = raw"""
+    @parameters a = b b = c
+    """
+    formatted_str = raw"""
+    @parameters a=b b=c
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = raw"""
     @parameters a=b
+    """
+    formatted_str = raw"""
+    @parameters a=b
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
+
+    str = raw"""
+    @parameters a = b
     """
     formatted_str = raw"""
     @parameters a = b
@@ -80,7 +96,7 @@
         foo(x) + goo(y)
     end
     """
-    @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
+    @test format_text(str, SciMLStyle(); yas_style_nesting = true) ==
           formatted_str_yas_nesting
 
     str = raw"""
@@ -90,7 +106,7 @@
 
     # This should be valid with and without `Dict` in `variable_call_indent`
     @test format_text(str, SciMLStyle()) == str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == str
 
     str = raw"""
     SVector(1.0,
@@ -98,8 +114,8 @@
     """
 
     # Test the same with different callers
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test2"]) == str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["SVector", "test2"]) == str
 
     str = raw"""
     Dict{Int, Int}(
@@ -121,7 +137,7 @@
 
     # `variable_call_indent` keeps the line break and doesn't align
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str2
 
     str = raw"""
     SVector(
@@ -142,8 +158,8 @@
     """
 
     # Test the same with different callers
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["test", "SVector"]) ==
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str1
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["test", "SVector"]) ==
           formatted_str2
 
     str = raw"""
@@ -168,9 +184,9 @@
 
     # This is already valid with `variable_call_indent`
     @test format_text(str, SciMLStyle()) == formatted_str
-    @test format_text(str, SciMLStyle(), yas_style_nesting = true) ==
+    @test format_text(str, SciMLStyle(); yas_style_nesting = true) ==
           formatted_str_yas_nesting
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
     SomeLongerTypeThanJustString = String
@@ -195,7 +211,7 @@
 
     # Here, `variable_call_indent` forces the line break because the line is too long
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str2
 
     str = raw"""
     Dict{Int, Int}(
@@ -213,7 +229,7 @@
 
     # Test `variable_call_indent` with a comment in a separate line
     @test format_text(str, SciMLStyle()) == formatted_str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
     SVector(
@@ -231,7 +247,7 @@
 
     # Test the same with different callers
     @test format_text(str, SciMLStyle()) == formatted_str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector"]) ==
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["SVector"]) ==
           formatted_str
 
     str = raw"""
@@ -256,7 +272,7 @@
     # With `variable_call_indent = false`, the comment will be eaten,
     # see https://github.com/domluna/JuliaFormatter.jl/issues/609
     @test format_text(str, SciMLStyle()) == formatted_str1
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str2
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str2
 
     str = raw"""
     Dict{Int, Int}( # Comment
@@ -277,7 +293,7 @@
     # Test `variable_call_indent` with both an inline comment after the opening parenthesis
     # and a comment in a separate line.
     @test format_text(str, SciMLStyle()) == formatted_str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"]) == formatted_str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
 
     str = raw"""
     SVector( # Comment
@@ -296,8 +312,8 @@
     """
 
     # Test the same with different callers
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["test"]) == formatted_str
-    @test format_text(str, SciMLStyle(), variable_call_indent = ["SVector", "test"]) ==
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["test"]) == formatted_str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["SVector", "test"]) ==
           formatted_str
 
     str = """
@@ -372,7 +388,7 @@
     # xxxxx::SomePrettyLongTypeName{
     #                               Foo
     #                              }
-    @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
+    @test format_text(str, SciMLStyle(); yas_style_nesting = true) == str
 
     # https://github.com/SciML/JumpProcesses.jl/pull/362#discussion_r1375432275
     str_ = """
@@ -400,7 +416,7 @@
                 Nothing}}
         body
     end"""
-    @test format_text(str_, SciMLStyle(), margin = 1) == str
+    @test format_text(str_, SciMLStyle(); margin = 1) == str
 
     str_ = """
     macro (p::CoevolveJumpAggregation{
@@ -427,7 +443,7 @@
                 Nothing}}
         body
     end"""
-    @test format_text(str_, SciMLStyle(), margin = 1) == str
+    @test format_text(str_, SciMLStyle(); margin = 1) == str
 
     @testset "optimal nesting" begin
         @testset "function definition" begin
@@ -443,8 +459,8 @@
                 body
             end
             """
-            @test format_text(str, SciMLStyle(), margin = 41) == fstr
-            @test format_text(str, SciMLStyle(), margin = 37) == fstr
+            @test format_text(str, SciMLStyle(); margin = 41) == fstr
+            @test format_text(str, SciMLStyle(); margin = 37) == fstr
 
             fstr = """
             function foo(arg1, arg2, arg3,
@@ -452,9 +468,9 @@
                 body
             end
             """
-            @test format_text(str, SciMLStyle(), margin = 36) == fstr
+            @test format_text(str, SciMLStyle(); margin = 36) == fstr
             # should be 30? might be a unnesting off by 1 error
-            @test format_text(str, SciMLStyle(), margin = 31) == fstr
+            @test format_text(str, SciMLStyle(); margin = 31) == fstr
 
             fstr = """
             function foo(
@@ -463,8 +479,8 @@
                 body
             end
             """
-            @test format_text(str, SciMLStyle(), margin = 29) == fstr
-            @test format_text(str, SciMLStyle(), margin = 25) == fstr
+            @test format_text(str, SciMLStyle(); margin = 29) == fstr
+            @test format_text(str, SciMLStyle(); margin = 25) == fstr
 
             fstr = """
             function foo(
@@ -474,7 +490,7 @@
                 body
             end
             """
-            @test format_text(str, SciMLStyle(), margin = 24) == fstr
+            @test format_text(str, SciMLStyle(); margin = 24) == fstr
 
             fstr = """
             function foo(
@@ -486,7 +502,7 @@
                 body
             end
             """
-            @test format_text(str, SciMLStyle(), margin = 18) == fstr
+            @test format_text(str, SciMLStyle(); margin = 18) == fstr
         end
 
         @testset "vector definition" begin
@@ -495,38 +511,38 @@
             """
 
             # Fits within the margin
-            @test format_text(str, SciMLStyle(), margin = 41) == str
-            @test format_text(str, SciMLStyle(), margin = 37) == str
+            @test format_text(str, SciMLStyle(); margin = 41) == str
+            @test format_text(str, SciMLStyle(); margin = 37) == str
 
             fstr = """
             test = [
                 arg1, arg2, arg3, arg4, arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 36) == fstr
-            @test format_text(str, SciMLStyle(), margin = 33) == fstr
+            @test format_text(str, SciMLStyle(); margin = 36) == fstr
+            @test format_text(str, SciMLStyle(); margin = 33) == fstr
 
             fstr = """
             test = [arg1, arg2, arg3,
                 arg4, arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 32) == fstr
+            @test format_text(str, SciMLStyle(); margin = 32) == fstr
             # should be 25? might be a unnesting off by 1 error
-            @test format_text(str, SciMLStyle(), margin = 26) == fstr
+            @test format_text(str, SciMLStyle(); margin = 26) == fstr
 
             fstr = """
             test = [
                 arg1, arg2, arg3,
                 arg4, arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 25) == fstr
-            @test format_text(str, SciMLStyle(), margin = 21) == fstr
+            @test format_text(str, SciMLStyle(); margin = 25) == fstr
+            @test format_text(str, SciMLStyle(); margin = 21) == fstr
 
             fstr = """
             test = [arg1, arg2,
                 arg3,
                 arg4, arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 20) == fstr
+            @test format_text(str, SciMLStyle(); margin = 20) == fstr
             # should be 19? might be a unnesting off by 1 error
             # @test format_text(str, SciMLStyle(), margin = 19) == fstr
 
@@ -536,9 +552,9 @@
                 arg3,
                 arg4, arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 19) == fstr
+            @test format_text(str, SciMLStyle(); margin = 19) == fstr
             # should be 15? might be a unnesting off by 1 error
-            @test format_text(str, SciMLStyle(), margin = 16) == fstr
+            @test format_text(str, SciMLStyle(); margin = 16) == fstr
 
             fstr = """
             test = [
@@ -547,7 +563,7 @@
                 arg4,
                 arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 15) == fstr
+            @test format_text(str, SciMLStyle(); margin = 15) == fstr
 
             fstr = """
             test = [arg1,
@@ -556,7 +572,7 @@
                 arg4,
                 arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 14) == fstr
+            @test format_text(str, SciMLStyle(); margin = 14) == fstr
 
             fstr = """
             test = [
@@ -566,7 +582,7 @@
                 arg4,
                 arg5]
             """
-            @test format_text(str, SciMLStyle(), margin = 13) == fstr
+            @test format_text(str, SciMLStyle(); margin = 13) == fstr
         end
     end
 
@@ -578,5 +594,5 @@
 
     # This should be valid with and without `yas_style_nesting`
     @test format_text(str, SciMLStyle()) == str
-    @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
+    @test format_text(str, SciMLStyle(); yas_style_nesting = true) == str
 end

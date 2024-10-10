@@ -143,7 +143,7 @@ sample_count(samples::Samples) = size(samples.data, 2)
 
 const VALID_SAMPLE_TYPE_UNION = Union{Int8,Int16,Int32,Int64,UInt8,UInt16,UInt32,UInt64}
 
-function encode_sample(::Type{S}, resolution_in_unit, offset_in_unit, sample_in_unit,
+function encode_sample(::Type{S}, resolution_in_unit, offset_in_unit, sample_in_unit;
                        noise=zero(sample_in_unit)) where {S<:VALID_SAMPLE_TYPE_UNION}
     sample_in_unit += noise
     isnan(sample_in_unit) && return typemax(S)
@@ -194,7 +194,7 @@ Otherwise, `dither_storage` must be a container of similar shape and type to
 `samples`. This container is then used to store the random noise needed for the
 triangular dithering process, which is applied to the signal prior to quantization.
 """
-function encode(::Type{S}, sample_resolution_in_unit, sample_offset_in_unit, samples,
+function encode(::Type{S}, sample_resolution_in_unit, sample_offset_in_unit, samples;
                 dither_storage=nothing) where {S}
     return encode!(similar(samples, S), S, sample_resolution_in_unit, sample_offset_in_unit,
                    samples, dither_storage)
@@ -218,7 +218,7 @@ function encode!(result_storage, sample_resolution_in_unit, sample_offset_in_uni
 end
 
 function encode!(result_storage, ::Type{S}, sample_resolution_in_unit,
-                 sample_offset_in_unit, samples, dither_storage=nothing) where {S}
+                 sample_offset_in_unit, samples; dither_storage=nothing) where {S}
     if dither_storage isa Nothing
         broadcast!(encode_sample, result_storage, S, sample_resolution_in_unit,
                    sample_offset_in_unit, samples)

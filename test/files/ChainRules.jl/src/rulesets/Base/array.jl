@@ -154,7 +154,7 @@ function rrule(::typeof(reduce), ::typeof(hcat), As::AbstractVector{<:AbstractVe
         dAs = map(widths) do w
             lo = hi[] + 1
             hi[] += w
-            dY[:, lo:hi[]]
+            return dY[:, lo:hi[]]
         end
         return (NoTangent(), NoTangent(), dAs)
     end
@@ -217,7 +217,7 @@ function rrule(::typeof(reduce), ::typeof(vcat), As::AbstractVector{<:AbstractVe
             lo = hi[] + 1
             hi[] += z
             ind = ntuple(d -> d == 1 ? (lo:hi[]) : (:), ndimsY)
-            dY[ind...]
+            return dY[ind...]
         end
         return (NoTangent(), NoTangent(), dAs)
     end
@@ -252,7 +252,7 @@ function rrule(::typeof(cat), Xs::Union{AbstractArray,Number}...; dims)
                     if d > ndimsX
                         (prev[d] + 1)
                     else
-                        ((prev[d] + 1):(prev[d] + sizeX[d]))
+                        ((prev[d]+1):(prev[d]+sizeX[d]))
                     end
                 else
                     d > ndimsX ? 1 : (:)
@@ -293,7 +293,7 @@ function rrule(::typeof(hvcat), rows, values::Union{AbstractArray,Number}...)
                     if d > ndimsX
                         (prev[d] + 1)
                     else
-                        ((prev[d] + 1):(prev[d] + sizeX[d]))
+                        ((prev[d]+1):(prev[d]+sizeX[d]))
                     end
                 else
                     d > ndimsX ? 1 : (:)
@@ -304,7 +304,7 @@ function rrule(::typeof(hvcat), rows, values::Union{AbstractArray,Number}...)
                 prev[2] = 0
                 prev[1] += get(sizeX, 1, 1)
             end
-            project(dY[index...])
+            return project(dY[index...])
         end
         return (NoTangent(), NoTangent(), dXs...)
     end

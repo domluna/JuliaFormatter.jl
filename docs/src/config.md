@@ -25,21 +25,23 @@ margin = 100
 
 then files under `somedir` will be formatted with 2 spaces indentation and the maximum line length 100.
 
-!!! warning "Custom Style"
+## Non Default Style
 
-    Currently the configuration file doesn't support user-defined [Custom Styles](@ref).
-    For the time being, we only provide specs for [YAS Style](@ref), [Blue Style](@ref) and [SciML Style](@ref) in configuration file.
-    In order to use YAS style instead of the default style, you can just specify:
+If you would use another style, such as `YASStyle` you can write this in your configuration like so:
 
-    > .JuliaFormatter.toml
+```toml
+style = "yas"
+```
 
-    ```toml
-    ...
-    style = "yas"
-    ...
-    ```
+Styles choices are:
 
-    In the same way as above, you can specify `style = "blue"` to use Blue style.
+- "default" (default choice if nothing is specified)
+- "yas"
+- "blue"
+- "sciml"
+- "minimal"
+
+
 
 ## Search Rule
 

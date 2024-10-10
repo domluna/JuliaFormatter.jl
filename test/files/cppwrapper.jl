@@ -267,7 +267,7 @@ function get_array(io, field::Symbol, Typ)
     basename = if field == :tetrahedra
         string(field)
     else
-        string(field)[1:end-1] # cut of s
+        string(field)[1:(end-1)] # cut of s
     end
     ptr = if field == :tetrahedra
         io.tetrahedronlist
@@ -362,7 +362,7 @@ function Base.cconvert(
         basename = if field == :tetrahedra
             string(field)
         else
-            string(field)[1:end-1] # cut of s
+            string(field)[1:(end-1)] # cut of s
         end
         listname = Symbol(replace(basename * "list", "tetrahedra" => "tetrahedron"))
         FT = fieldtype(CIO, listname)

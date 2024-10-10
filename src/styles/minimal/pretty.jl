@@ -5,8 +5,9 @@ struct MinimalStyle <: AbstractStyle
     innerstyle::Union{Nothing,AbstractStyle}
 end
 MinimalStyle() = MinimalStyle(NoopStyle())
+getstyle(s::MinimalStyle) = s.innerstyle isa NoopStyle ? s : s.innerstyle
 
-function options(style::MinimalStyle)
+function options(::MinimalStyle)
     return (;
         indent = 4,
         annotate_untyped_fields_with_any = false,
