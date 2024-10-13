@@ -108,6 +108,8 @@ function nest!(
         n_tuple!(style, fst, s, lineage)
     elseif fst.typ === CartesianIterator
         n_cartesian_iterator!(style, fst, s, lineage)
+    elseif fst.typ === TupleBlock
+        n_tupleblock!(style, fst, s, lineage)
     elseif fst.typ === Parameters
         n_parameters!(style, fst, s, lineage)
     elseif fst.typ === Vect
@@ -396,6 +398,15 @@ function n_tuple!(
 end
 
 function n_cartesian_iterator!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
+
+function n_tupleblock!(
     ds::AbstractStyle,
     fst::FST,
     s::State,

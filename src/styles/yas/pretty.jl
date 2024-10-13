@@ -243,6 +243,54 @@ function p_bracescat(
     t
 end
 
+function p_tupleblock(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    style = getstyle(ys)
+    t = FST(TupleBlock, nspaces(s))
+    if !haschildren(cst)
+        return t
+    end
+
+    nargs = length(get_args(cst))
+    childs = children(cst)
+    idx = findfirst(n -> kind(n) === K"(", childs)
+    first_arg_idx =
+        isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
+
+    for (i, a) in enumerate(childs)
+        n = if kind(a) === K"=" && haschildren(a)
+            p_kw(style, a, s, ctx, lineage)
+        else
+            pretty(style, a, s, ctx, lineage)
+        end
+
+        override = (i == first_arg_idx) || kind(a) === K")"
+
+        if kind(a) in KSet"; ,"
+            if nargs == 1
+                add_node!(t, n, s; join_lines = true)
+            elseif needs_placeholder(childs, i + 1, K")")
+                add_node!(t, n, s; join_lines = true)
+                add_node!(t, Placeholder(1), s)
+            end
+        else
+            add_node!(
+                t,
+                n,
+                s;
+                join_lines = true,
+                override_join_lines_based_on_source = override,
+            )
+        end
+    end
+    t
+end
+
 function p_tuple(
     ys::YASStyle,
     cst::JuliaSyntax.GreenNode,

@@ -685,13 +685,21 @@ function p_block(
     ignore_single_line = ctx.ignore_single_line
     from_quote = ctx.from_quote
 
-    single_line =
-        ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst) - 1)
+
+    childs = children(cst)
+    has_paren = !isnothing(findfirst(n -> kind(n) === K"(", childs))
+
+    if has_paren && !from_quote
+        return p_tupleblock(style, cst, s, ctx, lineage)
+    end
+
+    single_line =  ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst) - 1)
+
     before_first_arg = true
 
     # TODO: fix this so we can pass it through
     ctx = newctx(ctx; ignore_single_line = false, join_body = false, from_quote = false)
-    childs = children(cst)
+
     for (i, a) in enumerate(childs)
         if is_ws(a)
             s.offset += span(a)
@@ -738,6 +746,8 @@ function p_block(
                 add_node!(t, n, s; max_padding = 0)
             end
         end
+
+
     end
 
     t
@@ -2225,6 +2235,55 @@ function p_invisbrackets(
     t
 end
 
+function p_tupleblock(
+    ds::AbstractStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    style = getstyle(ds)
+    t = FST(TupleBlock, nspaces(s))
+    if !haschildren(cst)
+        return t
+    end
+
+    args = get_args(cst)
+    nest =
+        length(args) > 0 && !(
+            length(args) == 1 &&
+            (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
+        )
+
+    childs = children(cst)
+    for (i, a) in enumerate(childs)
+        n = if kind(a) === K"=" && haschildren(a)
+            p_kw(style, a, s, ctx, lineage)
+        else
+            pretty(style, a, s, ctx, lineage)
+        end
+        if kind(a) === K"("
+            add_node!(t, n, s; join_lines = true)
+            if nest
+                add_node!(t, Placeholder(0), s)
+            end
+        elseif kind(a) === K")"
+            if nest
+                add_node!(t, Placeholder(0), s)
+            end
+            add_node!(t, n, s; join_lines = true)
+        elseif kind(a) in KSet", ;"
+            add_node!(t, n, s; join_lines = true)
+            if needs_placeholder(childs, i + 1, K")")
+                add_node!(t, Placeholder(1), s)
+            end
+        else
+            add_node!(t, n, s; join_lines = true)
+        end
+    end
+    t
+end
+
 function p_tuple(
     ds::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
@@ -2272,7 +2331,7 @@ function p_tuple(
                 add_node!(t, Placeholder(0), s)
             end
             add_node!(t, n, s; join_lines = true)
-        elseif kind(a) === K","
+        elseif kind(a) in KSet", ;"
             add_node!(t, n, s; join_lines = true)
             if needs_placeholder(childs, i + 1, K")")
                 add_node!(t, Placeholder(1), s)

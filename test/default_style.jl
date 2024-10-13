@@ -2644,21 +2644,15 @@
 
         # TODO: if this ends up being a issue fix it but it doesn't seem
         # like it actually occurs in the wild.
-        # str = "(a; b; c)"
-        # @test fmt("(a;b;c)", 4, 100) == str
-        # str = """
-        # (
-        #     a;
-        #     b;
-        #     c
-        # )"""
-        # @test fmt("(a;b;c)", 4, 1) == str
-        #
-        # str = """
-        # (
-        #   a; b; c
-        # )"""
-        # @test fmt("(a;b;c)", 2, 1) == str
+        str = "(a; b; c)"
+        @test fmt("(a;b;c)", 4, 100) == str
+        str = """
+        (
+            a;
+            b;
+            c
+        )"""
+        @test fmt("(a;b;c)", 4, 1) == str
 
         str = "(x for x = 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str

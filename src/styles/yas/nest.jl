@@ -217,6 +217,14 @@ function n_cartesian_iterator!(
 )
     n_tuple!(ys, fst, s, lineage)
 end
+function n_tupleblock!(
+    ys::YASStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ys, fst, s, lineage)
+end
 
 function n_generator!(
     ys::YASStyle,

@@ -94,6 +94,7 @@
     Break,
     Continue,
     Inert,
+    TupleBlock,
 )
 
 @enum(NestBehavior, AllowNest, AlwaysNest, NeverNest, NeverNestNode, AllowNestButDontRemove)
