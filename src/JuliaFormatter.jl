@@ -532,41 +532,41 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-# @setup_workload begin
-#     dir = joinpath(@__DIR__, "..")
-#     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
-#     mkdir(sandbox_dir)
-#     cp(dir, sandbox_dir; force = true)
-#     str = """
-#     true
-#     false
-#     10.0
-#     "hello"
-#     a + b
-#     a == b == c
-#     a^10
-#     !cond
-#     f(a,b,c)
-#     @f(a,b,c)
-#     (a,b,c)
-#     [a,b,c]
-#     begin
-#         a
-#         b
-#     end
-#     quote
-#         a
-#         b
-#     end
-#     :(a+b+c+d)
-#     """
-#
-#     @compile_workload begin
-#         format(sandbox_dir)
-#         for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
-#             format_text(str, style)
-#         end
-#     end
-# end
+@setup_workload begin
+    dir = joinpath(@__DIR__, "..")
+    sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
+    mkdir(sandbox_dir)
+    cp(dir, sandbox_dir; force = true)
+    str = """
+    true
+    false
+    10.0
+    "hello"
+    a + b
+    a == b == c
+    a^10
+    !cond
+    f(a,b,c)
+    @f(a,b,c)
+    (a,b,c)
+    [a,b,c]
+    begin
+        a
+        b
+    end
+    quote
+        a
+        b
+    end
+    :(a+b+c+d)
+    """
+
+    @compile_workload begin
+        format(sandbox_dir)
+        for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
+            format_text(str, style)
+        end
+    end
+end
 
 end

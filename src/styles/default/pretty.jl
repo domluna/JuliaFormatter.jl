@@ -685,7 +685,6 @@ function p_block(
     ignore_single_line = ctx.ignore_single_line
     from_quote = ctx.from_quote
 
-
     childs = children(cst)
     has_paren = !isnothing(findfirst(n -> kind(n) === K"(", childs))
 
@@ -693,7 +692,8 @@ function p_block(
         return p_tupleblock(style, cst, s, ctx, lineage)
     end
 
-    single_line =  ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst) - 1)
+    single_line =
+        ignore_single_line ? false : on_same_line(s, s.offset, s.offset + span(cst) - 1)
 
     before_first_arg = true
 
@@ -746,8 +746,6 @@ function p_block(
                 add_node!(t, n, s; max_padding = 0)
             end
         end
-
-
     end
 
     t
