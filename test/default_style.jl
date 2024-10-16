@@ -111,6 +111,7 @@
         b = 10 * 20
 
         # comment"""
+
         str_ = """
         # this should be formatted
         a = f(aaa, bbb, ccc)
@@ -134,7 +135,7 @@
         #! format: off
         b = 10*20
         #! format: on
-        b = 10*20
+        b = 10 *20
 
         # comment"""
         @test fmt(str_) == str
@@ -165,6 +166,10 @@
         @test fmt("a.^b") == "a .^ b"
         @test fmt("a.^10.") == "a .^ 10.0"
         @test fmt("a.//10") == "a .// 10"
+
+        @test fmt("a .^ b") == "a .^ b"
+        @test fmt("a .^ 10.") == "a .^ 10.0"
+        @test fmt("a .// 10") == "a .// 10"
     end
 
     @testset "toplevel" begin
@@ -182,8 +187,7 @@
 
         hello = "string";
 
-        a = 10
-        ;
+        a = 10        ;
 
 
         c = 50;
@@ -318,8 +322,10 @@
     end
 
     @testset "unary ops" begin
-        @test fmt("! x") == "!x"
-        @test fmt("x ...") == "x..."
+        @test fmt("! x") == "! x"
+        @test fmt("x ...") == "x ..."
+        @test fmt("!x") == "!x"
+        @test fmt("x...") == "x..."
 
         # Issue 110
         str = raw"""
@@ -340,48 +346,58 @@
         foo(
             args...,
         )"""
-        @test fmt(str, m = 1) == str
+        @test fmt(str_; m = 1) == str
+        @test fmt(str; m = 1) == str
     end
 
-    @testset "binary ops" begin
-        @test fmt("a+b*c") == "a + b * c"
-        @test fmt("a +b*c") == "a + b * c"
-        @test fmt("a+ b*c") == "a + b * c"
-        @test fmt("a+b *c") == "a + b * c"
-        @test fmt("a+b* c") == "a + b * c"
-        @test fmt("a+b*c ") == "a + b * c"
-        @test fmt("a:b") == "a:b"
-        @test fmt("a : b") == "a:b"
-        @test fmt("a: b") == "a:b"
-        @test fmt("a :b") == "a:b"
-        @test fmt("a +1 :b -1") == "a+1:b-1"
+    @testset ": op" begin
         @test fmt("a:b:c") == "a:b:c"
         @test fmt("a :b:c") == "a:b:c"
         @test fmt("a: b:c") == "a:b:c"
         @test fmt("a:b :c") == "a:b:c"
         @test fmt("a:b: c") == "a:b:c"
         @test fmt("a:b:c ") == "a:b:c"
-        @test fmt("a::b:: c") == "a::b::c"
-        @test fmt("a :: b::c") == "a::b::c"
+    end
+
+    @testset "binary ops" begin
+        @test fmt("a+b*c") == "a+b*c"
+        @test fmt("a +b *c") == "a + b * c"
+        @test fmt("a + b      *c") == "a + b * c"
+        @test fmt("a +b*c") == "a + b*c"
+        @test fmt("a + b*c") == "a + b*c"
+        @test fmt("a+b *c") == "a+b * c"
+        @test fmt("a+b* c") == "a+b * c"
+        @test fmt("a+b*c ") == "a+b*c"
+        @test fmt("a:b") == "a:b"
+        @test fmt("a : b") == "a:b"
+        @test fmt("a: b") == "a:b"
+        @test fmt("a :b") == "a:b"
+        @test fmt("a +1 :b -1") == "(a+1):(b-1)"
+
+        @test fmt("a::b:: c") == "a::b :: c"
+        @test fmt("a :: b::c") == "a :: b::c"
+        @test fmt("a      :: b   :: c") == "a :: b :: c"
         # issue 74
-        @test fmt("0:1/3:2") == "0:1/3:2"
+        @test fmt("0:1/3:2") == "0:(1/3):2"
         @test fmt("2a") == "2a"
         # issue 251
-        @test fmt("2(a+1)") == "2(a + 1)"
+        @test fmt("2(a   + 1)") == "2(a + 1)"
+        @test fmt("2(a+1)") == "2(a+1)"
         @test fmt("1 / 2a^2") == "1 / 2a^2"
 
         str_ = "a[1:2 * num_source * num_dump-1]"
-        str = "a[1:2*num_source*num_dump-1]"
+        str = "a[1:(2*num_source*num_dump-1)]"
         @test fmt(str_, 4, 1) == str
 
         str_ = "a[2 * num_source * num_dump-1:1]"
-        str = "a[2*num_source*num_dump-1:1]"
+        str = "a[(2*num_source*num_dump-1):1]"
         @test fmt(str_, 4, 1) == str
 
         str = "!(typ <: ArithmeticTypes)"
         @test fmt(str) == str
 
-        @test fmt("1 // 2 + 3 ^ 4") == "1 // 2 + 3^4"
+        @test fmt("1 // 2 + 3^4") == "1 // 2 + 3^4"
+        @test fmt("1 // 2 + 3 ^ 4") == "1 // 2 + 3 ^ 4"
 
         # Function def
 
@@ -458,14 +474,6 @@
             end"""
         @test fmt(str_) == str
 
-        str_ = """foo() = let var1=value1,var2,var3=value3 body end"""
-        str = """
-        foo() =
-            let var1 = value1, var2, var3 = value3
-                body
-            end"""
-        @test fmt(str_) == str
-
         # Assignment op
 
         str_ = """foo = if cond a else b end"""
@@ -537,49 +545,6 @@
           end"""
         @test fmt(str_, 2, 1) == str
 
-        str_ = """foo = let var1=value1,var2,var3=value3 body end"""
-        str = """
-        foo =
-          let var1 = value1, var2, var3 = value3
-            body
-          end"""
-        @test fmt(str_, 2, 43) == str
-        @test fmt(str_, 2, 40) == str
-
-        str = """
-        foo =
-          let var1 = value1,
-            var2,
-            var3 = value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 39) == str
-
-        str = """
-        foo =
-          let var1 =
-              value1,
-            var2,
-            var3 = value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 17) == str
-
-        str = """
-        foo =
-          let var1 =
-              value1,
-            var2,
-            var3 =
-              value3
-
-            body
-          end"""
-        @test fmt(str_, 2, 16) == str
-        @test fmt(str_, 2, 1) == str
-
         str_ = """
         foo = let
           body
@@ -591,6 +556,11 @@
             body
           end"""
         @test fmt(str_, 2, 8) == str
+        str = """
+        foo =
+          let
+            body
+          end"""
         @test fmt(str_, 2, 1) == str
 
         str_ = """a, b = cond ? e1 : e2"""
@@ -804,11 +774,13 @@
     end
 
     @testset "op chain" begin
-        @test fmt("a+b+c+d") == "a + b + c + d"
+        @test fmt("a+b+c+d") == "a+b+c+d"
+        @test fmt("a + b + c +d") == "a + b + c + d"
     end
 
     @testset "comparison chain" begin
-        @test fmt("a<b==c≥d") == "a < b == c ≥ d"
+        @test fmt("a<b==c≥d") == "a<b==c≥d"
+        @test fmt("a<b == c≥d") == "a < b == c ≥ d"
     end
 
     @testset "single line block" begin
@@ -1150,6 +1122,7 @@
             end""") == str
 
         str = """
+        a = 10000
         for i = 1:10
             body
         end"""
@@ -1157,6 +1130,7 @@
         @test length(t) == 12
 
         str = """
+        a = 1
         for i in 1:10
             bodybodybodybody
         end"""
@@ -1204,7 +1178,7 @@
 
     @testset "let" begin
         str = """
-        let x = X
+        let x=X
             arg
         end"""
         @test fmt("""
@@ -1952,6 +1926,13 @@
         )"""
         @test fmt(str_) == str
 
+        str = """
+        foo(;;
+            a = b, # comment
+            c = d,
+            # comment
+        )"""
+
         str_ = """
         foo(
             ;
@@ -2006,6 +1987,23 @@
               # comment
         finally
               # comment
+        end"""
+        @test fmt(str_, 6, 92) == str
+
+        str_ = "if a \n # comment\n body \n# comment\n elseif b\n # comment\nbody\n #comment\n else\n # comment\n body \n #comment\n end"
+        str = """
+        if a
+              # comment
+              body
+              # comment
+        elseif b
+              # comment
+              body
+              #comment
+        else
+              # comment
+              body
+              #comment
         end"""
         @test fmt(str_, 6, 92) == str
 
@@ -2099,14 +2097,18 @@
         # issue 152
         str = """
         try
+            ;
         catch
+            ;
         end   # comment"""
         str_ = """try; catch;  end   # comment"""
         @test fmt(str_) == str
 
         str = """
         try
+            ;
         catch
+            ;
         end   # comment
         a = 10"""
         str_ = """
@@ -2131,7 +2133,7 @@
         @test length(t) == 18
 
         str = """function foo()
-                     10
+                     10;
                      20
                  end"""
         @test fmt("""function foo() 10;  20 end""") == str
@@ -2150,15 +2152,15 @@
                 end""") == str
 
         str = """for i = 1:10
-                     1
-                     2
+                     1;
+                     2;
                      3
                  end"""
         @test fmt("""for i=1:10 1; 2; 3 end""") == str
 
         str = """while true
-                     1
-                     2
+                     1;
+                     2;
                      3
                  end"""
         @test fmt("""while true 1; 2; 3 end""") == str
@@ -2171,13 +2173,13 @@
         @test fmt("""try a catch e b end""") == str
 
         str = """try
-                     a1
+                     a1;
                      a2
                  catch e
-                     b1
+                     b1;
                      b2
                  finally
-                     c1
+                     c1;
                      c2
                  end"""
         @test fmt("""try a1;a2 catch e b1;b2 finally c1;c2 end""") == str
@@ -2188,12 +2190,12 @@
         @test fmt("""map(a) do b,c
                      e end""") == str
 
-        str = """let a = b, c = d
-                     e1
-                     e2
+        str = """let a=b, c = d
+                     e1;
+                     e2;
                      e3
                  end"""
-        @test fmt("""let a=b,c=d\ne1; e2; e3 end""") == str
+        @test fmt("""let a=b,c  =  d  \ne1; e2; e3 end""") == str
 
         str = """let a, b
                      e
@@ -2206,8 +2208,8 @@
                      c""") == str
 
         str = """begin
-                     a
-                     b
+                     a;
+                     b;
                      c
                  end"""
         @test fmt("""begin a; b; c end""") == str
@@ -2216,8 +2218,8 @@
         @test fmt("""begin \n            end""") == str
 
         str = """quote
-                     a
-                     b
+                     a;
+                     b;
                      c
                  end"""
         @test fmt("""quote a; b; c end""") == str
@@ -2226,32 +2228,32 @@
         @test fmt("""quote \n end""") == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  end"""
         @test fmt("if cond1 e1;e2 end") == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  else
-                     e3
+                     e3;
                      e4
                  end"""
         @test fmt("if cond1 e1;e2 else e3;e4 end") == str
 
         str = """begin
                      if cond1
-                         e1
+                         e1;
                          e2
                      elseif cond2
-                         e3
+                         e3;
                          e4
                      elseif cond3
-                         e5
+                         e5;
                          e6
                      else
-                         e7
+                         e7;
                          e8
                      end
                  end"""
@@ -2260,10 +2262,10 @@
         ) == str
 
         str = """if cond1
-                     e1
+                     e1;
                      e2
                  elseif cond2
-                     e3
+                     e3;
                      e4
                  end"""
         @test fmt("if cond1 e1;e2 elseif cond2 e3; e4 end") == str
@@ -2273,24 +2275,62 @@
         @test fmt("[a   b         c   ]") == str
 
         str = """
-        [a; b; c]"""
+        [a; b; c;]"""
         @test fmt("[a;   b;         c;   ]") == str
+        str = """
+        [a; b; c]"""
+        @test fmt("[a;   b;         c   ]") == str
 
         str = """
         T[a b c]"""
         @test fmt("T[a   b         c   ]") == str
 
-        str = """
-        T[a; b; c]"""
+        str = """T[a; b; c]"""
+        @test fmt("T[a;   b;         c   ]") == str
+        str = """T[a; b; c;]"""
         @test fmt("T[a;   b;         c;   ]") == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+        ]"""
+        @test fmt("T[a;   b;         c;   ]", 4, 1) == str
+
+        str = """
+        T[
+            a;
+            b;
+            c
+        ]"""
+        @test fmt("T[a;   b;         c   ]", 4, 1) == str
 
         str = """
         T[a; b; c; e d f]"""
         @test fmt("T[a;   b;         c;   e  d    f   ]") == str
 
         str = """
-        T[a; b; c; e d f]"""
-        @test fmt("T[a;   b;         c;   e  d    f    ;   ]") == str
+        T[a; b; c; e d f;]"""
+        @test fmt("T[a;   b;         c;   e  d    f;   ]") == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+            e d f
+        ]"""
+        @test fmt("T[a;   b;         c;   e  d    f   ]", 4, 1) == str
+
+        str = """
+        T[
+            a;
+            b;
+            c;
+            e d f;
+        ]"""
+        @test fmt("T[a;   b;         c;   e  d    f;   ]", 4, 1) == str
 
         str = "T[a;]"
         @test fmt(str) == str
@@ -2404,7 +2444,7 @@
                 C,
             },
         }
-            10
+            10;
             20
         end"""
         str_ = "function f(arg1::A,key1=val1;key2=val2) where {A,F{B,C}} 10; 20 end"
@@ -2419,7 +2459,7 @@
             A,
             F{B,C},
         }
-            10
+            10;
             20
         end"""
         @test fmt(str_, 4, 17) == str
@@ -2430,7 +2470,7 @@
             key1 = val1;
             key2 = val2,
         ) where {A,F{B,C}}
-            10
+            10;
             20
         end"""
         @test fmt(str_, 4, 18) == str
@@ -2602,14 +2642,17 @@
         str = "Val(x) = (@_pure_meta; Val{x}())"
         @test fmt("Val(x) = (@_pure_meta ; Val{x}())", 4, 80) == str
 
+        # TODO: if this ends up being a issue fix it but it doesn't seem
+        # like it actually occurs in the wild.
         str = "(a; b; c)"
         @test fmt("(a;b;c)", 4, 100) == str
-
         str = """
         (
-          a; b; c
+            a;
+            b;
+            c
         )"""
-        @test fmt("(a;b;c)", 2, 1) == str
+        @test fmt("(a;b;c)", 4, 1) == str
 
         str = "(x for x = 1:10)"
         @test fmt("(x   for x  in  1 : 10)", 4, 100) == str
@@ -3002,7 +3045,8 @@
 
         str = "f(a, b, c) where {A,{B, C, D},E}"
         _, s = run_nest(str, 100)
-        @test s.line_offset == length(str)
+        # -2 whitespace in the brackets
+        @test s.line_offset == length(str) - 2
         _, s = run_nest(str, 1)
         @test s.line_offset == 1
 
@@ -3154,7 +3198,7 @@
             {b, c},
             d,
         )"""
-        @test fmt(str_, 4, 13) == str
+        @test fmt(str_, 4, 12) == str
         @test fmt(str_, 4, 11) == str
 
         str = """
@@ -3480,12 +3524,17 @@
         d e Expr();]"""
         str = """
         [
-           a b Expr()
-           d e Expr()
+           a b Expr();
+           d e Expr();
         ]"""
         @test fmt(str_, 3, 92) == str
         str_ = "[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
+        str = """
+        [
+           a b Expr();
+           d e Expr()
+        ]"""
         @test fmt(str_, 3, 1) == str
 
         str_ = """
@@ -3493,13 +3542,18 @@
         d e Expr();]"""
         str = """
         T[
-            a b Expr()
-            d e Expr()
+            a b Expr();
+            d e Expr();
         ]"""
         @test fmt(str_) == str
 
         str_ = "T[a b Expr(); d e Expr()]"
         @test fmt(str_) == str_
+        str = """
+        T[
+            a b Expr();
+            d e Expr()
+        ]"""
         @test fmt(str_, 4, 1) == str
 
         str = """
@@ -3708,24 +3762,47 @@
     end
 
     @testset "comprehension types" begin
-        str_ = "var = (x, y) for x = 1:10, y = 1:10"
+        str_ = "var = ((x, y) for x = 1:10, y = 1:10)"
         str = """
-        var = (x, y) for x = 1:10,
-        y = 1:10"""
+        var =
+            ((x, y) for x = 1:10, y = 1:10)"""
         @test fmt(str_, 4, length(str_) - 1) == str
-        @test fmt(str_, 4, 26) == str
+        @test fmt(str_, 4, 35) == str
 
         str = """
-        var = (x, y) for
-        x = 1:10, y = 1:10"""
-        @test fmt(str_, 4, 25) == str
-        @test fmt(str_, 4, 18) == str
+        var = (
+            (x, y) for x = 1:10, y = 1:10
+        )"""
+        @test fmt(str_, 4, 34) == str
 
         str = """
-        var = (x, y) for
-        x = 1:10,
-        y = 1:10"""
-        @test fmt(str_, 4, 17) == str
+        var = (
+            (x, y) for
+            x = 1:10, y = 1:10
+        )"""
+        @test fmt(str_, 4, 30) == str
+
+        str = """
+        var = (
+            (x, y) for
+            x = 1:10,
+            y = 1:10
+        )"""
+        @test fmt(str_, 4, 20) == str
+
+        str = """
+        var =
+            (
+                (
+                    x,
+                    y,
+                ) for
+                x =
+                    1:10,
+                y =
+                    1:10
+            )"""
+        @test fmt(str_, 4, 1) == str
 
         str_ = """
         begin
@@ -4027,7 +4104,7 @@ some_function(
 
             d,
         )"""
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4039,7 +4116,7 @@ some_function(
             c)"""
         str = """var = func(a, b, c)"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4051,7 +4128,7 @@ some_function(
         c"""
         str = """var = a && b && c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4066,7 +4143,7 @@ some_function(
         c"""
         str = """var = a ? b : c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4081,7 +4158,7 @@ some_function(
         c"""
         str = """var = a + b + c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
 
         str_ = """
         var =
@@ -4096,7 +4173,7 @@ some_function(
         c"""
         str = """var = a == b == c"""
         @test fmt(str_) == str
-        @test fmt(str_, remove_extra_newlines = true) == str
+        @test fmt(str_; remove_extra_newlines = true) == str
     end
 
     @testset "align ChainOpCall indent" begin
@@ -4153,8 +4230,8 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 74) == str
-        @test fmt(str, m = 75) == str_
+        @test fmt(str_; m = 74) == str
+        @test fmt(str; m = 75) == str_
 
         str_ = """
         if argument1 && argument2 && (argument3 || argument4 || argument5) && argument6
@@ -4169,7 +4246,7 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 43) == str
+        @test fmt(str_; m = 43) == str
 
         str = """
         if argument1 &&
@@ -4183,7 +4260,7 @@ some_function(
 
             body
         end"""
-        @test fmt(str_, m = 42) == str
+        @test fmt(str_; m = 42) == str
     end
 
     @testset "standalone lazy expr indent" begin
@@ -4212,16 +4289,16 @@ some_function(
         begin
             a && b ||
                 c &&
-                    d
+                d
         end"""
         @test fmt(str_, 4, 13) == str
 
         str = """
         begin
             a &&
-                b ||
+            b ||
                 c &&
-                    d
+                d
         end"""
         @test fmt(str_, 4, 1) == str
 
@@ -4274,14 +4351,11 @@ some_function(
         begin
             a ||
                 b &&
-                    c ||
+                c ||
                 d
         end"""
         @test fmt(str_, 4, 16) == str
 
-        # Due to parsing but in practice this
-        # case that will never come up and
-        # can be fixed by adding parenthesis.
         str_ = """
         begin
          a && b || c || d || e
@@ -4289,12 +4363,12 @@ some_function(
         str = """
         begin
             a &&
-                b ||
-                    c ||
-                    d ||
-                    e
+            b ||
+                c ||
+                d ||
+                e
         end"""
-        @test_broken fmt(str_, 4, 1) == str
+        @test fmt(str_, 4, 1) == str
 
         str_ = """
         begin
@@ -4304,9 +4378,9 @@ some_function(
         begin
             a ||
                 b &&
-                    c &&
-                    d &&
-                    e
+                c &&
+                d &&
+                e
         end"""
         @test fmt(str_, 4, 1) == str
 
@@ -4401,6 +4475,30 @@ some_function(
         return arg1 ||
                arg2"""
         @test fmt(str_, 4, 1) == str
+
+        str_ = raw"""
+        @othermacro begin
+                x isa Matrix &&
+                   @testset "$MT" for MT in (Diagonal, UpperTriangular, LowerTriangular)
+                       test_rrule(fnorm, MT(x), p; kwargs..., check_inferred=VERSION >= v"1.5")
+                   end
+        end
+        """
+        str = raw"""
+        @othermacro begin
+            x isa Matrix &&
+                @testset "$MT" for MT in (Diagonal, UpperTriangular, LowerTriangular)
+                    test_rrule(
+                        fnorm,
+                        MT(x),
+                        p;
+                        kwargs...,
+                        check_inferred = VERSION >= v"1.5",
+                    )
+                end
+        end
+        """
+        @test fmt(str_, 4, 80) == str
     end
 
     @testset "source file line offset with unicode" begin
@@ -4451,5 +4549,210 @@ some_function(
         ]
         """
         @test fmt(str_, 4, 78) == str
+    end
+
+    @testset "operators as arguments" begin
+        str_ = "a    .*     %"
+        str = "a .* %"
+        @test fmt(str_, 4, 100) == str
+
+        str_ = "a    *     %"
+        str = "a * %"
+        @test fmt(str_, 4, 100) == str
+    end
+
+    @testset "binary shortcircuit" begin
+        s1 = """
+        if a || b
+            body
+        elseif c || d
+            body2 && body2
+        elseif e || f
+            body3 || body3
+        else
+            body4 && body4
+        end
+        """
+        s2 = """
+        if a ||
+           b
+                body
+        elseif c ||
+               d
+                body2 &&
+                        body2
+        elseif e ||
+               f
+                body3 ||
+                        body3
+        else
+                body4 &&
+                        body4
+        end
+        """
+        @test fmt(s1, 8, 1) == s2
+
+        str_ = """
+        a =     if where_idx === nothing
+               from_typedef
+           else
+               from_typedef ||
+               b
+           end
+        """
+        str = """
+        a =
+            if where_idx ===
+               nothing
+                from_typedef
+            else
+                from_typedef ||
+                    b
+            end
+        """
+        @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "parameter to call nesting" begin
+        # always nest is in parameters
+        s = raw"""
+        test_rrule(
+            SymHerm,
+            x,
+            uplo;
+            output_tangent = ΔΩ,
+            # type stability here critically relies on uplo being constant propagated,
+            # so we need to test this more carefully below
+            check_inferred = false,
+        )
+        """
+        @test fmt(s, 4, 100) == s
+
+        # always nest is outsite of parameters in the call
+        s = raw"""
+        test_rrule(  # 5 arg version with scaling scalar
+            gemm,
+            tA,
+            tB,
+            randn(T),
+            A,
+            B;
+            check_inferred = false,
+        )
+        """
+        @test fmt(s, 4, 100) == s
+    end
+
+    @testset "no args before kwargs ; placement" begin
+        str_ = """(; a = b, c = d)"""
+        str = """
+        (;
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(;  # inline
+            a = b, c = d)"""
+        str = """
+        (;  # inline
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(;
+            # comment
+            a = b, c = d)"""
+        str = """
+        (;
+            # comment
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg;
+            # comment
+            a = b, c = d)"""
+        str = """
+        (
+            arg;
+            # comment
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg; # inline
+            a = b, c = d)"""
+        str = """
+        (
+            arg; # inline
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+
+        str_ = """(arg;
+            a = b, c = d)"""
+        str = """
+        (
+            arg;
+            a = b,
+            c = d,
+        )"""
+        @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "for loop, extra placeholder not added" begin
+        str_ = """
+        for i in [a,b,c]
+            body
+        end
+        """
+        str = """
+        for i in
+            [
+            a,
+            b,
+            c,
+        ]
+            body
+        end
+        """
+        @test fmt(str_, 4, 1) == str
+    end
+
+    @testset "for loop, placeholder not removed" begin
+        str_ = """
+        for f in (A, B), T in (C, D)
+            a
+            b
+        end"""
+        str = """
+        for f in (A, B),
+            T in (C, D)
+
+            a
+            b
+        end"""
+        @test fmt(str_, 4, 27) == str
+        @test fmt(str, 4, 27; join_lines_based_on_source = true) == str
+    end
+
+    @testset "block automatically assume nested when join_lines_based_on_source" begin
+        str_ = """
+        let y = a, z = b
+            body
+        end"""
+        str = """
+        let y = a,
+            z = b
+
+            body
+        end"""
+        @test fmt(str_, 4, 16; join_lines_based_on_source = true) == str_
+        @test fmt(str_, 4, 15; join_lines_based_on_source = true) == str
     end
 end

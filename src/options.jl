@@ -36,6 +36,7 @@ Base.@kwdef struct Options
     yas_style_nesting::Bool = false
     short_circuit_to_if::Bool = false
     disallow_single_arg_nesting::Bool = false
+
     function Options(args...)
         opts = new(args...)
         if (opts.force_long_function_def === true) &&
@@ -55,12 +56,17 @@ function Base.show(io::IO, opt::Options)
 end
 
 function needs_alignment(opts::Options)
-    opts.align_struct_field ||
+    if !(
+        opts.align_struct_field ||
         opts.align_conditional ||
         opts.align_assignment ||
-        opts.align_pair_arrow ||
+        opts.align_pair_arrow
+    )
         opts.align_matrix
+    else
+        true
+    end
 end
 
-valid_for_in_op(s::String) = s in VALID_FOR_IN_OPERATORS
+valid_for_in_op(s::AbstractString) = s in VALID_FOR_IN_OPERATORS
 valid_for_in_op(_) = false

@@ -1,13 +1,4 @@
-# FST passes/transforms
-
-function flattenable(kind::Tokens.Kind)
-    kind === Tokens.AND && return true
-    kind === Tokens.OR && return true
-    kind === Tokens.LAZY_AND && return true
-    kind === Tokens.LAZY_OR && return true
-    kind === Tokens.RPIPE && return true
-    return false
-end
+flattenable(k) = kind(k) in KSet"&& || |>"
 flattenable(::Nothing) = false
 
 """
@@ -24,23 +15,23 @@ function flatten_binaryopcall(fst::FST; top = true)
     rhs_kind = op_kind(rhs)
     lhs_same_op = lhs_kind === kind
     rhs_same_op = rhs_kind === kind
-    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes::Vector)
+    idx = findlast(n -> n.typ === PLACEHOLDER, fst.nodes::Vector{FST})
 
     if (top && !lhs_same_op && !rhs_same_op) || idx === nothing
         return nodes
     end
 
     if lhs_same_op
-        append!(nodes, flatten_binaryopcall(lhs, top = false))
+        append!(nodes, flatten_binaryopcall(lhs; top = false))
     else
         flatten_fst!(lhs)
         push!(nodes, lhs)
     end
     # everything except the indentation placeholder
-    append!(nodes, fst[2:idx-1])
+    append!(nodes, fst[2:(idx-1)])
 
     if rhs_same_op
-        append!(nodes, flatten_binaryopcall(rhs, top = false))
+        append!(nodes, flatten_binaryopcall(rhs; top = false))
     else
         flatten_fst!(rhs)
         push!(nodes, rhs)
@@ -51,7 +42,7 @@ end
 
 function flatten_conditionalopcall(fst::FST)
     nodes = FST[]
-    for n in fst.nodes::Vector
+    for n in fst.nodes::Vector{FST}
         if n.typ === Conditional
             append!(nodes, flatten_conditionalopcall(n))
         else
@@ -62,8 +53,10 @@ function flatten_conditionalopcall(fst::FST)
 end
 
 function flatten_fst!(fst::FST)
-    is_leaf(fst) && return
-    for n in fst.nodes::Vector
+    if is_leaf(fst)
+        return
+    end
+    for n in fst.nodes::Vector{FST}
         if is_leaf(n)
             continue
         elseif n.typ === Binary && flattenable(op_kind(n))
@@ -87,18 +80,20 @@ end
 Rewrites `x |> f` to `f(x)`.
 """
 function pipe_to_function_call_pass!(fst::FST)
-    is_leaf(fst) && return
+    if is_leaf(fst)
+        return
+    end
 
     # the RHS must be a valid type to apply a function call.
-    if op_kind(fst) === Tokens.RPIPE && (fst[end].typ !== PUNCTUATION)
+    if op_kind(fst) === K"|>" && (fst[end].typ !== PUNCTUATION)
         fst.nodes = pipe_to_function_call(fst)
         fst.typ = Call
         return
     end
-    for n in fst.nodes::Vector
+    for n in fst.nodes::Vector{FST}
         if is_leaf(n)
             continue
-        elseif op_kind(n) === Tokens.RPIPE && (n[end].typ !== PUNCTUATION)
+        elseif op_kind(n) === K"|>" && (n[end].typ !== PUNCTUATION)
             n.nodes = pipe_to_function_call(n)
             n.typ = Call
         else
@@ -109,13 +104,13 @@ end
 
 function pipe_to_function_call(fst::FST)
     nodes = FST[]
-    dot = fst[3].metadata !== nothing && fst[3].metadata.op_dotted
+    dot = !isnothing(fst.metadata) && (fst.metadata::Metadata).op_dotted
     arg2 = fst[end]
 
     # is RHS is an anon function?
     # need to wrap it parens, i.e. "(x -> x + 1)(arg)"
     # and then possibly add a "." as well !
-    if op_kind(arg2) === Tokens.ANON_FUNC
+    if op_kind(arg2) === K"->"
         n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, "(")
         push!(nodes, n)
 
@@ -144,11 +139,14 @@ function pipe_to_function_call(fst::FST)
                arg2[end][end].typ === IDENTIFIER
             n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
             push!(nodes, n)
+        elseif dot &&
+               arg2.typ === Accessor &&
+               arg2[end].typ === Quote &&
+               arg2[end][end].typ === IDENTIFIER
+            n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
+            push!(nodes, n)
         elseif dot && arg2.typ === Brackets
-            idx = findfirst(
-                n -> n.typ === Binary && op_kind(n) === Tokens.ANON_FUNC,
-                arg2.nodes,
-            )
+            idx = findfirst(n -> n.typ === Binary && op_kind(n) === K"->", arg2.nodes)
             if idx !== nothing
                 n = FST(PUNCTUATION, -1, arg2.endline, arg2.endline, ".")
                 push!(nodes, n)
@@ -167,13 +165,16 @@ function pipe_to_function_call(fst::FST)
 end
 
 function import_to_usings(fst::FST, s::State)
-    nodes = fst.nodes::Vector
-    findfirst(n -> is_colon(n) || n.typ === As, nodes) === nothing || return FST[]
-    findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing ||
+    nodes = fst.nodes::Vector{FST}
+    if !(findfirst(n -> is_colon(n) || n.typ === As, nodes) === nothing)
         return FST[]
+    end
+    if !(findfirst(n -> n.typ === PUNCTUATION && n.val == ".", fst[3].nodes) === nothing)
+        return FST[]
+    end
 
     # handle #723 "import ..f" should not become "using ..f: f"
-    if length(nodes) == 3 && !is_leaf(nodes[3]) && nodes[3].nodes[1].val == "."
+    if length(nodes) == 3 && nodes[3].typ === ImportPath && length(nodes[3].nodes) > 1
         return FST[]
     end
 
@@ -191,12 +192,12 @@ function import_to_usings(fst::FST, s::State)
         add_node!(use, FST(KEYWORD, -1, sl, el, "using"), s)
         add_node!(use, Whitespace(1), s)
 
-        add_node!(use, n, s, join_lines = true)
+        add_node!(use, n, s; join_lines = true)
         colon = FST(OPERATOR, -1, sl, el, ":")
-        colon.metadata = Metadata(Tokens.COLON, false)
-        add_node!(use, colon, s, join_lines = true)
+        colon.metadata = Metadata(K"::", false)
+        add_node!(use, colon, s; join_lines = true)
         add_node!(use, Whitespace(1), s)
-        add_node!(use, n[end], s, join_lines = true)
+        add_node!(use, n[end], s; join_lines = true)
 
         push!(usings, use)
     end
@@ -211,8 +212,10 @@ Annotates fields in a type definitions with `::Any` if
 no type annotation is provided.
 """
 function annotate_typefields_with_any!(fst::FST, s::State)
-    is_leaf(fst) && return
-    for (i, n) in enumerate(fst.nodes::Vector)
+    if is_leaf(fst)
+        return
+    end
+    for (i, n) in enumerate(fst.nodes::Vector{FST})
         if n.typ === IDENTIFIER
             nn = FST(Binary, n.indent)
             nn.startline = n.startline
@@ -220,13 +223,13 @@ function annotate_typefields_with_any!(fst::FST, s::State)
             add_node!(nn, n, s)
             line_offset = n.line_offset + length(n)
             op = FST(OPERATOR, line_offset, n.startline, n.endline, "::")
-            op.metadata = Metadata(Tokens.DECLARATION, false)
-            add_node!(nn, op, s, join_lines = true)
+            op.metadata = Metadata(K"::", false)
+            add_node!(nn, op, s; join_lines = true)
             line_offset += 2
             add_node!(
                 nn,
                 FST(IDENTIFIER, line_offset, n.startline, n.endline, "Any"),
-                s,
+                s;
                 join_lines = true,
             )
             fst[i] = nn
@@ -253,15 +256,27 @@ function f(arg2, arg2)
 end
 ```
 """
-function short_to_long_function_def!(fst::FST, s::State)
-    (fst[1].typ !== Call && fst[1].typ !== Where) && return false
+function short_to_long_function_def!(
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    if (fst[1].typ !== Call && fst[1].typ !== Where)
+        return false
+    end
 
-    # do not apply if parent is a function or macro definition
-    parent_is(
-        fst.ref[],
-        n -> is_function_or_macro_def(n) || n.head == :macrocall;
-        ignore = n -> is_block(n),
-    ) && return false
+    for i in (length(lineage)-1):-1:1
+        parent = lineage[i]
+        # maybe need to know metadata too?
+        if parent[1] in (If, Do, Try, Begin, For, While, Quote, Block)
+            continue
+        elseif parent[1] in (FunctionN, Macro, MacroBlock, MacroCall) ||
+               (!isnothing(parent[2]) && parent[2].is_short_form_function)
+            return false
+        else
+            break
+        end
+    end
 
     # 3 cases
     #
@@ -282,13 +297,13 @@ function short_to_long_function_def!(fst::FST, s::State)
     # func(a)
     # OR
     # func(a) where T
-    add_node!(funcdef, fst[1], s, join_lines = true)
+    add_node!(funcdef, fst[1], s; join_lines = true)
 
     # body
 
-    s.opts.always_use_return && prepend_return!(fst[end], s)
+    # s.opts.always_use_return && prepend_return!(fst[end], s)
     if fst[end].typ === Block
-        add_node!(funcdef, fst[end], s, max_padding = s.opts.indent)
+        add_node!(funcdef, fst[end], s; max_padding = s.opts.indent)
     elseif fst[end].typ === Begin
         # case where body is wrapped in a `begin` block
         # which becomes superfluous when converted to a
@@ -301,10 +316,12 @@ function short_to_long_function_def!(fst::FST, s::State)
         #
         # find Block node in fs[tend]
         idx = findfirst(n -> n.typ === Block, fst[end].nodes)
-        idx === nothing && return false
+        if idx === nothing
+            return false
+        end
         bnode = fst[end][idx]
         add_indent!(bnode, s, -s.opts.indent)
-        add_node!(funcdef, bnode, s, max_padding = s.opts.indent)
+        add_node!(funcdef, bnode, s; max_padding = s.opts.indent)
     else
         # ```
         # function
@@ -316,9 +333,13 @@ function short_to_long_function_def!(fst::FST, s::State)
         # a `Block` node ensures the indent is correct.
         bl = FST(Block, fst[end].indent)
         add_node!(bl, fst[end], s)
-        add_node!(funcdef, bl, s, max_padding = s.opts.indent)
+        add_node!(funcdef, bl, s; max_padding = s.opts.indent)
     end
     add_indent!(funcdef[end], s, s.opts.indent)
+
+    if s.opts.always_use_return
+        prepend_return!(funcdef[end], s)
+    end
 
     # end
     kw = FST(KEYWORD, -1, fst[end].startline, fst[end].endline, "end")
@@ -327,6 +348,7 @@ function short_to_long_function_def!(fst::FST, s::State)
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
+
     return true
 end
 
@@ -348,46 +370,69 @@ f(arg1, arg2) = body
 ```
 """
 function long_to_short_function_def!(fst::FST, s::State)
-    nodes = fst.nodes::Vector
-    any(is_comment, nodes) && return false
+    nodes = fst.nodes::Vector{FST}
+    if any(is_comment, nodes)
+        return false
+    end
 
     I = findall(n -> n.typ === Block, nodes)
-    length(I) == 1 || return false  # function must have a single block
+    if !(length(I) == 1)
+        return false
+    end
 
     block = nodes[first(I)]
-    length(block.nodes::Vector{FST}) == 1 || return false  # block must have a single statement
+    if !(length(block.nodes::Vector{FST}) == 1)
+        return false
+    end
 
     I = findfirst(n -> n.typ === Call || n.typ === Where, nodes)
-    I === nothing && return false
+    if I === nothing
+        return false
+    end
     lhs = nodes[I]
 
     rhs = first(block.nodes)
 
     if rhs.typ === Return
-        I = findall(!is_custom_leaf, nodes)
-        length(I) < 2 && return false
-        popfirst!(I)  # remove leading `return` keyword
-        rhs = (rhs.nodes::Vector{FST})[first(I)]
+        rhs = (rhs.nodes::Vector{FST})[end]
     end
 
     # length(Whitespace(1) * "=" * Whitespace(1)) = 3
     line_margin = s.line_offset + length(lhs) + 3 + length(rhs) + fst.extra_margin
-    line_margin > s.opts.margin && return false
+    if line_margin > s.opts.margin
+        return false
+    end
+
+    if rhs.indent > 0
+        add_indent!(rhs, s, -s.opts.indent)
+    end
 
     funcdef = FST(Binary, fst.indent)
+    funcdef.metadata = Metadata(K"=", false, false, true, false, false, false)
     kw = (join_lines = true, override_join_lines_based_on_source = true)
+
     add_node!(funcdef, lhs, s; kw...)
     add_node!(funcdef, Whitespace(1), s; kw...)
-    add_node!(funcdef, FST(OPERATOR, 0, -1, -1, "="), s; kw...)
-    add_node!(funcdef, Whitespace(1), s; kw...)
+    op = FST(OPERATOR, 0, 0, 0, "=")
+    op.metadata = Metadata(K"=", false)
+    add_node!(funcdef, op, s; kw...)
+    add_node!(funcdef, Placeholder(1), s; kw...)
+    add_node!(funcdef, Placeholder(0), s; kw...)
     add_node!(funcdef, rhs, s; kw...)
+
+    if rhs.typ in (If, Do, Try, For, While, Let)
+        funcdef.nest_behavior = AlwaysNest
+    end
 
     fst.typ = funcdef.typ
     fst.nodes = funcdef.nodes
     fst.len = funcdef.len
+    fst.metadata = funcdef.metadata
+    fst.nest_behavior = funcdef.nest_behavior
     return true
 end
 
+# TODO: revisit this
 """
     binaryop_to_whereop(fst::FST, s::State)
 
@@ -441,17 +486,17 @@ function binaryop_to_whereop!(fst::FST, s::State)
         if n.typ === Where
             break
         end
-        add_node!(binop, n, s, join_lines = true)
+        add_node!(binop, n, s; join_lines = true)
     end
     # # foo(a::A)::R gets the "R"
-    add_node!(binop, oldwhereop[1], s, join_lines = true)
+    add_node!(binop, oldwhereop[1], s; join_lines = true)
 
     whereop = FST(Where, fst[1].indent)
     add_node!(whereop, binop, s)
 
     # "foo(a::A)::R where A"
     for n in oldwhereop[2:end]
-        add_node!(whereop, n, s, join_lines = true)
+        add_node!(whereop, n, s; join_lines = true)
     end
 
     fst[1] = whereop
@@ -479,15 +524,18 @@ end
 ```
 """
 function prepend_return!(fst::FST, s::State)
-    fst.typ === Block || return
-    length(fst.nodes::Vector{FST}) == 0 && return
+    if fst.typ !== Block || length(fst.nodes::Vector{FST}) == 0
+        return
+    end
+
     ln = fst[end]
-    is_block(ln) && return
-    ln.typ === Return && return
-    ln.typ === MacroCall && return
-    ln.typ === MacroBlock && return
-    ln.typ === MacroStr && return
-    if length(fst.nodes::Vector) > 2 &&
+    if is_block(ln)
+        return
+    end
+    if ln.typ in (Return, MacroCall, MacroBlock, MacroStr)
+        return
+    end
+    if length(fst.nodes::Vector{FST}) > 2 &&
        (fst[end-2].typ === MacroStr || is_macrodoc(fst[end-2]))
         # The last node is has a docstring prior to it so a return should not be prepended
         # fst[end-1] is a newline
@@ -496,7 +544,9 @@ function prepend_return!(fst::FST, s::State)
     # fix #426
     # don't add return if the last node is a throw call. throw is a built-in function
     # that shouldn't be overwritten for over purposes so this should be fine.
-    ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw" && return
+    if ln.typ === Call && ln[1].typ === IDENTIFIER && ln[1].val == "throw"
+        return
+    end
 
     # check to see if the last node already has a return
     found_return = false
@@ -509,13 +559,15 @@ function prepend_return!(fst::FST, s::State)
     lo = s.line_offset
     walk(f, ln, s)
     s.line_offset = lo
-    found_return && return
+    if found_return
+        return
+    end
 
     ret = FST(Return, fst.indent)
     kw = FST(KEYWORD, -1, ln.startline, ln.startline, "return")
-    add_node!(ret, kw, s)
+    add_node!(ret, kw, s; join_lines = true)
     add_node!(ret, Whitespace(1), s)
-    add_node!(ret, ln, s, join_lines = true)
+    add_node!(ret, ln, s; join_lines = true)
     fst[end] = ret
     return
 end
@@ -541,57 +593,50 @@ Module.@macro
 ```
 """
 function move_at_sign_to_the_end(fst::FST, s::State)
-    t = FST[]
-    f = (t) -> (n, s) -> begin
-        if is_macrocall(n) || (n.typ === Quotenode && !is_leaf(n[1]))
-            # 1. Do not move "@" in nested macro calls
-            # 2. Do not move "@" if in the middle of a chain, i.e. "a.@b.c"
-            # since it's semantically different to "@a.b.c" and "a.b.@c"
-            push!(t, n)
+    val = ""
+    has_at = false
+    f = (n::FST, _) -> begin
+        if n.typ === MACRONAME && n.line_offset == -33
+            val *= gettreeval(n)
             return false
         elseif is_leaf(n)
-            push!(t, n)
+            v = gettreeval(n)
+            has_at = has_at || contains(v, "@")
+            v = replace(v, "@" => "")
+            val *= v
         end
     end
-    walk(f(t), fst, s)
+    walk(f, fst, s)
 
-    macroname = FST(Macroname, fst.indent)
-    for (i, n) in enumerate(t)
-        if n.val == "@"
-            continue
-        elseif n.typ === IDENTIFIER && i < length(t) && n.val[1] == '@'
-            n.val = n.val[2:end]
-            n.len -= 1
-            add_node!(macroname, n, s, join_lines = true)
-        elseif i < length(t) || n.typ == Quotenode
-            add_node!(macroname, n, s, join_lines = true)
-        else
-            if n.typ === IDENTIFIER && n.val[1] != '@'
-                n.val = "@" * n.val::AbstractString
-                n.len += 1
-                add_node!(macroname, n, s, join_lines = true)
-            else
-                add_node!(macroname, n, s, join_lines = true)
-            end
-        end
+    if !has_at
+        return fst
     end
 
-    return macroname
+    # Find the last occurrence of . and insert @ after it
+    last_dot_index = findlast('.', val)
+    if last_dot_index !== nothing
+        val = val[1:last_dot_index] * "@" * val[(last_dot_index+1):end]
+    else
+        # If there's no dot, add @ to the beginning
+        val = "@" * val
+    end
+
+    return FST(MACRONAME, -33, fst.startline, fst.startline, val)
 end
 
-function conditional_to_if_block!(fst::FST, s::State; top = true)
+function conditional_to_if_block!(fst::FST, s::State, top::Bool)
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, top ? "if" : "elseif")
-    add_node!(t, kw, s, max_padding = 0)
-    add_node!(t, Whitespace(1), s, join_lines = true)
-    add_node!(t, fst[1], s, join_lines = true)
+    add_node!(t, kw, s; max_padding = 0)
+    add_node!(t, Whitespace(1), s; join_lines = true)
+    add_node!(t, fst[1], s; join_lines = true)
 
-    nodes = fst.nodes::Vector
+    nodes = fst.nodes::Vector{FST}
     idx1 = findfirst(n -> n.typ === OPERATOR && n.val == "?", nodes)::Int
     idx2 = findfirst(n -> n.typ === OPERATOR && n.val == ":", nodes)::Int
 
     block1 = FST(Block, fst.indent + s.opts.indent)
-    for n in nodes[idx1+1:idx2-1]
+    for n in nodes[(idx1+1):(idx2-1)]
         if n.typ === PLACEHOLDER ||
            n.typ === WHITESPACE ||
            n.typ === NEWLINE ||
@@ -600,24 +645,24 @@ function conditional_to_if_block!(fst::FST, s::State; top = true)
         end
         add_node!(block1, n, s)
     end
-    add_node!(t, block1, s, max_padding = s.opts.indent)
+    add_node!(t, block1, s; max_padding = s.opts.indent)
 
     block2 = FST(Block, fst.indent)
     padding = 0
     if fst[end].typ === Conditional
-        conditional_to_if_block!(fst[end], s, top = false)
+        conditional_to_if_block!(fst[end], s, false)
     else
         block2.indent += s.opts.indent
         padding = s.opts.indent
-        kw = FST(KEYWORD, -1, -1, -1, "else")
-        add_node!(t, kw, s, max_padding = 0)
+        kw = FST(KEYWORD, 0, 0, -1, "else")
+        add_node!(t, kw, s; max_padding = 0)
     end
     add_node!(block2, fst[end], s)
-    add_node!(t, block2, s, max_padding = 0)
+    add_node!(t, block2, s; max_padding = 0)
 
     if top
-        kw = FST(KEYWORD, -1, -1, -1, "end")
-        add_node!(t, kw, s, max_padding = 0)
+        kw = FST(KEYWORD, 0, 0, -1, "end")
+        add_node!(t, kw, s; max_padding = 0)
     end
 
     fst.typ = t.typ
@@ -655,20 +700,22 @@ a = f(; x = 1, y = 2)
 ```
 """
 function separate_kwargs_with_semicolon!(fst::FST)
-    nodes = fst.nodes::Vector
+    nodes = fst.nodes::Vector{FST}
     kw_idx = findfirst(n -> n.typ === Kw, nodes)
-    kw_idx === nothing && return
+    if isnothing(kw_idx)
+        return
+    end
     sc_idx = findfirst(n -> n.typ === SEMICOLON, nodes)
     # first "," prior to a kwarg
-    comma_idx = findlast(is_comma, nodes[1:kw_idx-1])
-    ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:kw_idx-1])
+    comma_idx = findlast(is_comma, nodes[1:(kw_idx-1)])
+    ph_idx = findlast(n -> n.typ === PLACEHOLDER, nodes[1:(kw_idx-1)])
 
-    if sc_idx !== nothing && sc_idx > kw_idx
+    if !isnothing(sc_idx) && sc_idx > kw_idx
         # move ; prior to first kwarg
         fst[sc_idx].val = ","
         fst[sc_idx].typ = PUNCTUATION
-        if comma_idx === nothing
-            if ph_idx !== nothing
+        if isnothing(comma_idx)
+            if !isnothing(ph_idx)
                 fst[ph_idx] = Placeholder(1)
                 insert!(fst, ph_idx, Semicolon())
             else
@@ -679,15 +726,15 @@ function separate_kwargs_with_semicolon!(fst::FST)
             fst[comma_idx].val = ";"
             fst[comma_idx].typ = SEMICOLON
         end
-    elseif sc_idx === nothing && comma_idx === nothing
-        if ph_idx !== nothing
+    elseif isnothing(sc_idx) && isnothing(comma_idx)
+        if !isnothing(ph_idx)
             fst[ph_idx] = Placeholder(1)
             insert!(fst, ph_idx, Semicolon())
         else
             insert!(fst, kw_idx, Placeholder(1))
             insert!(fst, kw_idx, Semicolon())
         end
-    elseif sc_idx === nothing
+    elseif isnothing(sc_idx)
         fst[comma_idx].val = ";"
         fst[comma_idx].typ = SEMICOLON
     end
@@ -701,10 +748,13 @@ end
 Soft deletes `WHITESPACE` or `PLACEHOLDER` that's directly followed by a `NEWLINE` or `INLINECOMMENT` node.
 """
 function remove_superfluous_whitespace!(fst::FST)
-    is_leaf(fst) && return
-    nodes = fst.nodes::Vector
+    if is_leaf(fst)
+        return
+    end
+    nodes = fst.nodes::Vector{FST}
     for (i, n) in enumerate(nodes)
         if (n.typ === WHITESPACE || n.typ === PLACEHOLDER || n.typ === NEWLINE) &&
+           can_remove(n) &&
            i < length(nodes) &&
            (fst[i+1].typ === NEWLINE || fst[i+1].typ === INLINECOMMENT)
             fst[i] = Whitespace(0)
@@ -715,18 +765,18 @@ function remove_superfluous_whitespace!(fst::FST)
     return
 end
 
-function _short_circuit_to_if!(fst::FST, s::State)
+function _short_circuit_to_if!(fst::FST, s::State, last_arg::Bool)
     # change it into an if
     t = FST(If, fst.indent)
     kw = FST(KEYWORD, -1, fst.startline, fst.startline, "if")
-    add_node!(t, kw, s, max_padding = 0)
-    add_node!(t, Whitespace(1), s, join_lines = true)
+    add_node!(t, kw, s; max_padding = 0)
+    add_node!(t, Whitespace(1), s; join_lines = true)
 
-    nodes = fst.nodes::Vector
+    nodes = fst.nodes::Vector{FST}
     idx = findlast(n -> n.typ === OPERATOR && (n.val == "||" || n.val == "&&"), nodes)::Int
     is_or = nodes[idx].val == "||"
 
-    wrap_with_parens = !(fst.nodes[1].typ === Brackets)
+    wrap_with_parens = !(nodes[1].typ === Brackets)
 
     if is_or
         call = FST(Unary, fst.indent)
@@ -737,49 +787,49 @@ function _short_circuit_to_if!(fst::FST, s::State)
             add_node!(
                 brackets,
                 FST(PUNCTUATION, -1, fst.startline, fst.startline, "("),
-                s,
+                s;
                 join_lines = true,
             )
             add_node!(brackets, Placeholder(0), s)
             # inner
             lhs = FST(Chain, fst.indent)
-            for n in nodes[1:idx-1]
-                add_node!(lhs, n, s, join_lines = true)
+            for n in nodes[1:(idx-1)]
+                add_node!(lhs, n, s; join_lines = true)
             end
             # remove extra ws
             if lhs[end].typ === WHITESPACE
                 lhs[end] = Whitespace(0)
             end
 
-            add_node!(brackets, lhs, s, join_lines = true)
+            add_node!(brackets, lhs, s; join_lines = true)
             add_node!(brackets, Placeholder(0), s)
             add_node!(
                 brackets,
                 FST(PUNCTUATION, -1, nodes[idx-2].startline, nodes[idx-2].startline, ")"),
-                s,
+                s;
                 join_lines = true,
             )
-            add_node!(call, brackets, s, join_lines = true)
+            add_node!(call, brackets, s; join_lines = true)
         else
-            add_node!(call, fst[1], s, join_lines = true)
+            add_node!(call, fst[1], s; join_lines = true)
         end
 
-        add_node!(t, call, s, join_lines = true)
+        add_node!(t, call, s; join_lines = true)
     else
-        # from idx-1 go backwards until we find a node that's not a 
+        # from idx-1 go backwards until we find a node that's not a
         lhs = FST(Chain, fst.indent)
-        for n in nodes[1:idx-1]
-            add_node!(lhs, n, s, join_lines = true)
+        for n in nodes[1:(idx-1)]
+            add_node!(lhs, n, s; join_lines = true)
         end
         # remove extra ws
         if lhs[end].typ === WHITESPACE
             lhs[end] = Whitespace(0)
         end
-        add_node!(t, lhs, s, join_lines = true)
+        add_node!(t, lhs, s; join_lines = true)
     end
 
     block1 = FST(Block, fst.indent + s.opts.indent)
-    for n in nodes[idx+1:end]
+    for n in nodes[(idx+1):end]
         if n.typ === PLACEHOLDER ||
            n.typ === WHITESPACE ||
            n.typ === NEWLINE ||
@@ -788,10 +838,25 @@ function _short_circuit_to_if!(fst::FST, s::State)
         end
         add_node!(block1, n, s)
     end
-    add_node!(t, block1, s, max_padding = s.opts.indent)
+    add_node!(t, block1, s; max_padding = s.opts.indent)
 
-    kw = FST(KEYWORD, -1, -1, -1, "end")
-    add_node!(t, kw, s, max_padding = 0)
+    if last_arg
+        # Add the 'else' branch
+        else_kw = FST(KEYWORD, 0, 0, -1, "else")
+        add_node!(t, else_kw, s; max_padding = 0)
+        # add second block is this is not a return
+        block2 = FST(Block, fst.indent + s.opts.indent)
+
+        # Determine the default return value based on the operator
+        default_val =
+            is_or ? FST(KEYWORD, -1, 0, -1, "true") : FST(KEYWORD, -1, 0, -1, "false")
+        add_node!(block2, default_val, s; join_lines = true)
+        add_node!(t, block2, s; max_padding = s.opts.indent)
+    end
+
+    # Close the if statement
+    end_kw = FST(KEYWORD, 0, 0, -1, "end")
+    add_node!(t, end_kw, s; max_padding = 0)
 
     fst.typ = t.typ
     fst.nodes = t.nodes
@@ -801,15 +866,17 @@ function _short_circuit_to_if!(fst::FST, s::State)
 end
 
 function short_circuit_to_if_pass!(fst::FST, s::State)
-    is_leaf(fst) && return
-    for n in fst.nodes::Vector
+    if is_leaf(fst)
+        return
+    end
+    for (i, n) in enumerate(fst.nodes::Vector{FST})
         if is_leaf(n)
             continue
         elseif (n.typ === Binary || n.typ === Chain) &&
-               (op_kind(n) === Tokens.LAZY_AND || op_kind(n) === Tokens.LAZY_OR) &&
-               n.ref[] !== nothing &&
-               is_standalone_shortcircuit(n.ref[])
-            _short_circuit_to_if!(n, s)
+               !isnothing(n.metadata) &&
+               (n.metadata::Metadata).is_standalone_shortcircuit
+            last_arg = i == length(fst.nodes) && fst.typ === Block
+            _short_circuit_to_if!(n, s, last_arg)
         else
             short_circuit_to_if_pass!(n, s)
         end

@@ -267,7 +267,7 @@ function adjointcfg(pr::Primal)
         end
     end
     sigs = sig(pr)
-    for b in blocks(ir)[1:end-1], i = 1:length(sigs[b.id])
+    for b in blocks(ir)[1:(end-1)], i = 1:length(sigs[b.id])
         argument!(b)
     end
     argument!(blocks(ir)[end])

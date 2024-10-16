@@ -191,7 +191,7 @@ end
 
 @testset "Accumulations" begin
     @testset "cumprod" begin
-        v = round.(10 .* randn(9), sigdigits=3)
+        v = round.(10 .* randn(9); sigdigits=3)
         test_rrule(cumprod, v)
         v[3] = 0
         test_rrule(cumprod, v)
@@ -199,13 +199,13 @@ end
         test_rrule(cumprod, v)
 
         @testset "higher dimensions, dims=$dims" for dims in (1, 2, 3)
-            m = round.(10 .* randn(4, 5), sigdigits=3)
+            m = round.(10 .* randn(4, 5); sigdigits=3)
             test_rrule(cumprod, m; fkwargs=(; dims=dims), atol=0.1)
             m[2, 2] = 0
             m[2, 4] = 0
             test_rrule(cumprod, m; fkwargs=(; dims=dims))
 
-            t = round.(10 .* randn(3, 3, 3), sigdigits=3)
+            t = round.(10 .* randn(3, 3, 3); sigdigits=3)
             test_rrule(cumprod, t; fkwargs=(; dims=dims))
             t[2, 2, 2] = 0
             t[2, 3, 3] = 0

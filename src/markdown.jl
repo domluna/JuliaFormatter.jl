@@ -10,7 +10,9 @@ function format_md(text::AbstractString; style::AbstractStyle = DefaultStyle(), 
 end
 
 function format_md(text::AbstractString, style::AbstractStyle; kwargs...)
-    isempty(text) && return text
+    if isempty(text)
+        return text
+    end
     opts = Options(; merge(options(style), kwargs)...)
     return format_md(text, style, opts)
 end

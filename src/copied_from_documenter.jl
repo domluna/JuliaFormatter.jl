@@ -15,7 +15,11 @@ function repl_splitter(code)
         line = popfirst!(lines)
         prompt = match(PROMPT_REGEX, line)
         # We allow comments before the first julia> prompt
-        !found_first_prompt && startswith(line, '#') && continue
+        if !found_first_prompt && startswith(line, '#')
+            continue
+        else
+            false
+        end
         if prompt === nothing
             source = match(SOURCE_REGEX, line)
             if source === nothing

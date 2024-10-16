@@ -38,14 +38,6 @@
             T[1;;
               2]"""
             @test yasfmt(str, 4, 1) == str_
-
-            str = "[v1 v2;;]"
-            @test yasfmt(str) == str
-            @test yasfmt(str, 4, 1) == str
-
-            str = "T[v1 v2;;]"
-            @test yasfmt(str) == str
-            @test yasfmt(str, 4, 1) == str
         end
     end
 

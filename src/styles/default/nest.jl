@@ -15,13 +15,16 @@
 # the length of " op" will be considered when nesting LHS
 
 function nest!(
-    ds::DefaultStyle,
+    ds::AbstractStyle,
     nodes::Vector{FST},
     s::State,
-    indent::Int;
-    extra_margin = 0,
+    indent::Int,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
+    extra_margin::Int = 0,
 )
     style = getstyle(ds)
+    nested = false
+
     for (i, n) in enumerate(nodes)
         if n.typ === NEWLINE && nodes[i+1].typ === Block
             s.line_offset = nodes[i+1].indent
@@ -31,168 +34,199 @@ function nest!(
             s.line_offset = indent
         else
             n.extra_margin = extra_margin
-            nest!(style, n, s)
+            nested |= nest!(style, n, s, lineage)
         end
     end
-end
-nest!(
-    style::S,
-    nodes::Vector{FST},
-    s::State,
-    indent::Int;
-    extra_margin = 0,
-) where {S<:AbstractStyle} =
-    nest!(DefaultStyle(style), nodes, s, indent, extra_margin = extra_margin)
 
-function nest!(ds::DefaultStyle, fst::FST, s::State)
-    style = getstyle(ds)
+    return nested
+end
+
+function nest!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     if is_leaf(fst)
         s.line_offset += length(fst)
-        return
+        return false
+    elseif cant_nest(fst)
+        walk(increment_line_offset!, fst, s)
+        return false
     end
 
-    if cant_nest(fst)
-        walk(increment_line_offset!, fst, s)
-        return
-    end
+    style = getstyle(ds)
+    push!(lineage, (fst.typ, fst.metadata))
 
     if fst.typ === FunctionN &&
        s.opts.long_to_short_function_def &&
-       fst.ref !== nothing &&
-       CSTParser.defines_function(fst.ref[])
+       !isnothing(fst.metadata) &&
+       (fst.metadata::Metadata).is_long_form_function
         long_to_short_function_def!(fst, s)
-    end
-
-    if fst.typ === Import
-        n_import!(style, fst, s)
-    elseif fst.typ === Export
-        n_export!(style, fst, s)
-    elseif fst.typ === Using
-        n_using!(style, fst, s)
-    elseif fst.typ === Where
-        n_whereopcall!(style, fst, s)
-    elseif fst.typ === Conditional
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if s.opts.conditional_to_if && line_margin > s.opts.margin
-            conditional_to_if_block!(fst, s)
-            nest!(style, fst, s)
-        else
-            n_conditionalopcall!(style, fst, s)
-        end
     elseif fst.typ === Binary
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         if s.opts.short_to_long_function_def &&
-           ((line_margin > s.opts.margin) || s.opts.force_long_function_def) &&
-           fst.ref !== nothing &&
-           CSTParser.defines_function(fst.ref[]) &&
-           !parent_is(fst.ref[], n -> n.head == :let)
-            short_to_long_function_def!(fst, s)
+           (line_margin > s.opts.margin || s.opts.force_long_function_def) &&
+           !isnothing(fst.metadata) &&
+           (fst.metadata::Metadata).is_short_form_function
+            short_to_long_function_def!(fst, s, lineage)
         end
-        if fst.typ === Binary
-            n_binaryopcall!(style, fst, s)
-        else
-            nest!(style, fst, s)
+    elseif fst.typ === Conditional
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        if s.opts.conditional_to_if && line_margin > s.opts.margin
+            conditional_to_if_block!(fst, s, true)
         end
-    elseif fst.typ === Curly
-        n_curly!(style, fst, s)
-    elseif fst.typ === Call
-        n_call!(style, fst, s)
-    elseif fst.typ === MacroCall
-        n_macrocall!(style, fst, s)
-    elseif fst.typ === RefN
-        n_ref!(style, fst, s)
-    elseif fst.typ === TypedVcat
-        n_typedvcat!(style, fst, s)
-    elseif fst.typ === TypedNcat
-        n_typedvcat!(style, fst, s)
-    elseif fst.typ === TupleN
-        n_tuple!(style, fst, s)
-    elseif fst.typ === Vect
-        n_vect!(style, fst, s)
-    elseif fst.typ === Vcat
-        n_vcat!(style, fst, s)
-    elseif fst.typ === Ncat
-        n_vcat!(style, fst, s)
-    elseif fst.typ === Braces
-        n_braces!(style, fst, s)
-    elseif fst.typ === BracesCat
-        n_bracescat!(style, fst, s)
-    elseif fst.typ === Brackets
-        n_invisbrackets!(style, fst, s)
-    elseif fst.typ === Comprehension
-        n_comprehension!(style, fst, s)
-    elseif fst.typ === TypedComprehension
-        n_typedcomprehension!(style, fst, s)
-    elseif fst.typ === Do
-        n_do!(style, fst, s)
-    elseif fst.typ === Generator
-        n_generator!(style, fst, s)
-    elseif fst.typ === Filter
-        n_filter!(style, fst, s)
-    elseif fst.typ === Flatten
-        n_flatten!(style, fst, s)
-    elseif fst.typ === Block
-        n_block!(style, fst, s)
-    elseif fst.typ === Chain
-        n_chainopcall!(style, fst, s)
-    elseif fst.typ === Comparison
-        n_comparison!(style, fst, s)
-    elseif fst.typ === For
-        n_for!(style, fst, s)
-    elseif fst.typ === Let
-        n_let!(style, fst, s)
-    elseif fst.typ === Unary && length(fst.nodes::Vector) > 1 && fst[2].typ === OPERATOR
-        n_unaryopcall!(style, fst, s)
-    elseif fst.typ === StringN
-        n_string!(style, fst, s)
-    elseif fst.typ === FunctionN
-        n_functiondef!(style, fst, s)
-    elseif fst.typ === Macro
-        n_macro!(style, fst, s)
-    else
-        nest!(style, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
     end
+
+    nested = if fst.typ === Import
+        n_import!(style, fst, s, lineage)
+    elseif fst.typ === Export
+        n_export!(style, fst, s, lineage)
+    elseif fst.typ === Using
+        n_using!(style, fst, s, lineage)
+    elseif fst.typ === Where
+        n_whereopcall!(style, fst, s, lineage)
+    elseif fst.typ === Conditional
+        n_conditionalopcall!(style, fst, s, lineage)
+    elseif fst.typ === Binary
+        n_binaryopcall!(style, fst, s, lineage)
+    elseif fst.typ === Curly
+        n_curly!(style, fst, s, lineage)
+    elseif fst.typ === Call
+        n_call!(style, fst, s, lineage)
+    elseif fst.typ === MacroCall
+        n_macrocall!(style, fst, s, lineage)
+    elseif fst.typ === RefN
+        n_ref!(style, fst, s, lineage)
+        # elseif fst.typ === Row
+        #     n_row!(style, fst, s)
+    elseif fst.typ === TypedVcat
+        n_typedvcat!(style, fst, s, lineage)
+    elseif fst.typ === TypedNcat
+        n_typedvcat!(style, fst, s, lineage)
+    elseif fst.typ === TupleN && length(fst.nodes) > 0
+        n_tuple!(style, fst, s, lineage)
+    elseif fst.typ === CartesianIterator
+        n_cartesian_iterator!(style, fst, s, lineage)
+    elseif fst.typ === TupleBlock
+        n_tupleblock!(style, fst, s, lineage)
+    elseif fst.typ === Parameters
+        n_parameters!(style, fst, s, lineage)
+    elseif fst.typ === Vect
+        n_vect!(style, fst, s, lineage)
+    elseif fst.typ === Vcat
+        n_vcat!(style, fst, s, lineage)
+    elseif fst.typ === Ncat
+        n_vcat!(style, fst, s, lineage)
+    elseif fst.typ === Braces
+        n_braces!(style, fst, s, lineage)
+    elseif fst.typ === BracesCat
+        n_bracescat!(style, fst, s, lineage)
+    elseif fst.typ === Brackets
+        n_invisbrackets!(style, fst, s, lineage)
+    elseif fst.typ === Comprehension
+        n_comprehension!(style, fst, s, lineage)
+    elseif fst.typ === TypedComprehension
+        n_typedcomprehension!(style, fst, s, lineage)
+    elseif fst.typ === Do
+        n_do!(style, fst, s, lineage)
+    elseif fst.typ === Generator
+        n_generator!(style, fst, s, lineage)
+    elseif fst.typ === Filter
+        n_filter!(style, fst, s, lineage)
+        # elseif fst.typ === Block && is_closer(fst[end]) # (a;b;c)
+        #     n_tuple!(style, fst, s, lineage)
+    elseif fst.typ === Block
+        n_block!(style, fst, s, lineage)
+    elseif fst.typ === Chain
+        n_chainopcall!(style, fst, s, lineage)
+    elseif fst.typ === Comparison
+        n_comparison!(style, fst, s, lineage)
+    elseif fst.typ === For
+        n_for!(style, fst, s, lineage)
+    elseif fst.typ === Let
+        n_let!(style, fst, s, lineage)
+    elseif fst.typ === Unary && length(fst.nodes::Vector) > 1 && fst[2].typ === OPERATOR
+        n_unaryopcall!(style, fst, s, lineage)
+    elseif fst.typ === StringN
+        n_string!(style, fst, s, lineage)
+    elseif fst.typ === FunctionN
+        n_functiondef!(style, fst, s, lineage)
+    elseif fst.typ === Macro
+        n_macro!(style, fst, s, lineage)
+    else
+        nest!(style, fst.nodes::Vector, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+    end
+
+    pop!(lineage)
+
+    return nested
 end
-nest!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    nest!(DefaultStyle(style), fst, s)
-
-function n_functiondef!(ds::DefaultStyle, fst::FST, s::State)
-    nest!(ds, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
+function nest!(style::AbstractStyle, fst::FST, s::State)
+    nest!(style, fst, s, Tuple{FNode,Union{Nothing,Metadata}}[])
 end
-n_functiondef!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_functiondef!(DefaultStyle(style), fst, s)
 
-n_macro!(ds::DefaultStyle, fst::FST, s::State) = n_functiondef!(ds, fst, s)
-n_macro!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_macro!(DefaultStyle(style), fst, s)
+function n_functiondef!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    nest!(ds, fst.nodes::Vector, s, fst.indent, lineage; extra_margin = fst.extra_margin)
+end
 
-function n_string!(ds::DefaultStyle, fst::FST, s::State)
+function n_macro!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_functiondef!(ds, fst, s, lineage)
+end
+
+function n_string!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     # difference in positioning of the string
     # from the source document to the formatted document
     diff = s.line_offset - fst.indent
 
+    nested = false
     for (i, n) in enumerate(fst.nodes::Vector)
         if n.typ === NEWLINE
             s.line_offset = fst[i+1].indent + diff
         else
-            nest!(style, n, s)
+            nested |= nest!(style, n, s, lineage)
         end
     end
+    return nested
 end
-n_string!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_string!(DefaultStyle(style), fst, s)
 
-function n_unaryopcall!(ds::DefaultStyle, fst::FST, s::State)
+function n_unaryopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     fst[1].extra_margin = fst.extra_margin + length(fst[2])
-    nest!(style, fst[1], s)
-    nest!(style, fst[2], s)
+    nested = false
+    # nest!(style, fst.nodes::Vector{FST}, s, fst.indent)
+    nested |= nest!(style, fst[1], s, lineage)
+    nested |= nest!(style, fst[2], s, lineage)
+    return nested
 end
-n_unaryopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_unaryopcall!(DefaultStyle(style), fst, s)
 
-function n_do!(ds::DefaultStyle, fst::FST, s::State)
+function n_do!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     extra_margin = sum(length.(fst[2:3]))
     # make sure there are nodes after "do"
@@ -201,26 +235,33 @@ function n_do!(ds::DefaultStyle, fst::FST, s::State)
         extra_margin += length(fst[5])
     end
     fst[1].extra_margin = fst.extra_margin + extra_margin
-    nest!(style, fst[1], s)
-    nest!(style, fst[2:end], s, fst.indent, extra_margin = fst.extra_margin)
+    nested = false
+    nested |= nest!(style, fst[1], s, lineage)
+    nested |=
+        nest!(style, fst[2:end], s, fst.indent, lineage; extra_margin = fst.extra_margin)
+    return nested
 end
-n_do!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_do!(DefaultStyle(style), fst, s)
 
 # Import,Using,Export
-function n_using!(ds::DefaultStyle, fst::FST, s::State)
+function n_using!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
     idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
     fst.indent += s.opts.indent
 
+    nested = false
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst))
         if can_nest(fst)
-            if fst.indent + sum(length.(fst[idx+1:end])) <= s.opts.margin
-                fst[idx] = Newline(length = fst[idx].len)
+            if fst.indent + sum(length.(fst[(idx+1):end])) <= s.opts.margin
+                fst[idx] = Newline(; length = fst[idx].len)
                 walk(increment_line_offset!, fst, s)
-                return
+                return nested
             end
         end
 
@@ -230,34 +271,53 @@ function n_using!(ds::DefaultStyle, fst::FST, s::State)
             elseif n.typ === PLACEHOLDER
                 if s.opts.join_lines_based_on_source
                     si = findnext(n -> n.typ === PLACEHOLDER, nodes, i + 1)
-                    nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                    nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                 end
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
-                i < length(nodes) && (n.extra_margin = 1)
-                nest!(style, n, s)
+                if i < length(nodes)
+                    (n.extra_margin = 1)
+                else
+                    false
+                end
+                nested |= nest!(style, n, s, lineage)
             end
         end
     else
-        nest!(style, nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
+    return nested
 end
-n_using!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_using!(DefaultStyle(style), fst, s)
 
-n_export!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
-n_export!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_export!(DefaultStyle(style), fst, s)
+function n_export!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_using!(ds, fst, s, lineage)
+end
 
-n_import!(ds::DefaultStyle, fst::FST, s::State) = n_using!(ds, fst, s)
-n_import!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_import!(DefaultStyle(style), fst, s)
+function n_import!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_using!(ds, fst, s, lineage)
+end
 
-function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
+function n_tuple!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
@@ -267,20 +327,23 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
     if has_closer
         fst[end].indent = fst.indent
     end
-    if fst.typ !== TupleN || has_closer
+    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
         fst.indent += s.opts.indent
     end
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
-    src_diff_line = if s.opts.join_lines_based_on_source
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
         last_arg_idx = findlast(is_iterable_arg, nodes)
-        last_arg = last_arg_idx === nothing ? fst[end] : fst[last_arg_idx]
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
         fst[1].endline != last_arg.startline
     else
         false
     end
 
+    nested = false
+
     if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+        nested = true
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -291,43 +354,30 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
                         nodes,
                         i + 1,
                     )
-                    nested = nest_if_over_margin!(style, fst, s, i; stop_idx = si)
-                    if has_closer && !nested && n.startline == fst[end].startline
+                    nested2 = nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+                    if has_closer && !nested2 && n.startline == fst[end].startline
                         # trailing types are automatically converted, undo this if
                         # there is no nest and the closer is on the same in the
                         # original source.
-                        if fst[i-1].typ === TRAILINGCOMMA ||
-                           fst[i-1].typ === TRAILINGSEMICOLON
+                        if fst[i-1].typ === TRAILINGCOMMA
                             fst[i-1].val = ""
                             fst[i-1].len = 0
                         end
                     end
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                 end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === TRAILINGSEMICOLON
-                n.val = ";"
-                n.len = 1
-                nest!(style, n, s)
-            elseif n.typ === INVERSETRAILINGSEMICOLON && !(
-                s.opts.join_lines_based_on_source &&
-                (fst.typ === Vcat || fst.typ === TypedVcat)
-            )
-                n.val = ""
-                n.len = 0
-                nest!(style, n, s)
             elseif has_closer && (i == 1 || i == length(nodes))
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             end
         end
 
@@ -336,71 +386,163 @@ function n_tuple!(ds::DefaultStyle, fst::FST, s::State)
         end
     else
         extra_margin = fst.extra_margin
-        has_closer && (extra_margin += 1)
-        nest!(style, nodes, s, fst.indent, extra_margin = extra_margin)
+        if has_closer
+            (extra_margin += 1)
+        else
+            false
+        end
+        nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
     end
 
-    return
+    return nested
 end
-n_tuple!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_tuple!(DefaultStyle(style), fst, s)
 
-n_vect!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_vect!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_vect!(DefaultStyle(style), fst, s)
+function n_cartesian_iterator!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_vcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_vcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_vcat!(DefaultStyle(style), fst, s)
+function n_tupleblock!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_braces!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_braces!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_braces!(DefaultStyle(style), fst, s)
+function n_vect!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_bracescat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_bracescat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_bracescat!(DefaultStyle(style), fst, s)
+function n_vcat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_parameters!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_parameters!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_parameters!(DefaultStyle(style), fst, s)
+function n_braces!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_invisbrackets!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_invisbrackets!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_invisbrackets!(DefaultStyle(style), fst, s)
+function n_bracescat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_call!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_call!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_call!(DefaultStyle(style), fst, s)
+function n_parameters!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_curly!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_curly!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_curly!(DefaultStyle(style), fst, s)
+function n_invisbrackets!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_macrocall!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_macrocall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_macrocall!(DefaultStyle(style), fst, s)
+function n_call!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_ref!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_ref!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_ref!(DefaultStyle(style), fst, s)
+function n_curly!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-n_typedvcat!(ds::DefaultStyle, fst::FST, s::State) = n_tuple!(ds, fst, s)
-n_typedvcat!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_typedvcat!(DefaultStyle(style), fst, s)
+function n_macrocall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
 
-function n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
+function n_ref!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
+
+function n_row!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
+
+function n_typedvcat!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_tuple!(ds, fst, s, lineage)
+end
+
+function n_comprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     if s.opts.join_lines_based_on_source
-        n_tuple!(ds, fst, s)
+        n_tuple!(ds, fst, s, lineage)
     else
-        _n_comprehension!(ds, fst, s)
+        _n_comprehension!(ds, fst, s, lineage)
     end
-    return
 end
 
-function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
+function _n_comprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
-    line_offset = s.line_offset
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nested = false
 
@@ -411,11 +553,11 @@ function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
     if closer && (line_margin > s.opts.margin || must_nest(fst))
         idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
         if idx !== nothing
-            fst[idx] = Newline(length = fst[idx].len)
+            fst[idx] = Newline(; length = fst[idx].len)
         end
         idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
         if idx !== nothing
-            fst[idx] = Newline(length = fst[idx].len)
+            fst[idx] = Newline(; length = fst[idx].len)
         end
 
         add_indent!(fst, s, s.opts.indent)
@@ -428,53 +570,74 @@ function _n_comprehension!(ds::DefaultStyle, fst::FST, s::State)
             s.line_offset = fst.indent
         elseif n.typ === PLACEHOLDER
             if must_nest(fst)
-                fst[i] = Newline(length = n.len)
+                fst[i] = Newline(; length = n.len)
                 s.line_offset = fst.indent
             else
-                nest_if_over_margin!(style, fst, s, i)
+                nest_if_over_margin!(style, fst, s, i, lineage)
             end
         elseif i == length(nodes) && !closer
-            nest!(style, n, s)
+            nest!(style, n, s, lineage)
         else
             n.extra_margin = nested ? 0 : 1
-            nest!(style, n, s)
+            nest!(style, n, s, lineage)
         end
     end
 
     if closer
         s.line_offset = fst[end].indent + 1
     end
+
+    return nested
 end
 
-n_comprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_comprehension!(DefaultStyle(style), fst, s)
+function n_typedcomprehension!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_comprehension!(ds, fst, s, lineage)
+end
 
-n_typedcomprehension!(ds::DefaultStyle, fst::FST, s::State) = n_comprehension!(ds, fst, s)
-n_typedcomprehension!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_typedcomprehension!(DefaultStyle(style), fst, s)
-
-function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+function n_generator!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
     nodes = fst.nodes::Vector
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
+
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    nested = false
+
+    if line_margin > s.opts.margin || must_nest(fst) || src_diff_line
+        nested = true
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, nodes))
         if s.opts.join_lines_based_on_source
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
         end
         for (i, idx) in enumerate(phs)
             if i == 1
-                fst[idx] = Newline(length = fst[idx].len)
+                fst[idx] = Newline(; length = fst[idx].len)
             else
                 nidx = phs[i-1]
-                l1 = sum(length.(fst[1:idx-1]))
-                l2 = sum(length.(fst[idx:nidx-1]))
+                l1 = sum(length.(fst[1:(idx-1)]))
+                l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
-                    fst[idx] = Newline(length = fst[idx].len)
+                    fst[idx] = Newline(; length = fst[idx].len)
                 end
             end
         end
@@ -483,10 +646,10 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif i == length(nodes)
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             else
                 n.extra_margin = 1
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             end
         end
 
@@ -498,7 +661,7 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                i in phs
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
-                w, _ = length_to(fst, (NEWLINE,), start = i + 1)
+                w, _ = length_to(fst, (NEWLINE,); start = i + 1)
                 width += w
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
@@ -516,24 +679,27 @@ function n_generator!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
     else
-        nest!(style, nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
+    return nested
 end
 
-n_generator!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_generator!(DefaultStyle(style), fst, s)
+function n_filter!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_generator!(ds, fst, s, lineage)
+end
 
-n_filter!(ds::DefaultStyle, fst::FST, s::State) =
-    n_generator!(ds, fst, s, indent = fst.indent)
-n_filter!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_filter!(DefaultStyle(style), fst, s)
-
-n_flatten!(ds::DefaultStyle, fst::FST, s::State) =
-    n_generator!(ds, fst, s, indent = fst.indent)
-n_flatten!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_flatten!(DefaultStyle(style), fst, s)
-
-function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
+function n_whereopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     # "B"
@@ -542,12 +708,15 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
         fst[end].indent = fst.indent
     end
 
+    nested = false
+
     if line_margin > s.opts.margin || must_nest(fst)
+        nested = true
         line_offset = s.line_offset
         Blen = sum(length.(fst[2:end]))
 
         fst[1].extra_margin = Blen + fst.extra_margin
-        nest!(style, fst[1], s)
+        nest!(style, fst[1], s, lineage)
 
         over = (s.line_offset + Blen + fst.extra_margin > s.opts.margin) || must_nest(fst)
         fst.indent += s.opts.indent
@@ -559,56 +728,76 @@ function n_whereopcall!(ds::DefaultStyle, fst::FST, s::State)
                     fst.indent = s.line_offset + 1
                     fst[end].indent = s.line_offset
                 end
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             elseif n.typ === PLACEHOLDER && over
-                fst[i+1] = Newline(length = length(n))
+                fst[i+1] = Newline(; length = length(n))
                 s.line_offset = fst.indent
             elseif n.typ === TRAILINGCOMMA && over
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             elseif has_braces
                 n.extra_margin = 1 + fst.extra_margin
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             else
                 n.extra_margin = fst.extra_margin
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             end
         end
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-        return
+        return nested
     end
 
-    nest!(style, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
-    return
+    nested |= nest!(
+        style,
+        fst.nodes::Vector,
+        s,
+        fst.indent,
+        lineage;
+        extra_margin = fst.extra_margin,
+    )
+    return nested
 end
-n_whereopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_whereopcall!(DefaultStyle(style), fst, s)
 
-function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
+function n_conditionalopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     line_offset = s.line_offset
     fst.indent = s.line_offset
 
     nodes = fst.nodes::Vector
-    if line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+    nested = false
+
+    if line_margin > s.opts.margin || must_nest(fst) || src_diff_line
+        nested = true
         phs = reverse(findall(n -> n.typ === PLACEHOLDER, nodes))
         if s.opts.join_lines_based_on_source
             phs = filter(idx -> fst[idx+1].typ !== NEWLINE, phs)
         end
         for (i, idx) in enumerate(phs)
             if i == 1
-                fst[idx] = Newline(length = fst[idx].len)
+                fst[idx] = Newline(; length = fst[idx].len)
             else
                 nidx = phs[i-1]
-                l1 = sum(length.(fst[1:idx-1]))
-                l2 = sum(length.(fst[idx:nidx-1]))
+                l1 = sum(length.(fst[1:(idx-1)]))
+                l2 = sum(length.(fst[idx:(nidx-1)]))
                 width = line_offset + l1 + l2
                 if must_nest(fst) || width > s.opts.margin
-                    fst[idx] = Newline(length = fst[idx].len)
+                    fst[idx] = Newline(; length = fst[idx].len)
                 end
             end
         end
@@ -616,14 +805,14 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
         for (i, n) in enumerate(nodes)
             if i == length(nodes)
                 n.extra_margin = fst.extra_margin
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             elseif fst[i+1].typ === WHITESPACE
                 n.extra_margin = length(fst[i+1]) + length(fst[i+2])
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             elseif n.typ === NEWLINE
                 s.line_offset = fst.indent
             else
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             end
         end
 
@@ -636,9 +825,9 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
                 # +1 for newline to whitespace conversion
                 width = s.line_offset + 1
                 if i == length(nodes) - 1
-                    width += sum(length.(fst[i+1:end])) + fst.extra_margin
+                    width += sum(length.(fst[(i+1):end])) + fst.extra_margin
                 else
-                    width += sum(length.(fst[i+1:i+3]))
+                    width += sum(length.(fst[(i+1):(i+3)]))
                 end
                 if width <= s.opts.margin
                     fst[i] = Whitespace(1)
@@ -656,11 +845,11 @@ function n_conditionalopcall!(ds::DefaultStyle, fst::FST, s::State)
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
     else
-        nest!(style, nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
+    return nested
 end
-n_conditionalopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_conditionalopcall!(DefaultStyle(style), fst, s)
 
 function no_unnest(fst::FST)
     if fst.typ === Binary ||
@@ -672,8 +861,15 @@ function no_unnest(fst::FST)
     return false
 end
 
-function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
+function n_binaryopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
+    indent::Int = -1,
+)
     style = getstyle(ds)
+
     line_offset = s.line_offset
     line_margin = line_offset + length(fst) + fst.extra_margin
 
@@ -682,25 +878,33 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
     idxs = findall(n -> n.typ === PLACEHOLDER, nodes)
 
     rhs = fst[end]
-    rhs.typ === Block && (rhs = rhs[1])
+    if rhs.typ === Block
+        (rhs = rhs[1])
+    else
+        false
+    end
 
     # is the LHS on a different line than the RHS ?
     src_diff_line =
         s.opts.join_lines_based_on_source && fst[1].endline != fst[end].startline
 
+    nested = false
+
     if length(idxs) == 2 &&
        (line_margin > s.opts.margin || must_nest(fst) || must_nest(rhs) || src_diff_line)
         i1 = idxs[1]
         i2 = idxs[2]
-        fst[i1] = Newline(length = fst[i1].len)
-        cst = fst.ref[]
+        fst[i1] = Newline(; length = fst[i1].len)
+        nested = true
 
         indent_nest =
-            CSTParser.defines_function(cst) ||
-            is_assignment(cst) ||
-            op_kind(fst) === Tokens.PAIR_ARROW ||
-            op_kind(fst) === Tokens.ANON_FUNC ||
-            (fst.ref !== nothing && is_standalone_shortcircuit(cst))
+            (!isnothing(fst.metadata) && (fst.metadata::Metadata).is_short_form_function) ||
+            is_assignment(fst) ||
+            op_kind(fst) in KSet"=> ->" ||
+            (
+                !isnothing(fst.metadata) &&
+                (fst.metadata::Metadata).is_standalone_shortcircuit
+            )
 
         if indent_nest
             s.line_offset = fst.indent + s.opts.indent
@@ -721,16 +925,16 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
 
         # rhs
         fst[end].extra_margin = fst.extra_margin
-        nest!(style, fst[end], s)
+        nest!(style, fst[end], s, lineage)
 
         # "lhs op" rhs
         s.line_offset = line_offset
 
         # extra margin for " op"
         fst[1].extra_margin = length(fst[2]) + length(fst[3])
-        nest!(style, fst[1], s)
+        nest!(style, fst[1], s, lineage)
         for n in fst[2:i1]
-            nest!(style, n, s)
+            nest!(style, n, s, lineage)
         end
 
         # Undo nest if possible
@@ -738,27 +942,24 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
             line_margin = s.line_offset
 
             # replace IN with all of precedence level 6
-            if (
-                   rhs.typ === Binary &&
-                   !(op_kind(rhs) === Tokens.IN || op_kind(rhs) === Tokens.DECLARATION)
-               ) ||
+            if (rhs.typ === Binary && !(op_kind(rhs) in KSet"in ::")) ||
                rhs.typ === Unary && rhs[end].typ !== Brackets ||
                rhs.typ === Chain ||
                rhs.typ === Comparison ||
                rhs.typ === Conditional
                 line_margin += length(fst[end])
             elseif rhs.typ === Do && is_iterable(rhs[1])
-                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,); start = i2 + 1)
                 line_margin += rw
             elseif is_block(rhs)
                 idx = findfirst(n -> n.typ === NEWLINE, rhs.nodes)
                 if idx === nothing
                     line_margin += length(fst[end])
                 else
-                    line_margin += sum(length.(rhs[1:idx-1]))
+                    line_margin += sum(length.(rhs[1:(idx-1)]))
                 end
             else
-                rw, _ = length_to(fst, (NEWLINE,), start = i2 + 1)
+                rw, _ = length_to(fst, (NEWLINE,); start = i2 + 1)
                 line_margin += rw
             end
 
@@ -773,7 +974,7 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
 
         s.line_offset = line_offset
         walk(increment_line_offset!, fst, s)
-        return
+        return nested
     end
 
     # length of op and surrounding whitespace
@@ -784,43 +985,94 @@ function n_binaryopcall!(ds::DefaultStyle, fst::FST, s::State; indent::Int = -1)
             s.line_offset = fst.indent
         elseif i == 1
             n.extra_margin = oplen + fst.extra_margin
-            nest!(style, n, s)
+            nested |= nest!(style, n, s, lineage)
         elseif i == length(nodes)
             n.extra_margin = fst.extra_margin
-            nest!(style, n, s)
+            nested |= nest!(style, n, s, lineage)
         else
-            nest!(style, n, s)
+            nested |= nest!(style, n, s, lineage)
         end
     end
+
+    return nested
 end
-n_binaryopcall!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
-    n_binaryopcall!(DefaultStyle(style), fst, s; indent = indent)
 
-function n_for!(ds::DefaultStyle, fst::FST, s::State)
+function n_for!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     style = getstyle(ds)
-    nest!(style, fst.nodes::Vector, s, fst.indent, extra_margin = fst.extra_margin)
+
+    nested = false
+    nodes = fst.nodes::Vector{FST}
+    for (i, n) in enumerate(nodes)
+        if n.typ === NEWLINE && nodes[i+1].typ === Block
+            s.line_offset = nodes[i+1].indent
+        elseif n.typ === NOTCODE && nodes[i+1].typ === Block
+            s.line_offset = nodes[i+1].indent
+        elseif n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER && nested
+            fst[i] = Newline(; length = n.len, nest_behavior = AllowNestButDontRemove)
+            s.line_offset = fst.indent
+        else
+            n.extra_margin = fst.extra_margin
+            nested |= nest!(style, n, s, lineage)
+        end
+    end
+
+    return nested
 end
-n_for!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_for!(DefaultStyle(style), fst, s)
 
-n_let!(ds::DefaultStyle, fst::FST, s::State) = n_for!(ds, fst, s)
-n_let!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_let!(DefaultStyle(style), fst, s)
+function n_let!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_for!(ds, fst, s, lineage)
+end
 
-function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
+function n_block!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}};
+    indent::Int = -1,
+)
     style = getstyle(ds)
+
     line_margin = s.line_offset + length(fst) + fst.extra_margin
     nodes = fst.nodes::Vector
     idx = findfirst(n -> n.typ === PLACEHOLDER, nodes)
     has_nl = false
-    indent >= 0 && (fst.indent = indent)
+    if indent >= 0
+        (fst.indent = indent)
+    else
+        false
+    end
 
-    if fst.typ === Chain && fst.ref !== nothing && is_standalone_shortcircuit(fst.ref[])
+    if fst.typ === Chain &&
+       !isnothing(fst.metadata) &&
+       (fst.metadata::Metadata).is_standalone_shortcircuit
         fst.indent += s.opts.indent
     end
 
-    if idx !== nothing &&
-       (line_margin > s.opts.margin || must_nest(fst) || s.opts.join_lines_based_on_source)
+    src_diff_line = if s.opts.join_lines_based_on_source && length(nodes) > 1
+        last_arg_idx = findlast(is_iterable_arg, nodes)
+        last_arg = isnothing(last_arg_idx) ? fst[end] : fst[last_arg_idx]
+        fst[1].endline != last_arg.startline
+    else
+        false
+    end
+
+    nested = false
+
+    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+        nested = true
+
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
@@ -851,22 +1103,22 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                             nodes,
                             i + 1,
                         )
-                        nest_if_over_margin!(style, fst, s, i; stop_idx = si)
+                        nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
                     elseif has_nl
-                        fst[i] = Newline(length = n.len)
+                        fst[i] = Newline(; length = n.len)
                         s.line_offset = fst.indent
                     else
-                        nest!(style, n, s)
+                        nest!(style, n, s, lineage)
                     end
                 else
-                    fst[i] = Newline(length = n.len)
+                    fst[i] = Newline(; length = n.len)
                     s.line_offset = fst.indent
                     has_nl = true
                 end
             elseif n.typ === TRAILINGCOMMA
                 n.val = ","
                 n.len = 1
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             else
                 diff = fst.indent - fst[i].indent
                 add_indent!(n, s, diff)
@@ -878,23 +1130,30 @@ function n_block!(ds::DefaultStyle, fst::FST, s::State; indent = -1)
                         n.extra_margin = 1
                     end
                 end
-                nest!(style, n, s)
+                nest!(style, n, s, lineage)
             end
         end
     else
-        nest!(style, nodes, s, fst.indent, extra_margin = fst.extra_margin)
+        nested |=
+            nest!(style, nodes, s, fst.indent, lineage; extra_margin = fst.extra_margin)
     end
-    return
+    return nested
 end
-n_block!(style::S, fst::FST, s::State; indent = -1) where {S<:AbstractStyle} =
-    n_block!(DefaultStyle(style), fst, s, indent = indent)
 
-n_comparison!(ds::DefaultStyle, fst::FST, s::State) =
-    n_block!(ds, fst, s, indent = s.line_offset)
-n_comparison!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_comparison!(DefaultStyle(style), fst, s)
+function n_comparison!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+end
 
-n_chainopcall!(ds::DefaultStyle, fst::FST, s::State) =
-    n_block!(ds, fst, s, indent = s.line_offset)
-n_chainopcall!(style::S, fst::FST, s::State) where {S<:AbstractStyle} =
-    n_chainopcall!(DefaultStyle(style), fst, s)
+function n_chainopcall!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_block!(ds, fst, s, lineage; indent = s.line_offset)
+end

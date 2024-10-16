@@ -110,7 +110,7 @@ function frule(
         2 * real(dot(x, ẋ))
     elseif VERSION ≥ v"1.2" # multi-iterator mapreduce introduced in v1.2
         mapreduce(+, x, ẋ; dims=dims) do xi, dxi
-            2 * _realconjtimes(xi, dxi)
+            return 2 * _realconjtimes(xi, dxi)
         end
     else
         2 * sum(_realconjtimes.(x, ẋ); dims=dims)
@@ -191,7 +191,7 @@ function rrule(::typeof(prod), x::AbstractArray{T}; dims=:) where {T<:Commutativ
     return y, prod_pullback
 end
 
-function ∇prod_dims(vald::Val{dims}, x, dy, y=prod(x; dims=dims)) where {dims}
+function ∇prod_dims(vald::Val{dims}, x, dy; y=prod(x; dims=dims)) where {dims}
     T = promote_type(eltype(x), eltype(dy))
     dx = fill!(similar(x, T, axes(x)), zero(T))
     ∇prod_dims!(dx, vald, x, dy, y)
@@ -252,8 +252,7 @@ function rrule(::typeof(cumprod), x::AbstractVector{<:Real}; dims::Integer=1)
                 ∇cumprod!(dx, x, dy, y)
             else
                 dx .+= dy
-            end,
-            @thunk project_x(
+            end, @thunk project_x(
                 if dims == 1
                     ∇cumprod(x, dy, y)
                 else
@@ -293,7 +292,7 @@ function rrule(::typeof(cumprod), x::AbstractArray{<:Real}; dims::Integer)
 end
 
 function ∇cumprod_dim(
-    vald::Val{dim}, x::AbstractArray, dy=fill!(zero(x), 1), y=cumprod(x; dims=dim)
+    vald::Val{dim}, x::AbstractArray; dy=fill!(zero(x), 1), y=cumprod(x; dims=dim)
 ) where {dim}
     T = promote_type(eltype(x), eltype(dy))
     dx = fill!(similar(x, T, axes(x)), zero(T))
@@ -322,14 +321,14 @@ end
     lo, hi = firstindex(x), lastindex(x)
     z = something(findfirst(iszero, x), hi + 1)
     acc = zero(eltype(dy))
-    @inbounds for k in (z - 1):-1:lo
+    @inbounds for k in (z-1):-1:lo
         acc += y[k] * dy[k]
         dx[k] += acc / x[k]
     end
     @inbounds if z != hi + 1
         yk = z == 1 ? one(eltype(y)) : y[z - 1]  # will be prod(x[j] for j=1:k if j!=z)
         dx[z] += yk * dy[z]
-        for k in (z + 1):hi
+        for k in (z+1):hi
             yk *= x[k]
             dx[z] += yk * dy[k]
         end

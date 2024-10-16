@@ -37,7 +37,7 @@ function rand_eigen(T::Type, n::Int)
     end
 
     # make sure the sorting of eigenvalues is well defined
-    λ = 10(_rand(T, n) .+ (0:3:(3(n - 1))))
+    λ = 10(_rand(T, n) .+ (0:3:(3(n-1))))
 
     return V * Diagonal(λ) / V
 end
@@ -437,7 +437,7 @@ end
             @test darg2 === NoTangent()
             X̄_ad = dot(unthunk(dX), V)
             X̄_fd = central_fdm(5, 1)(0.000_001) do ε
-                dot(Ȳ, getproperty(cholesky(X .+ ε .* V), p))
+                return dot(Ȳ, getproperty(cholesky(X .+ ε .* V), p))
             end
             @test X̄_ad ≈ X̄_fd rtol = 1e-4
         end

@@ -527,18 +527,28 @@ end
 You can convert short circuit expressions to the equivalent if expression.
 
 ```julia
-b0 && foo()
-b1 || bar()
-```
+function foo(a, b)
+    a || return "bar"
 
-respectively become
+    "hello"
 
-```julia
-if b0
-    foo()
+    b && return "ooo"
 end
-if !b1
-    bar()
+
+BECOMES
+
+function foo(a, b)
+    if !(a)
+        return "bar"
+    end
+
+    "hello"
+
+    if b
+        return "ooo"
+    else
+        false
+    end
 end
 ```
 

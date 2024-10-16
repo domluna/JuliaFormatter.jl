@@ -171,7 +171,7 @@ const FASTABLE_AST = quote
             test_frule(^, rand(T) + 3, rand(S) + 3)
             test_rrule(^, rand(T) + 3, rand(S) + 3)
 
-            # When both x & p are Real, and !(isinteger(p)), 
+            # When both x & p are Real, and !(isinteger(p)),
             # then x must be positive to avoid a DomainError
             T <: Real && S <: Real && continue
             # In other cases, we can test values near zero:
@@ -185,7 +185,7 @@ const FASTABLE_AST = quote
             # Some regular points, as sanity checks:
             (1.0, 2) => (2.0, 0.0),
             (2.0, 2) => (4.0, 2.772588722239781),
-            # At x=0, gradients for x seem clear, 
+            # At x=0, gradients for x seem clear,
             # for p less certain what's best.
             (0.0, 2) => (0.0, 0.0),
             (-0.0, 2) => (0.0, 0.0),  # probably (-0.0, 0.0) would be ideal
