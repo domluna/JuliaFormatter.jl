@@ -527,12 +527,8 @@ function prepend_return!(fst::FST, s::State)
     if fst.typ !== Block || length(fst.nodes::Vector{FST}) == 0
         return
     end
-
     ln = fst[end]
-    if is_block(ln)
-        return
-    end
-    if ln.typ in (Return, MacroCall, MacroBlock, MacroStr)
+    if is_block(ln) || ln.typ in (Return, MacroCall, MacroBlock, MacroStr)
         return
     end
     if length(fst.nodes::Vector{FST}) > 2 &&

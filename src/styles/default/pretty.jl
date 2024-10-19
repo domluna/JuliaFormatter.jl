@@ -894,7 +894,7 @@ function p_functiondef(
             end
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
-        elseif kind(c) === K"call"
+        elseif is_func_call(c)
             n = pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage)
             add_node!(t, n, s; join_lines = true)
         else
@@ -1518,9 +1518,6 @@ function p_do(
         elseif kind(c) === K"block"
             s.indent += s.opts.indent
             n = pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage)
-            if s.opts.always_use_return
-                prepend_return!(n, s)
-            end
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         else
@@ -1734,8 +1731,8 @@ function p_binaryopcall(
 
     is_short_form_function = defines_function(cst) && !ctx.from_let
     op_dotted = kind(cst) === K"dotcall"
-    can_separate_kwargs = !is_function_or_macro_def(cst)
     standalone_binary_circuit = ctx.standalone_binary_circuit
+    can_separate_kwargs = ctx.can_separate_kwargs && !is_function_or_macro_def(cst)
 
     lazy_op = is_lazy_op(opkind)
     # check if expression is a lazy circuit
