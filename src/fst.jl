@@ -630,7 +630,7 @@ function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
         return false
     end
     k = kind(cst)
-    if (k == K"function" || k == K"macro")
+    if k in KSet"function macro"
         return true
     end
 

@@ -422,7 +422,7 @@
         str = """
         map(arg1, arg2) do x, y
             expr1
-            return expr2
+            expr2
         end"""
         @test fmt(str_, 4, length(str_) - 1; always_use_return = true) == str
 
@@ -2234,6 +2234,19 @@
         end
         shortdef1(MatrixT, VectorT = nothing) = nothing
         shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
+        """
+        @test fmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str; separate_kwargs_with_semicolon = true) == str
+
+        str = """
+        function g(x::T, y = 1) where {T}
+            return x + y
+        end
+        function g(x::T, y = 1)::Int where {T}
+            return x + y
+        end
         """
         @test fmt1(str; separate_kwargs_with_semicolon = true) == str
         @test fmt(str; separate_kwargs_with_semicolon = true) == str
