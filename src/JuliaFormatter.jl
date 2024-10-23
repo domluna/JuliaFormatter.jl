@@ -427,7 +427,7 @@ function format(path::AbstractString, options::Configuration)
         formatted = Threads.Atomic{Bool}(true)
         Threads.@threads for subpath in readdir(path)
             subpath = joinpath(path, subpath)
-            if !ispath(subpath)
+            if !ispath(subpath) || islink(subpath)
                 continue
             end
             is_formatted = format(subpath, options)
