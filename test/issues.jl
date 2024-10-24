@@ -1897,4 +1897,17 @@
             @test f1 == str
         end
     end
+
+    @testset "880" begin
+        s1 = "constant_list[node_index.val:: UInt16]"
+        s2 = "constant_list[node_index.val::UInt16]"
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+
+        s1 = "constant_list[node_index.val+ UInt16]"
+        s2 = "constant_list[node_index.val + UInt16]"
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+
+        s = ".!purge"
+        @test s = fmt(s, 4, 100) == s
+    end
 end
