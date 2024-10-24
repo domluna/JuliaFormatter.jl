@@ -1774,6 +1774,8 @@ function p_binaryopcall(
     if opkind === K":"
         nospace = true
         from_colon = true
+    elseif opkind in KSet"::"
+        nospace = true
     elseif opkind in KSet"in ∈ isa ."
         nospace = false
     elseif ctx.from_typedef && opkind in KSet"<: >:"
@@ -1854,8 +1856,10 @@ function p_binaryopcall(
             ns = is_dot ? 1 : nws
 
             # Add whitespace before the operator, unless it's a dot in a dotted operator
-            if ns > 0
-                if i > 1 && !(kind(childs[i-1]) === K".")  # Don't add space if previous was a dot
+            if ns > 0 && i > 1
+                if kind(childs[i-1]) !== K"."  # Don't add space if previous was a dot
+                    add_node!(t, Whitespace(ns), s)
+                elseif kind(childs[i-1]) === K"." && haschildren(childs[i-1])  # Don't add space if previous was a dot
                     add_node!(t, Whitespace(ns), s)
                 end
             end

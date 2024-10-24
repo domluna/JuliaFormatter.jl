@@ -997,8 +997,8 @@
         end"""
         str_ = """
         struct Foo
-            a :: T
-            longfieldname :: B
+            a::T
+            longfieldname::B
         end"""
         @test fmt(str; align_struct_field = true) == str
         @test fmt(str; align_struct_field = false) == str_
