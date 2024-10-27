@@ -123,9 +123,12 @@
         str = "arr[a in b]"
         @test fmt(str; m = 1, whitespace_ops_in_indices = true) == str
 
+        # In v1
         str_ = "a:b+c:d-e"
-        str = "a:(b+c):(d-e)"
+        str = "a:(b + c):(d - e)"
         @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
+        str = "a:(b+c):(d-e)"
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = false) == str
 
         str_ = "s[m+i+1]"
         # issue 180
