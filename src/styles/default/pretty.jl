@@ -1786,7 +1786,7 @@ function p_binaryopcall(
             nospace = true
             has_ws = false
         end
-    elseif ctx.from_ref
+    elseif ctx.from_ref || from_colon
         if s.opts.whitespace_ops_in_indices
             nospace = false
             has_ws = true
