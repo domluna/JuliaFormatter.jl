@@ -116,6 +116,18 @@ function p_export(
     t
 end
 
+function p_public(
+    ys::YASStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    t = p_import(ys, cst, s, ctx, lineage)
+    t.typ = Public
+    t
+end
+
 function p_curly(
     ys::YASStyle,
     cst::JuliaSyntax.GreenNode,

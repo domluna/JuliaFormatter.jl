@@ -83,6 +83,7 @@
     Const,
     Import,
     Export,
+    Public,
     Using,
     File,
     Quotenode,
@@ -447,7 +448,7 @@ function is_named_iterable(x::FST)
 end
 
 function is_import_expr(x::FST)
-    return x.typ in (Import, Using, Export)
+    return x.typ in (Import, Using, Export, Public)
 end
 
 """

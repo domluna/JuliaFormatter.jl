@@ -146,6 +146,8 @@ function pretty(
         p_import(style, node, s, ctx, lineage)
     elseif k === K"export"
         p_export(style, node, s, ctx, lineage)
+    elseif k === K"public"
+        p_public(style, node, s, ctx, lineage)
     elseif k === K"using"
         p_using(style, node, s, ctx, lineage)
     elseif k === K"importpath"
@@ -2630,6 +2632,18 @@ function p_export(
 )
     t = p_import(ds, cst, s, ctx, lineage)
     t.typ = Export
+    t
+end
+
+function p_public(
+    ds::AbstractStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    t = p_import(ds, cst, s, ctx, lineage)
+    t.typ = Public
     t
 end
 
