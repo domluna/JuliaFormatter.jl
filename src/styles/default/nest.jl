@@ -244,7 +244,7 @@ function n_do!(
     return nested
 end
 
-# Import,Using,Export
+# Import,Using,Export,Public
 function n_using!(
     ds::AbstractStyle,
     fst::FST,

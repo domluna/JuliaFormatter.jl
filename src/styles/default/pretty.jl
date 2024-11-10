@@ -2600,14 +2600,14 @@ function p_import(
     end
 
     for a in children(cst)
-        if kind(a) in KSet"import export using"
+        if kind(a) in KSet"import export public using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
-                if kind(n) in KSet"import export using"
+                if kind(n) in KSet"import export public using"
                     add_node!(t, Whitespace(1), s)
                 elseif kind(n) in KSet", :"
                     add_node!(t, Placeholder(1), s)
