@@ -338,6 +338,14 @@ function n_export!(
 )
     n_using!(ys, fst, s, lineage)
 end
+function n_public!(
+    ys::YASStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_using!(ys, fst, s, lineage)
+end
 function n_import!(
     ys::YASStyle,
     fst::FST,

@@ -4741,6 +4741,23 @@ some_function(
         @test fmt(str, 4, 27; join_lines_based_on_source = true) == str
     end
 
+    @testset "public keyword support" begin
+        str_ = """
+        public    a,b,
+         c
+        """
+        str = """
+        public a, b, c
+        """
+        @test fmt(str_, 4, 14) == str
+        str = """
+        public a,
+            b,
+            c
+        """
+        @test fmt(str_, 4, 1) == str
+    end
+
     @testset "block automatically assume nested when join_lines_based_on_source" begin
         str_ = """
         let y = a, z = b

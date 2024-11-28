@@ -146,6 +146,8 @@ function pretty(
         p_import(style, node, s, ctx, lineage)
     elseif k === K"export"
         p_export(style, node, s, ctx, lineage)
+    elseif k === K"public"
+        p_public(style, node, s, ctx, lineage)
     elseif k === K"using"
         p_using(style, node, s, ctx, lineage)
     elseif k === K"importpath"
@@ -2598,14 +2600,14 @@ function p_import(
     end
 
     for a in children(cst)
-        if kind(a) in KSet"import export using"
+        if kind(a) in KSet"import export public using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
-                if kind(n) in KSet"import export using"
+                if kind(n) in KSet"import export public using"
                     add_node!(t, Whitespace(1), s)
                 elseif kind(n) in KSet", :"
                     add_node!(t, Placeholder(1), s)
@@ -2630,6 +2632,18 @@ function p_export(
 )
     t = p_import(ds, cst, s, ctx, lineage)
     t.typ = Export
+    t
+end
+
+function p_public(
+    ds::AbstractStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    t = p_import(ds, cst, s, ctx, lineage)
+    t.typ = Public
     t
 end
 
