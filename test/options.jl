@@ -425,7 +425,7 @@
         str = """
         map(arg1, arg2) do x, y
             expr1
-            expr2
+            return expr2
         end"""
         @test fmt(str_, 4, length(str_) - 1; always_use_return = true) == str
 

@@ -1520,6 +1520,9 @@ function p_do(
         elseif kind(c) === K"block"
             s.indent += s.opts.indent
             n = pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage)
+            if s.opts.always_use_return
+                prepend_return!(n, s)
+            end
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
         else
