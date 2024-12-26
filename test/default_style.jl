@@ -2553,10 +2553,12 @@
             b"""
         @test fmt("export a,b", 4, 1) == str
 
-        str = """
-        public a,
-            b"""
-        @test fmt("public a,b", 4, 1) == str
+        if VERSION >= v"1.11.0"
+            str = """
+            public a,
+                b"""
+            @test fmt("public a,b", 4, 1) == str
+        end
 
         str = """
         using a,
@@ -3131,13 +3133,15 @@
         _, s = run_nest(str, 73)
         @test s.line_offset == 9
 
-        str = "public @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
-        _, s = run_nest(str, length(str))
-        @test s.line_offset == length(str)
-        _, s = run_nest(str, length(str) - 1)
-        @test s.line_offset == 74
-        _, s = run_nest(str, 73)
-        @test s.line_offset == 9
+        if VERSION >= v"1.11.0"
+            str = "public @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
+            _, s = run_nest(str, length(str))
+            @test s.line_offset == length(str)
+            _, s = run_nest(str, length(str) - 1)
+            @test s.line_offset == 74
+            _, s = run_nest(str, 73)
+            @test s.line_offset == 9
+        end
 
         # https://github.com/domluna/JuliaFormatter.jl/issues/9#issuecomment-481607068
         str = """this_is_a_long_variable_name = Dict{Symbol,Any}(:numberofpointattributes => NAttributes,

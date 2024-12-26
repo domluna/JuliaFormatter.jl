@@ -560,8 +560,10 @@
         str = "export A"
         @test yasfmt(str) == str
 
-        str = "public A"
-        @test yasfmt(str) == str
+        if VERSION >= v"1.11.0"
+            str = "public A"
+            @test yasfmt(str) == str
+        end
 
         str = "using A"
         @test yasfmt(str) == str
