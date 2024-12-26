@@ -374,9 +374,9 @@
         @test fmt("a :b") == "a:b"
         @test fmt("a +1 :b -1") == "(a+1):(b-1)"
 
-        @test fmt("a::b:: c") == "a::b :: c"
-        @test fmt("a :: b::c") == "a :: b::c"
-        @test fmt("a      :: b   :: c") == "a :: b :: c"
+        @test fmt("a::b:: c") == "a::b::c"
+        @test fmt("a :: b::c") == "a::b::c"
+        @test fmt("a      :: b   :: c") == "a::b::c"
         # issue 74
         @test fmt("0:1/3:2") == "0:(1/3):2"
         @test fmt("2a") == "2a"
@@ -4754,5 +4754,24 @@ some_function(
         end"""
         @test fmt(str_, 4, 16; join_lines_based_on_source = true) == str_
         @test fmt(str_, 4, 15; join_lines_based_on_source = true) == str
+    end
+
+    if VERSION >= v"1.11.0"
+        @testset "public keyword support" begin
+            str_ = """
+            public    a,b,
+             c
+            """
+            str = """
+            public a, b, c
+            """
+            @test fmt(str_, 4, 14) == str
+            str = """
+            public a,
+                b,
+                c
+            """
+            @test fmt(str_, 4, 1) == str
+        end
     end
 end

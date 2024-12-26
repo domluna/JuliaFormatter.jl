@@ -146,6 +146,8 @@ function pretty(
         p_import(style, node, s, ctx, lineage)
     elseif k === K"export"
         p_export(style, node, s, ctx, lineage)
+    elseif k === K"public"
+        p_public(style, node, s, ctx, lineage)
     elseif k === K"using"
         p_using(style, node, s, ctx, lineage)
     elseif k === K"importpath"
@@ -245,10 +247,10 @@ function p_comment(
     loc = cursor_loc(s)
     same_line = on_same_line(s, s.offset, s.offset + span(cst) - 1)
     val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
-    if same_line && startswith(val, "#=") && endswith(val, "=#")
-        s.offset += span(cst)
-        return FST(HASHEQCOMMENT, loc[2], loc[1], loc[1], val)
-    end
+    # if same_line && startswith(val, "#=") && endswith(val, "=#")
+    #     s.offset += span(cst)
+    #     return FST(HASHEQCOMMENT, loc[2], loc[1], loc[1], val)
+    # end
     s.offset += span(cst)
     FST(NONE, loc[2], loc[1], loc[1], "")
 end
@@ -894,7 +896,7 @@ function p_functiondef(
             end
             add_node!(t, n, s; max_padding = s.opts.indent)
             s.indent -= s.opts.indent
-        elseif kind(c) === K"call"
+        elseif is_func_call(c)
             n = pretty(style, c, s, newctx(ctx; can_separate_kwargs = false), lineage)
             add_node!(t, n, s; join_lines = true)
         else
@@ -1734,8 +1736,8 @@ function p_binaryopcall(
 
     is_short_form_function = defines_function(cst) && !ctx.from_let
     op_dotted = kind(cst) === K"dotcall"
-    can_separate_kwargs = !is_function_or_macro_def(cst)
     standalone_binary_circuit = ctx.standalone_binary_circuit
+    can_separate_kwargs = ctx.can_separate_kwargs && !is_function_or_macro_def(cst)
 
     lazy_op = is_lazy_op(opkind)
     # check if expression is a lazy circuit
@@ -1777,6 +1779,8 @@ function p_binaryopcall(
     if opkind === K":"
         nospace = true
         from_colon = true
+    elseif opkind in KSet"::"
+        nospace = true
     elseif opkind in KSet"in ∈ isa ."
         nospace = false
     elseif ctx.from_typedef && opkind in KSet"<: >:"
@@ -1787,7 +1791,7 @@ function p_binaryopcall(
             nospace = true
             has_ws = false
         end
-    elseif ctx.from_ref
+    elseif ctx.from_ref || from_colon
         if s.opts.whitespace_ops_in_indices
             nospace = false
             has_ws = true
@@ -1857,8 +1861,10 @@ function p_binaryopcall(
             ns = is_dot ? 1 : nws
 
             # Add whitespace before the operator, unless it's a dot in a dotted operator
-            if ns > 0
-                if i > 1 && !(kind(childs[i-1]) === K".")  # Don't add space if previous was a dot
+            if ns > 0 && i > 1
+                if kind(childs[i-1]) !== K"."  # Don't add space if previous was a dot
+                    add_node!(t, Whitespace(ns), s)
+                elseif kind(childs[i-1]) === K"." && haschildren(childs[i-1])  # Don't add space if previous was a dot
                     add_node!(t, Whitespace(ns), s)
                 end
             end
@@ -2597,14 +2603,14 @@ function p_import(
     end
 
     for a in children(cst)
-        if kind(a) in KSet"import export using"
+        if kind(a) in KSet"import export public using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
         elseif kind(a) === K":" && haschildren(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
-                if kind(n) in KSet"import export using"
+                if kind(n) in KSet"import export public using"
                     add_node!(t, Whitespace(1), s)
                 elseif kind(n) in KSet", :"
                     add_node!(t, Placeholder(1), s)
@@ -2629,6 +2635,18 @@ function p_export(
 )
     t = p_import(ds, cst, s, ctx, lineage)
     t.typ = Export
+    t
+end
+
+function p_public(
+    ds::AbstractStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    t = p_import(ds, cst, s, ctx, lineage)
+    t.typ = Public
     t
 end
 

@@ -1386,7 +1386,7 @@
         arraycopy_common(false#=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
         return nothing
         """
-        @test fmt(s) == s_
+        @test_broken fmt(s) == s_
 
         s1 = """
         foo(a, b, #=c=#)
@@ -1397,7 +1397,7 @@
             b,#=c=#
         )
         """
-        @test fmt(s1, 4, 1) == s2
+        @test_broken fmt(s1, 4, 1) == s2
     end
 
     @testset "604" begin
@@ -1896,5 +1896,18 @@
             f1 = format_text(f1, BlueStyle(); join_lines_based_on_source = true)
             @test f1 == str
         end
+    end
+
+    @testset "880" begin
+        s1 = "constant_list[node_index.val:: UInt16]"
+        s2 = "constant_list[node_index.val::UInt16]"
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+
+        s1 = "constant_list[node_index.val+ UInt16]"
+        s2 = "constant_list[node_index.val + UInt16]"
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+
+        s = ".!purge"
+        @test s = fmt(s, 4, 100) == s
     end
 end

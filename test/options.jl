@@ -123,9 +123,12 @@
         str = "arr[a in b]"
         @test fmt(str; m = 1, whitespace_ops_in_indices = true) == str
 
+        # In v1
         str_ = "a:b+c:d-e"
-        str = "a:(b+c):(d-e)"
+        str = "a:(b + c):(d - e)"
         @test fmt(str_; m = 1, whitespace_ops_in_indices = true) == str
+        str = "a:(b+c):(d-e)"
+        @test fmt(str_; m = 1, whitespace_ops_in_indices = false) == str
 
         str_ = "s[m+i+1]"
         # issue 180
@@ -997,8 +1000,8 @@
         end"""
         str_ = """
         struct Foo
-            a :: T
-            longfieldname :: B
+            a::T
+            longfieldname::B
         end"""
         @test fmt(str; align_struct_field = true) == str
         @test fmt(str; align_struct_field = false) == str_
@@ -2234,6 +2237,19 @@
         end
         shortdef1(MatrixT, VectorT = nothing) = nothing
         shortdef2(MatrixT, VectorT = nothing) where {T} = nothing
+        """
+        @test fmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test fmt(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt1(str; separate_kwargs_with_semicolon = true) == str
+        @test yasfmt(str; separate_kwargs_with_semicolon = true) == str
+
+        str = """
+        function g(x::T, y = 1) where {T}
+            return x + y
+        end
+        function g(x::T, y = 1)::Int where {T}
+            return x + y
+        end
         """
         @test fmt1(str; separate_kwargs_with_semicolon = true) == str
         @test fmt(str; separate_kwargs_with_semicolon = true) == str

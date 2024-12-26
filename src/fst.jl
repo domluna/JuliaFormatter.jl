@@ -83,6 +83,7 @@
     Const,
     Import,
     Export,
+    Public,
     Using,
     File,
     Quotenode,
@@ -425,7 +426,7 @@ is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 function is_iterable(t::JuliaSyntax.GreenNode)
     if !(
         kind(t) in
-        KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export"
+        KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export public"
     )
         is_func_call(t)
     else
@@ -447,7 +448,7 @@ function is_named_iterable(x::FST)
 end
 
 function is_import_expr(x::FST)
-    return x.typ in (Import, Using, Export)
+    return x.typ in (Import, Using, Export, Public)
 end
 
 """
@@ -567,7 +568,7 @@ function is_unary(x::JuliaSyntax.GreenNode)
     if JuliaSyntax.is_unary_op(x)
         return true
     end
-    if kind(x) === K"call" || (JuliaSyntax.is_operator(x) && haschildren(x))
+    if kind(x) in KSet"call dotcall" || (JuliaSyntax.is_operator(x) && haschildren(x))
         nops, nargs = _callinfo(x)
         return nops == 1 && nargs == 1
     end
@@ -583,7 +584,7 @@ function is_binary(x)
 end
 
 function is_chain(x::JuliaSyntax.GreenNode)
-    if !(kind(x) === K"call")
+    if !(kind(x) in KSet"call dotcall")
         return false
     end
     nops, nargs = _callinfo(x)
@@ -630,7 +631,7 @@ function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
         return false
     end
     k = kind(cst)
-    if (k == K"function" || k == K"macro")
+    if k in KSet"function macro"
         return true
     end
 
@@ -647,7 +648,7 @@ end
 
 function is_function_like_lhs(node::JuliaSyntax.GreenNode)
     k = kind(node)
-    if k == K"call"
+    if k in KSet"call dotcall"
         return true
     elseif k == K"where" || k == K"::"
         return haschildren(node) && is_function_like_lhs(node[1])
@@ -709,7 +710,7 @@ function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue
-            elseif JuliaSyntax.is_operator(c)
+            elseif JuliaSyntax.is_operator(c) && !haschildren(c)
                 return c
             end
         end
