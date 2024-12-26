@@ -2,6 +2,7 @@ for f in [
     :n_import!,
     :n_using!,
     :n_export!,
+    :n_public!,
     :n_vcat!,
     :n_ncat!,
     :n_typedvcat!,

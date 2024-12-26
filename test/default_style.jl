@@ -2554,6 +2554,11 @@
         @test fmt("export a,b", 4, 1) == str
 
         str = """
+        public a,
+            b"""
+        @test fmt("public a,b", 4, 1) == str
+
+        str = """
         using a,
           b"""
         @test fmt("using a,b", 2, 1) == str
@@ -3119,6 +3124,14 @@
         @test fmt(str_, 4, 20) == str
 
         str = "export @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
+        _, s = run_nest(str, length(str))
+        @test s.line_offset == length(str)
+        _, s = run_nest(str, length(str) - 1)
+        @test s.line_offset == 74
+        _, s = run_nest(str, 73)
+        @test s.line_offset == 9
+
+        str = "public @esc, isexpr, isline, iscall, rmlines, unblock, block, inexpr, namify, isdef"
         _, s = run_nest(str, length(str))
         @test s.line_offset == length(str)
         _, s = run_nest(str, length(str) - 1)

@@ -66,6 +66,7 @@ for f in [
     :p_import,
     :p_using,
     :p_export,
+    :p_public,
     :p_vcat,
     :p_ncat,
     :p_typedvcat,

@@ -83,6 +83,7 @@
     Const,
     Import,
     Export,
+    Public,
     Using,
     File,
     Quotenode,
@@ -425,7 +426,7 @@ is_opener(t::JuliaSyntax.GreenNode) = kind(t) in KSet"{ ( ["
 function is_iterable(t::JuliaSyntax.GreenNode)
     if !(
         kind(t) in
-        KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export"
+        KSet"parens tuple vect vcat braces curly comprehension typed_comprehension macrocall ref typed_vcat import using export public"
     )
         is_func_call(t)
     else
@@ -447,7 +448,7 @@ function is_named_iterable(x::FST)
 end
 
 function is_import_expr(x::FST)
-    return x.typ in (Import, Using, Export)
+    return x.typ in (Import, Using, Export, Public)
 end
 
 """

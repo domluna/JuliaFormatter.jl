@@ -560,6 +560,9 @@
         str = "export A"
         @test yasfmt(str) == str
 
+        str = "public A"
+        @test yasfmt(str) == str
+
         str = "using A"
         @test yasfmt(str) == str
     end

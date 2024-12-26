@@ -82,6 +82,8 @@ function nest!(
         n_import!(style, fst, s, lineage)
     elseif fst.typ === Export
         n_export!(style, fst, s, lineage)
+    elseif fst.typ === Public
+        n_public!(style, fst, s, lineage)
     elseif fst.typ === Using
         n_using!(style, fst, s, lineage)
     elseif fst.typ === Where
@@ -242,7 +244,7 @@ function n_do!(
     return nested
 end
 
-# Import,Using,Export
+# Import,Using,Export,Public
 function n_using!(
     ds::AbstractStyle,
     fst::FST,
@@ -295,6 +297,15 @@ function n_using!(
 end
 
 function n_export!(
+    ds::AbstractStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    n_using!(ds, fst, s, lineage)
+end
+
+function n_public!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
