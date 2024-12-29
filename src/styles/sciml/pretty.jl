@@ -52,9 +52,6 @@ end
 
 Formatting style based on [SciMLStyle](https://github.com/SciML/SciMLStyle).
 
-!!! note
-    This style is still work-in-progress.
-
 Configurable options with different defaults to [`DefaultStyle`](@ref) are:
 $(list_different_defaults(SciMLStyle()))
 """
