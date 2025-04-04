@@ -537,6 +537,7 @@ end
     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
     mkdir(sandbox_dir)
     cp(dir, sandbox_dir; force = true)
+    chmod(sandbox_dir, 0o777; recursive = true)
     str = """
     true
     false
