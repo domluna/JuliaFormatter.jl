@@ -1386,7 +1386,7 @@
         arraycopy_common(false#=fwd=#, LLVM.Builder(B), orig, origops[1], gutils)
         return nothing
         """
-        @test_broken fmt(s) == s_
+        @test fmt(s) == s_
 
         s1 = """
         foo(a, b, #=c=#)
@@ -1397,7 +1397,7 @@
             b,#=c=#
         )
         """
-        @test_broken fmt(s1, 4, 1) == s2
+        @test fmt(s1, 4, 1) == s2
     end
 
     @testset "604" begin
