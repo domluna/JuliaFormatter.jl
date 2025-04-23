@@ -1767,15 +1767,15 @@ function p_binaryopcall(
         false,
     )
 
-    has_ws = false
+    has_ws = true
     childs = children(cst)
 
-    for (i, c) in enumerate(childs)
-        if i > 1 && kind(c) in KSet"Whitespace NewlineWs"
-            has_ws = true
-            break
-        end
-    end
+    # for (i, c) in enumerate(childs)
+    #     if i > 1 && kind(c) in KSet"Whitespace NewlineWs"
+    #         has_ws = true
+    #         break
+    #     end
+    # end
 
     from_colon = ctx.from_colon
 
@@ -1787,6 +1787,8 @@ function p_binaryopcall(
         nospace = true
     elseif opkind in KSet"in ∈ isa ."
         nospace = false
+    elseif JuliaSyntax.is_radical_op(opkind) || JuliaSyntax.is_prec_decl(opkind) || JuliaSyntax.is_prec_power(opkind)
+        nospace = true
     elseif ctx.from_typedef && opkind in KSet"<: >:"
         if s.opts.whitespace_typedefs
             nospace = false
@@ -1807,6 +1809,7 @@ function p_binaryopcall(
         nospace = true
     end
     nws = !nospace && has_ws ? 1 : 0
+    # nws = nospace ? 0 :  1
 
     has_dot = false
     if kind(cst) === K"dotcall"
@@ -1818,6 +1821,7 @@ function p_binaryopcall(
     nlws_count = 0
     after_op = false
     op_indices = extract_operator_indices(childs)
+    is_binary_op = length(op_indices) == 1 || (length(op_indices) == 2 && has_dot)
 
     for (i, c) in enumerate(childs)
         n = pretty(
@@ -1935,7 +1939,7 @@ function p_binaryopcall(
         end
     end
 
-    if nest && (length(op_indices) == 1 || (length(op_indices) == 2 && has_dot))
+    if nest && is_binary_op
         # for indent, will be converted to `indent` if needed
         insert!(t.nodes::Vector{FST}, length(t.nodes::Vector{FST}), Placeholder(0))
     end
