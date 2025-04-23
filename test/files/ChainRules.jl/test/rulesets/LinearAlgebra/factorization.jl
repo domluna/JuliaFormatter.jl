@@ -37,7 +37,7 @@ function rand_eigen(T::Type, n::Int)
     end
 
     # make sure the sorting of eigenvalues is well defined
-    λ = 10(_rand(T, n) .+ (0:3:(3(n-1))))
+    λ = 10(_rand(T, n) .+ (0:3:(3(n - 1))))
 
     return V * Diagonal(λ) / V
 end

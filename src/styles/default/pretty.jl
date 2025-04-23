@@ -76,10 +76,12 @@ function pretty(
         p_do(style, node, s, ctx, lineage)
     elseif k === K"var"
         p_var(style, node, s, ctx, lineage)
+    elseif is_try(node) ||
+           # issue #912
+           (k === K"else" && !isnothing(lineage) && lineage[end-1][1] === K"try")
+        p_try(style, node, s, ctx, lineage)
     elseif is_if(node)
         p_if(style, node, s, ctx, lineage)
-    elseif is_try(node)
-        p_try(style, node, s, ctx, lineage)
     elseif k === K"toplevel"
         p_toplevel(style, node, s, ctx, lineage)
     elseif k === K"quote" && haschildren(node) && kind(node[1]) === K":"
@@ -219,7 +221,7 @@ function p_identifier(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     FST(IDENTIFIER, loc[2], loc[1], loc[1], val)
 end
@@ -232,7 +234,7 @@ function p_whitespace(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     FST(NONE, loc[2], loc[1], loc[1], val)
 end
@@ -246,7 +248,7 @@ function p_comment(
 )
     loc = cursor_loc(s)
     same_line = on_same_line(s, s.offset, s.offset + span(cst) - 1)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     if same_line && startswith(val, "#=") && endswith(val, "=#")
         s.offset += span(cst)
         return FST(HASHEQCOMMENT, loc[2], loc[1], loc[1], val)
@@ -275,7 +277,7 @@ function p_macroname(
     ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     FST(MACRONAME, loc[2], loc[1], loc[1], val)
 end
@@ -288,7 +290,7 @@ function p_operator(
     ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     t = FST(OPERATOR, loc[2], loc[1], loc[1], val)
     t.metadata = Metadata(kind(cst), JuliaSyntax.is_dotted(cst))
@@ -303,7 +305,7 @@ function p_keyword(
     ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     FST(KEYWORD, loc[2], loc[1], loc[1], val)
 end
@@ -316,7 +318,7 @@ function p_punctuation(
     ::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     s.offset += span(cst)
     FST(PUNCTUATION, loc[2], loc[1], loc[1], val)
 end
@@ -445,7 +447,7 @@ function p_literal(
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
     loc = cursor_loc(s)
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
 
     if !is_str_or_cmd(cst)
         if kind(cst) in KSet"Float Float32" && !startswith(val, "0x")
@@ -509,7 +511,7 @@ function p_stringh(
     end
     loc2 = cursor_loc(s, s.offset+span(cst)-1)
 
-    val = getsrcval(s.doc, s.offset:s.offset+span(cst)-1)
+    val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     startline = loc[1]
     endline = loc2[1]
 
@@ -1551,12 +1553,14 @@ function p_try(
     # the end of block it will be added as a comment in the parent node and hence
     # have a lower indentation than the rest of the block. To counteract that we reduce
     # the indent when we encounter "catch finally end" keywords.
+    #
+    # Apparently "try catch else end" is also valid.
 
     childs = children(cst)
     for c in childs
-        if kind(c) in KSet"try catch finally"
+        if kind(c) in KSet"try catch finally else"
             if !haschildren(c)
-                if kind(c) in KSet"catch finally"
+                if kind(c) in KSet"catch finally else"
                     s.indent -= s.opts.indent
                 end
                 add_node!(t, pretty(style, c, s, ctx, lineage), s; max_padding = 0)
@@ -1566,7 +1570,7 @@ function p_try(
                 add_node!(t, n, s; max_padding = 0)
                 t.len = max(len, length(n))
             end
-        elseif kind(c) === K"end"
+        elseif kind(c) in KSet"end"
             s.indent -= s.opts.indent
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         elseif kind(c) === K"block"

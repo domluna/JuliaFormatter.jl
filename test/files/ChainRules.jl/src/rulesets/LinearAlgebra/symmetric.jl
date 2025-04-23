@@ -513,7 +513,7 @@ function _hermitrizelike!(A_, S::LinearAlgebra.RealHermSymComplexHerm)
     A = eltype(S) <: Real ? real(A_) : A_
     n = size(A, 1)
     for i in 1:n
-        for j in (i+1):n
+        for j in (i + 1):n
             A[i, j] = (A[i, j] + conj(A[j, i])) / 2
             A[j, i] = conj(A[i, j])
         end

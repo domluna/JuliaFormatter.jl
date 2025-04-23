@@ -1901,13 +1901,50 @@
     @testset "880" begin
         s1 = "constant_list[node_index.val:: UInt16]"
         s2 = "constant_list[node_index.val::UInt16]"
-        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices = true) == s2
 
         s1 = "constant_list[node_index.val+ UInt16]"
         s2 = "constant_list[node_index.val + UInt16]"
-        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices=true) == s2
+        @test s1 = fmt(s1, 4, 100, whitespace_ops_in_indices = true) == s2
 
         s = ".!purge"
         @test s = fmt(s, 4, 100) == s
+    end
+
+    @testset "912" begin
+        s = """
+        try
+            nothing
+        catch e
+            nothing
+        else
+            nothing
+        end
+        """
+        @test fmt(s, 4, 100) == s
+
+        str_ = """
+        try
+         # comment
+         catch e
+         # comment
+        body
+         # comment
+         else
+         # comment
+         end
+        """
+        s = """
+        try
+            # comment
+        catch e
+            # comment
+            body
+            # comment
+        else
+            # comment
+        end
+        """
+        @test fmt(str_, 4, 100) == s
     end
 end

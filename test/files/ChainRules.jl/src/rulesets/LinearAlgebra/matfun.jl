@@ -202,7 +202,7 @@ function _matfun!(::typeof(exp), A::StridedMatrix{T}) where {T<:BlasFloat}
     W = C[2] * P
     V = C[1] * P
     Apows = typeof(P)[]
-    for k in 1:(div(size(C, 1), 2)-1)
+    for k in 1:(div(size(C, 1), 2) - 1)
         k2 = 2 * k
         P *= A2
         push!(Apows, P)
@@ -247,7 +247,7 @@ function _matfun_frechet!(
     ∂P = copy(∂A2)
     ∂W = C[4] * ∂P
     ∂V = C[3] * ∂P
-    for k in 2:(length(Apows)-1)
+    for k in 2:(length(Apows) - 1)
         k2 = 2 * k
         P = Apows[k - 1]
         ∂P, ∂temp = mul!(mul!(∂temp, ∂P, A2), P, ∂A2, true, true), ∂P
@@ -261,7 +261,7 @@ function _matfun_frechet!(
     ldiv!(F, ∂X)
 
     if si > 0
-        for t in 1:(length(Xpows)-1)
+        for t in 1:(length(Xpows) - 1)
             X = Xpows[t]
             ∂X, ∂temp = mul!(mul!(∂temp, X, ∂X), ∂X, X, true, true), ∂X
         end
@@ -284,12 +284,12 @@ end
 function _balance!(X, ilo, ihi, scale, n)
     n = size(X, 1)
     if ihi < n
-        for j in (ihi+1):n
+        for j in (ihi + 1):n
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
     if ilo > 1
-        for j in (ilo-1):-1:1
+        for j in (ilo - 1):-1:1
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
@@ -319,12 +319,12 @@ function _unbalance!(X, ilo, ihi, scale, n)
     end
 
     if ilo > 1
-        for j in (ilo-1):-1:1
+        for j in (ilo - 1):-1:1
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end
     if ihi < n
-        for j in (ihi+1):n
+        for j in (ihi + 1):n
             LinearAlgebra.rcswap!(j, Int(scale[j]), X)
         end
     end

@@ -252,7 +252,7 @@ function rrule(::typeof(cat), Xs::Union{AbstractArray,Number}...; dims)
                     if d > ndimsX
                         (prev[d] + 1)
                     else
-                        ((prev[d]+1):(prev[d]+sizeX[d]))
+                        ((prev[d] + 1):(prev[d] + sizeX[d]))
                     end
                 else
                     d > ndimsX ? 1 : (:)
@@ -293,7 +293,7 @@ function rrule(::typeof(hvcat), rows, values::Union{AbstractArray,Number}...)
                     if d > ndimsX
                         (prev[d] + 1)
                     else
-                        ((prev[d]+1):(prev[d]+sizeX[d]))
+                        ((prev[d] + 1):(prev[d] + sizeX[d]))
                     end
                 else
                     d > ndimsX ? 1 : (:)
