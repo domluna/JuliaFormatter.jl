@@ -7,7 +7,7 @@ end
 
 using PrecompileTools: @setup_workload, @compile_workload
 using JuliaSyntax
-using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
+using JuliaSyntax: children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier
@@ -207,7 +207,7 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     if opts.always_for_in == true
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
-    t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text; ignore_warnings = true)
+    t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text, operators_as_identifiers=false)
     state = State(Document(text), opts)
     text = format_text(t, style, state)
     return text
@@ -277,7 +277,7 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
     text = normalize_line_ending(text, replacer)
 
     try
-        _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text; ignore_warnings = true)
+        _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text, operators_as_identifiers=false)
     catch err
         @warn "Formatted text is not parsable ... no change made."
         rethrow(err)
@@ -532,42 +532,42 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-@setup_workload begin
-    dir = joinpath(@__DIR__, "..")
-    sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
-    mkdir(sandbox_dir)
-    cp(dir, sandbox_dir; force = true)
-    chmod(sandbox_dir, 0o777; recursive = true)
-    str = """
-    true
-    false
-    10.0
-    "hello"
-    a + b
-    a == b == c
-    a^10
-    !cond
-    f(a,b,c)
-    @f(a,b,c)
-    (a,b,c)
-    [a,b,c]
-    begin
-        a
-        b
-    end
-    quote
-        a
-        b
-    end
-    :(a+b+c+d)
-    """
-
-    @compile_workload begin
-        format(sandbox_dir)
-        for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
-            format_text(str, style)
-        end
-    end
-end
+# @setup_workload begin
+#     dir = joinpath(@__DIR__, "..")
+#     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
+#     mkdir(sandbox_dir)
+#     cp(dir, sandbox_dir; force = true)
+#     chmod(sandbox_dir, 0o777; recursive = true)
+#     str = """
+#     true
+#     false
+#     10.0
+#     "hello"
+#     a + b
+#     a == b == c
+#     a^10
+#     !cond
+#     f(a,b,c)
+#     @f(a,b,c)
+#     (a,b,c)
+#     [a,b,c]
+#     begin
+#         a
+#         b
+#     end
+#     quote
+#         a
+#         b
+#     end
+#     :(a+b+c+d)
+#     """
+#
+#     @compile_workload begin
+#         format(sandbox_dir)
+#         for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
+#             format_text(str, style)
+#         end
+#     end
+# end
 
 end
