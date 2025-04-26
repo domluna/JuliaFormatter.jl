@@ -240,12 +240,11 @@ function InlineComment(line)
     FST(INLINECOMMENT, line, line, 0, 0, "", (), AllowNest, 0, -1, nothing)
 end
 
-is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
 is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 function is_punc(cst::JuliaSyntax.GreenNode)
     punctuation = KSet", ( ) [ ] { } @"
-    return kind(cst) in punctuation || (kind(cst) === K"." && !haschildren(cst))
+    return kind(cst) in punctuation || (kind(cst) === K"." && JuliaSyntax.is_leaf(cst))
 end
 is_punc(fst::FST) = fst.typ === PUNCTUATION
 
@@ -257,7 +256,7 @@ is_colon(x::FST) = x.typ === OPERATOR && x.val == ":"
 is_comma(fst::FST) = fst.typ === TRAILINGCOMMA || (is_punc(fst) && fst.val == ",")
 is_comment(fst::FST) = fst.typ in (INLINECOMMENT, NOTCODE, HASHEQCOMMENT)
 
-is_identifier(x) = kind(x) === K"Identifier" && !haschildren(x)
+is_identifier(x) = kind(x) === K"Identifier" && JuliaSyntax.is_leaf(x)
 
 is_ws(x) = kind(x) in KSet"Whitespace NewlineWs"
 
@@ -274,15 +273,15 @@ function is_macrodoc(fst::FST)::Bool
 end
 
 function is_macrostr(t::JuliaSyntax.GreenNode)::Bool
-    kind(t) == K"macrocall" && haschildren(t) && contains_macrostr(t[1])
+    kind(t) == K"macrocall" && !JuliaSyntax.is_leaf(t) && contains_macrostr(t[1])
 end
 
 function contains_macrostr(t::JuliaSyntax.GreenNode)::Bool
-    if kind(t) in KSet"StringMacroName CmdMacroName core_@cmd"
+    if kind(t) in KSet"StringMacroName CmdMacroName"
         return true
-    elseif kind(t) === "quote" && haschildren(t)
+    elseif kind(t) === "quote" && !JuliaSyntax.is_leaf(t)
         return contains_macrostr(t[1])
-    elseif kind(t) === K"." && haschildren(t)
+    elseif kind(t) === K"." && !JuliaSyntax.is_leaf(t)
         return any(contains_macrostr, reverse(children(t)))
     end
     return false
@@ -291,7 +290,7 @@ end
 function is_func_call(t::JuliaSyntax.GreenNode)::Bool
     if kind(t) in KSet"call dotcall"
         return JuliaSyntax.is_prefix_call(t)
-    elseif kind(t) in KSet":: where parens" && haschildren(t)
+    elseif kind(t) in KSet":: where parens" && !JuliaSyntax.is_leaf(t)
         childs = children(t)
         idx =
             findfirst(n -> !JuliaSyntax.is_whitespace(n) && !(kind(n) in KSet"( )"), childs)
@@ -301,9 +300,9 @@ function is_func_call(t::JuliaSyntax.GreenNode)::Bool
 end
 
 function defines_function(x::JuliaSyntax.GreenNode)
-    if kind(x) in KSet"function macro" && haschildren(x)
+    if kind(x) in KSet"function macro" && !JuliaSyntax.is_leaf(x)
         return true
-    elseif is_assignment(x) && haschildren(x)
+    elseif is_assignment(x) && !JuliaSyntax.is_leaf(x)
         childs = children(x)
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(n), childs)
         return !isnothing(idx) && is_func_call(childs[idx])
@@ -311,10 +310,10 @@ function defines_function(x::JuliaSyntax.GreenNode)
     return false
 end
 
-is_if(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"if elseif else" && haschildren(cst)
+is_if(cst::JuliaSyntax.GreenNode) = kind(cst) in KSet"if elseif else" && !JuliaSyntax.is_leaf(cst)
 
 function is_try(cst::JuliaSyntax.GreenNode)
-    kind(cst) in KSet"try catch finally" && haschildren(cst)
+    kind(cst) in KSet"try catch finally" && !JuliaSyntax.is_leaf(cst)
 end
 
 function is_custom_leaf(fst::FST)
@@ -329,13 +328,13 @@ end
 
 function get_args(t::JuliaSyntax.GreenNode)
     nodes = JuliaSyntax.GreenNode[]
-    !haschildren(t) && return nodes
+    JuliaSyntax.is_leaf(t) && return nodes
     childs = children(t)
     childs isa Tuple{} && return nodes
 
     k = kind(t)
     ret = if k == K"where"
-        if is_leaf(childs[end])
+        if JuliaSyntax.is_leaf(childs[end])
             JuliaSyntax.GreenNode[childs[end]]
         else
             get_args(childs[end])
@@ -476,8 +475,8 @@ end
 function is_block(x::JuliaSyntax.GreenNode)
     is_if(x) ||
         kind(x) in KSet"do try for while let" ||
-        (kind(x) == K"block" && haschildren(x)) ||
-        (kind(x) == K"quote" && haschildren(x) && is_block(x[1]))
+        (kind(x) == K"block" && !JuliaSyntax.is_leaf(x)) ||
+        (kind(x) == K"quote" && !JuliaSyntax.is_leaf(x) && is_block(x[1]))
 end
 
 function is_block(x::FST)
@@ -493,7 +492,7 @@ function is_opcall(x::JuliaSyntax.GreenNode)
     if is_binary(x) || kind(x) == K"comparison" || is_chain(x) || is_unary(x)
         return true
     end
-    if kind(x) === K"parens" && haschildren(x)
+    if kind(x) === K"parens" && !JuliaSyntax.is_leaf(x)
         childs = children(x)
         idx = findfirst(
             n -> !JuliaSyntax.is_whitespace(kind(n)) && !(kind(n) in KSet"( )"),
@@ -509,7 +508,7 @@ end
 
 function is_prefix_op_call(x::JuliaSyntax.GreenNode)
     is_opcall(x) || return false
-    haschildren(x) || return false
+    !JuliaSyntax.is_leaf(x) || return false
 
     idx = findfirst(!JuliaSyntax.is_whitespace, children(x))
     isnothing(idx) && return false
@@ -533,7 +532,7 @@ function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) wher
         push!(op_indices, args[i])
         if i < length(args) &&
            kind(childs[args[i]]) === K"." &&
-           !haschildren(childs[args[i]])
+           JuliaSyntax.is_leaf(childs[args[i]])
             push!(op_indices, args[i+1])
             i += 1
         end
@@ -543,7 +542,7 @@ function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) wher
 end
 
 function _callinfo(x::JuliaSyntax.GreenNode)
-    if !haschildren(x)
+    if JuliaSyntax.is_leaf(x)
         return 0, 0
     end
     k = kind(x)
@@ -553,7 +552,7 @@ function _callinfo(x::JuliaSyntax.GreenNode)
     for c in children(x)
         if JuliaSyntax.is_whitespace(c) || is_punc(c)
             continue
-        elseif haschildren(c) || (!haschildren(c) && !JuliaSyntax.is_operator(c))
+        elseif !JuliaSyntax.is_leaf(c) || (JuliaSyntax.is_leaf(c) && !JuliaSyntax.is_operator(c))
             n_args += 1
         elseif k == K"dotcall" && JuliaSyntax.is_operator(c) && kind(c) == K"."
             continue
@@ -568,7 +567,7 @@ function is_unary(x::JuliaSyntax.GreenNode)
     if JuliaSyntax.is_unary_op(x)
         return true
     end
-    if kind(x) in KSet"call dotcall" || (JuliaSyntax.is_operator(x) && haschildren(x))
+    if kind(x) in KSet"call dotcall" || (JuliaSyntax.is_operator(x) && !JuliaSyntax.is_leaf(x))
         nops, nargs = _callinfo(x)
         return nops == 1 && nargs == 1
     end
@@ -576,7 +575,7 @@ function is_unary(x::JuliaSyntax.GreenNode)
 end
 
 function is_binary(x)
-    if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && haschildren(x))
+    if !JuliaSyntax.is_infix_op_call(x) && !(JuliaSyntax.is_operator(x) && !JuliaSyntax.is_leaf(x))
         return false
     end
     nops, nargs = _callinfo(x)
@@ -614,7 +613,7 @@ function is_assignment(x::FST)
 end
 
 function is_assignment(t::JuliaSyntax.GreenNode)
-    if JuliaSyntax.is_prec_assignment(kind(t)) && haschildren(t)
+    if JuliaSyntax.is_prec_assignment(kind(t)) && !JuliaSyntax.is_leaf(t)
         return !any(c -> kind(c) in KSet"in ∈", children(t))
     end
     return false
@@ -627,7 +626,7 @@ function is_pairarrow(cst::JuliaSyntax.GreenNode)::Bool
 end
 
 function is_function_or_macro_def(cst::JuliaSyntax.GreenNode)
-    if !haschildren(cst)
+    if JuliaSyntax.is_leaf(cst)
         return false
     end
     k = kind(cst)
@@ -651,7 +650,7 @@ function is_function_like_lhs(node::JuliaSyntax.GreenNode)
     if k in KSet"call dotcall"
         return true
     elseif k == K"where" || k == K"::"
-        return haschildren(node) && is_function_like_lhs(node[1])
+        return !JuliaSyntax.is_leaf(node) && is_function_like_lhs(node[1])
     end
     return false
 end
@@ -660,7 +659,7 @@ function has_leading_whitespace(n::JuliaSyntax.GreenNode)
     if kind(n) === K"Whitespace"
         return true
     end
-    if haschildren(n) && length(children(n)) > 0
+    if !JuliaSyntax.is_leaf(n) && length(children(n)) > 0
         return has_leading_whitespace(n[1])
     end
     return false
@@ -678,7 +677,7 @@ function unnestable_node(cst::JuliaSyntax.GreenNode)
 end
 
 function is_binaryop_nestable(::AbstractStyle, cst::JuliaSyntax.GreenNode)
-    if (is_assignment(cst) || is_pairarrow(cst)) && haschildren(cst)
+    if (is_assignment(cst) || is_pairarrow(cst)) && !JuliaSyntax.is_leaf(cst)
         childs = children(cst)
         idx = findlast(n -> !JuliaSyntax.is_whitespace(n), childs)::Int
         return !is_str_or_cmd(childs[idx])
@@ -687,9 +686,9 @@ function is_binaryop_nestable(::AbstractStyle, cst::JuliaSyntax.GreenNode)
 end
 
 function nest_rhs(cst::JuliaSyntax.GreenNode)::Bool
-    if defines_function(cst) && haschildren(cst)
+    if defines_function(cst) && !JuliaSyntax.is_leaf(cst)
         for c in children(cst)
-            if is_if(c) || kind(c) in KSet"do try for while let" && haschildren(c)
+            if is_if(c) || kind(c) in KSet"do try for while let" && !JuliaSyntax.is_leaf(c)
                 return true
             end
         end
@@ -706,11 +705,11 @@ function get_op(cst::JuliaSyntax.GreenNode)::Union{JuliaSyntax.GreenNode,Nothing
         kind(cst) in KSet"comparison dotcall call" ||
         is_chain(cst) ||
         is_unary(cst)
-    ) && haschildren(cst)
+    ) && !JuliaSyntax.is_leaf(cst)
         for c in children(cst)
             if kind(cst) === K"dotcall" && kind(c) === K"."
                 continue
-            elseif JuliaSyntax.is_operator(c) && !haschildren(c)
+            elseif JuliaSyntax.is_operator(c) && JuliaSyntax.is_leaf(c)
                 return c
             end
         end
@@ -872,11 +871,11 @@ function needs_placeholder(
 end
 
 function next_node_is(k::JuliaSyntax.Kind, nn::JuliaSyntax.GreenNode)
-    kind(nn) === k || (haschildren(nn) && next_node_is(k, nn[1]))
+    kind(nn) === k || (!JuliaSyntax.is_leaf(nn) && next_node_is(k, nn[1]))
 end
 
 function next_node_is(f::Function, nn::JuliaSyntax.GreenNode)
-    f(nn) || (haschildren(nn) && next_node_is(f, nn[1]))
+    f(nn) || (!JuliaSyntax.is_leaf(nn) && next_node_is(f, nn[1]))
 end
 
 """
