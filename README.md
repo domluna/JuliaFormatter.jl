@@ -4,6 +4,11 @@
 [![Documenter: dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://domluna.github.io/JuliaFormatter.jl/dev/)
 ![Build Status](https://github.com/domluna/JuliaFormatter.jl/actions/workflows/ci.yml/badge.svg)
 
+> **If you're having issues with v2 outputs use the latest v1. `add JuliaFormatter@v1` should install 1.0.62**
+
+
+> I don't have the time to commit large changes regarding v2. JuliaSyntax v1 broke a bunch of things again and it is a large undertaking fix everything needed to upgrade and then also fix previous issues. If you would like to contribute via PRs they would be welcomed.
+
 Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 
 ![Screencast](https://user-images.githubusercontent.com/1813121/72941091-0b146300-3d68-11ea-9c95-75ec979caf6e.gif)
