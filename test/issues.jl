@@ -1947,4 +1947,10 @@
         """
         @test fmt(str_, 4, 100) == s
     end
+
+    @testset "917" begin
+        s = "using Foo: ( .. )"
+        sf = "using Foo: (..)"
+        @test fmt(s, 4, 100) == sf
+    end
 end
