@@ -207,7 +207,7 @@ function format_text(text::AbstractString, style::AbstractStyle, opts::Options)
     if opts.always_for_in == true
         @assert valid_for_in_op(opts.for_in_replacement) "`for_in_replacement` is set to an invalid operator \"$(opts.for_in_replacement)\", valid operators are $(VALID_FOR_IN_OPERATORS). Change it to one of the valid operators and then reformat."
     end
-    t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
+    t = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text; ignore_warnings = true)
     state = State(Document(text), opts)
     text = format_text(t, style, state)
     return text
@@ -277,7 +277,7 @@ function format_text(node::JuliaSyntax.GreenNode, style::AbstractStyle, s::State
     text = normalize_line_ending(text, replacer)
 
     try
-        _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text)
+        _ = JuliaSyntax.parseall(JuliaSyntax.GreenNode, text; ignore_warnings = true)
     catch err
         @warn "Formatted text is not parsable ... no change made."
         rethrow(err)
