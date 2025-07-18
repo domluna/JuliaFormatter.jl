@@ -39,7 +39,7 @@ function options(::BlueStyle)
 end
 
 function is_binaryop_nestable(::BlueStyle, cst::JuliaSyntax.GreenNode)
-    if is_assignment(cst) && haschildren(cst) && is_iterable(cst[end])
+    if is_assignment(cst) && !is_leaf(cst) && is_iterable(cst[end])
         return false
     end
     return is_binaryop_nestable(DefaultStyle(), cst)
@@ -69,7 +69,7 @@ function p_return(
 )
     style = getstyle(bs)
     t = FST(Return, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
