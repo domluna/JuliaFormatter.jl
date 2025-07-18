@@ -241,7 +241,7 @@ function InlineComment(line)
 end
 
 # is_leaf(cst::JuliaSyntax.GreenNode) = !haschildren(cst)
-is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
+JuliaSyntax.is_leaf(fst::FST) = typeof(fst.nodes) === Tuple{}
 
 function is_punc(cst::JuliaSyntax.GreenNode)
     punctuation = KSet", ( ) [ ] { } @"
@@ -530,9 +530,7 @@ function extract_operator_indices(childs::Vector{JuliaSyntax.GreenNode{T}}) wher
     i = 2
     while i <= length(args)
         push!(op_indices, args[i])
-        if i < length(args) &&
-           kind(childs[args[i]]) === K"." &&
-           is_leaf(childs[args[i]])
+        if i < length(args) && kind(childs[args[i]]) === K"." && is_leaf(childs[args[i]])
             push!(op_indices, args[i+1])
             i += 1
         end
