@@ -112,6 +112,9 @@ function pretty(
         p_macrostr(style, node, s, ctx, lineage)
     elseif k === K"doc"
         p_globalrefdoc(style, node, s, ctx, lineage)
+        # Treat them as if they were simple identifiers.
+    elseif k in KSet"MacroName StringMacroName CmdMacroName"
+        p_identifier(style, node, s, ctx, lineage)
     elseif k === K"macrocall"
         p_macrocall(style, node, s, ctx, lineage)
     elseif k === K"where"
@@ -617,20 +620,23 @@ function p_macrocall(
     ctx = newctx(ctx; can_separate_kwargs = false)
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s, ctx, lineage)::FST
-        if  i == 1 
+        # **THIS IS THE MAIN FIX**
+        if i == 1
+            # The first child is always the name. Only apply the @ sign
+            # transformation if it's a dotted expression (qualified name).
+            if kind(a) === K"."
+                n = move_at_sign_to_the_end(n, s)
+            end
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"("
+            # This correctly joins the parenthesis to the name with no space.
             add_node!(t, n, s; join_lines = true)
             if nest
                 add_node!(t, Placeholder(0), s)
-            else
-                false
             end
         elseif kind(a) === K")"
             if nest
                 add_node!(t, Placeholder(0), s)
-            else
-                false
             end
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
@@ -641,32 +647,18 @@ function p_macrocall(
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
-            if n.typ === MacroBlock && t[end].typ === WHITESPACE
-                t[end] = Placeholder(length(t[end].val))
-            end
-
             max_padding = is_block(n) ? 0 : -1
             join_lines = t.endline == n.startline
-
             if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
                next_node_is(nn -> kind(nn) in KSet"NewlineWs Whitespace", childs[i])
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s; join_lines, max_padding)
         else
-            if has_closer
-                add_node!(t, n, s; join_lines = true)
-            else
-                padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s; join_lines = true, max_padding = padding)
-            end
+            # Default case for other arguments.
+            add_node!(t, n, s; join_lines = true)
         end
     end
-
-    # move placement of @ to the end
-    #
-    # @Module.macro -> Module.@macro
-    t[1] = move_at_sign_to_the_end(t[1], s)
     t
 end
 # Block
