@@ -60,7 +60,7 @@ function pretty(
         p_block(style, node, s, ctx, lineage)
     elseif k === K"function"
         p_functiondef(style, node, s, ctx, lineage)
-    elseif k in K"macrocall"
+    elseif k in KSet"macrocall"
         p_macrocall(style, node, s, ctx, lineage)
     elseif k === K"macro"
         p_macro(style, node, s, ctx, lineage)
@@ -1561,7 +1561,7 @@ function p_try(
             )
         elseif !JuliaSyntax.is_whitespace(c)
             # "catch" vs "catch ..."
-            if !(kind(cst) === K"catch" && any(n -> kind(n) === K"false", childs))
+            if !(kind(cst) === K"catch" && any(n -> kind(n) === K"Bool", childs))
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
