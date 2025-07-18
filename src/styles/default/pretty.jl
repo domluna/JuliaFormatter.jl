@@ -102,7 +102,7 @@ function pretty(
         p_bracescat(style, node, s, ctx, lineage)
     elseif k === K"tuple"
         p_tuple(style, node, s, ctx, lineage)
-    elseif k === K"cartesian_iterator"
+    elseif k === K"iteration"
         p_cartesian_iterator(style, node, s, ctx, lineage)
     elseif k === K"parens"
         p_invisbrackets(style, node, s, ctx, lineage)
@@ -1404,7 +1404,7 @@ function p_for(
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         else
             add_node!(t, Whitespace(1), s)
-            n = if kind(c) === K"cartesian_iterator"
+            n = if kind(c) === K"iteration"
                 s.indent += s.opts.indent
                 n = pretty(style, c, s, newctx(ctx; from_for = true), lineage)
                 s.indent -= s.opts.indent
