@@ -274,16 +274,15 @@ function is_macrodoc(fst::FST)::Bool
 end
 
 function is_macrostr(t::JuliaSyntax.GreenNode)::Bool
-    kind(t) == K"macrocall" && haschildren(t) && contains_macrostr(t[1])
-end
+    # 1. First, confirm the node is a macro call with children.
+    #    A string macro must have a name (child 1) and an argument (child 2).
+    if kind(t) == K"macrocall" && length(children(t)) >= 2
+        # 2. Get the second child, which is the argument to the macro.
+        arg_node = t[2]
 
-function contains_macrostr(t::JuliaSyntax.GreenNode)::Bool
-    if kind(t) in KSet"StringMacroName CmdMacroName core_@cmd"
-        return true
-    elseif kind(t) === "quote" && haschildren(t)
-        return contains_macrostr(t[1])
-    elseif kind(t) === K"." && haschildren(t)
-        return any(contains_macrostr, reverse(children(t)))
+        # 3. Check if the argument is a literal string or command string.
+        #    This correctly identifies `mac"..."` (K"String") and `mac`...`` (K"CmdString").
+        return kind(arg_node) in KSet"String CmdString"
     end
     return false
 end

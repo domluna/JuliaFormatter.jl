@@ -60,8 +60,8 @@ function pretty(
         p_block(style, node, s, ctx, lineage)
     elseif k === K"function"
         p_functiondef(style, node, s, ctx, lineage)
-    elseif k in KSet"MacroName StringMacroName CmdMacroName core_@cmd"
-        p_macroname(style, node, s, ctx, lineage)
+    elseif k in K"macrocall"
+        p_macrocall(style, node, s, ctx, lineage)
     elseif k === K"macro"
         p_macro(style, node, s, ctx, lineage)
     elseif k === K"struct" && !JuliaSyntax.has_flags(node, JuliaSyntax.MUTABLE_FLAG)
@@ -585,6 +585,7 @@ function p_globalrefdoc(
 end
 
 # MacroCall
+# New p_macrocall for JuliaSyntax v1.0
 function p_macrocall(
     ds::AbstractStyle,
     cst::JuliaSyntax.GreenNode,
@@ -594,80 +595,57 @@ function p_macrocall(
 )
     style = getstyle(ds)
     t = FST(MacroCall, nspaces(s))
+    childs = children(cst)
 
-    if !haschildren(cst)
+    if isempty(childs)
         return t
     end
 
-    args = get_args(cst)
-    nest =
-        length(args) > 0 && !(
-            length(args) == 1 &&
-            (unnestable_node(args[1]) || s.opts.disallow_single_arg_nesting)
-        )
-    childs = children(cst)
+    # The macro name is *always* the first child.
+    name_node = childs[1]
+    name_fst = pretty(style, name_node, s, ctx, lineage)
 
-    has_closer = is_closer(childs[end])
-    is_macroblock = !has_closer
+    # This part from your original code is still good. It handles `@Mod.foo`.
+    name_fst = move_at_sign_to_the_end(name_fst, s)
+    add_node!(t, name_fst, s; join_lines = true)
 
+    # All subsequent children are arguments.
+    args = childs[2:end]
+    if isempty(args)
+        return t
+    end
+
+    # This is the key change: instead of checking for parens, we check if the
+    # single argument is a 'call' or 'tuple', which implies parens in the source.
+    is_paren_macro = length(args) == 1 && kind(args[1]) in KSet"call tuple"
+
+    # A "macro block" is a style like `@test "foo" begin ... end`
+    # It has multiple space-separated arguments.
+    is_macroblock = !is_paren_macro
     if is_macroblock
         t.typ = MacroBlock
     end
 
-    ctx = newctx(ctx; can_separate_kwargs = false)
-    for (i, a) in enumerate(childs)
-        n = pretty(style, a, s, ctx, lineage)::FST
-        if JuliaSyntax.is_macro_name(a)
-            add_node!(t, n, s; join_lines = true)
-        elseif kind(a) === K"("
-            add_node!(t, n, s; join_lines = true)
-            if nest
-                add_node!(t, Placeholder(0), s)
-            else
-                false
-            end
-        elseif kind(a) === K")"
-            if nest
-                add_node!(t, Placeholder(0), s)
-            else
-                false
-            end
-            add_node!(t, n, s; join_lines = true)
-        elseif kind(a) === K","
-            add_node!(t, n, s; join_lines = true)
-            if needs_placeholder(childs, i + 1, K")")
-                add_node!(t, Placeholder(1), s)
-            end
-        elseif JuliaSyntax.is_whitespace(a)
-            add_node!(t, n, s; join_lines = true)
-        elseif is_macroblock
-            if n.typ === MacroBlock && t[end].typ === WHITESPACE
-                t[end] = Placeholder(length(t[end].val))
-            end
+    # Add a space before the first argument.
+    add_node!(t, Whitespace(1), s)
 
-            max_padding = is_block(n) ? 0 : -1
-            join_lines = t.endline == n.startline
-
-            if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
-               next_node_is(nn -> kind(nn) in KSet"NewlineWs Whitespace", childs[i])
+    if is_paren_macro
+        # If it's a parenthesized macro, we just need to format the single
+        # 'call' or 'tuple' node. The `p_call` or `p_tuple` function
+        # will handle the parentheses, commas, and nesting for us.
+        add_node!(t, pretty(style, args[1], s, ctx, lineage), s; join_lines = true)
+    else
+        # It's a space-separated macro call, like `@testset "..." begin ... end`
+        # We format each argument and separate them with a space.
+        for (i, arg) in enumerate(args)
+            add_node!(t, pretty(style, arg, s, ctx, lineage), s; join_lines = true)
+            if i < length(args)
                 add_node!(t, Whitespace(1), s)
-            end
-            add_node!(t, n, s; join_lines, max_padding)
-        else
-            if has_closer
-                add_node!(t, n, s; join_lines = true)
-            else
-                padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s; join_lines = true, max_padding = padding)
             end
         end
     end
 
-    # move placement of @ to the end
-    #
-    # @Module.macro -> Module.@macro
-    t[1] = move_at_sign_to_the_end(t[1], s)
-    t
+    return t
 end
 
 # Block
@@ -730,7 +708,7 @@ function p_block(
         elseif single_line
             if kind(a) in KSet", ;"
                 add_node!(t, n, s; join_lines = true)
-                if needs_placeholder(childs, i+1, K")")
+                if needs_placeholder(childs, i + 1, K")")
                     add_node!(t, Placeholder(1), s)
                 end
             else
