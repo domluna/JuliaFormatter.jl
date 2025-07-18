@@ -509,7 +509,7 @@ function p_stringh(
     if !haschildren(cst)
         return FST(StringN, loc[2] - 1)
     end
-    loc2 = cursor_loc(s, s.offset+span(cst)-1)
+    loc2 = cursor_loc(s, s.offset + span(cst) - 1)
 
     val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     startline = loc[1]
@@ -637,11 +637,12 @@ function p_macrocall(
     else
         # It's a space-separated macro call, like `@testset "..." begin ... end`
         # We format each argument and separate them with a space.
-        for (i, arg) in enumerate(args)
+        t.typ = MacroBlock
+
+        # **FIX:** The space is ONLY added for this case.
+        for arg in args
+            add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, arg, s, ctx, lineage), s; join_lines = true)
-            if i < length(args)
-                add_node!(t, Whitespace(1), s)
-            end
         end
     end
 
