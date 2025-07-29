@@ -263,11 +263,11 @@ function find_optimal_nest_placeholders(
     if (fst.typ === RefN && length(placeholder_inds) <= 4)
         # Don't break short array indexing expressions like II[i, j, 1]
         return Int[]
-    elseif (fst.typ === MacroCall && length(placeholder_inds) <= 6)
-        # Don't break short macro calls like @unpack a, b, c = struct
+    elseif (fst.typ === MacroCall && length(placeholder_inds) <= 10)
+        # Don't break macro calls like @unpack a, b, c = struct or @time ts, us = func()
         # unless they're significantly over the margin
         total_length = start_line_offset + length(fst) + fst.extra_margin
-        if total_length <= max_margin + 30
+        if total_length <= max_margin + 60
             return Int[]
         end
     elseif (fst.typ === Call && length(placeholder_inds) <= 5)
