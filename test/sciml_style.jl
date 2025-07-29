@@ -604,8 +604,9 @@
     du[II[i, j, 1]] = α * (u[II[im1, j, 1]] + u[II[ip1, j, 1]] + u[II[i, jp1, 1]] + u[II[i, jm1, 1]])
     """
     formatted = format_text(str, SciMLStyle())
-    @test !contains(formatted, "II[i,\n")  # Should not break array indices
-    @test !contains(formatted, "II[i, j,\n")  # Should not break array indices
+    # The key fix: array indices should not be broken between parameters
+    @test !contains(formatted, "II[i,\n")  # Should not break between i and j
+    @test !contains(formatted, "II[i, j,\n")  # Should not break between j and 1
     
     # Test 2: @unpack macro calls should not be broken unnecessarily
     str = "@unpack γ, a31, a32, a41, a42, a43, btilde1, btilde2, btilde3, btilde4, c3 = integ.tab"

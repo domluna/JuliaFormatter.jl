@@ -278,7 +278,11 @@ function find_optimal_nest_placeholders(
         end
     elseif (fst.typ === Curly && length(placeholder_inds) <= 4)
         # Don't break short type parameter lists like Type{A, B, C}
-        return Int[]
+        # unless the margin is extremely tight
+        total_length = start_line_offset + length(fst) + fst.extra_margin
+        if total_length <= max_margin + 10
+            return Int[]
+        end
     elseif (fst.typ === Vect && length(placeholder_inds) <= 4)
         # Don't break short vector literals like [a, b, c] unless necessary
         total_length = start_line_offset + length(fst) + fst.extra_margin
