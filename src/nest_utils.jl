@@ -257,6 +257,35 @@ function find_optimal_nest_placeholders(
     if length(placeholder_inds) <= 1 || length(placeholder_inds) >= 500
         return placeholder_inds
     end
+    
+    # For certain expression types, be more conservative about line breaking
+    # to avoid breaking readable expressions across multiple lines
+    if (fst.typ === RefN && length(placeholder_inds) <= 4)
+        # Don't break short array indexing expressions like II[i, j, 1]
+        return Int[]
+    elseif (fst.typ === MacroCall && length(placeholder_inds) <= 6)
+        # Don't break short macro calls like @unpack a, b, c = struct
+        # unless they're significantly over the margin
+        total_length = start_line_offset + length(fst) + fst.extra_margin
+        if total_length <= max_margin + 30
+            return Int[]
+        end
+    elseif (fst.typ === Call && length(placeholder_inds) <= 5)
+        # Be more conservative with function calls to avoid awkward breaks
+        total_length = start_line_offset + length(fst) + fst.extra_margin
+        if total_length <= max_margin + 15
+            return Int[]
+        end
+    elseif (fst.typ === Curly && length(placeholder_inds) <= 4)
+        # Don't break short type parameter lists like Type{A, B, C}
+        return Int[]
+    elseif (fst.typ === Vect && length(placeholder_inds) <= 4)
+        # Don't break short vector literals like [a, b, c] unless necessary
+        total_length = start_line_offset + length(fst) + fst.extra_margin
+        if total_length <= max_margin + 10
+            return Int[]
+        end
+    end
     newline_inds = findall(n -> n.typ === NEWLINE, fst.nodes)
 
     placeholder_groups = Vector{Int}[]

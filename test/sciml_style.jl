@@ -595,4 +595,38 @@
     # This should be valid with and without `yas_style_nesting`
     @test format_text(str, SciMLStyle()) == str
     @test format_text(str, SciMLStyle(); yas_style_nesting = true) == str
+
+    # Test for comprehensive line break fixes
+    # https://github.com/SciML/DiffEqGPU.jl/pull/356/files
+    
+    # Test 1: Array indexing should not be broken across lines
+    str = """
+    du[II[i, j, 1]] = α * (u[II[im1, j, 1]] + u[II[ip1, j, 1]] + u[II[i, jp1, 1]] + u[II[i, jm1, 1]])
+    """
+    formatted = format_text(str, SciMLStyle())
+    @test !contains(formatted, "II[i,\n")  # Should not break array indices
+    @test !contains(formatted, "II[i, j,\n")  # Should not break array indices
+    
+    # Test 2: @unpack macro calls should not be broken unnecessarily
+    str = "@unpack γ, a31, a32, a41, a42, a43, btilde1, btilde2, btilde3, btilde4, c3 = integ.tab"
+    formatted = format_text(str, SciMLStyle())
+    # Should not break the unpack statement awkwardly
+    lines = split(formatted, "\n")
+    @test length(lines) <= 2  # Should fit on 1-2 lines max
+    
+    # Test 3: Function calls should not be broken awkwardly
+    str = "beta1, beta2, qmax, qmin, gamma = build_adaptive_controller_cache(integ.alg, T)"
+    formatted = format_text(str, SciMLStyle())
+    lines = split(formatted, "\n")
+    @test length(lines) <= 2  # Should not create excessive line breaks
+    
+    # Test 4: Type parameters should not be broken unnecessarily  
+    str = "Vector{Float64, Int32, String}"
+    formatted = format_text(str, SciMLStyle())
+    @test !contains(formatted, "{\n")  # Should not break type parameters
+    
+    # Test 5: Short vector literals should not be broken
+    str = "[a, b, c, d]"
+    formatted = format_text(str, SciMLStyle())
+    @test formatted == str  # Should remain on one line
 end
