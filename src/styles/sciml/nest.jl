@@ -220,12 +220,67 @@ function _n_tuple!(
     return nested
 end
 
+# Custom implementation for n_ref! to prevent breaking LHS of assignments
+function n_ref!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # Check if this RefN is the LHS of an assignment
+    # Look through the lineage to see if we have a Binary assignment parent
+    # and this RefN comes before any other Binary operators
+    is_lhs_of_assignment = false
+    
+    if length(lineage) >= 2
+        # Check if we have a Binary assignment in the lineage
+        for i in length(lineage):-1:1
+            if lineage[i][1] === Binary && !isnothing(lineage[i][2]) && lineage[i][2].is_assignment
+                # Check if there are any other Binary nodes between us and the assignment
+                has_intermediate_binary = false
+                for j in (i+1):length(lineage)
+                    if lineage[j][1] === Binary
+                        has_intermediate_binary = true
+                        break
+                    end
+                end
+                
+                if !has_intermediate_binary
+                    is_lhs_of_assignment = true
+                end
+                break
+            end
+        end
+    end
+    
+    if is_lhs_of_assignment
+        # Don't break the LHS of an assignment
+        # Format children but keep them on the same line
+        lo = s.line_offset
+        nested = false
+        for (i, n) in enumerate(fst.nodes)
+            nested |= nest!(ss, n, s, lineage)
+            if n.typ !== NEWLINE  # Prevent any newlines
+                s.line_offset += length(n)
+            end
+        end
+        s.line_offset = lo + length(fst)
+        return nested
+    end
+    
+    # Otherwise use the default behavior
+    if s.opts.yas_style_nesting
+        return n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        return _n_tuple!(getstyle(ss), fst, s, lineage)
+    end
+end
+
 for f in [
     :n_tuple!,
     :n_call!,
     :n_curly!,
     :n_macrocall!,
-    :n_ref!,
     :n_braces!,
     :n_parameters!,
     :n_invisbrackets!,

@@ -288,6 +288,17 @@ function find_optimal_nest_placeholders(
             return Int[]
         end
     elseif (fst.typ === Binary || fst.typ === Chain || fst.typ === Comparison)
+        # Special handling for assignments - don't break LHS
+        if fst.typ === Binary && !isnothing(fst.metadata) && (fst.metadata::Metadata).is_assignment
+            # For assignments, find the operator position
+            # Assignment structure: LHS placeholder op placeholder RHS
+            # We want to avoid breaking before the operator
+            if length(placeholder_inds) >= 2
+                # Skip the first placeholder (which comes after LHS)
+                return placeholder_inds[2:end]
+            end
+        end
+        
         # For mathematical expressions, be conservative about breaking
         # Only break if significantly over margin or has many operations
         if length(placeholder_inds) <= 3 && total_length <= max_margin + 20
