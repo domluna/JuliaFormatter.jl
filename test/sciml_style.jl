@@ -1142,4 +1142,296 @@
         formatted = format_text(str, SciMLStyle())
         @test contains(formatted, "quote")
     end
+    
+    @testset "line break quality" begin
+        # Helper function to analyze line utilization
+        function analyze_line_quality(formatted_code)
+            lines = split(formatted_code, '\n')
+            non_empty_lines = filter(l -> !isempty(strip(l)), lines)
+            
+            if isempty(non_empty_lines)
+                return (max_length=0, avg_length=0.0, num_lines=0, efficiency=0.0)
+            end
+            
+            lengths = [length(rstrip(line)) for line in non_empty_lines]
+            max_length = maximum(lengths)
+            avg_length = sum(lengths) / length(lengths)
+            
+            # Efficiency: how well lines use available space (0-1)
+            # Penalize both very short lines and lines over margin
+            efficiency_scores = map(lengths) do len
+                if len > 92
+                    0.5 * (92 / len)  # Penalty for exceeding margin
+                elseif len < 20
+                    len / 40  # Penalty for very short lines
+                else
+                    len / 92  # Normal efficiency
+                end
+            end
+            efficiency = sum(efficiency_scores) / length(efficiency_scores)
+            
+            return (max_length=max_length, avg_length=avg_length, 
+                    num_lines=length(non_empty_lines), efficiency=efficiency)
+        end
+        
+        # Test 1: Simple expressions should stay on one line when they fit
+        @testset "single line preservation" begin
+            # These should remain on one line
+            single_line_cases = [
+                "x = a + b * c - d",
+                "result = solve(prob, alg)",
+                "arr[i, j] = value * scale",
+                "y = sin(x) + cos(z) * exp(-t)",
+                "data = [1, 2, 3, 4, 5]",
+            ]
+            
+            for code in single_line_cases
+                formatted = format_text(code, SciMLStyle())
+                @test !contains(formatted, '\n')
+                @test formatted == code
+            end
+        end
+        
+        # Test 2: Long lines should break efficiently
+        @testset "efficient line breaking" begin
+            # Function call with many parameters
+            str = """
+            result = solve(NonlinearProblem(f, u0, p), NewtonRaphson(; autodiff=AutoForwardDiff()), abstol=1e-10, reltol=1e-10, maxiters=1000, show_trace=true)
+            """
+            formatted = format_text(str, SciMLStyle())
+            quality = analyze_line_quality(formatted)
+            
+            @test quality.max_length <= 92  # Should respect margin
+            @test quality.avg_length > 50   # Should use space efficiently
+            @test quality.efficiency > 0.6   # Good space utilization
+            
+            # Mathematical expression
+            str = """
+            residual = alpha * (u[i-1, j] + u[i+1, j] - 2u[i, j]) / dx^2 + beta * (u[i, j-1] + u[i, j+1] - 2u[i, j]) / dy^2 + gamma * u[i, j]
+            """
+            formatted = format_text(str, SciMLStyle())
+            quality = analyze_line_quality(formatted)
+            
+            # Should break but maintain good line density
+            @test quality.num_lines >= 2
+            @test quality.avg_length > 40  # Not too many short lines
+        end
+        
+        # Test 3: Type parameters should wrap nicely
+        @testset "type parameter wrapping" begin
+            str = """
+            function f(x::AbstractArray{T,N}, y::AbstractMatrix{S}) where {T<:Real, S<:Number, N}
+                return x
+            end
+            """
+            formatted = format_text(str, SciMLStyle())
+            quality = analyze_line_quality(formatted)
+            
+            # Should fit on 3 lines max
+            @test quality.num_lines <= 3
+            @test quality.max_length <= 92
+            
+            # Long type parameter list
+            str = """
+            struct MyType{T1,T2,T3,T4,T5,T6,T7,T8,T9,T10} <: AbstractType{T1,T2,T3,T4,T5,T6,T7,T8,T9,T10}
+            end
+            """
+            formatted = format_text(str, SciMLStyle())
+            lines = split(formatted, '\n')
+            
+            # Should break but not excessively
+            @test length(lines) <= 4
+            # No single parameter on a line
+            for line in lines
+                if contains(line, "T") && !contains(line, "end")
+                    @test contains(line, ",") || contains(line, "{") || contains(line, "}")
+                end
+            end
+        end
+        
+        # Test 4: Array operations should maintain structure
+        @testset "array operation formatting" begin
+            # Array comprehension
+            str = "[f(i, j) * g(k) for i in 1:n, j in 1:m, k in 1:p if condition(i, j, k)]"
+            formatted = format_text(str, SciMLStyle())
+            
+            # Should keep comprehension readable
+            @test contains(formatted, "for i in 1:n, j in 1:m")
+            quality = analyze_line_quality(formatted)
+            @test quality.efficiency > 0.5
+            
+            # Matrix literal
+            str = """
+            A = [
+                a11 a12 a13 a14
+                a21 a22 a23 a24
+                a31 a32 a33 a34
+            ]
+            """
+            formatted = format_text(str, SciMLStyle())
+            # Should preserve matrix structure
+            @test contains(formatted, "a11 a12 a13 a14")
+            @test contains(formatted, "a21 a22 a23 a24")
+        end
+        
+        # Test 5: Function definitions with multiple arguments
+        @testset "function definition formatting" begin
+            # Moderate length - should stay on 2-3 lines
+            str = """
+            function solve(prob::ODEProblem, alg::Tsit5; abstol=1e-6, reltol=1e-3, saveat=[], callback=nothing)
+                # body
+            end
+            """
+            formatted = format_text(str, SciMLStyle())
+            quality = analyze_line_quality(formatted)
+            
+            @test quality.num_lines <= 4  # Reasonable number of lines
+            @test quality.avg_length > 30  # Reasonable line utilization
+            
+            # Very long parameter list
+            str = """
+            function complex_solver(problem::NonlinearProblem{uType,tType,isinplace}, algorithm::NewtonRaphson{CS,AD,FDT,L,P,ST,CJ}, x0::AbstractVector, p::NamedTuple; abstol::Float64=1e-8, reltol::Float64=1e-8, maxiters::Int=1000, callback=nothing, show_trace::Bool=false) where {uType,tType,isinplace,CS,AD,FDT,L,P,ST,CJ}
+                # body
+            end
+            """
+            formatted = format_text(str, SciMLStyle())
+            lines = split(formatted, '\n')
+            
+            # Should break intelligently
+            @test all(length(rstrip(line)) <= 92 for line in lines)
+            # But not too many lines
+            @test length(lines) <= 12  # Complex function may need more lines
+        end
+        
+        # Test 6: Nested expressions should maintain hierarchy
+        @testset "nested expression formatting" begin
+            str = """
+            result = transform(integrate(differentiate(interpolate(data, method=:cubic), order=2), bounds=(a, b)), scaling=:log)
+            """
+            formatted = format_text(str, SciMLStyle())
+            
+            # Should break at outer function calls first
+            @test contains(formatted, "transform(")
+            quality = analyze_line_quality(formatted)
+            @test quality.efficiency > 0.5
+            
+            # Nested array access
+            str = "value = data[indices[i]][subindices[j]][k]"
+            formatted = format_text(str, SciMLStyle())
+            # Should keep array access together when reasonable
+            @test !contains(formatted, "[\n")
+        end
+        
+        # Test 7: Mathematical expressions should break at operators
+        @testset "mathematical expression breaking" begin
+            # Long equation
+            str = """
+            energy = 0.5 * mass * velocity^2 + mass * gravity * height + 0.5 * spring_constant * displacement^2 + friction_coefficient * mass * gravity * distance
+            """
+            formatted = format_text(str, SciMLStyle())
+            lines = split(formatted, '\n')
+            
+            # Should break at + operators
+            for line in lines[2:end]
+                stripped = strip(line)
+                if !isempty(stripped)
+                    # Continuation lines should start with operator or be aligned
+                    @test startswith(stripped, "+") || startswith(stripped, "-") || 
+                          startswith(stripped, "*") || startswith(stripped, "/") ||
+                          length(lstrip(line)) < length(line)  # Or be indented
+                end
+            end
+            
+            quality = analyze_line_quality(formatted)
+            @test quality.avg_length > 40  # Efficient use of space
+        end
+        
+        # Test 8: Avoid "orphan" parameters
+        @testset "avoid orphan parameters" begin
+            # Should not leave single parameters on lines
+            str = "f(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)"
+            formatted = format_text(str, SciMLStyle())
+            lines = split(formatted, '\n')
+            
+            for line in lines
+                stripped = strip(line)
+                # If it's just a single letter and comma/paren, it's an orphan
+                if match(r"^[a-z],?\)?$", stripped) !== nothing
+                    @test false  # Should not have orphan parameters
+                end
+            end
+        end
+        
+        # Test 9: Keyword arguments should group nicely
+        @testset "keyword argument grouping" begin
+            str = """
+            solve(prob; abstol=1e-8, reltol=1e-8, dtmin=1e-10, dtmax=0.1, maxiters=10000, adaptive=true, save_everystep=false, save_start=true, save_end=true, verbose=true)
+            """
+            formatted = format_text(str, SciMLStyle())
+            
+            # Should group related kwargs when possible
+            lines = split(formatted, '\n')
+            # First line should have multiple kwargs if they fit
+            if length(lines) > 1
+                @test contains(lines[1], ",") || contains(lines[1], ";")
+            end
+            
+            quality = analyze_line_quality(formatted)
+            @test quality.efficiency > 0.6
+        end
+        
+        # Test 10: Preserve logical grouping
+        @testset "logical grouping preservation" begin
+            # Coordinates should stay together
+            str = "plot(x1, y1, x2, y2, x3, y3; xlabel=\"Time\", ylabel=\"Value\", title=\"Results\")"
+            formatted = format_text(str, SciMLStyle())
+            
+            # x,y pairs should stay together when possible
+            @test contains(formatted, "x1, y1") || contains(formatted, "x1,y1")
+            
+            # Matrix multiplication chain
+            str = "result = A * B * C * D * E * F"
+            formatted = format_text(str, SciMLStyle())
+            # Should keep some products together
+            @test length(split(formatted, '\n')) <= 3
+        end
+        
+        # Test 11: Real-world examples from SciML
+        @testset "SciML real-world examples" begin
+            # From OrdinaryDiffEq
+            str = """
+            @muladd function perform_step!(integrator, cache::RK4Cache, repeat_step=false)
+                @unpack t, dt, uprev, u, f, p = integrator
+                @unpack k1, k2, k3, k4, tmp = cache
+                f(k1, uprev, p, t)
+                f(k2, uprev + dt/2 * k1, p, t + dt/2)
+                f(k3, uprev + dt/2 * k2, p, t + dt/2)
+                f(k4, uprev + dt * k3, p, t + dt)
+                @. u = uprev + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+            end
+            """
+            formatted = format_text(str, SciMLStyle())
+            quality = analyze_line_quality(formatted)
+            
+            # Should maintain readability
+            @test quality.max_length <= 92
+            @test quality.avg_length > 30
+            
+            # From ModelingToolkit
+            str = """
+            @parameters t σ ρ β
+            @variables x(t) y(t) z(t)
+            D = Differential(t)
+            eqs = [D(x) ~ σ * (y - x), D(y) ~ x * (ρ - z) - y, D(z) ~ x * y - β * z]
+            """
+            formatted = format_text(str, SciMLStyle())
+            
+            # Should keep equations readable
+            @test contains(formatted, "D(x) ~ σ * (y - x)")
+            lines = split(formatted, '\n')
+            # Equations should be nicely formatted
+            eq_lines = filter(l -> contains(l, "D("), lines)
+            @test length(eq_lines) > 0
+        end
+    end
 end
