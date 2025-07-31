@@ -847,4 +847,299 @@
             @test !contains(formatted, "][j\n")
         end
     end
+    
+    @testset "semantic safety" begin
+        # Test 1: Whitespace-sensitive array literals
+        # Space means horizontal concatenation, ; or newline means vertical
+        str = "[1 2 3]"  # 1×3 matrix
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "[1; 2; 3]"  # 3×1 matrix  
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "[1 2; 3 4]"  # 2×2 matrix
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test that we don't accidentally change array dimensions
+        str = """
+        A = [1 2 3
+             4 5 6]
+        """
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "1 2 3") # Ensure spaces preserved
+        @test !contains(formatted, "1; 2; 3") # Ensure no semicolons added
+        
+        # Test 2: Operator precedence preservation
+        precedence_tests = [
+            ("x = a + b * c", "x = a + b * c"),
+            ("x = a * b + c", "x = a * b + c"),
+            ("x = a^b^c", "x = a^b^c"),  # Right associative
+            ("x = a / b * c", "x = a / b * c"),  # Left associative
+            ("x = -a^2", "x = -a^2"),  # Unary minus precedence
+        ]
+        
+        for (input, expected) in precedence_tests
+            @test format_text(input, SciMLStyle()) == expected
+        end
+        
+        # Test 3: Coefficient syntax preservation
+        # In Julia, 2x means 2*x, but 2 x is an error
+        str = "y = 2x + 3y - 4z"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "y = 2(x + y)"  # Coefficient with parentheses
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 4: Macro scope preservation
+        str = "@. x = y + z"
+        formatted = format_text(str, SciMLStyle())
+        @test formatted == str
+        @test contains(formatted, "@.")
+        
+        str = "@views x[1:n] = y[1:n]"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "@views")
+        @test !contains(formatted, "@views\n")  # Macro not separated from expression
+        
+        # Test 5: String and character literals (must not break)
+        str = "msg = \"This is a long string that should not be broken\""
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "c = 'a'"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 6: Ternary operator associativity
+        str = "x = a ? b : c ? d : e"  # Right associative
+        formatted = format_text(str, SciMLStyle())
+        # Ensure it doesn't become (a ? b : c) ? d : e
+        @test Meta.parse(str) == Meta.parse(formatted)
+        
+        # Test 7: Short-circuit evaluation order
+        str = "a && b || c && d"
+        formatted = format_text(str, SciMLStyle())
+        @test Meta.parse(str) == Meta.parse(formatted)
+        
+        # Test 8: Anonymous function syntax
+        str = "f = x -> x^2"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "g = (x, y) -> x + y"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 9: Array comprehension preservation
+        str = "[i * j for i in 1:3, j in 1:3]"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "for i in 1:3, j in 1:3")
+        
+        # Test 10: Broadcasting syntax
+        str = "x .= y .+ z .* w"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "sin.(x) .+ cos.(y)"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 11: Type parameter syntax
+        str = "Vector{Float64}"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "Dict{String,Int}"
+        formatted = format_text(str, SciMLStyle())
+        @test formatted == str || formatted == "Dict{String, Int}"  # Space after comma is ok
+        
+        # Test 12: Splatting and slurping
+        str = "f(x...)"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "g(a, b..., c)"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 13: Range syntax preservation
+        str = "1:10"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "1:2:10"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 14: Rational number syntax
+        str = "1//2"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 15: Complex number syntax
+        str = "1 + 2im"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 16: Symbol syntax
+        str = ":symbol"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = ":(a + b)"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 17: Interpolation in strings
+        str = "\"x = \$x, y = \$(y + 1)\""
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 18: Command literals
+        str = "`echo hello`"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 19: Version number literals
+        str = "v\"1.2.3\""
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 20: Regex literals
+        str = "r\"[a-z]+\""
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 21: Critical array literal semantic preservation
+        # These MUST not change dimensions
+        
+        # Horizontal concatenation (space)
+        str = "[1 2 3]"
+        formatted = format_text(str, SciMLStyle())
+        @test formatted == "[1 2 3]"  # Must preserve spaces
+        
+        # Vertical concatenation (semicolon)
+        str = "[1; 2; 3]"
+        formatted = format_text(str, SciMLStyle())
+        @test formatted == "[1; 2; 3]"  # Must preserve semicolons
+        
+        # Mixed (creates matrix)
+        str = "[1 2; 3 4]"
+        formatted = format_text(str, SciMLStyle()) 
+        @test formatted == "[1 2; 3 4]"  # Must preserve exact structure
+        
+        # Test 21b: More array literal edge cases
+        # Mixed spaces and semicolons
+        str = "[1 2; 3 4; 5 6]"  # 3×2 matrix
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Nested arrays
+        str = "[[1, 2], [3, 4]]"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Array with trailing comma (1-element array vs scalar)
+        str = "[1,]"  # 1-element array
+        formatted = format_text(str, SciMLStyle())
+        @test formatted == "[1]" || formatted == "[1,]"  # Both are valid
+        
+        # Empty arrays with type
+        str = "Float64[]"
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "Vector{Int}()"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 22: Tuple vs array distinction
+        str = "(1, 2, 3)"  # Tuple
+        @test format_text(str, SciMLStyle()) == str
+        
+        str = "(1,)"  # 1-element tuple (comma required)
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 23: Generator expressions
+        str = "(x^2 for x in 1:10)"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "for x in 1:10")
+        
+        # Test 24: Multi-line array construction preservation
+        str = """
+        A = [
+            1 2 3
+            4 5 6
+            7 8 9
+        ]
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should preserve the matrix structure
+        @test contains(formatted, "1 2 3")
+        @test contains(formatted, "4 5 6")
+        @test contains(formatted, "7 8 9")
+        
+        # Test 25: Coefficient with array indexing
+        str = "y = 2A[i, j]"  # 2*A[i,j], not 2 A[i,j]
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 26: Multiple dispatch syntax
+        str = "f(::Type{T}) where T = T"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "where") && contains(formatted, "T") && contains(formatted, "Type{T}")
+        
+        # Test 27: Subtype syntax
+        str = "T <: Number"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 28: Union types
+        str = "Union{Int, Float64}"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 29: Parametric types with constraints
+        str = "struct Foo{T<:Real} end"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "T<:Real") || contains(formatted, "T <: Real")
+        
+        # Test 30: Named tuples
+        str = "(a=1, b=2)"
+        formatted = format_text(str, SciMLStyle())
+        # Named tuples might get spaces around =
+        @test formatted == str || formatted == "(a = 1, b = 2)"
+        
+        # Test 31: Keyword arguments
+        str = "f(x; y=1, z=2)"
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "; y")  # Semicolon preserved
+        
+        # Test 32: Do block syntax
+        str = """
+        map(1:3) do x
+            x^2
+        end
+        """
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "do x")
+        
+        # Test 33: Let block with multiple bindings
+        str = "let x = 1, y = 2; x + y end"
+        formatted = format_text(str, SciMLStyle())
+        # Check semantic equivalence by comparing string representation without line numbers
+        str_ast = replace(string(Meta.parse(str)), r"#= \S+:\d+ =#" => "")
+        form_ast = replace(string(Meta.parse(formatted)), r"#= \S+:\d+ =#" => "")
+        @test str_ast == form_ast
+        
+        # Test 34: Destructuring
+        str = "a, b, c = 1, 2, 3"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 35: Unicode operators
+        str = "x ∈ A ∩ B"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 36: Pipe operator
+        str = "x |> f |> g"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 37: Pairs syntax
+        str = "a => b"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 38: Quote expressions
+        str = ":(x + y)"
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 39: Escaped identifiers
+        str = "var\"strange name\""
+        @test format_text(str, SciMLStyle()) == str
+        
+        # Test 40: Line number nodes (should be preserved in macros)
+        str = """
+        macro foo()
+            quote
+                x = 1
+                y = 2
+            end
+        end
+        """
+        formatted = format_text(str, SciMLStyle())
+        @test contains(formatted, "quote")
+    end
 end
