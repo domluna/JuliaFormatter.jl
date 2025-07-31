@@ -1,4 +1,32 @@
 @testset "SciML Style" begin
+    # Test for mathematical expressions not breaking unnecessarily
+    str = raw"""
+    du[i, j, 1] = alpha * (u[im1, j, 1] + u[ip1, j, 1] + u[i, jp1, 1] + u[i, jm1, 1] - 4u[i, j, 1]) + B + u[i, j, 1]^2 * u[i, j, 2] - (A + 1) * u[i, j, 1] + brusselator_f(x, y)
+    """
+    # Should not break if within margin (92 chars)
+    if length(str) <= 92
+        @test format_text(str, SciMLStyle()) == str
+    end
+    
+    # Test for function calls not breaking unnecessarily
+    str = raw"""
+    res = NLS.solve(nlls_prob, NLS.LevenbergMarquardt(); maxiters = 1000, show_trace = Val(true))
+    """
+    # Should remain on one line if it fits
+    @test format_text(str, SciMLStyle()) == str
+    
+    # Test for anonymous function parameters not breaking
+    str = raw"""
+    f! = @closure (cfx, cx, user_ctx) -> begin
+        # function body
+    end
+    """
+    formatted_str = raw"""
+    f! = @closure (cfx, cx, user_ctx) -> begin
+        # function body
+    end
+    """
+    @test format_text(str, SciMLStyle()) == formatted_str
     str = raw"""
        @noinline require_complete(m::Matching) = m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """

@@ -151,7 +151,20 @@ function _n_tuple!(
     end
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
 
-    if idx !== nothing && (line_margin > s.opts.margin || must_nest(fst) || src_diff_line)
+    # Check if we should apply conservative nesting rules
+    should_nest = line_margin > s.opts.margin || must_nest(fst) || src_diff_line
+    
+    # For certain types, be more conservative about nesting
+    if should_nest && !must_nest(fst) && !src_diff_line
+        total_length = line_margin
+        if (fst.typ === Call && length(placeholder_inds) <= 5 && total_length <= s.opts.margin + 20)
+            should_nest = false
+        elseif (fst.typ === Binary || fst.typ === Chain) && length(placeholder_inds) <= 6 && total_length <= s.opts.margin + 20
+            should_nest = false
+        end
+    end
+    
+    if idx !== nothing && should_nest
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
