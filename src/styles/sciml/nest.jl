@@ -161,6 +161,9 @@ function _n_tuple!(
             should_nest = false
         elseif (fst.typ === Binary || fst.typ === Chain) && length(placeholder_inds) <= 6 && total_length <= s.opts.margin + 20
             should_nest = false
+        elseif (fst.typ === RefN && length(placeholder_inds) <= 4 && total_length <= s.opts.margin + 30)
+            # Keep array indexing together when reasonable (e.g., du[i, j, 1])
+            should_nest = false
         end
     end
     

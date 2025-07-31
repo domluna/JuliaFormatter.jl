@@ -27,6 +27,15 @@
     end
     """
     @test format_text(str, SciMLStyle()) == formatted_str
+    
+    # Test for array indexing not breaking unnecessarily
+    str = raw"""
+    du[i, j, 1] = alpha * (u[im1, j, 1] + u[ip1, j, 1] + u[i, jp1, 1] + u[i, jm1, 1] - 4u[i, j, 1])
+    """
+    # Should not break du[i, j, 1] when close to margin
+    formatted = format_text(str, SciMLStyle())
+    @test !contains(formatted, "du[\n")
+    @test startswith(strip(formatted), "du[i, j, 1]")
     str = raw"""
        @noinline require_complete(m::Matching) = m.inv_match === nothing && throw(ArgumentError("Backwards matching not defined. `complete` the matching first."))
     """
