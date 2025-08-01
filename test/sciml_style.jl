@@ -1629,6 +1629,41 @@
         @test !contains(formatted3, "p_a,\np_b")
     end
     
+    @testset "PR #934 comment #3144697449 - Consistent indentation for split LHS tuples" begin
+        # When LHS tuple is already split, ensure consistent 4-space indentation
+        str = raw"""
+        p_a,
+        p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+                                                    v_neighbor_system,
+                                                    particle_system, neighbor_system,
+                                                    particle, neighbor)
+        """
+        formatted = format_text(str, SciMLStyle())
+        lines = split(formatted, '\n')
+        
+        # Check that p_b has 4-space indentation
+        if length(lines) >= 2
+            indent_match = match(r"^(\s*)", lines[2])
+            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+            @test_broken indent_level == 4  # Should be 4 spaces
+        end
+        
+        # Check that all RHS lines have consistent indentation
+        rhs_lines = lines[3:end]  # Lines after "p_b = ..."
+        indents = Int[]
+        for line in rhs_lines
+            if !isempty(strip(line))
+                indent_match = match(r"^(\s*)", line)
+                push!(indents, length(indent_match.match))
+            end
+        end
+        
+        if length(indents) > 0
+            # All RHS continuation lines should have the same indentation
+            @test_broken all(i == indents[1] for i in indents)
+        end
+    end
+    
     @testset "Issue #935 - TypedVcat indentation regression" begin
         # The specific case from issue #935
         str = raw"""
