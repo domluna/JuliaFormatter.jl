@@ -107,8 +107,19 @@ function p_typedvcat(
     p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
 end
 
+# Custom p_call to preserve alignment to opening parenthesis
+function p_call(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS style for calls to get proper alignment
+    p_call(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
 for f in [
-    :p_call,
     :p_curly,
     # :p_ref,  # Custom implementation below
     :p_braces,

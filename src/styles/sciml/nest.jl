@@ -296,9 +296,52 @@ function _n_tuple!(
     return nested
 end
 
+# Custom n_call! to align arguments with opening parenthesis
+function n_call!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    if s.opts.yas_style_nesting
+        # Use YAS style directly
+        n_call!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # Implement alignment to opening parenthesis
+        style = getstyle(ss)
+        nodes = fst.nodes::Vector
+        
+        nested = false
+        for (i, n) in enumerate(nodes)
+            if is_opener(n)
+                # The key: set indent to align with position after opener
+                # This is what YAS does
+                fst.indent = s.line_offset + length(n)
+            end
+            
+            if n.typ === NEWLINE
+                s.line_offset = fst.indent
+            elseif n.typ === PLACEHOLDER
+                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+            elseif is_gen(n)
+                n.indent = fst.indent
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            else
+                diff = fst.indent - n.indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            end
+        end
+        
+        return nested
+    end
+end
+
 for f in [
     :n_tuple!,
-    :n_call!,
     :n_curly!,
     :n_macrocall!,
     :n_braces!,
