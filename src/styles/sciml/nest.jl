@@ -25,44 +25,6 @@ for f in [
     end
 end
 
-# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int = -1)
-#     style = getstyle(ss)
-#     line_margin = s.line_offset + length(fst) + fst.extra_margin
-#     
-#     # Handle short form function conversion first
-#     if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
-#         transformed = short_to_long_function_def!(fst, s, lineage)
-#         transformed && nest!(style, fst, s, lineage)
-#         return transformed
-#     end
-#
-#     # For assignments with tuple LHS, check if we should keep the LHS intact
-#     if !isnothing(fst.metadata) && fst.metadata.is_assignment && length(fst.nodes) >= 3
-#         lhs = fst[1]
-#         op = fst[2]
-#         
-#         # If LHS is a tuple, only break at the assignment operator, not within the tuple
-#         if lhs.typ === TupleN
-#             # Calculate margin if we break after the assignment
-#             lhs_length = s.line_offset + length(lhs) + length(op) + 1  # +1 for space after =
-#             
-#             # If breaking after = keeps us reasonable, do that instead of breaking the tuple
-#             if lhs_length <= s.opts.margin * 1.2
-#                 # Mark the LHS tuple to not nest internally
-#                 lhs.nest_behavior = NeverNest
-#             end
-#         end
-#     end
-#
-#     # For non-assignment binary operations, check if we have placeholders and use default behavior
-#     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
-#         return n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
-#     end
-#
-#     # Use default nesting behavior
-#     return n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
-# end
-
 function n_functiondef!(
     ss::SciMLStyle,
     fst::FST,
