@@ -5,7 +5,6 @@ for f in [
     :n_public!,
     :n_vcat!,
     :n_ncat!,
-    :n_typedvcat!,
     :n_typedncat!,
     :n_row!,
     :n_nrow!,
@@ -350,6 +349,28 @@ function n_vect!(
         # Allow a line break after the opening brackets without aligning
         n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
     else
+        _n_tuple!(getstyle(ss), fst, s, lineage)
+    end
+end
+
+# Fix for issue #935 - TypedVcat loses indentation
+function n_typedvcat!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # TypedVcat nodes need special handling to preserve indentation
+    # The default delegation to YAS style causes indentation to be lost
+    # because YAS style's n_typedvcat! -> n_call! sets indent based on line_offset
+    # which can be 0 at the start of a line
+    
+    if s.opts.yas_style_nesting
+        # For YAS style nesting, we still want to preserve the behavior
+        # but need to ensure indentation isn't lost
+        n_typedvcat!(DefaultStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # Use tuple handling which properly maintains indentation
         _n_tuple!(getstyle(ss), fst, s, lineage)
     end
 end

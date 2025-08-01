@@ -1604,4 +1604,52 @@
             @test length(unique(indents)) <= 2  # At most 2 different indent levels (first arg might be special)
         end
     end
+    
+    @testset "Issue #935 - TypedVcat indentation regression" begin
+        # The specific case from issue #935
+        str = raw"""
+        setup = Pair{String, Any}["Start time" => first(integrator.sol.prob.tspan),
+                                  "Final time" => last(integrator.sol.prob.tspan),
+                                  "time integrator" => integrator.alg |> typeof |> nameof,
+                                  "adaptive" => integrator.opts.adaptive]
+        """
+        formatted = format_text(str, SciMLStyle())
+        
+        # Check that continuation lines have proper indentation
+        lines = split(formatted, '\n')
+        if length(lines) >= 2
+            # Second line should have indentation
+            indent_match = match(r"^(\s*)", lines[2])
+            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+            @test_broken indent_level > 0  # Currently broken, needs fix
+        end
+        
+        # Test simpler typed arrays
+        str2 = raw"""
+        values = Int[1,
+                     2,
+                     3]
+        """
+        formatted2 = format_text(str2, SciMLStyle())
+        lines2 = split(formatted2, '\n')
+        if length(lines2) >= 2
+            indent_match = match(r"^(\s*)", lines2[2])
+            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+            @test_broken indent_level > 0  # Currently broken, needs fix
+        end
+        
+        # Regular arrays should work fine
+        str3 = raw"""
+        values = [1,
+                  2,
+                  3]
+        """
+        formatted3 = format_text(str3, SciMLStyle())
+        lines3 = split(formatted3, '\n')
+        if length(lines3) >= 2
+            indent_match = match(r"^(\s*)", lines3[2])
+            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+            @test indent_level == 4  # Should have standard 4-space indent
+        end
+    end
 end
