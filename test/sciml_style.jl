@@ -1616,7 +1616,7 @@
         formatted = format_text(str, SciMLStyle())
         
         # Check that p_a, p_b stay on the same line
-        @test_broken !contains(formatted, "p_a,\np_b")  # Currently breaks, needs fix
+        @test !contains(formatted, "p_a,\np_b")  # Fixed - LHS tuples are preserved
         
         # Simpler cases should work
         str2 = "p_a, p_b = foo(x, y)"
