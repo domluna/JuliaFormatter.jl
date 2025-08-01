@@ -1434,4 +1434,145 @@
             @test length(eq_lines) > 0
         end
     end
+
+    @testset "JumpProcesses.jl PR #504 formatting issues" begin
+        # Test 1: Function call with tuple assignment and splatted arguments
+        str = raw"""
+        discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator, integrator.opts.callback.discrete_callbacks...)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should break after = if needed, not within the tuple
+        @test !contains(formatted, "discrete_modified,\nsaved_in_cb")
+        
+        # Test 2: Lambda with long expression
+        str = raw"""
+        new_rate = (u, p, t) -> rate(u.u, p, t) - min(rate(u.u, p, t), rate_control(u.u_control, p, t))
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Lambda parameters should stay together when reasonable
+        @test contains(formatted, "(u, p, t)")
+        
+        # Test 3: Long function signature with type parameters
+        str = raw"""
+        @inline function executerx!(speciesvec::AbstractVector{T}, rxidx::S, majump::M) where {T, S, M <: AbstractMassActionJump}
+            # function body
+        end
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should format nicely without awkward breaks
+        lines = split(formatted, '\n')
+        @test length(lines) >= 3  # At least function def, body, and end
+        
+        # Test 4: Array indexing should not break unnecessarily
+        str = raw"""
+        rate = u[i, j, 1] * k[1] + u[i, j, 2] * k[2] + u[i, j, 3] * k[3]
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Array indices should stay together
+        @test !contains(formatted, "u[\n")
+        @test !contains(formatted, "u[i,\n")
+        
+        # Test 5: Assignment with long RHS
+        str = raw"""
+        result = some_long_function_name(arg1, arg2, arg3) + another_function(arg4, arg5)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should handle reasonably without breaking at every opportunity
+        @test startswith(strip(formatted), "result =")
+        
+        # Test 6: Nested function calls
+        str = raw"""
+        update!(p, t, integrator.u, get_tmp_cache(integrator))
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Short nested calls should stay on one line
+        @test count('\n', formatted) == 0 || count('\n', formatted) == 1
+        
+        # Test 7: Binary operations with function calls
+        str = raw"""
+        new_rate = rate(u.u, p, t) - min(rate(u.u, p, t), rate_control(u.u_control, p, t))
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should format readably without excessive breaks
+        @test contains(formatted, "rate(u.u, p, t)")
+    end
+
+    @testset "Catalyst.jl PR #1305 formatting issues" begin
+        # Test 1: Multiple assignment with plotting functions
+        str = raw"""
+        fig, ax, hm = heatmap(zeros(10, 10), colormap = :viridis)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should not break up fig, ax, hm
+        @test !contains(formatted, "fig,\n")
+        @test !contains(formatted, "ax,\n")
+        @test contains(formatted, "fig, ax, hm =")
+        
+        # Test 2: Scatterlines with multiple return values
+        str = raw"""
+        fig, ax, plt = scatterlines(vals[1]; xlabel = "Time", ylabel = "Value", title = "Simulation Results")
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should not break the LHS tuple
+        @test !contains(formatted, "fig,\n")
+        @test !contains(formatted, "ax,\n")
+        @test contains(formatted, "fig, ax, plt =")
+        
+        # Test 3: Graphplot with named arguments
+        str = raw"""
+        fig, ax, plt = graphplot(plot_graph; node_color = vals[1], edge_width = 2, layout = Spring())
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should not break the LHS tuple even with long RHS
+        @test !contains(formatted, "fig,\n")
+        @test !contains(formatted, "ax,\n")
+        @test contains(formatted, "fig, ax, plt =")
+        
+        # Test 4: Even longer assignment that might need breaking
+        str = raw"""
+        fig, ax, plt = graphplot(plot_graph; node_color = vals[1], edge_width = 2, layout = Spring(), node_size = 20, edge_color = :black, arrow_size = 10)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should still keep LHS together, only break RHS if needed
+        @test contains(formatted, "fig, ax, plt =")
+        
+        # Test 5: Assignment with array unpacking
+        str = raw"""
+        x, y, z = process_coordinates(data, transform = true, scale = 2.0)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should keep x, y, z together
+        @test !contains(formatted, "x,\n")
+        @test !contains(formatted, "y,\n")
+        @test contains(formatted, "x, y, z =")
+        
+        # Test 6: Nested tuple assignments
+        str = raw"""
+        (a, b), c = some_function(arg1, arg2, arg3)
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Should preserve nested structure
+        @test contains(formatted, "(a, b), c =")
+        
+        # Test 7: Multiple plotting assignments with different functions
+        str = raw"""
+        fig1, ax1, plt1 = scatter(x, y; color = :red)
+        fig2, ax2, plt2 = lines(x, y; color = :blue, linewidth = 2)
+        fig3, ax3, plt3 = heatmap(matrix; colormap = :plasma, colorrange = (0, 1))
+        """
+        formatted = format_text(str, SciMLStyle())
+        # Each should keep its LHS intact
+        @test contains(formatted, "fig1, ax1, plt1 =")
+        @test contains(formatted, "fig2, ax2, plt2 =")
+        @test contains(formatted, "fig3, ax3, plt3 =")
+        
+        # Test 8: Very long LHS that genuinely needs breaking
+        str = raw"""
+        very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4 = some_function()
+        """
+        formatted = format_text(str, SciMLStyle())
+        # This one might actually need to break, but should do so sensibly
+        # Just verify it formats without error
+        @test isa(formatted, String)
+    end
 end
