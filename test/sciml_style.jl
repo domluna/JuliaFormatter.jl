@@ -1575,4 +1575,33 @@
         # Just verify it formats without error
         @test isa(formatted, String)
     end
+    
+    @testset "Issue from PR comments - indentation with split LHS" begin
+        # The specific case from efaulhaber's comment
+        str = raw"""
+        p_a,
+        p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+                                                   v_neighbor_system,
+                                                   particle_system, neighbor_system,
+                                                   particle, neighbor)
+        """
+        formatted = format_text(str, SciMLStyle())
+        
+        # The formatting should maintain consistent indentation
+        # All arguments should be aligned, not some at one level and others at another
+        lines = split(formatted, '\n')
+        
+        # Find lines with function arguments
+        arg_lines = filter(l -> contains(l, "_system") || contains(l, "particle,") || contains(l, "neighbor)"), lines)
+        
+        if length(arg_lines) > 1
+            # Get the indentation of each argument line
+            indents = map(l -> length(match(r"^\s*", l).match), arg_lines)
+            
+            # All arguments should have consistent indentation
+            # They should either all be aligned with the opening paren
+            # or all be indented by the same amount
+            @test length(unique(indents)) <= 2  # At most 2 different indent levels (first arg might be special)
+        end
+    end
 end

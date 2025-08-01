@@ -277,19 +277,31 @@ function n_tuple!(
     end
     
     if is_assignment_lhs
-        # For assignment LHS tuples, be very conservative about nesting
-        # Only break LHS tuples if they're extremely long (more than reasonable)
-        tuple_length = length(fst)
-        
-        # If the tuple itself is reasonable length, keep it together regardless of overall line length
-        if tuple_length <= 50  # Allow reasonably sized tuples to stay together
-            lo = s.line_offset
-            for n in fst.nodes
-                nest!(ss, n, s, lineage)
-                s.line_offset += length(n)
+        # Check if the tuple is already split across lines in the source
+        nodes = fst.nodes::Vector
+        tuple_already_split = false
+        for n in nodes
+            if n.typ === NEWLINE
+                tuple_already_split = true
+                break
             end
-            s.line_offset = lo + length(fst)
-            return false
+        end
+        
+        if !tuple_already_split
+            # For assignment LHS tuples that aren't already split, be very conservative about nesting
+            # Only break LHS tuples if they're extremely long (more than reasonable)
+            tuple_length = length(fst)
+            
+            # If the tuple itself is reasonable length, keep it together regardless of overall line length
+            if tuple_length <= 50  # Allow reasonably sized tuples to stay together
+                lo = s.line_offset
+                for n in fst.nodes
+                    nest!(ss, n, s, lineage)
+                    s.line_offset += length(n)
+                end
+                s.line_offset = lo + length(fst)
+                return false
+            end
         end
     end
     
@@ -318,7 +330,12 @@ for f in [
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else
-            _n_tuple!(getstyle(ss), fst, s, lineage)
+            # Special case: use YAS style nesting for macro calls to preserve alignment
+            if $(Meta.quot(f)) === :n_macrocall!
+                $f(YASStyle(getstyle(ss)), fst, s, lineage)
+            else
+                _n_tuple!(getstyle(ss), fst, s, lineage)
+            end
         end
     end
 end
@@ -351,3 +368,4 @@ for f in [:n_chainopcall!, :n_comparison!, :n_for!]
         end
     end
 end
+
