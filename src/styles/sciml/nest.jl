@@ -5,6 +5,7 @@ for f in [
     :n_public!,
     :n_vcat!,
     :n_ncat!,
+    :n_typedvcat!,
     :n_typedncat!,
     :n_row!,
     :n_nrow!,
@@ -87,7 +88,7 @@ function _n_tuple!(
     nodes = fst.nodes::Vector
     has_closer = is_closer(fst[end])
     start_line_offset = s.line_offset
-    
+
     # Initialize variables needed for LHS tuple detection
     is_lhs_tuple = false
     has_newline = false
@@ -112,7 +113,7 @@ function _n_tuple!(
     end
 
     nested = false
-    
+
     # Check if this is a LHS tuple that shouldn't be broken
     skip_optimal_nesting = false
     if fst.typ === TupleN && length(lineage) >= 1
@@ -126,7 +127,9 @@ function _n_tuple!(
                         has_newline = true
                         # Ensure nodes after newline have proper indent
                         for j in (i+1):length(nodes)
-                            if nodes[j].typ !== PLACEHOLDER && nodes[j].typ !== WHITESPACE && nodes[j].typ !== NEWLINE
+                            if nodes[j].typ !== PLACEHOLDER &&
+                               nodes[j].typ !== WHITESPACE &&
+                               nodes[j].typ !== NEWLINE
                                 nodes[j].indent = fst.indent
                             end
                         end
@@ -142,8 +145,12 @@ function _n_tuple!(
             end
         end
     end
-    
-    optimal_placeholders = skip_optimal_nesting ? Int[] : find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
+
+    optimal_placeholders = if skip_optimal_nesting
+        Int[]
+    else
+        find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
+    end
     if length(optimal_placeholders) > 0
         nested = true
     end
@@ -171,20 +178,30 @@ function _n_tuple!(
 
     # Check if we should apply conservative nesting rules
     should_nest = line_margin > s.opts.margin || must_nest(fst) || src_diff_line
-    
+
     # For certain types, be more conservative about nesting
     if should_nest && !must_nest(fst) && !src_diff_line
         total_length = line_margin
-        if (fst.typ === Call && length(placeholder_inds) <= 5 && total_length <= s.opts.margin + 20)
+        if (
+            fst.typ === Call &&
+            length(placeholder_inds) <= 5 &&
+            total_length <= s.opts.margin + 20
+        )
             should_nest = false
-        elseif (fst.typ === Binary || fst.typ === Chain) && length(placeholder_inds) <= 6 && total_length <= s.opts.margin + 20
+        elseif (fst.typ === Binary || fst.typ === Chain) &&
+               length(placeholder_inds) <= 6 &&
+               total_length <= s.opts.margin + 20
             should_nest = false
-        elseif (fst.typ === RefN && length(placeholder_inds) <= 4 && total_length <= s.opts.margin + 30)
+        elseif (
+            fst.typ === RefN &&
+            length(placeholder_inds) <= 4 &&
+            total_length <= s.opts.margin + 30
+        )
             # Keep array indexing together when reasonable (e.g., du[i, j, 1])
             should_nest = false
         end
     end
-    
+
     # Override should_nest for LHS tuples that shouldn't be broken
     if is_lhs_tuple && !has_newline
         # For LHS tuples, only nest if they're extremely long
@@ -200,7 +217,7 @@ function _n_tuple!(
             should_nest = false
         end
     end
-    
+
     if idx !== nothing && should_nest
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
@@ -243,7 +260,7 @@ function _n_tuple!(
         else
             false
         end
-        
+
         # Special handling for split LHS tuples to ensure proper indentation
         if is_lhs_tuple && has_newline && fst.typ === TupleN
             # Ensure all nodes after newlines get proper indentation
@@ -266,7 +283,8 @@ function _n_tuple!(
                 end
             end
         else
-            nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
+            nested |=
+                nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
         end
     end
 
@@ -277,63 +295,6 @@ function _n_tuple!(
 
     return nested
 end
-
-# Custom implementation for n_ref! to prevent breaking LHS of assignments
-function n_ref!(
-    ss::SciMLStyle,
-    fst::FST,
-    s::State,
-    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-)
-    # Check if this RefN is the LHS of an assignment
-    # Look through the lineage to see if we have a Binary assignment parent
-    # and this RefN comes before any other Binary operators
-    is_lhs_of_assignment = false
-    
-    if length(lineage) >= 2
-        # Check if we have a Binary assignment in the lineage
-        for i in length(lineage):-1:1
-            if lineage[i][1] === Binary && !isnothing(lineage[i][2]) && lineage[i][2].is_assignment
-                # Check if there are any other Binary nodes between us and the assignment
-                has_intermediate_binary = false
-                for j in (i+1):length(lineage)
-                    if lineage[j][1] === Binary
-                        has_intermediate_binary = true
-                        break
-                    end
-                end
-                
-                if !has_intermediate_binary
-                    is_lhs_of_assignment = true
-                end
-                break
-            end
-        end
-    end
-    
-    if is_lhs_of_assignment
-        # Don't break the LHS of an assignment
-        # Format children but keep them on the same line
-        lo = s.line_offset
-        nested = false
-        for (i, n) in enumerate(fst.nodes)
-            nested |= nest!(ss, n, s, lineage)
-            if n.typ !== NEWLINE  # Prevent any newlines
-                s.line_offset += length(n)
-            end
-        end
-        s.line_offset = lo + length(fst)
-        return nested
-    end
-    
-    # Otherwise use the default behavior
-    if s.opts.yas_style_nesting
-        return n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
-    else
-        return _n_tuple!(getstyle(ss), fst, s, lineage)
-    end
-end
-
 
 for f in [
     :n_tuple!,
@@ -364,6 +325,17 @@ for f in [
     end
 end
 
+# Custom n_ref! to preserve alignment in typed arrays (Issue #935)
+function n_ref!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # Always use YAS style for typed arrays to preserve alignment
+    n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
+end
+
 function n_vect!(
     ss::SciMLStyle,
     fst::FST,
@@ -378,18 +350,6 @@ function n_vect!(
     end
 end
 
-# Fix for issue #935 - TypedVcat should preserve alignment
-function n_typedvcat!(
-    ss::SciMLStyle,
-    fst::FST,
-    s::State,
-    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-)
-    # TypedVcat should preserve source alignment like YASStyle does
-    # Always delegate to YASStyle which handles this correctly
-    n_typedvcat!(YASStyle(getstyle(ss)), fst, s, lineage)
-end
-
 function n_binaryopcall!(
     ss::SciMLStyle,
     fst::FST,
@@ -398,11 +358,11 @@ function n_binaryopcall!(
 )
     style = getstyle(ss)
     line_margin = s.line_offset + length(fst) + fst.extra_margin
-    
+
     # Check if this is an assignment with a tuple LHS
     if !isnothing(fst.metadata) && (fst.metadata::Metadata).is_assignment
         lhs = fst[1]
-        
+
         # Check if LHS is a tuple that isn't already split
         if lhs.typ === TupleN
             has_newline = false
@@ -412,26 +372,26 @@ function n_binaryopcall!(
                     break
                 end
             end
-            
+
             if !has_newline
                 # Calculate just the LHS length
                 lhs_length = length(lhs)
-                
+
                 # Only break after LHS if the LHS itself is very long
                 if lhs_length <= 80 && line_margin > s.opts.margin
                     # Don't let the default handler break after a short LHS
                     # Instead, handle the nesting ourselves
                     nodes = fst.nodes::Vector
                     idxs = findall(n -> n.typ === PLACEHOLDER, nodes)
-                    
+
                     if length(idxs) == 2
                         # Keep the first placeholder (after LHS) as whitespace
                         # Only potentially break at the second placeholder (in RHS)
                         nested = false
-                        
+
                         # Nest the LHS without breaking it
                         nested |= nest!(style, lhs, s, lineage)
-                        
+
                         # Handle the operator and RHS
                         for i in 2:length(nodes)
                             if i == idxs[1]
@@ -447,14 +407,14 @@ function n_binaryopcall!(
                                 end
                             end
                         end
-                        
+
                         return nested
                     end
                 end
             end
         end
     end
-    
+
     # Fall back to default behavior
     if s.opts.yas_style_nesting
         n_binaryopcall!(YASStyle(style), fst, s, lineage)
@@ -477,4 +437,3 @@ for f in [:n_chainopcall!, :n_comparison!, :n_for!]
         end
     end
 end
-

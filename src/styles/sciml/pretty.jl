@@ -66,7 +66,7 @@ for f in [
     :p_public,
     :p_vcat,
     :p_ncat,
-    :p_typedvcat,
+    # :p_typedvcat,  # Custom implementation below
     :p_typedncat,
     :p_row,
     :p_nrow,
@@ -87,10 +87,30 @@ for f in [
     end
 end
 
+# Custom p_typedvcat to preserve alignment for Issue #935
+function p_typedvcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Create a modified state that forces preservation of whitespace
+    # by temporarily setting join_lines_based_on_source if not already set
+    modified_s = if !s.opts.join_lines_based_on_source
+        State(s.doc, Options(s.opts; join_lines_based_on_source = true))
+    else
+        s
+    end
+
+    # Delegate to YAS with the modified state
+    p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
+end
+
 for f in [
     :p_call,
     :p_curly,
-    :p_ref,
+    # :p_ref,  # Custom implementation below
     :p_braces,
     # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
     :p_parameters,
@@ -110,6 +130,19 @@ for f in [
             $f(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
         end
     end
+end
+
+# Custom p_ref to preserve whitespace in typed arrays (Issue #935)
+function p_ref(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS style for ref to preserve alignment
+    # YAS has better whitespace preservation for array literals
+    p_ref(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 function p_tuple(
