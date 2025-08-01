@@ -25,37 +25,43 @@ for f in [
     end
 end
 
-function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int = -1)
-    style = getstyle(ss)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
-    
-    # For assignments with tuple LHS, check if we should keep the LHS intact
-    if !isnothing(fst.metadata) && fst.metadata.is_assignment && length(fst.nodes) >= 3
-        lhs = fst[1]
-        op = fst[2]
-        
-        # If LHS is a tuple, only break at the assignment operator, not within the tuple
-        if lhs.typ === TupleN
-            # Calculate margin if we break after the assignment
-            lhs_length = s.line_offset + length(lhs) + length(op) + 1  # +1 for space after =
-            
-            # If breaking after = keeps us reasonable, do that instead of breaking the tuple
-            if lhs_length <= s.opts.margin * 1.2
-                # Mark the LHS tuple to not nest internally
-                lhs.nest_behavior = NeverNest
-            end
-        end
-    end
-    
-    if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
-        transformed = short_to_long_function_def!(fst, s, lineage)
-        transformed && nest!(style, fst, s, lineage)
-        return transformed
-    end
-
-    # Use default nesting behavior
-    return n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
-end
+# function n_binaryopcall!(ss::SciMLStyle, fst::FST, s::State, lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}}; indent::Int = -1)
+#     style = getstyle(ss)
+#     line_margin = s.line_offset + length(fst) + fst.extra_margin
+#     
+#     # Handle short form function conversion first
+#     if line_margin > s.opts.margin && !isnothing(fst.metadata) && fst.metadata.is_short_form_function
+#         transformed = short_to_long_function_def!(fst, s, lineage)
+#         transformed && nest!(style, fst, s, lineage)
+#         return transformed
+#     end
+#
+#     # For assignments with tuple LHS, check if we should keep the LHS intact
+#     if !isnothing(fst.metadata) && fst.metadata.is_assignment && length(fst.nodes) >= 3
+#         lhs = fst[1]
+#         op = fst[2]
+#         
+#         # If LHS is a tuple, only break at the assignment operator, not within the tuple
+#         if lhs.typ === TupleN
+#             # Calculate margin if we break after the assignment
+#             lhs_length = s.line_offset + length(lhs) + length(op) + 1  # +1 for space after =
+#             
+#             # If breaking after = keeps us reasonable, do that instead of breaking the tuple
+#             if lhs_length <= s.opts.margin * 1.2
+#                 # Mark the LHS tuple to not nest internally
+#                 lhs.nest_behavior = NeverNest
+#             end
+#         end
+#     end
+#
+#     # For non-assignment binary operations, check if we have placeholders and use default behavior
+#     if findfirst(n -> n.typ === PLACEHOLDER, fst.nodes) !== nothing
+#         return n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
+#     end
+#
+#     # Use default nesting behavior
+#     return n_binaryopcall!(DefaultStyle(style), fst, s, lineage; indent = indent)
+# end
 
 function n_functiondef!(
     ss::SciMLStyle,
@@ -168,16 +174,13 @@ function _n_tuple!(
     should_nest = line_margin > s.opts.margin || must_nest(fst) || src_diff_line
     
     # For certain types, be more conservative about nesting
-    # Only nest if we're significantly over the margin
     if should_nest && !must_nest(fst) && !src_diff_line
         total_length = line_margin
-        
-        # For function calls, only nest if we're over margin by more than 10%
-        if (fst.typ === Call && total_length <= s.opts.margin * 1.1)
+        if (fst.typ === Call && length(placeholder_inds) <= 5 && total_length <= s.opts.margin + 20)
             should_nest = false
-        elseif (fst.typ === Binary || fst.typ === Chain) && total_length <= s.opts.margin * 1.15
+        elseif (fst.typ === Binary || fst.typ === Chain) && length(placeholder_inds) <= 6 && total_length <= s.opts.margin + 20
             should_nest = false
-        elseif (fst.typ === RefN && total_length <= s.opts.margin * 1.2)
+        elseif (fst.typ === RefN && length(placeholder_inds) <= 4 && total_length <= s.opts.margin + 30)
             # Keep array indexing together when reasonable (e.g., du[i, j, 1])
             should_nest = false
         end
@@ -299,12 +302,25 @@ function n_tuple!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # Check if this tuple is the LHS of an assignment
-    if length(lineage) >= 1 && !isnothing(lineage[end][2]) && lineage[end][2].is_assignment
+    # Check if this tuple is the LHS of an assignment by looking for a Binary assignment parent
+    is_assignment_lhs = false
+    if length(lineage) >= 1
+        # Look through lineage to find if we're the LHS of a Binary assignment
+        for (node_type, metadata) in reverse(lineage)
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                is_assignment_lhs = true
+                break
+            end
+        end
+    end
+    
+    if is_assignment_lhs
         # For assignment LHS tuples, be very conservative about nesting
-        line_margin = s.line_offset + length(fst) + fst.extra_margin
-        if line_margin <= s.opts.margin * 1.3
-            # Don't nest if we're only slightly over
+        # Only break LHS tuples if they're extremely long (more than reasonable)
+        tuple_length = length(fst)
+        
+        # If the tuple itself is reasonable length, keep it together regardless of overall line length
+        if tuple_length <= 50  # Allow reasonably sized tuples to stay together
             lo = s.line_offset
             for n in fst.nodes
                 nest!(ss, n, s, lineage)

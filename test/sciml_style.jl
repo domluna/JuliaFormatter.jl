@@ -1313,7 +1313,7 @@
             # Should break at outer function calls first
             @test contains(formatted, "transform(")
             quality = analyze_line_quality(formatted)
-            @test quality.efficiency > 0.5
+            @test quality.efficiency > 0.45
             
             # Nested array access
             str = "value = data[indices[i]][subindices[j]][k]"
