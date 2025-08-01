@@ -1630,7 +1630,8 @@
     end
     
     @testset "PR #934 comment #3144697449 - Consistent indentation for split LHS tuples" begin
-        # When LHS tuple is already split, ensure consistent 4-space indentation
+        # When LHS tuple is already split, RHS should use consistent 4-space indentation
+        # not alignment-based indentation
         str = raw"""
         p_a,
         p_b = @inbounds particle_neighbor_pressure(v_particle_system,
@@ -1641,26 +1642,40 @@
         formatted = format_text(str, SciMLStyle())
         lines = split(formatted, '\n')
         
-        # Check that p_b has 4-space indentation
-        if length(lines) >= 2
-            indent_match = match(r"^(\s*)", lines[2])
-            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
-            @test_broken indent_level == 4  # Should be 4 spaces
-        end
-        
-        # Check that all RHS lines have consistent indentation
-        rhs_lines = lines[3:end]  # Lines after "p_b = ..."
-        indents = Int[]
-        for line in rhs_lines
-            if !isempty(strip(line))
-                indent_match = match(r"^(\s*)", line)
-                push!(indents, length(indent_match.match))
+        # Check that RHS arguments have 4-space indentation (not aligned with opening paren)
+        if length(lines) >= 3
+            # Lines 3+ should be the RHS arguments
+            for i in 3:length(lines)
+                line = lines[i]
+                if !isempty(strip(line))
+                    indent_match = match(r"^(\s*)", line)
+                    indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+                    @test indent_level == 4  # Should be 4 spaces, not aligned with paren
+                end
             end
         end
         
-        if length(indents) > 0
-            # All RHS continuation lines should have the same indentation
-            @test_broken all(i == indents[1] for i in indents)
+        # Also test that we don't change already correct 4-space indentation
+        str2 = raw"""
+        p_a,
+        p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+            v_neighbor_system,
+            particle_system, neighbor_system,
+            particle, neighbor)
+        """
+        formatted2 = format_text(str2, SciMLStyle())
+        lines2 = split(formatted2, '\n')
+        
+        # Should preserve the 4-space indentation
+        if length(lines2) >= 3
+            for i in 3:length(lines2)
+                line = lines2[i]
+                if !isempty(strip(line))
+                    indent_match = match(r"^(\s*)", line)
+                    indent_level = indent_match !== nothing ? length(indent_match.match) : 0
+                    @test indent_level == 4
+                end
+            end
         end
     end
     
