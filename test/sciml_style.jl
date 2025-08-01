@@ -1605,6 +1605,30 @@
         end
     end
     
+    @testset "PR #934 comment - LHS tuple preservation" begin
+        # Test that LHS tuples aren't broken when they're on one line
+        str = raw"""
+        p_a, p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+                                                        v_neighbor_system,
+                                                        particle_system, neighbor_system,
+                                                        particle, neighbor)
+        """
+        formatted = format_text(str, SciMLStyle())
+        
+        # Check that p_a, p_b stay on the same line
+        @test_broken !contains(formatted, "p_a,\np_b")  # Currently breaks, needs fix
+        
+        # Simpler cases should work
+        str2 = "p_a, p_b = foo(x, y)"
+        formatted2 = format_text(str2, SciMLStyle())
+        @test !contains(formatted2, "p_a,\np_b")
+        
+        # Medium length should also work
+        str3 = "p_a, p_b = particle_neighbor_pressure(v_particle_system, v_neighbor_system)"
+        formatted3 = format_text(str3, SciMLStyle())
+        @test !contains(formatted3, "p_a,\np_b")
+    end
+    
     @testset "Issue #935 - TypedVcat indentation regression" begin
         # The specific case from issue #935
         str = raw"""

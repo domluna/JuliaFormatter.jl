@@ -105,7 +105,32 @@ function _n_tuple!(
     end
 
     nested = false
-    optimal_placeholders = find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
+    
+    # Check if this is a LHS tuple that shouldn't be broken
+    skip_optimal_nesting = false
+    if fst.typ === TupleN && length(lineage) >= 1
+        for (node_type, metadata) in reverse(lineage)
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                # This is a LHS tuple in an assignment
+                # Check if it's not already split
+                has_newline = false
+                for n in nodes
+                    if n.typ === NEWLINE
+                        has_newline = true
+                        break
+                    end
+                end
+                if !has_newline
+                    # Don't break LHS tuples - mark as NeverNest
+                    fst.nest_behavior = NeverNest
+                    skip_optimal_nesting = true
+                end
+                break
+            end
+        end
+    end
+    
+    optimal_placeholders = skip_optimal_nesting ? Int[] : find_optimal_nest_placeholders(fst, fst.indent, s.opts.margin)
     if length(optimal_placeholders) > 0
         nested = true
     end
@@ -145,6 +170,11 @@ function _n_tuple!(
             # Keep array indexing together when reasonable (e.g., du[i, j, 1])
             should_nest = false
         end
+    end
+    
+    # Override should_nest for LHS tuples that shouldn't be broken
+    if skip_optimal_nesting && fst.typ === TupleN
+        should_nest = false
     end
     
     if idx !== nothing && should_nest
@@ -256,62 +286,9 @@ function n_ref!(
     end
 end
 
-# Override n_tuple! specifically to handle assignment LHS better
-function n_tuple!(
-    ss::SciMLStyle,
-    fst::FST,
-    s::State,
-    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
-)
-    # Check if this tuple is the LHS of an assignment by looking for a Binary assignment parent
-    is_assignment_lhs = false
-    if length(lineage) >= 1
-        # Look through lineage to find if we're the LHS of a Binary assignment
-        for (node_type, metadata) in reverse(lineage)
-            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
-                is_assignment_lhs = true
-                break
-            end
-        end
-    end
-    
-    if is_assignment_lhs
-        # Check if the tuple is already split across lines in the source
-        nodes = fst.nodes::Vector
-        tuple_already_split = false
-        for n in nodes
-            if n.typ === NEWLINE
-                tuple_already_split = true
-                break
-            end
-        end
-        
-        if !tuple_already_split
-            # For assignment LHS tuples that aren't already split, be very conservative about nesting
-            # Only break LHS tuples if they're extremely long (more than reasonable)
-            tuple_length = length(fst)
-            
-            # If the tuple itself is reasonable length, keep it together regardless of overall line length
-            if tuple_length <= 50  # Allow reasonably sized tuples to stay together
-                lo = s.line_offset
-                for n in fst.nodes
-                    nest!(ss, n, s, lineage)
-                    s.line_offset += length(n)
-                end
-                s.line_offset = lo + length(fst)
-                return false
-            end
-        end
-    end
-    
-    if s.opts.yas_style_nesting
-        n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
-    else
-        _n_tuple!(getstyle(ss), fst, s, lineage)
-    end
-end
 
 for f in [
+    :n_tuple!,
     :n_call!,
     :n_curly!,
     :n_macrocall!,
@@ -361,18 +338,29 @@ function n_typedvcat!(
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
     # TypedVcat nodes need special handling to preserve indentation
-    # The default delegation to YAS style causes indentation to be lost
-    # because YAS style's n_typedvcat! -> n_call! sets indent based on line_offset
-    # which can be 0 at the start of a line
+    # The issue is that when delegating to YAS style from SciML context,
+    # the line_offset is 0, causing YAS's n_call! to set indent = 0 + 1 = 1
     
-    if s.opts.yas_style_nesting
-        # For YAS style nesting, we still want to preserve the behavior
-        # but need to ensure indentation isn't lost
-        n_typedvcat!(DefaultStyle(getstyle(ss)), fst, s, lineage)
-    else
-        # Use tuple handling which properly maintains indentation
-        _n_tuple!(getstyle(ss), fst, s, lineage)
+    # Save current state
+    saved_line_offset = s.line_offset
+    
+    # Ensure we have a proper line offset for indentation
+    # If line_offset is 0 (start of line), use the current indent level
+    if s.line_offset == 0
+        s.line_offset = fst.indent
     end
+    
+    # Now delegate with the corrected line offset
+    if s.opts.yas_style_nesting
+        result = n_typedvcat!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # Use tuple handling which should maintain proper indentation
+        result = _n_tuple!(getstyle(ss), fst, s, lineage)
+    end
+    
+    # Restore line offset
+    s.line_offset = saved_line_offset
+    return result
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
