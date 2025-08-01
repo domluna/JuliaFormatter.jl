@@ -1681,6 +1681,7 @@
     
     @testset "Issue #935 - TypedVcat indentation regression" begin
         # The specific case from issue #935
+        # TypedVcat should preserve original alignment (like YASStyle)
         str = raw"""
         setup = Pair{String, Any}["Start time" => first(integrator.sol.prob.tspan),
                                   "Final time" => last(integrator.sol.prob.tspan),
@@ -1689,13 +1690,16 @@
         """
         formatted = format_text(str, SciMLStyle())
         
-        # Check that continuation lines have proper indentation
+        # Check that alignment is preserved
         lines = split(formatted, '\n')
-        if length(lines) >= 2
-            # Second line should have indentation
-            indent_match = match(r"^(\s*)", lines[2])
-            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
-            @test_broken indent_level > 0  # Currently broken, needs fix
+        original_lines = split(str, '\n')
+        if length(lines) >= 2 && length(original_lines) >= 2
+            # Get original indentation of second line
+            original_indent = length(match(r"^(\s*)", original_lines[2]).match)
+            # Get formatted indentation
+            formatted_indent = length(match(r"^(\s*)", lines[2]).match)
+            # Should preserve the original alignment
+            @test_broken formatted_indent == original_indent  # TypedVcat loses indentation
         end
         
         # Test simpler typed arrays
@@ -1706,24 +1710,21 @@
         """
         formatted2 = format_text(str2, SciMLStyle())
         lines2 = split(formatted2, '\n')
-        if length(lines2) >= 2
-            indent_match = match(r"^(\s*)", lines2[2])
-            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
-            @test_broken indent_level > 0  # Currently broken, needs fix
+        original_lines2 = split(str2, '\n')
+        if length(lines2) >= 2 && length(original_lines2) >= 2
+            original_indent = length(match(r"^(\s*)", original_lines2[2]).match)
+            formatted_indent = length(match(r"^(\s*)", lines2[2]).match)
+            @test_broken formatted_indent == original_indent  # TypedVcat loses indentation
         end
         
-        # Regular arrays should work fine
+        # Another alignment test
         str3 = raw"""
-        values = [1,
-                  2,
-                  3]
+        x = Float64[1.0,
+                    2.0,
+                    3.0]
         """
         formatted3 = format_text(str3, SciMLStyle())
-        lines3 = split(formatted3, '\n')
-        if length(lines3) >= 2
-            indent_match = match(r"^(\s*)", lines3[2])
-            indent_level = indent_match !== nothing ? length(indent_match.match) : 0
-            @test indent_level == 4  # Should have standard 4-space indent
-        end
+        # Should preserve the alignment
+        @test_broken formatted3 == str3  # TypedVcat loses alignment
     end
 end

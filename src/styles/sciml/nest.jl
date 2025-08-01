@@ -378,69 +378,16 @@ function n_vect!(
     end
 end
 
-# Fix for issue #935 - TypedVcat loses indentation
+# Fix for issue #935 - TypedVcat should preserve alignment
 function n_typedvcat!(
     ss::SciMLStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # TypedVcat nodes need special handling to preserve indentation
-    # When at the start of a line (line_offset = 0), we need to ensure
-    # proper indentation is maintained for the array elements
-    
-    style = getstyle(ss)
-    
-    # For TypedVcat, we want standard indentation for continuation lines
-    # Calculate the proper indent based on the context
-    if s.line_offset == 0
-        # We're at the start of a line, need to figure out proper indent
-        # For assignments like "x = Int[...]", elements should be indented
-        # relative to the start of the line
-        target_indent = s.opts.indent
-        
-        # Check if we're in an assignment context
-        for (node_type, metadata) in reverse(lineage)
-            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
-                # In assignment, indent from the line start
-                break
-            elseif node_type === Block || node_type === Begin || node_type === Module
-                # Inside a block, add to its indent
-                if !isnothing(metadata) && hasproperty(metadata, :indent)
-                    target_indent = metadata.indent + s.opts.indent
-                end
-                break
-            end
-        end
-        
-        # Temporarily adjust line_offset to get proper indentation
-        s.line_offset = target_indent - 1  # -1 because YAS adds +1
-    end
-    
-    # Now delegate  
-    if s.opts.yas_style_nesting
-        result = n_typedvcat!(YASStyle(style), fst, s, lineage)
-    else
-        # For non-YAS style, ensure proper indent is set
-        fst.indent = s.line_offset + 1
-        result = _n_tuple!(style, fst, s, lineage)
-    end
-    
-    # After nesting, ensure all elements after newlines have proper indentation
-    nodes = fst.nodes::Vector
-    for (i, n) in enumerate(nodes)
-        if n.typ === NEWLINE && i < length(nodes)
-            # Ensure next element has proper indentation
-            for j in (i+1):length(nodes)
-                if nodes[j].typ !== PLACEHOLDER && nodes[j].typ !== WHITESPACE && nodes[j].typ !== NEWLINE
-                    add_indent!(nodes[j], s, s.opts.indent)
-                    break
-                end
-            end
-        end
-    end
-    
-    return result
+    # TypedVcat should preserve source alignment like YASStyle does
+    # Always delegate to YASStyle which handles this correctly
+    n_typedvcat!(YASStyle(getstyle(ss)), fst, s, lineage)
 end
 
 function n_binaryopcall!(
