@@ -524,7 +524,7 @@ function n_parameters!(
     n_invisbrackets!(ss, fst, s, lineage)
 end
 
-# Custom n_ref! to align to opening bracket
+# Custom n_ref! to use same logic as vectors
 function n_ref!(
     ss::SciMLStyle,
     fst::FST,
@@ -534,36 +534,75 @@ function n_ref!(
     if s.opts.yas_style_nesting
         n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Always align to opening bracket like YAS does
+        # Use same packing logic as vectors
         style = getstyle(ss)
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
         nodes = fst.nodes::Vector
+        has_closer = is_closer(fst[end])
+        
+        if has_closer
+            fst[end].indent = fst.indent
+        end
+        fst.indent += s.opts.indent
         
         nested = false
-        for (i, n) in enumerate(nodes)
-            if is_opener(n)
-                # Set indent to align with position after opener
-                fst.indent = s.line_offset + 1
+        
+        # Check if we need to nest
+        if line_margin > s.opts.margin
+            nested = true
+            
+            # Track position in line
+            current_line_offset = s.line_offset
+            last_newline_idx = 0
+            
+            for (i, n) in enumerate(nodes)
+                if n.typ === NEWLINE
+                    s.line_offset = fst.indent
+                    current_line_offset = fst.indent
+                elseif n.typ === PLACEHOLDER
+                    # Look ahead to see if next element fits
+                    next_element_len = 0
+                    j = i + 1
+                    while j <= length(nodes) && nodes[j].typ !== PLACEHOLDER && nodes[j].typ !== PUNCTUATION
+                        next_element_len += length(nodes[j])
+                        j += 1
+                    end
+                    
+                    # If the next element doesn't fit, add a newline
+                    if current_line_offset + 1 + next_element_len > s.opts.margin && last_newline_idx < i - 1
+                        fst[i] = Newline(; length = n.len)
+                        s.line_offset = fst.indent
+                        current_line_offset = fst.indent
+                        last_newline_idx = i
+                    else
+                        current_line_offset += 1
+                    end
+                elseif n.typ === TRAILINGCOMMA
+                    n.val = ","
+                    n.len = 1
+                    current_line_offset += 1
+                elseif has_closer && (i == 1 || i == length(nodes))
+                    nest!(style, n, s, lineage)
+                    current_line_offset += length(n)
+                else
+                    diff = fst.indent - fst[i].indent
+                    add_indent!(n, s, diff)
+                    n.extra_margin = 1
+                    nest!(style, n, s, lineage)
+                    current_line_offset += length(n)
+                end
             end
             
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif n.typ === PLACEHOLDER
-                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
-            elseif is_gen(n)
-                n.indent = fst.indent
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
-            else
-                # Ensure all nodes after the opener get the proper indent
-                if i > 1 && is_opener(nodes[i-1])
-                    n.indent = fst.indent
-                end
-                diff = fst.indent - n.indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
+            if has_closer
+                s.line_offset = fst[end].indent + 1
             end
+        else
+            # Use default nesting
+            extra_margin = fst.extra_margin
+            if has_closer
+                extra_margin += 1
+            end
+            nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
         end
         
         return nested
@@ -579,8 +618,78 @@ function n_vect!(
     if s.opts.yas_style_nesting
         n_vect!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Use DefaultStyle for 4-space indentation instead of YAS alignment
-        n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
+        # Custom implementation that packs multiple elements per line
+        style = getstyle(ss)
+        line_margin = s.line_offset + length(fst) + fst.extra_margin
+        nodes = fst.nodes::Vector
+        has_closer = is_closer(fst[end])
+        
+        if has_closer
+            fst[end].indent = fst.indent
+        end
+        fst.indent += s.opts.indent
+        
+        nested = false
+        
+        # Check if we need to nest
+        if line_margin > s.opts.margin
+            nested = true
+            
+            # Track position in line
+            current_line_offset = s.line_offset
+            last_newline_idx = 0
+            
+            for (i, n) in enumerate(nodes)
+                if n.typ === NEWLINE
+                    s.line_offset = fst.indent
+                    current_line_offset = fst.indent
+                elseif n.typ === PLACEHOLDER
+                    # Look ahead to see if next element fits
+                    next_element_len = 0
+                    j = i + 1
+                    while j <= length(nodes) && nodes[j].typ !== PLACEHOLDER && nodes[j].typ !== PUNCTUATION
+                        next_element_len += length(nodes[j])
+                        j += 1
+                    end
+                    
+                    # If the next element doesn't fit, add a newline
+                    if current_line_offset + 1 + next_element_len > s.opts.margin && last_newline_idx < i - 1
+                        fst[i] = Newline(; length = n.len)
+                        s.line_offset = fst.indent
+                        current_line_offset = fst.indent
+                        last_newline_idx = i
+                    else
+                        current_line_offset += 1
+                    end
+                elseif n.typ === TRAILINGCOMMA
+                    n.val = ","
+                    n.len = 1
+                    current_line_offset += 1
+                elseif has_closer && (i == 1 || i == length(nodes))
+                    nest!(style, n, s, lineage)
+                    current_line_offset += length(n)
+                else
+                    diff = fst.indent - fst[i].indent
+                    add_indent!(n, s, diff)
+                    n.extra_margin = 1
+                    nest!(style, n, s, lineage)
+                    current_line_offset += length(n)
+                end
+            end
+            
+            if has_closer
+                s.line_offset = fst[end].indent + 1
+            end
+        else
+            # Use default nesting
+            extra_margin = fst.extra_margin
+            if has_closer
+                extra_margin += 1
+            end
+            nested |= nest!(style, nodes, s, fst.indent, lineage; extra_margin = extra_margin)
+        end
+        
+        return nested
     end
 end
 

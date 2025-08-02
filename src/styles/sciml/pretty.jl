@@ -224,9 +224,7 @@ function p_vect(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    # For SciML style, we want to keep vectors on a single line when possible
-    # Instead of modifying the FST after creation, let's just delegate to YAS style
-    # which has better single-line formatting for vectors
+    # Use YAS style which might have better vector formatting
     p_vect(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
@@ -238,8 +236,7 @@ function p_ref(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    # Always use YAS style for ref to preserve alignment
-    # YAS has better whitespace preservation for array literals
+    # Use YAS style which might have better array formatting
     p_ref(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
