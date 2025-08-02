@@ -28,7 +28,7 @@ function options(::SciMLStyle)
         align_conditional = false,
         align_pair_arrow = false,
         align_matrix = false,
-        trailing_comma = false,
+        trailing_comma = true,
         trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
@@ -107,7 +107,6 @@ function p_typedvcat(
     p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
 end
 
-
 for f in [
     # :p_call,  # Use custom implementation that always uses YAS pretty printing
     :p_curly,
@@ -155,7 +154,6 @@ function p_invisbrackets(
     # Always use YAS pretty printing for invisbrackets to get alignment
     p_invisbrackets(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
-
 
 # Custom p_ref to preserve whitespace in typed arrays (Issue #935)
 function p_ref(

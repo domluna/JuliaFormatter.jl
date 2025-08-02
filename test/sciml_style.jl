@@ -163,10 +163,11 @@
     SVector(1.0,
             2.0)
     """
-    
+
     # Test the same with different callers
     @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
-    @test format_text(str, SciMLStyle(); variable_call_indent = ["SVector", "test2"]) == formatted_str
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["SVector", "test2"]) ==
+          formatted_str
 
     str = raw"""
     Dict{Int, Int}(
@@ -266,7 +267,8 @@
                                                 )
     """
     @test format_text(str, SciMLStyle()) == formatted_str_actual
-    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str_actual
+    @test format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) ==
+          formatted_str_actual
 
     str = raw"""
     Dict{Int, Int}(
@@ -674,7 +676,7 @@
         1, 2, 3
     ]
     """
-    
+
     # Now aligns to opening bracket
     formatted_str = raw"""
     x = [
@@ -1744,7 +1746,7 @@
         # The issue is that whitespace is converted to placeholders early in the
         # formatting pipeline, making it difficult to preserve the original alignment
         # even when delegating to YASStyle.
-        
+
         # The specific case from issue #935
         str = raw"""
         setup = Pair{String, Any}["Start time" => first(integrator.sol.prob.tspan),
@@ -1785,5 +1787,108 @@
             3.0]
         """
         @test_broken format_text(str3, SciMLStyle()) == expected3
+    end
+
+    @testset "Issue #934 comment #3146379860 - Additional edge cases" begin
+        # Test 1: Variable array indent
+        str = raw"""
+        kernels = [
+            GaussianKernel,
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel,
+        ]
+        """
+        # Good (main) - should remain as-is with proper indentation
+        expected = raw"""
+        kernels = [
+            GaussianKernel,
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel,
+        ]
+        """
+        # Current behavior aligns to opening bracket
+        expected_current = raw"""
+        kernels = [
+                   GaussianKernel,
+                   SchoenbergCubicSplineKernel,
+                   SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel
+                   ]
+        """
+        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+
+        # Test 2: Function call with multiple arguments should not break on first arg
+        str = raw"""
+        discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
+                                                                             integrator.opts.callback.discrete_callbacks...)
+        """
+        # Good (v1.0.62) - function name and first arg should stay on same line
+        expected = raw"""
+        discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
+                                                                             integrator.opts.callback.discrete_callbacks...)
+        """
+        # Current behavior splits LHS tuple and adds closing paren on new line
+        expected_current = raw"""
+        discrete_modified,
+        saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
+                                                          integrator.opts.callback.discrete_callbacks...
+                                                          )
+        """
+        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+
+        # Test 3: Function definition with Union type arguments
+        str = raw"""
+        function compute_gradient_correction_matrix!(corr::Union{GradientCorrection,
+                                                                 BlendedGradientCorrection,
+                                                                 MixedKernelGradientCorrection},
+                                                     another_argument)
+        end
+        """
+        # Good (main) - function name and first arg should stay on same line
+        expected = raw"""
+        function compute_gradient_correction_matrix!(corr::Union{GradientCorrection,
+                                                                 BlendedGradientCorrection,
+                                                                 MixedKernelGradientCorrection},
+                                                     another_argument)
+        end
+        """
+        # Current behavior breaks after function name
+        expected_current = raw"""
+        function compute_gradient_correction_matrix!(
+                                                     corr::Union{GradientCorrection,
+                                                                 BlendedGradientCorrection,
+                                                                 MixedKernelGradientCorrection},
+                                                     another_argument)
+        end
+        """
+        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+
+        # Test 4: Closing parentheses behavior
+        str = raw"""
+        function some_very_very_very_very_very_very_long_function_name(some_argument,
+                                                                       some_very_very_very_very_long_argument)
+        end
+        """
+        # Main behavior - closing paren on same line
+        expected_main = raw"""
+        function some_very_very_very_very_very_very_long_function_name(some_argument,
+                                                                       some_very_very_very_very_long_argument)
+        end
+        """
+        # This PR behavior - closing paren on new line
+        expected_pr = raw"""
+        function some_very_very_very_very_very_very_long_function_name(some_argument,
+                                                                       some_very_very_very_very_long_argument
+                                                                       )
+        end
+        """
+        # Test that we get one of the two behaviors (documenting the change)
+        result = format_text(str, SciMLStyle(), yas_style_nesting = true)
+        @test result == expected_main || result == expected_pr
     end
 end
