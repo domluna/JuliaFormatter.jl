@@ -64,7 +64,7 @@ for f in [
     :p_using,
     :p_export,
     :p_public,
-    :p_vcat,
+    # :p_vcat,  # Custom implementation below
     :p_ncat,
     # :p_typedvcat,  # Custom implementation below
     :p_typedncat,
@@ -85,6 +85,18 @@ for f in [
     )
         $f(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
     end
+end
+
+# Custom p_vcat to use 4-space indentation instead of YAS alignment
+function p_vcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Use DefaultStyle instead of YAS to get 4-space indentation
+    p_vcat(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 # Custom p_typedvcat to preserve alignment for Issue #935

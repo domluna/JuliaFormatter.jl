@@ -1808,8 +1808,11 @@
             SchoenbergQuinticSplineKernel,
         ]
         """
-        # Current behavior aligns to opening bracket
-        expected_current = raw"""
+        # With default style, should use 4-space indent
+        @test format_text(str, SciMLStyle()) == expected
+        
+        # With yas_style_nesting=true, aligns to opening bracket
+        expected_yas = raw"""
         kernels = [
                    GaussianKernel,
                    SchoenbergCubicSplineKernel,
@@ -1817,8 +1820,7 @@
                    SchoenbergQuinticSplineKernel
                    ]
         """
-        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
 
         # Test 2: Function call with multiple arguments should not break on first arg
         str = raw"""

@@ -3,7 +3,7 @@ for f in [
     :n_using!,
     :n_export!,
     :n_public!,
-    :n_vcat!,
+    # :n_vcat!,  # Custom implementation below
     :n_ncat!,
     :n_typedvcat!,
     :n_typedncat!,
@@ -23,6 +23,17 @@ for f in [
     )
         $f(YASStyle(getstyle(ss)), fst, s, lineage)
     end
+end
+
+# Custom n_vcat! to use 4-space indentation instead of YAS alignment
+function n_vcat!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # Use DefaultStyle instead of YAS to get 4-space indentation
+    n_vcat!(DefaultStyle(getstyle(ss)), fst, s, lineage)
 end
 
 function n_functiondef!(
@@ -569,39 +580,8 @@ function n_vect!(
     if s.opts.yas_style_nesting
         n_vect!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Always align to opening bracket like YAS does
-        style = getstyle(ss)
-        nodes = fst.nodes::Vector
-        
-        nested = false
-        for (i, n) in enumerate(nodes)
-            if is_opener(n)
-                # Set indent to align with position after opener
-                fst.indent = s.line_offset + 1
-            end
-            
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif n.typ === PLACEHOLDER
-                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
-            elseif is_gen(n)
-                n.indent = fst.indent
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
-            else
-                # Ensure all nodes after the opener get the proper indent
-                if i > 1 && is_opener(nodes[i-1])
-                    n.indent = fst.indent
-                end
-                diff = fst.indent - n.indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
-            end
-        end
-        
-        return nested
+        # Use DefaultStyle for 4-space indentation instead of YAS alignment
+        n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
     end
 end
 
