@@ -534,16 +534,24 @@ function n_ref!(
     if s.opts.yas_style_nesting
         n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Use same packing logic as vectors
+        # Use same packing logic as vectors with YAS-style alignment
         style = getstyle(ss)
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         nodes = fst.nodes::Vector
         has_closer = is_closer(fst[end])
         
-        if has_closer
-            fst[end].indent = fst.indent
+        # Find the opening bracket to align with
+        opener_idx = findfirst(n -> is_opener(n), nodes)
+        if !isnothing(opener_idx)
+            # YAS-style: align with position after opener
+            fst.indent = s.line_offset + sum(length(nodes[j]) for j in 1:opener_idx)
+        else
+            fst.indent += s.opts.indent
         end
-        fst.indent += s.opts.indent
+        
+        if has_closer
+            fst[end].indent = fst.indent - 1  # Closer aligns with opener
+        end
         
         nested = false
         
@@ -618,16 +626,24 @@ function n_vect!(
     if s.opts.yas_style_nesting
         n_vect!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Custom implementation that packs multiple elements per line
+        # Custom implementation that packs multiple elements per line with YAS-style alignment
         style = getstyle(ss)
         line_margin = s.line_offset + length(fst) + fst.extra_margin
         nodes = fst.nodes::Vector
         has_closer = is_closer(fst[end])
         
-        if has_closer
-            fst[end].indent = fst.indent
+        # Find the opening bracket to align with
+        opener_idx = findfirst(n -> is_opener(n), nodes)
+        if !isnothing(opener_idx)
+            # YAS-style: align with position after opener
+            fst.indent = s.line_offset + sum(length(nodes[j]) for j in 1:opener_idx)
+        else
+            fst.indent += s.opts.indent
         end
-        fst.indent += s.opts.indent
+        
+        if has_closer
+            fst[end].indent = fst.indent - 1  # Closer aligns with opener
+        end
         
         nested = false
         
