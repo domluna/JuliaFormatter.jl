@@ -92,6 +92,23 @@ function _n_tuple!(
     # Initialize variables needed for LHS tuple detection
     is_lhs_tuple = false
     has_newline = false
+    
+    # Check if this is a LHS tuple early so we can set proper indentation
+    if fst.typ === TupleN && length(lineage) >= 1
+        for (node_type, metadata) in reverse(lineage)
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                is_lhs_tuple = true
+                # Check if it's already split
+                for n in nodes
+                    if n.typ === NEWLINE
+                        has_newline = true
+                        break
+                    end
+                end
+                break
+            end
+        end
+    end
 
     if has_closer
         fst[end].indent = fst.indent
@@ -99,8 +116,9 @@ function _n_tuple!(
     if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
         fst.indent += s.opts.indent
     elseif fst.typ === TupleN && is_lhs_tuple && has_newline
-        # For LHS tuples that are already split, we still need proper indentation
-        fst.indent = s.opts.indent  # Ensure proper indentation for split LHS tuples
+        # For split LHS tuples without explicit parentheses, don't add extra indentation
+        # They should continue at the same column as the first line
+        # fst.indent stays as is (which is 0 for top-level assignments)
     end
 
     # "foo(a, b, c)" is true if "foo" and "c" are on different lines
@@ -137,9 +155,19 @@ function _n_tuple!(
                     end
                 end
                 if !has_newline
-                    # Don't break LHS tuples - mark as NeverNest
-                    fst.nest_behavior = NeverNest
-                    skip_optimal_nesting = true
+                    # Calculate the actual length of the tuple content
+                    tuple_length = 0
+                    for n in nodes
+                        if n.typ !== PLACEHOLDER
+                            tuple_length += length(n)
+                        end
+                    end
+                    # Only break LHS tuples if they're very long (>80 chars)
+                    if tuple_length <= 80
+                        # Don't break short LHS tuples - mark as NeverNest
+                        fst.nest_behavior = NeverNest
+                        skip_optimal_nesting = true
+                    end
                 end
                 break
             end
@@ -177,7 +205,7 @@ function _n_tuple!(
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
 
     # Check if we should apply conservative nesting rules
-    should_nest = line_margin > s.opts.margin || must_nest(fst) || src_diff_line
+    should_nest = (line_margin > s.opts.margin || must_nest(fst) || src_diff_line) && !cant_nest(fst)
 
     # For certain types, be more conservative about nesting
     if should_nest && !must_nest(fst) && !src_diff_line
@@ -271,8 +299,8 @@ function _n_tuple!(
                     nested |= nest!(style, n, s, lineage)
                     s.line_offset = fst.indent
                 elseif after_newline && n.typ !== PLACEHOLDER && n.typ !== WHITESPACE
-                    # Add indentation to nodes after newline
-                    add_indent!(n, s, fst.indent)
+                    # Set the indent for nodes after newline
+                    n.indent = fst.indent
                     nested |= nest!(style, n, s, lineage)
                     s.line_offset += length(n)
                 else
@@ -307,7 +335,7 @@ function n_call!(
         # Use YAS style directly
         n_call!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Implement alignment to opening parenthesis
+        # Implement alignment to opening parenthesis like YAS does
         style = getstyle(ss)
         nodes = fst.nodes::Vector
         
@@ -315,8 +343,7 @@ function n_call!(
         for (i, n) in enumerate(nodes)
             if is_opener(n)
                 # The key: set indent to align with position after opener
-                # This is what YAS does
-                fst.indent = s.line_offset + length(n)
+                fst.indent = s.line_offset + 1
             end
             
             if n.typ === NEWLINE
@@ -329,6 +356,10 @@ function n_call!(
                 n.extra_margin = 1
                 nested |= nest!(style, n, s, lineage)
             else
+                # Ensure all nodes after the opener get the proper indent
+                if i > 1 && is_opener(nodes[i-1])
+                    n.indent = fst.indent
+                end
                 diff = fst.indent - n.indent
                 add_indent!(n, s, diff)
                 n.extra_margin = 1
@@ -340,13 +371,76 @@ function n_call!(
     end
 end
 
+# Custom n_tuple! to handle parenthesized tuples with proper alignment
+function n_tuple!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    if s.opts.yas_style_nesting
+        n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # Check if this is a parenthesized tuple (has explicit parentheses)
+        has_parens = length(fst.nodes) > 0 && is_opener(fst[1])
+        
+        # Check if this is in an assignment or anonymous function context
+        is_in_assignment = false
+        is_anon_func = false
+        for (node_type, metadata) in lineage
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                is_in_assignment = true
+                break
+            elseif node_type === Binary && !isnothing(metadata) && hasfield(typeof(metadata), :op_kind) && metadata.op_kind === K"->"
+                # This is for anonymous functions like (a, b) -> c
+                is_anon_func = true
+                break
+            end
+        end
+        
+        if has_parens && (is_in_assignment || is_anon_func)
+            # For parenthesized tuples in assignments/anon functions, align to opening paren
+            style = getstyle(ss)
+            nodes = fst.nodes::Vector
+            
+            # Set indent to align with position after opener (like YAS does)
+            fst.indent = s.line_offset + 1
+            
+            nested = false
+            for (i, n) in enumerate(nodes)
+                if n.typ === NEWLINE
+                    s.line_offset = fst.indent
+                elseif n.typ === PLACEHOLDER
+                    si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                    nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+                elseif is_gen(n)
+                    n.indent = fst.indent
+                    n.extra_margin = 1
+                    nested |= nest!(style, n, s, lineage)
+                else
+                    # Ensure all nodes get the proper indent
+                    diff = fst.indent - n.indent
+                    add_indent!(n, s, diff)
+                    n.extra_margin = 1
+                    nested |= nest!(style, n, s, lineage)
+                end
+            end
+            
+            return nested
+        else
+            # For non-parenthesized tuples or other contexts, use default behavior
+            return _n_tuple!(ss, fst, s, lineage)
+        end
+    end
+end
+
 for f in [
-    :n_tuple!,
+    # :n_tuple!,  # Custom implementation above
     :n_curly!,
     :n_macrocall!,
     :n_braces!,
-    :n_parameters!,
-    :n_invisbrackets!,
+    # :n_parameters!,     # Custom implementation below
+    # :n_invisbrackets!,  # Custom implementation below  
     :n_bracescat!,
 ]
     @eval function $f(
@@ -358,25 +452,112 @@ for f in [
         if s.opts.yas_style_nesting
             $f(YASStyle(getstyle(ss)), fst, s, lineage)
         else
-            # Special case: use YAS style nesting for macro calls to preserve alignment
+            # Special cases: use YAS style nesting for better alignment
             if $(Meta.quot(f)) === :n_macrocall!
                 $f(YASStyle(getstyle(ss)), fst, s, lineage)
             else
-                _n_tuple!(getstyle(ss), fst, s, lineage)
+                _n_tuple!(ss, fst, s, lineage)
             end
         end
     end
 end
 
-# Custom n_ref! to preserve alignment in typed arrays (Issue #935)
+# Custom handlers for parentheses and parameters to get proper alignment
+function n_invisbrackets!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # Use the same logic as n_call! to align to opening parenthesis
+    style = getstyle(ss)
+    nodes = fst.nodes::Vector
+    
+    nested = false
+    for (i, n) in enumerate(nodes)
+        if is_opener(n)
+            # Set indent to align with position after opener
+            fst.indent = s.line_offset + 1
+        end
+        
+        if n.typ === NEWLINE
+            s.line_offset = fst.indent
+        elseif n.typ === PLACEHOLDER
+            si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+            nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+        elseif is_gen(n)
+            n.indent = fst.indent
+            n.extra_margin = 1
+            nested |= nest!(style, n, s, lineage)
+        else
+            # Ensure all nodes after the opener get the proper indent
+            if i > 1 && is_opener(nodes[i-1])
+                n.indent = fst.indent
+            end
+            diff = fst.indent - n.indent
+            add_indent!(n, s, diff)
+            n.extra_margin = 1
+            nested |= nest!(style, n, s, lineage)
+        end
+    end
+    
+    return nested
+end
+
+function n_parameters!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # Same as invisbrackets
+    n_invisbrackets!(ss, fst, s, lineage)
+end
+
+# Custom n_ref! to align to opening bracket
 function n_ref!(
     ss::SciMLStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # Always use YAS style for typed arrays to preserve alignment
-    n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
+    if s.opts.yas_style_nesting
+        n_ref!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # Always align to opening bracket like YAS does
+        style = getstyle(ss)
+        nodes = fst.nodes::Vector
+        
+        nested = false
+        for (i, n) in enumerate(nodes)
+            if is_opener(n)
+                # Set indent to align with position after opener
+                fst.indent = s.line_offset + 1
+            end
+            
+            if n.typ === NEWLINE
+                s.line_offset = fst.indent
+            elseif n.typ === PLACEHOLDER
+                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+            elseif is_gen(n)
+                n.indent = fst.indent
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            else
+                # Ensure all nodes after the opener get the proper indent
+                if i > 1 && is_opener(nodes[i-1])
+                    n.indent = fst.indent
+                end
+                diff = fst.indent - n.indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            end
+        end
+        
+        return nested
+    end
 end
 
 function n_vect!(
@@ -386,10 +567,41 @@ function n_vect!(
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
     if s.opts.yas_style_nesting
-        # Allow a line break after the opening brackets without aligning
-        n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
+        n_vect!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        _n_tuple!(getstyle(ss), fst, s, lineage)
+        # Always align to opening bracket like YAS does
+        style = getstyle(ss)
+        nodes = fst.nodes::Vector
+        
+        nested = false
+        for (i, n) in enumerate(nodes)
+            if is_opener(n)
+                # Set indent to align with position after opener
+                fst.indent = s.line_offset + 1
+            end
+            
+            if n.typ === NEWLINE
+                s.line_offset = fst.indent
+            elseif n.typ === PLACEHOLDER
+                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+            elseif is_gen(n)
+                n.indent = fst.indent
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            else
+                # Ensure all nodes after the opener get the proper indent
+                if i > 1 && is_opener(nodes[i-1])
+                    n.indent = fst.indent
+                end
+                diff = fst.indent - n.indent
+                add_indent!(n, s, diff)
+                n.extra_margin = 1
+                nested |= nest!(style, n, s, lineage)
+            end
+        end
+        
+        return nested
     end
 end
 
@@ -400,13 +612,12 @@ function n_binaryopcall!(
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
     style = getstyle(ss)
-    line_margin = s.line_offset + length(fst) + fst.extra_margin
 
-    # Check if this is an assignment with a tuple LHS
+    # Check if this is an assignment with a split LHS tuple that needs special handling
     if !isnothing(fst.metadata) && (fst.metadata::Metadata).is_assignment
         lhs = fst[1]
-
-        # Check if LHS is a tuple that isn't already split
+        
+        # Check if LHS is a tuple that's already split
         if lhs.typ === TupleN
             has_newline = false
             for n in lhs.nodes
@@ -415,45 +626,14 @@ function n_binaryopcall!(
                     break
                 end
             end
-
-            if !has_newline
-                # Calculate just the LHS length
-                lhs_length = length(lhs)
-
-                # Only break after LHS if the LHS itself is very long
-                if lhs_length <= 80 && line_margin > s.opts.margin
-                    # Don't let the default handler break after a short LHS
-                    # Instead, handle the nesting ourselves
-                    nodes = fst.nodes::Vector
-                    idxs = findall(n -> n.typ === PLACEHOLDER, nodes)
-
-                    if length(idxs) == 2
-                        # Keep the first placeholder (after LHS) as whitespace
-                        # Only potentially break at the second placeholder (in RHS)
-                        nested = false
-
-                        # Nest the LHS without breaking it
-                        nested |= nest!(style, lhs, s, lineage)
-
-                        # Handle the operator and RHS
-                        for i in 2:length(nodes)
-                            if i == idxs[1]
-                                # First placeholder - keep as space
-                                fst[i] = Whitespace(1)
-                                s.line_offset += 1
-                            else
-                                nested |= nest!(style, fst[i], s, lineage)
-                                if fst[i].typ !== NEWLINE
-                                    s.line_offset += length(fst[i])
-                                else
-                                    s.line_offset = fst.indent
-                                end
-                            end
-                        end
-
-                        return nested
-                    end
-                end
+            
+            if has_newline
+                # For split LHS tuples, we need to ensure proper indentation
+                # by using a custom handler
+                return n_binaryopcall_split_lhs!(ss, fst, s, lineage)
+            elseif length(lhs) <= 80
+                # Short non-split tuple - preserve on one line
+                return n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
             end
         end
     end
@@ -464,6 +644,27 @@ function n_binaryopcall!(
     else
         n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
     end
+end
+
+# Custom handler for binary operations with split LHS tuples
+function n_binaryopcall_split_lhs!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    style = getstyle(ss)
+    
+    # First, ensure the LHS tuple gets proper indentation by modifying
+    # it before the default handler processes it
+    lhs = fst[1]
+    
+    # For a split LHS tuple, we need to ensure it gets indented properly
+    # Split LHS tuples without parentheses should have 0 indentation
+    lhs.indent = 0  # Split LHS should continue at column 0
+    
+    # Now delegate to the default handler
+    return n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]

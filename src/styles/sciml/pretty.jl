@@ -107,25 +107,15 @@ function p_typedvcat(
     p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
 end
 
-# Custom p_call to preserve alignment to opening parenthesis
-function p_call(
-    ss::SciMLStyle,
-    cst::JuliaSyntax.GreenNode,
-    s::State,
-    ctx::PrettyContext,
-    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
-)
-    # Always use YAS style for calls to get proper alignment
-    p_call(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
-end
 
 for f in [
+    # :p_call,  # Use custom implementation that always uses YAS pretty printing
     :p_curly,
     # :p_ref,  # Custom implementation below
     :p_braces,
     # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
-    :p_parameters,
-    :p_invisbrackets,
+    # :p_parameters,     # Custom implementation below
+    # :p_invisbrackets,  # Custom implementation below
     :p_bracescat,
 ]
     @eval function $f(
@@ -142,6 +132,30 @@ for f in [
         end
     end
 end
+
+# Custom implementations to ensure proper alignment
+function p_parameters(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for parameters to get alignment
+    p_parameters(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+function p_invisbrackets(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for invisbrackets to get alignment
+    p_invisbrackets(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
 
 # Custom p_ref to preserve whitespace in typed arrays (Issue #935)
 function p_ref(
