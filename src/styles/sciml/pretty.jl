@@ -28,7 +28,7 @@ function options(::SciMLStyle)
         align_conditional = false,
         align_pair_arrow = false,
         align_matrix = false,
-        trailing_comma = false,
+        trailing_comma = true,
         trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
@@ -64,9 +64,9 @@ for f in [
     :p_using,
     :p_export,
     :p_public,
-    :p_vcat,
+    # :p_vcat,  # Custom implementation below
     :p_ncat,
-    :p_typedvcat,
+    # :p_typedvcat,  # Custom implementation below
     :p_typedncat,
     :p_row,
     :p_nrow,
@@ -87,14 +87,46 @@ for f in [
     end
 end
 
+# Custom p_vcat to use 4-space indentation instead of YAS alignment
+function p_vcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Use DefaultStyle instead of YAS to get 4-space indentation
+    p_vcat(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+# Custom p_typedvcat to preserve alignment for Issue #935
+function p_typedvcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Create a modified state that forces preservation of whitespace
+    # by temporarily setting join_lines_based_on_source if not already set
+    modified_s = if !s.opts.join_lines_based_on_source
+        State(s.doc, Options(s.opts; join_lines_based_on_source = true))
+    else
+        s
+    end
+
+    # Delegate to YAS with the modified state
+    p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
+end
+
 for f in [
-    :p_call,
+    # :p_call,  # Use custom implementation that always uses YAS pretty printing
     :p_curly,
-    :p_ref,
+    # :p_ref,  # Custom implementation below
     :p_braces,
     # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
-    :p_parameters,
-    :p_invisbrackets,
+    # :p_parameters,     # Custom implementation below
+    # :p_invisbrackets,  # Custom implementation below
     :p_bracescat,
 ]
     @eval function $f(
@@ -110,6 +142,42 @@ for f in [
             $f(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
         end
     end
+end
+
+# Custom implementations to ensure proper alignment
+function p_parameters(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for parameters to get alignment
+    p_parameters(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+function p_invisbrackets(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for invisbrackets to get alignment
+    p_invisbrackets(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+# Custom p_ref to preserve whitespace in typed arrays (Issue #935)
+function p_ref(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS style for ref to preserve alignment
+    # YAS has better whitespace preservation for array literals
+    p_ref(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 function p_tuple(
