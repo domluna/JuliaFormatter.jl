@@ -1990,7 +1990,21 @@ function p_whereopcall(
             add_node!(t, Placeholder(0), s)
             s.indent += s.opts.indent
         elseif kind(a) === K"}" && nest
-            add_node!(t, TrailingComma(), s)
+            # Don't add trailing comma in where clauses
+            # Check if we're in a where clause context
+            in_where_context = false
+            if length(lineage) > 0
+                for (k, _, _) in lineage
+                    if k === K"where"
+                        in_where_context = true
+                        break
+                    end
+                end
+            end
+
+            if !in_where_context && t.typ !== Where
+                add_node!(t, TrailingComma(), s)
+            end
             add_node!(t, Placeholder(0), s)
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             s.indent -= s.opts.indent
@@ -2107,7 +2121,20 @@ function p_curly(
             end
         elseif kind(a) === K"}"
             if nest
-                add_node!(t, TrailingComma(), s)
+                # Check if we're in a where clause context - don't add trailing comma
+                in_where_context = false
+                if length(lineage) > 0
+                    for (k, _, _) in lineage
+                        if k === K"where"
+                            in_where_context = true
+                            break
+                        end
+                    end
+                end
+
+                if !in_where_context
+                    add_node!(t, TrailingComma(), s)
+                end
                 add_node!(t, Placeholder(0), s)
             end
             add_node!(t, n, s; join_lines = true)
@@ -2386,7 +2413,20 @@ function p_braces(
             end
         elseif kind(a) === K"}"
             if nest
-                add_node!(t, TrailingComma(), s)
+                # Check if we're in a where clause context - don't add trailing comma
+                in_where_context = false
+                if length(lineage) > 0
+                    for (k, _, _) in lineage
+                        if k === K"where"
+                            in_where_context = true
+                            break
+                        end
+                    end
+                end
+
+                if !in_where_context
+                    add_node!(t, TrailingComma(), s)
+                end
                 add_node!(t, Placeholder(0), s)
             end
             add_node!(t, n, s; join_lines = true)
