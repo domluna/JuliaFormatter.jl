@@ -209,7 +209,16 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
         return Vector{Int}[[n]]
     end
 
-    function _backtrack(t::Vector{Int}, current_sum::Int)
+    # Maximum recursion depth to prevent infinite loops
+    max_recursions = 100
+
+    function _backtrack(t::Vector{Int}, current_sum::Int, recursion_count::Int)
+        # Check recursion limit
+        if recursion_count > max_recursions
+            # Early exit if we've recursed too many times
+            return
+        end
+
         if length(t) == k
             if current_sum == n
                 push!(res, t)
@@ -226,7 +235,7 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
             if dp[current_sum+1, current_sum+i] > max_margin
                 break
             end
-            _backtrack([t; i], current_sum + i)
+            _backtrack([t; i], current_sum + i, recursion_count + 1)
         end
     end
 
@@ -235,7 +244,7 @@ function find_all_segment_splits(dp::Matrix{Int}, k::Int, max_margin::Int)
         if cm > max_margin
             break
         end
-        _backtrack([i], i)
+        _backtrack([i], i, 1)
     end
 
     if length(res) == 0
