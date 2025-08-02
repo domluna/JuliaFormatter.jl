@@ -121,7 +121,7 @@ end
 
 for f in [
     # :p_call,  # Use custom implementation that always uses YAS pretty printing
-    :p_curly,
+    # :p_curly,  # Custom implementation below to handle where clauses
     # :p_ref,  # Custom implementation below
     :p_braces,
     # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
@@ -165,6 +165,56 @@ function p_invisbrackets(
 )
     # Always use YAS pretty printing for invisbrackets to get alignment
     p_invisbrackets(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+function p_curly(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Normal delegation - the where clause fix will be handled in p_whereopcall
+    if s.opts.yas_style_nesting
+        p_curly(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+    else
+        p_curly(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+    end
+end
+
+function p_whereopcall(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # For SciML style, we want to disable trailing commas in where clauses
+    # but the trailing comma logic is applied during nesting in p_curly
+    # So we'll use a different approach - modify the FST after creation
+
+    # First get the formatted result with the default behavior
+    t = p_whereopcall(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+
+    # Now remove any trailing commas from the FST
+    function remove_trailing_commas!(fst::FST)
+        if fst.typ === TRAILINGCOMMA
+            # Replace trailing comma with empty whitespace
+            fst.typ = WHITESPACE
+            fst.val = ""
+            fst.len = 0
+        end
+        if isdefined(fst, :nodes) && !isnothing(fst.nodes)
+            for node in fst.nodes
+                if isa(node, FST)
+                    remove_trailing_commas!(node)
+                end
+            end
+        end
+    end
+
+    remove_trailing_commas!(t)
+    return t
 end
 
 # Custom p_ref to preserve whitespace in typed arrays (Issue #935)
