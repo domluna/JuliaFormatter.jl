@@ -124,7 +124,7 @@ for f in [
     # :p_curly,  # Custom implementation below to handle where clauses
     # :p_ref,  # Custom implementation below
     :p_braces,
-    # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
+    # :p_vect,  # Custom implementation below to prevent unnecessary line breaks
     # :p_parameters,     # Custom implementation below
     # :p_invisbrackets,  # Custom implementation below
     :p_bracescat,
@@ -215,6 +215,19 @@ function p_whereopcall(
 
     remove_trailing_commas!(t)
     return t
+end
+
+function p_vect(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # For SciML style, we want to keep vectors on a single line when possible
+    # Instead of modifying the FST after creation, let's just delegate to YAS style
+    # which has better single-line formatting for vectors
+    p_vect(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 # Custom p_ref to preserve whitespace in typed arrays (Issue #935)
