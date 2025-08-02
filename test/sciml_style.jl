@@ -1824,23 +1824,30 @@
 
         # Test 2: Function call with multiple arguments should not break on first arg
         str = raw"""
-        discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
-                                                                             integrator.opts.callback.discrete_callbacks...)
+        discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator, integrator.opts.callback.discrete_callbacks...)
         """
-        # Good (v1.0.62) - function name and first arg should stay on same line
+        # Good - LHS tuple should stay on one line, function args can break
         expected = raw"""
         discrete_modified, saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
-                                                                             integrator.opts.callback.discrete_callbacks...)
+                                                                             integrator.opts.callback.discrete_callbacks...
+                                                                             )
         """
-        # Current behavior splits LHS tuple and adds closing paren on new line
-        expected_current = raw"""
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+        
+        # Test when source already has split LHS - it should be preserved
+        str_split = raw"""
+        discrete_modified,
+        saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
+                                                          integrator.opts.callback.discrete_callbacks...)
+        """
+        # Should preserve the split since join_lines_based_on_source = true
+        expected_split = raw"""
         discrete_modified,
         saved_in_cb = DiffEqBase.apply_discrete_callback!(integrator,
                                                           integrator.opts.callback.discrete_callbacks...
                                                           )
         """
-        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+        @test format_text(str_split, SciMLStyle(), yas_style_nesting = true) == expected_split
 
         # Test 3: Function definition with Union type arguments
         str = raw"""

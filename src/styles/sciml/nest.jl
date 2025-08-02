@@ -166,19 +166,9 @@ function _n_tuple!(
                     end
                 end
                 if !has_newline
-                    # Calculate the actual length of the tuple content
-                    tuple_length = 0
-                    for n in nodes
-                        if n.typ !== PLACEHOLDER
-                            tuple_length += length(n)
-                        end
-                    end
-                    # Only break LHS tuples if they're very long (>80 chars)
-                    if tuple_length <= 80
-                        # Don't break short LHS tuples - mark as NeverNest
-                        fst.nest_behavior = NeverNest
-                        skip_optimal_nesting = true
-                    end
+                    # Never break LHS tuples - mark as NeverNest
+                    fst.nest_behavior = NeverNest
+                    skip_optimal_nesting = true
                 end
                 break
             end
@@ -243,18 +233,10 @@ function _n_tuple!(
 
     # Override should_nest for LHS tuples that shouldn't be broken
     if is_lhs_tuple && !has_newline
-        # For LHS tuples, only nest if they're extremely long
-        # This prevents breaking "p_a, p_b" just because the RHS is long
-        tuple_length = 0
-        for n in nodes
-            if n.typ !== PLACEHOLDER
-                tuple_length += length(n)
-            end
-        end
-        # Only break if the tuple itself is very long (>80 chars)
-        if tuple_length <= 80
-            should_nest = false
-        end
+        # For LHS tuples, never nest them regardless of length
+        # This prevents breaking "p_a, p_b" or even longer tuples
+        # Users can manually add line breaks if they want
+        should_nest = false
     end
 
     if idx !== nothing && should_nest
@@ -389,6 +371,23 @@ function n_tuple!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
+    # Check if this is a LHS tuple in an assignment first
+    is_lhs_tuple = false
+    if fst.typ === TupleN && length(lineage) >= 1
+        for (node_type, metadata) in reverse(lineage)
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                is_lhs_tuple = true
+                break
+            end
+        end
+    end
+    
+    # For LHS tuples, always use our custom logic that prevents breaking
+    if is_lhs_tuple
+        return _n_tuple!(ss, fst, s, lineage)
+    end
+    
+    # For other tuples, respect yas_style_nesting setting
     if s.opts.yas_style_nesting
         n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
