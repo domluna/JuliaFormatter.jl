@@ -1512,10 +1512,10 @@
         new_rate = (u, p, t) -> rate(u.u, p, t) - min(rate(u.u, p, t), rate_control(u.u_control, p, t))
         """
         formatted = format_text(str, SciMLStyle())
-        # Lambda parameters now split due to line length
+        # With YAS-style alignment, the lambda body wraps while parameters stay on one line
         expected = raw"""
-        new_rate = (u, p, t
-                    ) -> rate(u.u, p, t) - min(rate(u.u, p, t), rate_control(u.u_control, p, t))
+        new_rate = (u, p, t) -> rate(u.u, p, t) -
+                                min(rate(u.u, p, t), rate_control(u.u_control, p, t))
         """
         @test formatted == expected
 
@@ -1799,26 +1799,22 @@
             SchoenbergQuinticSplineKernel,
         ]
         """
-        # Good (main) - should remain as-is with proper indentation
+        # With YAS-style alignment, arrays align with opening bracket
         expected = raw"""
-        kernels = [
-            GaussianKernel,
-            SchoenbergCubicSplineKernel,
-            SchoenbergQuarticSplineKernel,
-            SchoenbergQuinticSplineKernel,
-        ]
+        kernels = [GaussianKernel,
+                   SchoenbergCubicSplineKernel,
+                   SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel]
         """
-        # With default style, should use 4-space indent
+        # Default style now uses YAS-style alignment
         @test format_text(str, SciMLStyle()) == expected
         
         # With yas_style_nesting=true, aligns to opening bracket
         expected_yas = raw"""
-        kernels = [
-                   GaussianKernel,
+        kernels = [GaussianKernel,
                    SchoenbergCubicSplineKernel,
                    SchoenbergQuarticSplineKernel,
-                   SchoenbergQuinticSplineKernel
-                   ]
+                   SchoenbergQuinticSplineKernel]
         """
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
 
