@@ -1813,6 +1813,25 @@
                    SchoenbergQuinticSplineKernel]
         """
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
+        
+        # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
+        # This should be fixed to proper YAS-style alignment
+        str_bad = raw"""
+        kernels = [
+                   GaussianKernel,
+                   SchoenbergCubicSplineKernel,
+                   SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel
+                   ]
+        """
+        # Should be fixed to align with opening bracket
+        expected_fixed = raw"""
+        kernels = [GaussianKernel,
+                   SchoenbergCubicSplineKernel,
+                   SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel]
+        """
+        @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_fixed
 
         # Test 2: Function call with multiple arguments should not break on first arg
         str = raw"""
