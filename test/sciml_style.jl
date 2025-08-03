@@ -39,8 +39,7 @@
     # Now breaks and aligns to opening bracket
     formatted = format_text(str, SciMLStyle())
     expected = raw"""
-    du[i, j,
-       1] = alpha * (u[im1, j, 1] + u[ip1, j, 1] + u[i, jp1, 1] + u[i, jm1, 1] - 4u[i, j, 1])
+    du[i, j, 1] = alpha * (u[im1, j, 1] + u[ip1, j, 1] + u[i, jp1, 1] + u[i, jm1, 1] - 4u[i, j, 1])
     """
     @test formatted == expected
     str = raw"""
@@ -587,8 +586,7 @@
             @test format_text(str, SciMLStyle(); margin = 37) == str
 
             fstr = """
-            test = [arg1, arg2, arg3, arg4, arg5
-                    ]
+            test = [arg1, arg2, arg3, arg4, arg5]
             """
             @test format_text(str, SciMLStyle(); margin = 36) == fstr
             fstr2 = """
@@ -677,11 +675,9 @@
     ]
     """
 
-    # Now aligns to opening bracket
+    # Now joins the lines when they fit
     formatted_str = raw"""
-    x = [
-         1, 2, 3
-         ]
+    x = [1, 2, 3]
     """
 
     # This should be valid with and without `yas_style_nesting`
@@ -1756,11 +1752,11 @@
         """
         expected = raw"""
         setup = Pair{String, Any}["Start time" => first(integrator.sol.prob.tspan),
-            "Final time" => last(integrator.sol.prob.tspan),
-            "time integrator" => integrator.alg |> typeof |> nameof,
-            "adaptive" => integrator.opts.adaptive]
+                                  "Final time" => last(integrator.sol.prob.tspan),
+                                  "time integrator" => integrator.alg |> typeof |> nameof,
+                                  "adaptive" => integrator.opts.adaptive]
         """
-        @test_broken format_text(str, SciMLStyle()) == expected
+        @test format_text(str, SciMLStyle()) == expected
 
         # Test simpler typed arrays
         str2 = raw"""
@@ -1770,10 +1766,10 @@
         """
         expected2 = raw"""
         values = Int[1,
-            2,
-            3]
+                     2,
+                     3]
         """
-        @test_broken format_text(str2, SciMLStyle()) == expected2
+        @test format_text(str2, SciMLStyle()) == expected2
 
         # Another alignment test
         str3 = raw"""
@@ -1783,10 +1779,10 @@
         """
         expected3 = raw"""
         x = Float64[1.0,
-            2.0,
-            3.0]
+                    2.0,
+                    3.0]
         """
-        @test_broken format_text(str3, SciMLStyle()) == expected3
+        @test format_text(str3, SciMLStyle()) == expected3
     end
 
     @testset "Issue #934 comment #3146379860 - Additional edge cases" begin
@@ -1870,7 +1866,6 @@
                                                      another_argument)
         end
         """
-        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
 
         # Test 4: Closing parentheses behavior
