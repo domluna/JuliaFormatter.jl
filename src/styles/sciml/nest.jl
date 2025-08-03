@@ -243,8 +243,11 @@ function _n_tuple!(
     # For LHS tuples, be more conservative about breaking
     # but still allow it for very long lines
     if is_lhs_tuple && !has_newline
-        # Only nest if significantly over margin
-        if line_margin <= s.opts.margin + 20
+        # For short LHS tuples, never break them
+        if length(fst) <= 30  # e.g., "p_a, p_b" is only 8 chars
+            should_nest = false
+        # For longer LHS tuples, only nest if significantly over margin
+        elseif line_margin <= s.opts.margin + 20
             should_nest = false
         end
     end
