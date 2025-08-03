@@ -637,7 +637,9 @@ function n_vect!(
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
     if s.opts.yas_style_nesting
-        n_vect!(YASStyle(getstyle(ss)), fst, s, lineage)
+        # PR #807: Allow a line break after the opening brackets without YAS alignment
+        # This preserves existing formatting for arrays
+        return n_vect!(DefaultStyle(getstyle(ss)), fst, s, lineage)
     else
         # Custom implementation that packs multiple elements per line with YAS-style alignment
         style = getstyle(ss)

@@ -1805,17 +1805,17 @@
         # Default style now uses YAS-style alignment
         @test format_text(str, SciMLStyle()) == expected
         
-        # With yas_style_nesting=true, aligns to opening bracket
+        # With yas_style_nesting=true and existing line breaks, preserves them with standard indentation (PR #807)
         expected_yas = raw"""
         kernels = [GaussianKernel,
-                   SchoenbergCubicSplineKernel,
-                   SchoenbergQuarticSplineKernel,
-                   SchoenbergQuinticSplineKernel]
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel]
         """
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
         
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
-        # This should be fixed to proper YAS-style alignment
+        # With PR #807, existing line breaks are preserved with standard indentation
         str_bad = raw"""
         kernels = [
                    GaussianKernel,
@@ -1824,12 +1824,12 @@
                    SchoenbergQuinticSplineKernel
                    ]
         """
-        # Should be fixed to align with opening bracket
+        # Should preserve line breaks with standard indentation
         expected_fixed = raw"""
         kernels = [GaussianKernel,
-                   SchoenbergCubicSplineKernel,
-                   SchoenbergQuarticSplineKernel,
-                   SchoenbergQuinticSplineKernel]
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel]
         """
         @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_fixed
 
@@ -1999,5 +1999,33 @@
         (; x, y) = another_object
         """
         @test format_text(str, SciMLStyle()) == expected
+    end
+    
+    @testset "Array formatting preservation - Issue #934 comment" begin
+        # Arrays with existing line breaks should preserve them (PR #807)
+        str = """
+        kernels = [
+            GaussianKernel,
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel
+        ]
+        """
+        
+        expected = """
+        kernels = [GaussianKernel,
+            SchoenbergCubicSplineKernel,
+            SchoenbergQuarticSplineKernel,
+            SchoenbergQuinticSplineKernel]
+        """
+        
+        formatted = format_text(str, SciMLStyle(), yas_style_nesting = true)
+        @test formatted == expected
+        
+        # Arrays without line breaks should use default formatting
+        str2 = "kernels = [GaussianKernel, SchoenbergCubicSplineKernel, SchoenbergQuarticSplineKernel, SchoenbergQuinticSplineKernel]"
+        formatted2 = format_text(str2, SciMLStyle(), yas_style_nesting = true)
+        # Should break the long line
+        @test occursin("\n", formatted2)
     end
 end
