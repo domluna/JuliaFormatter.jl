@@ -166,8 +166,8 @@ function _n_tuple!(
                     end
                 end
                 if !has_newline
-                    # Never break LHS tuples - mark as NeverNest
-                    fst.nest_behavior = NeverNest
+                    # For LHS tuples, skip the automatic breaking logic
+                    # but still allow breaking if the line is too long
                     skip_optimal_nesting = true
                 end
                 break
@@ -196,12 +196,21 @@ function _n_tuple!(
            (ph > 1 && is_comment(fst[ph-1]))
             continue
         end
+        # Special case: preserve space after semicolon in tuple destructuring (e.g., (; x))
+        if ph > 1 && fst[ph-1].typ === SEMICOLON && fst.typ === TupleN
+            # Don't convert placeholder to whitespace - leave it as is
+            continue
+        end
         fst[ph] = Whitespace(fst[ph].len)
     end
 
     # macrocall doesn't have a placeholder before the closing parenthesis
     if fst.typ !== MacroCall && has_closer && length(placeholder_inds) > 0
-        fst[placeholder_inds[end]] = Whitespace(0)
+        # Special case: don't remove space after semicolon in tuple destructuring
+        last_ph_idx = placeholder_inds[end]
+        if !(last_ph_idx > 1 && fst[last_ph_idx-1].typ === SEMICOLON && fst.typ === TupleN)
+            fst[placeholder_inds[end]] = Whitespace(0)
+        end
     end
     idx = findlast(n -> n.typ === PLACEHOLDER, nodes)
 
@@ -231,12 +240,13 @@ function _n_tuple!(
         end
     end
 
-    # Override should_nest for LHS tuples that shouldn't be broken
+    # For LHS tuples, be more conservative about breaking
+    # but still allow it for very long lines
     if is_lhs_tuple && !has_newline
-        # For LHS tuples, never nest them regardless of length
-        # This prevents breaking "p_a, p_b" or even longer tuples
-        # Users can manually add line breaks if they want
-        should_nest = false
+        # Only nest if significantly over margin
+        if line_margin <= s.opts.margin + 20
+            should_nest = false
+        end
     end
 
     if idx !== nothing && should_nest

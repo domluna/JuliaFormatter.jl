@@ -1891,4 +1891,69 @@
         result = format_text(str, SciMLStyle(), yas_style_nesting = true)
         @test result == expected_main || result == expected_pr
     end
+
+    @testset "Tuple Destructuring - Issue #934 comments" begin
+        # Test case 1: Basic tuple destructuring (from PR comment)
+        str = """
+        (; density_calculator, state_equation, correction) = particle_system
+        (; sound_speed) = state_equation
+        """
+        expected = """
+        (; density_calculator, state_equation, correction) = particle_system
+        (; sound_speed) = state_equation
+        """
+        @test format_text(str, SciMLStyle()) == expected
+
+        # Test case 2: Single element tuple destructuring
+        str = """
+        (; x) = another_object
+        """
+        expected = """
+        (; x) = another_object
+        """
+        @test format_text(str, SciMLStyle()) == expected
+
+        # Test case 3: Multiple tuple destructuring in one line
+        str = """
+        (; a, b, c) = obj1; (; d, e, f) = obj2
+        """
+        expected = """
+        (; a, b, c) = obj1;
+        (; d, e, f) = obj2
+        """
+        @test format_text(str, SciMLStyle()) == expected
+
+        # Test case 4: Nested tuple destructuring
+        str = """
+        (; a, (; b, c) = inner) = outer
+        """
+        expected = """
+        (; a, (; b, c) = inner) = outer
+        """
+        @test format_text(str, SciMLStyle()) == expected
+
+        # Test case 5: Long tuple destructuring that should break
+        str = """
+        (; very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4) = some_very_long_object_name
+        """
+        # When the line is too long, it breaks after the opening paren
+        # This is consistent with how other tuples are formatted
+        expected = """
+        (;
+            very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3,
+            very_long_variable_name_4,) = some_very_long_object_name
+        """
+        @test format_text(str, SciMLStyle(), margin=92) == expected
+
+        # Test case 6: Multiple tuple destructuring with different objects
+        str = """
+        (; a, b, c) = some_object
+        (; x, y) = another_object
+        """
+        expected = """
+        (; a, b, c) = some_object
+        (; x, y) = another_object
+        """
+        @test format_text(str, SciMLStyle()) == expected
+    end
 end
