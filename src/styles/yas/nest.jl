@@ -9,9 +9,20 @@ function n_call!(
     # With `variable_call_indent`, check if the caller is in the list
     if caller_in_list(fst, s.opts.variable_call_indent) &&
        length(fst.nodes::Vector{FST}) > 5
-        # When variable_call_indent is set, use DefaultStyle which indents
-        # instead of aligning to the opening parenthesis
-        return n_call!(DefaultStyle(ys), fst, s, lineage)
+        # Check if the call is of the form `caller(something,...)`
+        # or of the form `caller(\n...)`.
+        # There may be a comment or both an inline comment and a comment in a separate line
+        # before the first argument, so check for that as well.
+        notcode(n) = n.typ === NOTCODE || n.typ === INLINECOMMENT || n.typ === PLACEHOLDER
+        linebreak_definition =
+            fst[4].typ === NEWLINE ||
+            notcode(fst[4]) && fst[5].typ === NEWLINE ||
+            notcode(fst[4]) && notcode(fst[5]) && fst[6].typ === NEWLINE
+
+        if linebreak_definition
+            # With a line break in the definition, don't align with the opening parenthesis
+            return n_call!(DefaultStyle(ys), fst, s, lineage)
+        end
     end
 
     function find_next_ph_or_nl(nodes::Vector{FST}, idx::Int)

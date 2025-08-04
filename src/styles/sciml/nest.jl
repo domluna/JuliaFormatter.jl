@@ -341,13 +341,6 @@ function n_call!(
         # Use YAS style directly
         n_call!(YASStyle(getstyle(ss)), fst, s, lineage)
     else
-        # Check if the caller is in variable_call_indent list
-        if caller_in_list(fst, s.opts.variable_call_indent) && length(fst.nodes::Vector{FST}) > 5
-            # When variable_call_indent is set, use DefaultStyle which indents normally
-            # instead of aligning to the opening parenthesis
-            return n_call!(DefaultStyle(getstyle(ss)), fst, s, lineage)
-        end
-        
         # Implement alignment to opening parenthesis like YAS does
         style = getstyle(ss)
         nodes = fst.nodes::Vector

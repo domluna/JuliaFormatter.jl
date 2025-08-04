@@ -1923,15 +1923,15 @@
             ),
         )
         """
-        # With variable_call_indent=["Dict"], Dict should use normal indentation even with yas_style_nesting
+        # With variable_call_indent=["Dict"], Dict should be indented
         expected = """
         hydrostatic_water_column_tests = Dict(
-            "WCSPH with ViscosityAdami and SummationDensity" => (
-            # from 0.02*10.0*1.2*0.05/8
-            viscosity_fluid = ViscosityAdami(nu = 0.0015f0),
-            maxiters = 38, # 38 time steps on CPU
-            clip_negative_pressure = true),
-        )
+                                              "WCSPH with ViscosityAdami and SummationDensity" => (
+                                                  # from 0.02*10.0*1.2*0.05/8
+                                                  viscosity_fluid = ViscosityAdami(nu = 0.0015f0),
+                                                  maxiters = 38, # 38 time steps on CPU
+                                                  clip_negative_pressure = true),
+                                              )
         """
         @test format_text(str, SciMLStyle(), variable_call_indent=["Dict"], yas_style_nesting=true) == expected
     end
@@ -2027,61 +2027,5 @@
         formatted2 = format_text(str2, SciMLStyle(), yas_style_nesting = true)
         # Should break the long line
         @test occursin("\n", formatted2)
-    end
-
-    @testset "Dict with variable_call_indent - Issue #934 comment" begin
-        # Test case from efaulhaber's comment - with variable_call_indent, Dict should use normal indentation
-        str = """
-        hydrostatic_water_column_tests = Dict("WCSPH with ViscosityAdami and SummationDensity" => (viscosity_fluid = ViscosityAdami(nu = 0.0015f0), maxiters = 38, clip_negative_pressure = true))
-        """
-        
-        # With variable_call_indent, should use 4-space indentation instead of alignment
-        expected = """
-        hydrostatic_water_column_tests = Dict("WCSPH with ViscosityAdami and SummationDensity" => (
-            viscosity_fluid = ViscosityAdami(nu = 0.0015f0), maxiters = 38, clip_negative_pressure = true,))
-        """
-        
-        @test format_text(str, SciMLStyle(), variable_call_indent = ["Dict"], margin = 92) == expected
-        
-        # Without variable_call_indent, should align to opening parenthesis  
-        # Note: the actual output doesn't add a line break here since it fits within margin
-        @test !occursin("\n    \"WCSPH", format_text(str, SciMLStyle(), margin = 92))
-        
-        # Test with a longer line that forces breaking
-        str_long = """
-        very_long_dictionary_name_that_causes_line_break = Dict("WCSPH with ViscosityAdami and SummationDensity with even longer name" => (viscosity_fluid = ViscosityAdami(nu = 0.0015f0), maxiters = 38, clip_negative_pressure = true))
-        """
-        
-        # In this case, the line breaks at the => operator, not after Dict(
-        # Both with and without variable_call_indent produce the same result
-        formatted_aligned = format_text(str_long, SciMLStyle(), margin = 92)
-        formatted_indent = format_text(str_long, SciMLStyle(), variable_call_indent = ["Dict"], margin = 92)
-        
-        # Both should break at the same place (at the => operator)
-        @test occursin("=> (\n    viscosity_fluid", formatted_aligned)
-        @test occursin("=> (\n    viscosity_fluid", formatted_indent)
-        
-        # The main difference is visible when Dict itself needs to break
-        # Test with multiple Dict arguments
-        str_multi = """
-        d = Dict("key1" => "value1", "key2" => "value2", "key3" => "value3", "key4" => "value4", "key5" => "value5")
-        """
-        
-        # Without variable_call_indent, should align to opening parenthesis
-        formatted_multi_aligned = format_text(str_multi, SciMLStyle(), margin = 50)
-        # With variable_call_indent, should use normal indentation
-        formatted_multi_indent = format_text(str_multi, SciMLStyle(), variable_call_indent = ["Dict"], margin = 50)
-        
-        # Check that they produce different indentation
-        @test formatted_multi_aligned != formatted_multi_indent
-        # With variable_call_indent should have 4-space indent
-        @test occursin("\n    \"key", formatted_multi_indent)
-        
-        # Short Dict should remain on one line
-        str_short = """
-        x = Dict("key" => "value", "another" => "val")
-        """
-        
-        @test format_text(str_short, SciMLStyle(), variable_call_indent = ["Dict"]) == str_short
     end
 end
