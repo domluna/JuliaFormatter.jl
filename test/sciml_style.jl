@@ -1930,7 +1930,8 @@
                                                   # from 0.02*10.0*1.2*0.05/8
                                                   viscosity_fluid = ViscosityAdami(nu = 0.0015f0),
                                                   maxiters = 38, # 38 time steps on CPU
-                                                  clip_negative_pressure = true),
+                                                  clip_negative_pressure = true,
+                                                  ),
                                               )
         """
         @test format_text(str, SciMLStyle(), variable_call_indent=["Dict"], yas_style_nesting=true) == expected

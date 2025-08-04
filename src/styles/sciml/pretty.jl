@@ -247,11 +247,10 @@ function p_tuple(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    if s.opts.yas_style_nesting
-        p_tuple(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
-    else
-        p_tuple(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
-    end
+    # Fix for Issue #934 Example 3: Always use DefaultStyle for tuples to preserve comma spacing
+    # YAS style with whitespace_in_kwargs=false was removing spaces after commas in tuples
+    # like (0.0,1.0) -> (0.0, 1.0)
+    p_tuple(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 function p_macrocall(
