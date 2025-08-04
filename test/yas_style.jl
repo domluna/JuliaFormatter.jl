@@ -577,20 +577,30 @@
         Dict{Int,Int}(1 => 2,
                       3 => 4)
         """
+        
+        formatted_str_with_indent = raw"""
+        Dict{Int,Int}(1 => 2,
+            3 => 4)
+        """
 
         # This should be valid with and without `Dict` in `variable_call_indent`
         @test format_text(str, YASStyle()) == str
-        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == str
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == formatted_str_with_indent
 
         str = raw"""
         SVector(1.0,
                 2.0)
         """
+        
+        formatted_str_with_indent = raw"""
+        SVector(1.0,
+            2.0)
+        """
 
         # Test the same with different callers
         @test format_text(str, YASStyle(); variable_call_indent = ["Dict"]) == str
         @test format_text(str, YASStyle(); variable_call_indent = ["SVector", "test2"]) ==
-              str
+              formatted_str_with_indent
 
         str = raw"""
         Dict{Int,Int}(
@@ -669,8 +679,7 @@
         SomeLongerTypeThanJustString = String
         y = Dict{Int,SomeLongerTypeThanJustString}(
             1 => "some arbitrary string bla bla bla bla bla bla",
-            2 => "another longer arbitrary string bla bla bla bla bla bla bla bla",
-        )
+            2 => "another longer arbitrary string bla bla bla bla bla bla bla bla")
         """
 
         # Here, `variable_call_indent` forces the line break because the line is too long.
@@ -800,5 +809,43 @@
               formatted_str1
         @test format_text(str, YASStyle(); variable_call_indent = ["SVector", "test"]) ==
               formatted_str2
+
+        # Test case from efaulhaber's comment - should not add unnecessary line break
+        str = raw"""
+        hydrostatic_water_column_tests = Dict("WCSPH with ViscosityAdami and SummationDensity" => (viscosity_fluid = ViscosityAdami(nu = 0.0015f0), maxiters = 38, clip_negative_pressure = true))
+        """
+        
+        formatted_str = raw"""
+        hydrostatic_water_column_tests = Dict(
+            "WCSPH with ViscosityAdami and SummationDensity" => (viscosity_fluid=ViscosityAdami(;
+                                                                                                nu=0.0015f0),
+                                                                 maxiters=38,
+                                                                 clip_negative_pressure=true),
+        )
+        """
+        
+        # With variable_call_indent, Dict should use normal indentation, not alignment
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"], margin = 92) == formatted_str
+
+        # Test with array syntax - should handle consistently
+        str = raw"""
+        kernels = [GaussianKernel, SchoenbergCubicSplineKernel, SchoenbergQuarticSplineKernel, SchoenbergQuinticSplineKernel]
+        """
+        
+        formatted_str = raw"""
+        kernels = [GaussianKernel, SchoenbergCubicSplineKernel, SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel]
+        """
+        
+        # Arrays should still align when yas_style_nesting is false (default)
+        @test format_text(str, YASStyle(); margin = 92) == formatted_str
+
+        # Test that Dict doesn't add unnecessary line break when it fits on one line
+        str = raw"""
+        x = Dict("key" => "value", "another" => "val")
+        """
+        
+        # Should remain on one line with variable_call_indent
+        @test format_text(str, YASStyle(); variable_call_indent = ["Dict"], margin = 92) == str
     end
 end
