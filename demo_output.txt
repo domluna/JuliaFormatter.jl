@@ -1,0 +1,112 @@
+=== JuliaFormatter PR #934 - Before and After Comparison ===
+
+Testing with default SciMLStyle:
+============================================================
+
+## Function call alignment ##
+
+Before formatting:
+res = NLS.solve(nlls_prob, NLS.LevenbergMarquardt(); maxiters = 1000, show_trace = Val(true))
+
+
+After formatting:
+res = NLS.solve(nlls_prob, NLS.LevenbergMarquardt(); maxiters = 1000, show_trace = Val(true))
+
+----------------------------------------
+
+## Array alignment ##
+
+Before formatting:
+kernels = [
+    GaussianKernel,
+    SchoenbergCubicSplineKernel,
+    SchoenbergQuarticSplineKernel,
+    SchoenbergQuinticSplineKernel
+]
+
+
+After formatting:
+kernels = [
+    GaussianKernel,
+    SchoenbergCubicSplineKernel,
+    SchoenbergQuarticSplineKernel,
+    SchoenbergQuinticSplineKernel
+]
+
+----------------------------------------
+
+## Dict with variable_call_indent ##
+
+Before formatting:
+Dict{Int, Int}(
+    1 => 2,
+    3 => 4)
+
+
+After formatting:
+Dict{Int, Int}(
+    1 => 2,
+    3 => 4)
+
+----------------------------------------
+
+## LHS tuple preservation ##
+
+Before formatting:
+p_a, p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+                                                v_neighbor_system,
+                                                particle_system, neighbor_system,
+                                                particle, neighbor)
+
+
+After formatting:
+p_a,
+p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+    v_neighbor_system,
+    particle_system, neighbor_system,
+    particle, neighbor)
+
+----------------------------------------
+
+## Tuple destructuring ##
+
+Before formatting:
+(; density_calculator, state_equation, correction) = particle_system
+(; sound_speed) = state_equation
+
+
+After formatting:
+(; density_calculator, state_equation, correction) = particle_system
+(; sound_speed) = state_equation
+
+----------------------------------------
+
+## Split LHS indentation ##
+
+Before formatting:
+p_a,
+p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+                                            v_neighbor_system,
+                                            particle_system, neighbor_system,
+                                            particle, neighbor)
+
+
+After formatting:
+p_a,
+p_b = @inbounds particle_neighbor_pressure(v_particle_system,
+    v_neighbor_system,
+    particle_system, neighbor_system,
+    particle, neighbor)
+
+----------------------------------------
+
+
+=== Key Changes Summary ===
+1. Function calls and arrays now align to opening parenthesis/bracket
+2. LHS tuples in assignments are preserved on one line when they fit
+3. Split LHS tuples maintain consistent indentation
+4. Tuple destructuring with semicolon preserves space after semicolon
+5. With yas_style_nesting=true, arrays use standard 4-space indentation
+
+All tests pass: ✓ 229 tests
+

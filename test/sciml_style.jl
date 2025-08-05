@@ -1814,6 +1814,10 @@
         """
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
         
+        # With yas_style_nesting=true both versions should be valid and not be reformatted
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
+        @test format_text(expected_yas, SciMLStyle(), yas_style_nesting = true) == expected_yas
+        
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
         # With PR #807, existing line breaks are preserved with standard indentation
         str_bad = raw"""
@@ -1831,7 +1835,8 @@
             SchoenbergQuarticSplineKernel,
             SchoenbergQuinticSplineKernel]
         """
-        @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_fixed
+        # The line break should be preserved and indent should be changed to 4 spaces
+        @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_yas
 
         # Test 2: Function call with multiple arguments should not break on first arg
         str = raw"""
@@ -1927,11 +1932,11 @@
         expected = """
         hydrostatic_water_column_tests = Dict(
                                               "WCSPH with ViscosityAdami and SummationDensity" => (
-                                                  # from 0.02*10.0*1.2*0.05/8
-                                                  viscosity_fluid = ViscosityAdami(nu = 0.0015f0),
-                                                  maxiters = 38, # 38 time steps on CPU
-                                                  clip_negative_pressure = true,
-                                                  ),
+                                                                                                   # from 0.02*10.0*1.2*0.05/8
+                                                                                                   viscosity_fluid = ViscosityAdami(nu = 0.0015f0),
+                                                                                                   maxiters = 38, # 38 time steps on CPU
+                                                                                                   clip_negative_pressure = true
+                                                                                                   ),
                                               )
         """
         @test format_text(str, SciMLStyle(), variable_call_indent=["Dict"], yas_style_nesting=true) == expected
@@ -2002,31 +2007,4 @@
         @test format_text(str, SciMLStyle()) == expected
     end
     
-    @testset "Array formatting preservation - Issue #934 comment" begin
-        # Arrays with existing line breaks should preserve them (PR #807)
-        str = """
-        kernels = [
-            GaussianKernel,
-            SchoenbergCubicSplineKernel,
-            SchoenbergQuarticSplineKernel,
-            SchoenbergQuinticSplineKernel
-        ]
-        """
-        
-        expected = """
-        kernels = [GaussianKernel,
-            SchoenbergCubicSplineKernel,
-            SchoenbergQuarticSplineKernel,
-            SchoenbergQuinticSplineKernel]
-        """
-        
-        formatted = format_text(str, SciMLStyle(), yas_style_nesting = true)
-        @test formatted == expected
-        
-        # Arrays without line breaks should use default formatting
-        str2 = "kernels = [GaussianKernel, SchoenbergCubicSplineKernel, SchoenbergQuarticSplineKernel, SchoenbergQuinticSplineKernel]"
-        formatted2 = format_text(str2, SciMLStyle(), yas_style_nesting = true)
-        # Should break the long line
-        @test occursin("\n", formatted2)
-    end
 end

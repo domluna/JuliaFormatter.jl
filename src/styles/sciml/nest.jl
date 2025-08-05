@@ -395,9 +395,18 @@ function n_tuple!(
         end
     end
     
-    # For LHS tuples, always use our custom logic that prevents breaking
+    # For LHS tuples, check if they have explicit parentheses
     if is_lhs_tuple
-        return _n_tuple!(ss, fst, s, lineage)
+        # Check if this is a parenthesized tuple (has explicit parentheses)
+        has_parens = length(fst.nodes) > 0 && is_opener(fst[1])
+        
+        if has_parens && s.opts.yas_style_nesting
+            # For parenthesized LHS tuples with yas_style_nesting, use YAS alignment
+            return n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
+        else
+            # Otherwise use our custom logic
+            return _n_tuple!(ss, fst, s, lineage)
+        end
     end
     
     # Fix for Issue #934 Dict variable_call_indent: Check if this tuple is the RHS of a => operator 

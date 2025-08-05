@@ -1,0 +1,6 @@
+ERROR: SystemError: opening file "/Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/test/sciml_style.jl": No such file or directory
+Stacktrace:
+ [1] include(fname::String)
+   @ Main ./sysimg.jl:38
+ [2] top-level scope
+   @ none:1
