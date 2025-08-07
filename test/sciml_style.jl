@@ -1805,14 +1805,9 @@
         # Default style now uses YAS-style alignment
         @test format_text(str, SciMLStyle()) == expected
         
-        # With yas_style_nesting=true and existing line breaks, preserves them with standard indentation (PR #807)
-        expected_yas = raw"""
-        kernels = [GaussianKernel,
-            SchoenbergCubicSplineKernel,
-            SchoenbergQuarticSplineKernel,
-            SchoenbergQuinticSplineKernel]
-        """
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
+        # With yas_style_nesting=true both versions should be valid and not be reformatted
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
+        @test format_text(expected, SciMLStyle(), yas_style_nesting = true) == expected
         
         # With yas_style_nesting=true both versions should be valid and not be reformatted
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
