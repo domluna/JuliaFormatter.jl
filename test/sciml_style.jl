@@ -313,11 +313,10 @@
                    3 => 4)
     """
 
-    # Now aligns to opening paren
     formatted_str = raw"""
     Dict{Int, Int}(# Comment
-                   1 => 2,
-                   3 => 4)
+       1 => 2,
+       3 => 4)
     """
 
     # Test `variable_call_indent` with an inline comment after the opening parenthesis
