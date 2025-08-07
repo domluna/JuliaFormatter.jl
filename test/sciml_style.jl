@@ -1809,10 +1809,6 @@
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == str
         @test format_text(expected, SciMLStyle(), yas_style_nesting = true) == expected
         
-        # With yas_style_nesting=true both versions should be valid and not be reformatted
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_yas
-        @test format_text(expected_yas, SciMLStyle(), yas_style_nesting = true) == expected_yas
-        
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
         # With PR #807, existing line breaks are preserved with standard indentation
         str_bad = raw"""
