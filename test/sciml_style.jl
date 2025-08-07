@@ -1871,16 +1871,7 @@
                                                      another_argument)
         end
         """
-        # Current behavior breaks after function name
-        expected_current = raw"""
-        function compute_gradient_correction_matrix!(
-                                                     corr::Union{GradientCorrection,
-                                                                 BlendedGradientCorrection,
-                                                                 MixedKernelGradientCorrection},
-                                                     another_argument)
-        end
-        """
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected_current
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
 
         # Test 4: Closing parentheses behavior
         str = raw"""
