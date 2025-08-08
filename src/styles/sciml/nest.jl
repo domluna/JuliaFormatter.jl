@@ -686,18 +686,51 @@ function n_ref!(
     end
 end
 
+# Helper function to extract variable name from FST node
+function extract_variable_name(fst::FST)
+    if fst.typ === IDENTIFIER
+        return fst.val
+    elseif fst.typ === TupleN && length(fst.nodes) > 0
+        # For tuple assignments, just check the first element
+        return extract_variable_name(fst.nodes[1])
+    elseif length(fst.nodes) > 0
+        # Recursively check first node for other types
+        return extract_variable_name(fst.nodes[1])
+    end
+    return nothing
+end
+extract_variable_name(::Any) = nothing
+
 function n_vect!(
     ss::SciMLStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    if s.opts.yas_style_nesting
-        # Fix for Issue #934: With yas_style_nesting, always use standard indentation for arrays
-        # This prevents excessive YAS-style alignment that was reported in the issue
-        style = getstyle(ss)
-        
-        # Use standard indentation (4 spaces) instead of YAS alignment
+    style = getstyle(ss)
+    
+    # Check if this array should use variable indentation
+    # This happens when the array name matches variable_array_indent patterns
+    use_variable_indent = false
+    if !isempty(s.opts.variable_array_indent) && length(lineage) >= 1
+        # Check if we're in an assignment context
+        for i in length(lineage):-1:1
+            (node_type, metadata) = lineage[i]
+            if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
+                # For now, apply variable_array_indent if "*" is in the list
+                # TODO: In the future, enhance this to match specific variable names
+                # by passing the variable name through the metadata or context
+                if "*" in s.opts.variable_array_indent
+                    use_variable_indent = true
+                end
+                break
+            end
+        end
+    end
+    
+    if use_variable_indent
+        # Use variable indentation style (indent under the assignment)
+        # This allows arrays to be formatted with standard indentation
         fst.indent += s.opts.indent
         
         nodes = fst.nodes::Vector
@@ -705,15 +738,12 @@ function n_vect!(
             fst[end].indent = fst.indent - s.opts.indent
         end
         
-        # Use YAS-style nesting logic
-        f = n -> n.typ === PLACEHOLDER || n.typ === NEWLINE
-        
         nested = false
         for (i, n) in enumerate(nodes)
             if n.typ === NEWLINE
                 s.line_offset = fst.indent
             elseif n.typ === PLACEHOLDER
-                si = findnext(f, nodes, i + 1)
+                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
                 nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
             elseif is_gen(n)
                 n.indent = fst.indent
@@ -728,6 +758,10 @@ function n_vect!(
         end
         
         return nested
+    elseif s.opts.yas_style_nesting
+        # With yas_style_nesting=true, use YAS-style alignment (align to opening bracket)
+        # This is the consistent behavior requested in PR #934
+        return n_vect!(YASStyle(style), fst, s, lineage)
     else
         # Custom implementation that packs multiple elements per line with YAS-style alignment
         style = getstyle(ss)

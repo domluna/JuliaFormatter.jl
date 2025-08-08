@@ -1806,7 +1806,7 @@
         
         # With yas_style_nesting=true both versions should be valid and not be reformatted
         @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == str
-        @test_broken format_text(expected, SciMLStyle(), yas_style_nesting = true) == expected
+        @test format_text(expected, SciMLStyle(), yas_style_nesting = true) == expected
         
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
         # With PR #807, existing line breaks are preserved with standard indentation
@@ -1818,14 +1818,14 @@
                    SchoenbergQuinticSplineKernel
                    ]
         """
-        # Should preserve line breaks with standard indentation
+        # With yas_style_nesting=true, should align to opening bracket (YAS-style)
         expected_fixed = raw"""
         kernels = [GaussianKernel,
-            SchoenbergCubicSplineKernel,
-            SchoenbergQuarticSplineKernel,
-            SchoenbergQuinticSplineKernel]
+                   SchoenbergCubicSplineKernel,
+                   SchoenbergQuarticSplineKernel,
+                   SchoenbergQuinticSplineKernel]
         """
-        # The line break should be preserved and indent should be changed to 4 spaces
+        # The line break should be preserved and aligned to bracket with yas_style_nesting
         @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_fixed
 
         # Test 2: Function call with multiple arguments should not break on first arg
