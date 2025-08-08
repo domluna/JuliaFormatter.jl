@@ -1,2 +1,0 @@
-Test Summary: | Pass  Total  Time
-SciML Style   |  229    229  1.5s
