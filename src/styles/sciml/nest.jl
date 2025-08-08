@@ -709,9 +709,8 @@ function n_vect!(
 )
     style = getstyle(ss)
     
-    # Check if this array should use variable indentation
-    # This happens when the array name matches variable_array_indent patterns
-    use_variable_indent = false
+    # Check if variable_array_indent is enabled and we're in an assignment
+    apply_variable_indent = false
     if !isempty(s.opts.variable_array_indent) && length(lineage) >= 1
         # Check if we're in an assignment context
         for i in length(lineage):-1:1
@@ -719,45 +718,81 @@ function n_vect!(
             if node_type === Binary && !isnothing(metadata) && metadata.is_assignment
                 # For now, apply variable_array_indent if "*" is in the list
                 # TODO: In the future, enhance this to match specific variable names
-                # by passing the variable name through the metadata or context
                 if "*" in s.opts.variable_array_indent
-                    use_variable_indent = true
+                    apply_variable_indent = true
                 end
                 break
             end
         end
     end
     
-    if use_variable_indent
-        # Use variable indentation style (indent under the assignment)
-        # This allows arrays to be formatted with standard indentation
-        fst.indent += s.opts.indent
-        
+    if apply_variable_indent && length(fst.nodes::Vector) > 2
+        # With variable_array_indent, be permissive about formatting:
+        # - Arrays can use either bracket alignment OR 4-space indent (with initial newline)
+        # - The "bad" format (no initial newline + wrong indent) gets fixed to bracket alignment
         nodes = fst.nodes::Vector
-        if length(nodes) > 0 && is_closer(fst[end])
-            fst[end].indent = fst.indent - s.opts.indent
-        end
         
-        nested = false
-        for (i, n) in enumerate(nodes)
-            if n.typ === NEWLINE
-                s.line_offset = fst.indent
-            elseif n.typ === PLACEHOLDER
-                si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
-                nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
-            elseif is_gen(n)
-                n.indent = fst.indent
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
-            else
-                diff = fst.indent - n.indent
-                add_indent!(n, s, diff)
-                n.extra_margin = 1
-                nested |= nest!(style, n, s, lineage)
+        # Check for initial newline after opening bracket
+        has_initial_newline = false
+        if length(nodes) >= 3
+            if nodes[2].typ === NEWLINE
+                has_initial_newline = true
+            elseif nodes[2].typ === PLACEHOLDER && length(nodes) >= 3 && nodes[3].typ === NEWLINE
+                has_initial_newline = true
             end
         end
         
-        return nested
+        # Check current indentation of first element after bracket
+        has_bad_indent = false
+        first_elem_idx = has_initial_newline ? 3 : 2
+        while first_elem_idx <= length(nodes) && 
+              (nodes[first_elem_idx].typ === PLACEHOLDER || 
+               nodes[first_elem_idx].typ === WHITESPACE ||
+               nodes[first_elem_idx].typ === NEWLINE)
+            first_elem_idx += 1
+        end
+        
+        # Detect bad format: continuation line without initial newline and with 4-space indent
+        # This would be like: `kernels = [GaussianKernel,\n    SchoenbergCubic...]`
+        # We detect this by checking if there's a newline somewhere but not after the bracket
+        has_any_newline = any(n -> n.typ === NEWLINE, nodes)
+        if !has_initial_newline && has_any_newline
+            # This is potentially the bad format - fix it with YAS alignment
+            return n_vect!(YASStyle(style), fst, s, lineage)
+        elseif has_initial_newline
+            # Valid format with initial newline - preserve with 4-space indent
+            # Use a custom implementation that preserves the newline
+            fst.indent += s.opts.indent
+            
+            if length(nodes) > 0 && is_closer(fst[end])
+                fst[end].indent = fst.indent - s.opts.indent
+            end
+            
+            # Ensure the newline after bracket is preserved
+            if nodes[2].typ === PLACEHOLDER
+                nodes[2] = Newline(; length = nodes[2].len)
+            end
+            
+            nested = false
+            for (i, n) in enumerate(nodes)
+                if n.typ === NEWLINE
+                    s.line_offset = fst.indent
+                elseif n.typ === PLACEHOLDER
+                    si = findnext(n -> n.typ === PLACEHOLDER || n.typ === NEWLINE, nodes, i + 1)
+                    nested |= nest_if_over_margin!(style, fst, s, i, lineage; stop_idx = si)
+                else
+                    diff = fst.indent - n.indent
+                    add_indent!(n, s, diff)
+                    n.extra_margin = 1
+                    nested |= nest!(style, n, s, lineage)
+                end
+            end
+            
+            return nested
+        else
+            # No newlines or valid format without initial newline - use YAS alignment
+            return n_vect!(YASStyle(style), fst, s, lineage)
+        end
     elseif s.opts.yas_style_nesting
         # With yas_style_nesting=true, use YAS-style alignment (align to opening bracket)
         # This is the consistent behavior requested in PR #934

@@ -1,0 +1,199 @@
+┌ Warning: The active manifest file has dependencies that were resolved with a different julia version (1.11.6). Unexpected behavior may occur.
+└ @ ~/sandbox/format3/JuliaFormatter.jl/Manifest.toml:0
+┌ Warning: The project dependencies or compat requirements have changed since the manifest was last resolved.
+│ It is recommended to `Pkg.resolve()` or consider `Pkg.update()` if necessary.
+└ @ Pkg.API ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:1142
+     Testing JuliaFormatter
+      Status `/private/var/folders/n7/8__dxqys26z09_m22jvqb3g00000gn/T/jl_edg8sg/Project.toml`
+  [a80b9123] CommonMark v0.9.1
+  [c27321d9] Glob v1.3.1
+  [98e50ef6] JuliaFormatter v2.1.6 `~/sandbox/format3/JuliaFormatter.jl`
+⌅ [70703baa] JuliaSyntax v0.4.10
+⌅ [aea7be01] PrecompileTools v1.2.1
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test
+      Status `/private/var/folders/n7/8__dxqys26z09_m22jvqb3g00000gn/T/jl_edg8sg/Manifest.toml`
+  [a80b9123] CommonMark v0.9.1
+  [c27321d9] Glob v1.3.1
+  [98e50ef6] JuliaFormatter v2.1.6 `~/sandbox/format3/JuliaFormatter.jl`
+⌅ [70703baa] JuliaSyntax v0.4.10
+⌅ [aea7be01] PrecompileTools v1.2.1
+  [21216c6a] Preferences v1.4.3
+  [2a0f44e3] Base64
+  [ade2ca70] Dates
+  [b77e0a4c] InteractiveUtils
+  [56ddb016] Logging
+  [d6f4376e] Markdown
+  [de0858da] Printf
+  [9a3f8284] Random
+  [ea8e919c] SHA v0.7.0
+  [9e88b42a] Serialization
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test
+  [4ec0a83e] Unicode
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading.
+Precompiling packages...
+  15836.6 ms  ✓ JuliaFormatter
+  1 dependency successfully precompiled in 16 seconds. 6 already precompiled.
+     Testing Running tests...
+SciML Style: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:325
+  Expression: format_text(str, SciMLStyle()) == formatted_str
+   Evaluated: "Dict{Int, Int}(# Comment\n               1 => 2,\n               3 => 4)\n" == "Dict{Int, Int}(# Comment\n   1 => 2,\n   3 => 4)\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:325 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+SciML Style: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:326
+  Expression: format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
+   Evaluated: "Dict{Int, Int}(# Comment\n               1 => 2,\n               3 => 4)\n" == "Dict{Int, Int}(# Comment\n   1 => 2,\n   3 => 4)\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:326 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+Issue #934 comment #3146379860 - Additional edge cases: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1808
+  Expression: format_text(str, SciMLStyle(), yas_style_nesting = true) == str
+   Evaluated: "kernels = [GaussianKernel,\n    SchoenbergCubicSplineKernel,\n    SchoenbergQuarticSplineKernel,\n    SchoenbergQuinticSplineKernel]\n" == "kernels = [\n    GaussianKernel,\n    SchoenbergCubicSplineKernel,\n    SchoenbergQuarticSplineKernel,\n    SchoenbergQuinticSplineKernel,\n]\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1808 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1789 [inlined]
+ [5] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [6] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+Issue #934 comment #3146379860 - Additional edge cases: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1809
+  Expression: format_text(expected, SciMLStyle(), yas_style_nesting = true) == expected
+   Evaluated: "kernels = [GaussianKernel,\n    SchoenbergCubicSplineKernel,\n    SchoenbergQuarticSplineKernel,\n    SchoenbergQuinticSplineKernel]\n" == "kernels = [GaussianKernel,\n           SchoenbergCubicSplineKernel,\n           SchoenbergQuarticSplineKernel,\n           SchoenbergQuinticSplineKernel]\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1809 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1789 [inlined]
+ [5] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [6] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+Issue #934 comment #3146379860 - Additional edge cases: Error During Test at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1829
+  Test threw exception
+  Expression: format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_yas
+  UndefVarError: `expected_yas` not defined
+  Stacktrace:
+   [1] macro expansion
+     @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:669 [inlined]
+   [2] macro expansion
+     @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1829 [inlined]
+   [3] macro expansion
+     @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+   [4] macro expansion
+     @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1789 [inlined]
+   [5] macro expansion
+     @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+   [6] top-level scope
+     @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+Issue #934 comment #3146379860 - Additional edge cases: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1874
+  Expression: format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+   Evaluated: "function compute_gradient_correction_matrix!(\n                                             corr::Union{GradientCorrection,\n                                                         BlendedGradientCorrection,\n                                                         MixedKernelGradientCorrection},\n                                             another_argument)\nend\n" == "function compute_gradient_correction_matrix!(corr::Union{GradientCorrection,\n                                                         BlendedGradientCorrection,\n                                                         MixedKernelGradientCorrection},\n                                             another_argument)\nend\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1874 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1789 [inlined]
+ [5] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [6] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+Dict with variable_call_indent - Issue #934 comment: Test Failed at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1923
+  Expression: format_text(str, SciMLStyle(), variable_call_indent = ["Dict"], yas_style_nesting = true) == expected
+   Evaluated: "hydrostatic_water_column_tests = Dict(\n                                      \"WCSPH with ViscosityAdami and SummationDensity\" => (\n                                                                                           # from 0.02*10.0*1.2*0.05/8\n                                                                                           viscosity_fluid = ViscosityAdami(nu = 0.0015f0),\n                                                                                           maxiters = 38, # 38 time steps on CPU\n                                                                                           clip_negative_pressure = true\n                                                                                           ),\n                                      )\n" == "hydrostatic_water_column_tests = Dict(\n    \"WCSPH with ViscosityAdami and SummationDensity\" => (\n        # from 0.02*10.0*1.2*0.05/8\n        viscosity_fluid = ViscosityAdami(nu = 0.0015f0),\n        maxiters = 38, # 38 time steps on CPU\n        clip_negative_pressure = true\n    ),\n)\n"
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:672 [inlined]
+ [2] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1923 [inlined]
+ [3] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [4] macro expansion
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:1902 [inlined]
+ [5] macro expansion
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Test/src/Test.jl:1577 [inlined]
+ [6] top-level scope
+   @ ~/sandbox/format3/JuliaFormatter.jl/test/sciml_style.jl:3
+┌ Info: formatting in directory
+└   sandbox_dir = "/var/folders/n7/8__dxqys26z09_m22jvqb3g00000gn/T/abuiktckqrqqdtokwpkskglmpskhkayyhvskkjsr"
+Test Summary:                                                                 | Pass  Fail  Error  Total   Time
+JuliaFormatter                                                                | 1703     6      1   1710  30.6s
+  Default Style                                                               |  669                 669   0.7s
+  YAS Style                                                                   |  131                 131   0.1s
+  Blue Style                                                                  |   28                  28   0.0s
+  SciML Style                                                                 |  270     6      1    277   2.1s
+    optimal nesting                                                           |   21                  21   0.0s
+    SciML Repository Regression Tests                                         |   45                  45   0.0s
+    semantic safety                                                           |   69                  69   0.3s
+    line break quality                                                        |   42                  42   0.1s
+    JumpProcesses.jl PR #504 formatting issues                                |    8                   8   0.0s
+    Catalyst.jl PR #1305 formatting issues                                    |   18                  18   0.0s
+    Issue from PR comments - indentation with split LHS                       |    1                   1   0.0s
+    PR #934 comment - LHS tuple preservation                                  |    3                   3   0.0s
+    PR #934 comment #3144697449 - Consistent indentation for split LHS tuples |    2                   2   0.0s
+    Issue #935 - TypedVcat indentation regression                             |    3                   3   0.0s
+    Issue #934 comment #3146379860 - Additional edge cases                    |    4     3      1      8   0.4s
+    Dict with variable_call_indent - Issue #934 comment                       |          1             1   0.0s
+    Tuple Destructuring - Issue #934 comments                                 |    6                   6   0.0s
+  Multidimensional Arrays                                                     |   17                  17   0.1s
+  GitHub Issues                                                               |  193                 193   0.2s
+  Formatting Options                                                          |  332                 332   0.2s
+  format interface                                                            |    8                   8   0.2s
+  format_file interface                                                       |    8                   8   0.1s
+  .JuliaFormatter.toml config                                                 |   45                  45   0.3s
+  Format repo                                                                 |    2                   2   1.9s
+ERROR: LoadError: Some tests did not pass: 1703 passed, 6 failed, 1 errored, 0 broken.
+in expression starting at /Users/chrisrackauckas/sandbox/format3/JuliaFormatter.jl/test/runtests.jl:67
+ERROR: Package JuliaFormatter errored during testing
+Stacktrace:
+ [1] pkgerror(msg::String)
+   @ Pkg.Types ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/Types.jl:70
+ [2] test(ctx::Pkg.Types.Context, pkgs::Vector{Pkg.Types.PackageSpec}; coverage::Bool, julia_args::Cmd, test_args::Cmd, test_fn::Nothing, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool)
+   @ Pkg.Operations ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/Operations.jl:2034
+ [3] test
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/Operations.jl:1915 [inlined]
+ [4] test(ctx::Pkg.Types.Context, pkgs::Vector{Pkg.Types.PackageSpec}; coverage::Bool, test_fn::Nothing, julia_args::Cmd, test_args::Cmd, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool, kwargs::@Kwargs{io::Base.PipeEndpoint})
+   @ Pkg.API ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:444
+ [5] test(pkgs::Vector{Pkg.Types.PackageSpec}; io::Base.PipeEndpoint, kwargs::@Kwargs{})
+   @ Pkg.API ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:159
+ [6] test(pkgs::Vector{Pkg.Types.PackageSpec})
+   @ Pkg.API ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:148
+ [7] test
+   @ ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:147 [inlined]
+ [8] test(pkg::String)
+   @ Pkg.API ~/.julia/juliaup/julia-1.10.10+0.aarch64.apple.darwin14/share/julia/stdlib/v1.10/Pkg/src/API.jl:146
+ [9] top-level scope
+   @ none:1
