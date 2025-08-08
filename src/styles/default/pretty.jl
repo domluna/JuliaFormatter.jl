@@ -1622,9 +1622,14 @@ function p_if(
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         elseif kind(c) === K"block"
             s.indent += s.opts.indent
+            block_ctx = if s.opts.preserve_single_line_if
+                ctx
+            else
+                newctx(ctx; ignore_single_line = true)
+            end
             add_node!(
                 t,
-                pretty(style, c, s, newctx(ctx; ignore_single_line = true), lineage),
+                pretty(style, c, s, block_ctx, lineage),
                 s;
                 max_padding = s.opts.indent,
             )
