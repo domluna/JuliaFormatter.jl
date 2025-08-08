@@ -1819,14 +1819,16 @@
                    ]
         """
         # Should preserve line breaks with standard indentation
-        expected_fixed = raw"""
+        str_bad2 = raw"""
         kernels = [GaussianKernel,
             SchoenbergCubicSplineKernel,
             SchoenbergQuarticSplineKernel,
             SchoenbergQuinticSplineKernel]
         """
         # The line break should be preserved and indent should be changed to 4 spaces
-        @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == expected_yas
+        @test format_text(str_bad, SciMLStyle(), yas_style_nesting = true) == str
+        # The line break should be preserved and indent should align with opening paren
+        @test format_text(str_bad2, SciMLStyle(), yas_style_nesting = true) == expected
 
         # Test 2: Function call with multiple arguments should not break on first arg
         str = raw"""
