@@ -34,7 +34,7 @@ Base.@kwdef struct Options
     ignore::Vector{String} = String[]
     variable_call_indent::Vector{String} = []
     yas_style_nesting::Bool = false
-    variable_array_indent::Vector{String} = []
+    variable_array_indent::Bool = false
     short_circuit_to_if::Bool = false
     disallow_single_arg_nesting::Bool = false
 

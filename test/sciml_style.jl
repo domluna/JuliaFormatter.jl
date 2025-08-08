@@ -1804,12 +1804,12 @@
         # Default style now uses YAS-style alignment
         @test format_text(str, SciMLStyle()) == expected
         
-        # With yas_style_nesting=true, arrays lign with opening brackets and no initial line break is allowed
-        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
+        # With yas_style_nesting=true, arrays align with opening brackets and no initial line break is allowed
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
         
-        # With variable_array_indent=["*"], both versions should be valid and not be reformatted
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=["*"]) == str
-        @test format_text(expected, SciMLStyle(), yas_style_nesting = true, variable_array_indent=["*"]) == expected
+        # With variable_array_indent=true, both versions should be valid and not be reformatted
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == str
+        @test format_text(expected, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == expected
         
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
         # With PR #807, existing line breaks are preserved with standard indentation

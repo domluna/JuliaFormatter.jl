@@ -224,8 +224,48 @@ function p_vect(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    # Use YAS style which might have better vector formatting
-    p_vect(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+    style = getstyle(ss)
+    
+    # If variable_array_indent is enabled, detect the format early and use appropriate style
+    if s.opts.variable_array_indent && haschildren(cst)
+        childs = children(cst)
+        
+        # Check if there's a newline after the opening bracket
+        has_initial_newline = false
+        if length(childs) >= 2 && kind(childs[1]) === K"["
+            # Check the source between [ and the first element
+            src_between = ""
+            if length(childs) >= 2
+                start_pos = s.offset + span(childs[1])
+                # Find first non-trivia child
+                next_child_idx = 2
+                while next_child_idx <= length(childs) && JuliaSyntax.is_trivia(childs[next_child_idx])
+                    next_child_idx += 1
+                end
+                if next_child_idx <= length(childs)
+                    end_pos = s.offset + sum(span(childs[j]) for j in 1:(next_child_idx-1))
+                    if end_pos > start_pos && start_pos <= length(s.doc.srcfile.code) && end_pos <= length(s.doc.srcfile.code)
+                        src_between = s.doc.srcfile.code[start_pos:end_pos]
+                        has_initial_newline = '\n' in src_between
+                    end
+                end
+            end
+        end
+        
+        if has_initial_newline
+            # Use DefaultStyle which preserves the newline better
+            t = p_vect(DefaultStyle(style), cst, s, ctx, lineage)
+            # Mark that this array had an initial newline for n_vect!
+            t.metadata = Metadata(K"None", false, false, true, false, false, false)
+            return t
+        else
+            # Use YAS style for bracket alignment
+            return p_vect(YASStyle(style), cst, s, ctx, lineage)
+        end
+    else
+        # Default behavior
+        return p_vect(YASStyle(style), cst, s, ctx, lineage)
+    end
 end
 
 # Custom p_ref to preserve whitespace in typed arrays (Issue #935)
