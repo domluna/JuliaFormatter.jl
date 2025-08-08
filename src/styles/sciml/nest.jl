@@ -250,6 +250,10 @@ function _n_tuple!(
         elseif line_margin <= s.opts.margin + 20
             should_nest = false
         end
+    elseif is_lhs_tuple && has_newline
+        # CRITICAL FIX for Bug #1: Never re-nest already split LHS tuples
+        # as it corrupts them (causing the first element to be lost)
+        should_nest = false
     end
 
     if idx !== nothing && should_nest
@@ -296,7 +300,10 @@ function _n_tuple!(
         end
 
         # Special handling for split LHS tuples to ensure proper indentation
+        # DEBUG: Check if we're actually entering this branch
         if is_lhs_tuple && has_newline && fst.typ === TupleN
+            # DEBUG
+            # println("DEBUG: Handling split LHS tuple with $(length(nodes)) nodes")
             # Ensure all nodes after newlines get proper indentation
             after_newline = false
             for (i, n) in enumerate(nodes)
@@ -854,16 +861,33 @@ function n_binaryopcall_split_lhs!(
 )
     style = getstyle(ss)
     
-    # First, ensure the LHS tuple gets proper indentation by modifying
-    # it before the default handler processes it
+    # For split LHS tuples, we need special handling to prevent corruption
+    # The default handler will try to add newlines which corrupts the LHS
+    
+    # Process the LHS and RHS separately
     lhs = fst[1]
+    # Don't override the indent - it should already be set correctly based on nesting level
+    # lhs.indent should preserve the indentation from parent blocks
     
-    # For a split LHS tuple, we need to ensure it gets indented properly
-    # Split LHS tuples without parentheses should have 0 indentation
-    lhs.indent = 0  # Split LHS should continue at column 0
+    # Process LHS with proper handling
+    nest!(style, lhs, s, lineage)
     
-    # Now delegate to the default handler
-    return n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
+    # Process the operator and whitespace
+    for i in 2:(length(fst.nodes)-1)
+        nest!(style, fst[i], s, lineage)
+    end
+    
+    # Process RHS
+    rhs = fst[end]
+    if rhs.typ === Block
+        rhs.indent = fst.indent + s.opts.indent
+    else
+        rhs.indent = fst.indent
+    end
+    rhs.extra_margin = fst.extra_margin
+    nest!(style, rhs, s, lineage)
+    
+    return true  # Mark as nested
 end
 
 for f in [:n_chainopcall!, :n_comparison!, :n_for!]
