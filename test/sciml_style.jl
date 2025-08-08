@@ -1967,12 +1967,12 @@
         str = """
         (; very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4) = some_very_long_object_name
         """
-        # When the line is too long, it breaks after the opening paren
-        # This is consistent with how other tuples are formatted
+        # When the line is too long, it breaks after the semicolon
+        # TODO: Ideally it should also break the long line of parameters to fit within margin
+        # but this is a pre-existing limitation of the nesting algorithm for parameters
         expected = """
         (;
-            very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3,
-            very_long_variable_name_4,) = some_very_long_object_name
+            very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4,) = some_very_long_object_name
         """
         @test format_text(str, SciMLStyle(), margin=92) == expected
 

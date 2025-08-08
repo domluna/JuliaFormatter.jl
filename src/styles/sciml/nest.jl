@@ -250,9 +250,10 @@ function _n_tuple!(
         elseif line_margin <= s.opts.margin + 20
             should_nest = false
         end
-    elseif is_lhs_tuple && has_newline
-        # CRITICAL FIX for Bug #1: Never re-nest already split LHS tuples
+    elseif is_lhs_tuple && has_newline && fst.typ === TupleN && !has_closer
+        # CRITICAL FIX for Bug #1: Never re-nest already split LHS tuples WITHOUT parentheses
         # as it corrupts them (causing the first element to be lost)
+        # Note: Only applies to TupleN type, not Parameters or other types
         should_nest = false
     end
 
