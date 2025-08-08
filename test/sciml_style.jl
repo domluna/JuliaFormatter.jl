@@ -1967,14 +1967,20 @@
         str = """
         (; very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4) = some_very_long_object_name
         """
-        # When the line is too long, it breaks after the semicolon
-        # TODO: Ideally it should also break the long line of parameters to fit within margin
-        # but this is a pre-existing limitation of the nesting algorithm for parameters
-        expected = """
+        # Current behavior: breaks after semicolon, adds trailing comma
+        current_expected = """
         (;
             very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4,) = some_very_long_object_name
         """
-        @test format_text(str, SciMLStyle(), margin=92) == expected
+        @test format_text(str, SciMLStyle(), margin=92) == current_expected
+        
+        # Ideal behavior: should also break the long line to fit within margin
+        ideal_expected = """
+        (;
+            very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3,
+            very_long_variable_name_4,) = some_very_long_object_name
+        """
+        @test_broken format_text(str, SciMLStyle(), margin=92) == ideal_expected
 
         # Test case 6: Multiple tuple destructuring with different objects
         str = """
