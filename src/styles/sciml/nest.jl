@@ -723,37 +723,16 @@ function n_vect!(
     end
     
     if apply_variable_indent
-        # Check if this array was marked as having an initial newline in p_vect
-        has_initial_newline_in_source = false
-        if !isnothing(fst.metadata) && 
-           fst.metadata.is_short_form_function  # We use this field as a flag for initial newline
-            has_initial_newline_in_source = true
-        end
-        
-        # Also check current FST structure
+        # When variable_array_indent is enabled, always use 4-space indent
+        # for multi-line arrays in assignments
         nodes = fst.nodes::Vector
-        has_initial_newline_in_fst = false
-        if length(nodes) >= 3
-            if nodes[2].typ === NEWLINE
-                has_initial_newline_in_fst = true
-            elseif nodes[2].typ === PLACEHOLDER && length(nodes) >= 3 && nodes[3].typ === NEWLINE
-                has_initial_newline_in_fst = true
-            end
-        end
-        
-        # Detect bad format: has line breaks but no initial newline
         has_any_newline = any(n -> n.typ === NEWLINE, nodes)
         
-        if has_initial_newline_in_source || has_initial_newline_in_fst
-            # Valid format with initial newline - use 4-space indent
-            # Delegate to DefaultStyle's n_vect which uses n_tuple
-            # This should preserve the format better
+        if has_any_newline
+            # Multi-line array - always use 4-space indent via DefaultStyle
             return n_vect!(DefaultStyle(style), fst, s, lineage)
-        elseif !has_initial_newline_in_fst && has_any_newline
-            # Bad format (no initial newline but has line breaks) - fix with YAS alignment
-            return n_vect!(YASStyle(style), fst, s, lineage)
         else
-            # No newlines or valid format without initial newline - use YAS alignment
+            # Single line - use YAS for consistency
             return n_vect!(YASStyle(style), fst, s, lineage)
         end
     elseif s.opts.yas_style_nesting
