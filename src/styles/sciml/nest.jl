@@ -709,6 +709,12 @@ function n_vect!(
 )
     style = getstyle(ss)
     
+    # With yas_style_nesting=true, always use YAS-style alignment (align to opening bracket)
+    # This takes precedence over variable_array_indent
+    if s.opts.yas_style_nesting
+        return n_vect!(YASStyle(style), fst, s, lineage)
+    end
+    
     # Check if variable_array_indent is enabled and we're in an assignment
     apply_variable_indent = false
     if s.opts.variable_array_indent && length(lineage) >= 1
@@ -723,22 +729,18 @@ function n_vect!(
     end
     
     if apply_variable_indent
-        # When variable_array_indent is enabled, always use 4-space indent
-        # for multi-line arrays in assignments
+        # When variable_array_indent is enabled (and yas_style_nesting is false),
+        # use 4-space indent for multi-line arrays in assignments
         nodes = fst.nodes::Vector
         has_any_newline = any(n -> n.typ === NEWLINE, nodes)
         
         if has_any_newline
-            # Multi-line array - always use 4-space indent via DefaultStyle
+            # Multi-line array - use 4-space indent via DefaultStyle
             return n_vect!(DefaultStyle(style), fst, s, lineage)
         else
             # Single line - use YAS for consistency
             return n_vect!(YASStyle(style), fst, s, lineage)
         end
-    elseif s.opts.yas_style_nesting
-        # With yas_style_nesting=true, use YAS-style alignment (align to opening bracket)
-        # This is the consistent behavior requested in PR #934
-        return n_vect!(YASStyle(style), fst, s, lineage)
     else
         # Custom implementation that packs multiple elements per line with YAS-style alignment
         style = getstyle(ss)
