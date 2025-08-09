@@ -852,6 +852,28 @@ function n_binaryopcall!(
 )
     style = getstyle(ss)
 
+    # Check if this is an anonymous function (->)
+    if op_kind(fst) in KSet"->"
+        lhs = fst[1]
+        
+        # Check if LHS is a tuple with newlines (multi-line parameters)
+        if lhs.typ === TupleN
+            has_newline = false
+            for n in lhs.nodes
+                if n.typ === NEWLINE
+                    has_newline = true
+                    break
+                end
+            end
+            
+            if has_newline
+                # For anonymous functions with multi-line parameters,
+                # ensure proper indentation alignment
+                return n_binaryopcall_anonymous!(ss, fst, s, lineage)
+            end
+        end
+    end
+
     # Check if this is an assignment with a split LHS tuple that needs special handling
     if !isnothing(fst.metadata) && (fst.metadata::Metadata).is_assignment
         lhs = fst[1]
@@ -883,6 +905,50 @@ function n_binaryopcall!(
     else
         n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
     end
+end
+
+# Custom handler for anonymous functions with multi-line parameters
+function n_binaryopcall_anonymous!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    style = getstyle(ss)
+    
+    # For anonymous functions with split parameters,
+    # we need to ensure proper alignment of the parameters
+    lhs = fst[1]  # The tuple of parameters
+    
+    # Calculate proper indentation for tuple contents
+    # They should align to the opening parenthesis
+    if lhs.typ === TupleN && is_closer(lhs[end])
+        # Find the position of the opening parenthesis
+        # and set indent for contents after newlines
+        opening_paren_col = s.line_offset + 1  # +1 for the opening paren
+        
+        # Update indent for nodes after newlines in the tuple
+        for (i, n) in enumerate(lhs.nodes)
+            if n.typ === NEWLINE && i < length(lhs.nodes)
+                # Set proper indent for next non-whitespace node
+                for j in (i+1):length(lhs.nodes)
+                    if lhs.nodes[j].typ !== PLACEHOLDER && 
+                       lhs.nodes[j].typ !== WHITESPACE && 
+                       lhs.nodes[j].typ !== NEWLINE &&
+                       !is_closer(lhs.nodes[j])
+                        lhs.nodes[j].indent = opening_paren_col
+                        break
+                    end
+                end
+            end
+        end
+        
+        # Ensure the tuple has the right base indent
+        lhs.indent = opening_paren_col
+    end
+    
+    # Use YAS style for the overall nesting to get alignment behavior
+    return n_binaryopcall!(YASStyle(style), fst, s, lineage)
 end
 
 # Custom handler for binary operations with split LHS tuples

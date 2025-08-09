@@ -1735,6 +1735,40 @@
         @test formatted2 == expected2
     end
 
+    @testset "Anonymous functions with multi-line parameters" begin
+        # Test 1: Basic anonymous function with split parameters
+        str = raw"""
+        pressure_P1 = (system, v_ode, u_ode, semi,
+                       t) -> interpolated_pressure([tank_right_wall_x, P1_y_top])
+        """
+        formatted = format_text(str, SciMLStyle(), yas_style_nesting=true)
+        # The parameter 't' should align with the opening parenthesis
+        @test contains(formatted, "               t)")
+        
+        # Test 2: Anonymous function in callback
+        str2 = raw"""
+        callback = PostprocessCallback(another_function=(system, v_ode, u_ode, semi,
+                                                         t) -> 1)
+        """
+        formatted2 = format_text(str2, SciMLStyle(), yas_style_nesting=true)
+        # Check that parameters are properly aligned
+        lines = split(strip(formatted2), '\n')
+        @test length(lines) == 2
+        # The second line should have proper indentation for 't'
+        @test contains(lines[2], "                                                   t)")
+        
+        # Test 3: Nested anonymous function
+        str3 = raw"""
+        map_func = (x, y,
+                    z) -> process((a, b,
+                                   c) -> a + b + c)
+        """
+        formatted3 = format_text(str3, SciMLStyle(), yas_style_nesting=true)
+        # Check both levels of anonymous functions have proper alignment
+        lines3 = split(formatted3, '\n')
+        @test contains(lines3[2], "            z)")
+    end
+
     @testset "Issue #935 - TypedVcat indentation regression" begin
         # Note: This is a known limitation. SciMLStyle currently does not preserve
         # custom alignment in typed arrays and dict literals, unlike YASStyle.
