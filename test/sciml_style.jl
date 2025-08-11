@@ -1741,9 +1741,7 @@
         pressure_P1 = (system, v_ode, u_ode, semi,
                        t) -> interpolated_pressure([tank_right_wall_x, P1_y_top])
         """
-        formatted = format_text(str, SciMLStyle(), yas_style_nesting=true)
-        # The parameter 't' should align with the opening parenthesis
-        @test contains(formatted, "               t)")
+        @test format_text(str, SciMLStyle(), yas_style_nesting=true) == str
         
         # Test 2: Anonymous function in callback
         str2 = raw"""
