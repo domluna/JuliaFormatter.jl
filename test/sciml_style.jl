@@ -1830,19 +1830,9 @@
         
         # With yas_style_nesting=true, arrays align with opening brackets and no initial line break is allowed
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
-        
-        # With variable_array_indent=true AND yas_style_nesting=true, 
-        # yas_style_nesting takes precedence and arrays align to bracket
-        # Arrays with initial newline get reformatted to YAS style
-        yas_expected = raw"""
-        kernels = [
-                   GaussianKernel,
-                   SchoenbergCubicSplineKernel,
-                   SchoenbergQuarticSplineKernel,
-                   SchoenbergQuinticSplineKernel
-                   ]
-        """
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == yas_expected
+
+        # With variable_array_indent=true, both versions should be valid and not be reformatted
+        @test format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == str
         @test format_text(expected, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == expected
         
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
