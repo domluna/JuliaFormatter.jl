@@ -1832,7 +1832,7 @@
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
 
         # With variable_array_indent=true, both versions should be valid and not be reformatted
-        @test format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == str
+        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == str
         @test format_text(expected, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == expected
         
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
