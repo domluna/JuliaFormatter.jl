@@ -1748,12 +1748,7 @@
         callback = PostprocessCallback(another_function=(system, v_ode, u_ode, semi,
                                                          t) -> 1)
         """
-        formatted2 = format_text(str2, SciMLStyle(), yas_style_nesting=true)
-        # Check that parameters are properly aligned
-        lines = split(strip(formatted2), '\n')
-        @test length(lines) == 2
-        # The second line should have proper indentation for 't'
-        @test contains(lines[2], "                                                   t)")
+        @test format_text(str2, SciMLStyle(), yas_style_nesting=true) == str2
         
         # Test 3: Nested anonymous function
         str3 = raw"""
