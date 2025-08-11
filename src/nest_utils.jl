@@ -330,15 +330,22 @@ function find_optimal_nest_placeholders(
         if i > length(newline_inds) || ind < newline_inds[i]
             push!(current_group, ind)
         else
-            push!(placeholder_groups, current_group)
+            if !isempty(current_group)
+                push!(placeholder_groups, current_group)
+            end
             current_group = Int[ind]
             i += 1
         end
     end
-    push!(placeholder_groups, current_group)
+    if !isempty(current_group)
+        push!(placeholder_groups, current_group)
+    end
 
     optimal_placeholders = Int[]
     for (i, g) in enumerate(placeholder_groups)
+        if isempty(g)  # Skip empty groups
+            continue
+        end
         optinds = find_optimal_nest_placeholders(
             fst,
             g,
@@ -371,6 +378,19 @@ function find_optimal_nest_placeholders(
         end
 
     n = length(placeholder_inds)
+    
+    # Handle edge cases where there are too few placeholders
+    if n == 0
+        return Int[]
+    elseif n == 1
+        return Int[]
+    elseif n == 2
+        # Only one possible break point
+        # Check if breaking at the first placeholder helps
+        len = segment_length(1, placeholder_inds[2])
+        return initial_offset + len > max_margin ? [1] : Int[]
+    end
+    
     dp = fill(0, n - 1, n - 1)
 
     # Initialize the lengths of segments with single placeholders
