@@ -1761,10 +1761,7 @@
                     z) -> process((a, b,
                                    c) -> a + b + c)
         """
-        formatted3 = format_text(str3, SciMLStyle(), yas_style_nesting=true)
-        # Check both levels of anonymous functions have proper alignment
-        lines3 = split(formatted3, '\n')
-        @test contains(lines3[2], "            z)")
+        @test format_text(str3, SciMLStyle(), yas_style_nesting=true) == str3
     end
 
     @testset "Issue #935 - TypedVcat indentation regression" begin
