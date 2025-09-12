@@ -9,7 +9,7 @@ for f in [
     :n_typedncat!,
     :n_row!,
     :n_nrow!,
-    :n_hcat!,
+    # :n_hcat!,  # Custom implementation below for matrix alignment
     :n_comprehension!,
     :n_typedcomprehension!,
     :n_generator!,
@@ -25,15 +25,38 @@ for f in [
     end
 end
 
-# Custom n_vcat! to use 4-space indentation instead of YAS alignment
+# Custom n_vcat! to handle arrays vs matrices properly
 function n_vcat!(
     ss::SciMLStyle,
     fst::FST,
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # Use DefaultStyle instead of YAS to get 4-space indentation
-    n_vcat!(DefaultStyle(getstyle(ss)), fst, s, lineage)
+    # Check if this is a matrix by looking for Row nodes (matrices have semicolons)
+    # Matrices should use YAS-style alignment to preserve column alignment
+    nodes = fst.nodes::Vector
+    is_matrix = any(n -> n.typ === Row, nodes)
+    
+    if is_matrix
+        # For matrices, use YAS-style alignment to preserve column structure
+        n_vcat!(YASStyle(getstyle(ss)), fst, s, lineage)
+    else
+        # For regular arrays, use 4-space indentation
+        n_vcat!(DefaultStyle(getstyle(ss)), fst, s, lineage)
+    end
+end
+
+# Custom n_hcat! to handle matrix alignment properly
+function n_hcat!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
+    # For matrices (horizontal concatenation), always use YAS-style alignment
+    # to preserve the matrix structure with proper column alignment
+    # This ensures proper indentation for multi-row matrices
+    return n_hcat!(YASStyle(getstyle(ss)), fst, s, lineage)
 end
 
 function n_functiondef!(
@@ -440,8 +463,17 @@ function n_tuple!(
         end
     end
     
-    # For other tuples, respect yas_style_nesting setting
-    if s.opts.yas_style_nesting && !is_dict_pair_value
+    # For other tuples, check if they need YAS-style alignment
+    # Anonymous function parameters should always use YAS-style alignment
+    needs_yas_alignment = false
+    for (node_type, metadata) in lineage
+        if node_type === Binary && !isnothing(metadata) && hasfield(typeof(metadata), :op_kind) && metadata.op_kind === K"->"
+            needs_yas_alignment = true
+            break
+        end
+    end
+    
+    if (s.opts.yas_style_nesting || needs_yas_alignment) && !is_dict_pair_value
         return n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
     elseif is_dict_pair_value
         # For Dict pair values with variable_call_indent, we need special handling
@@ -884,7 +916,9 @@ function n_binaryopcall!(
     if s.opts.yas_style_nesting
         n_binaryopcall!(YASStyle(style), fst, s, lineage)
     else
-        n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
+        # For SciMLStyle default, use YAS style for better alignment behavior
+        # This ensures anonymous functions and other constructs align properly
+        n_binaryopcall!(YASStyle(style), fst, s, lineage)
     end
 end
 
