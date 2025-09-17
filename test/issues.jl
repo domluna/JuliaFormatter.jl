@@ -1723,8 +1723,9 @@
         using ModelingToolkit
         @mtkmodel A begin
             @variables begin
-                i(t) = 0.0, [description = "Line longer than the char limit of 94 characters",
-                             unit = u"A"]
+                i(t) = 0.0,
+                       [description = "Line longer than the char limit of 94 characters",
+                        unit = u"A"]
             end
         end
         """
