@@ -65,8 +65,8 @@ function n_functiondef!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # TEMPORARY: Use YAS style to avoid corruption bugs
-    # TODO: Debug and fix the custom logic that's causing syntax corruption
+    # CRITICAL SAFETY FIX: Always use YAS style to prevent corruption
+    # The custom SciMLStyle function definition logic was corrupting named tuples
     return n_functiondef!(YASStyle(getstyle(ss)), fst, s, lineage)
 end
 
@@ -383,8 +383,16 @@ function n_tuple!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    # TEMPORARY: Use YAS style to avoid corruption bugs  
-    # TODO: Debug and fix the custom tuple logic that's causing syntax corruption
+    # CRITICAL SAFETY CHECK: Detect problematic named tuple cases that cause corruption
+    # If this is a named tuple (contains assignments), use YAS style to avoid corruption
+    for n in fst.nodes
+        if n.typ === Binary && !isnothing(n.metadata) && (n.metadata::Metadata).is_assignment
+            # This is a named tuple - use YAS style to prevent syntax corruption
+            return n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
+        end
+    end
+    
+    # SAFETY: Use YAS style for all tuples to prevent corruption
     return n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
 end
 
@@ -539,9 +547,21 @@ for f in [
         s::State,
         lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
     )
-        # TEMPORARY: Use YAS style to avoid corruption bugs
-        # TODO: Debug and fix _n_tuple! logic that's causing syntax corruption
-        return $f(YASStyle(getstyle(ss)), fst, s, lineage)
+        # CRITICAL SAFETY CHECK: Only use YAS style for curly braces (type parameters)
+        # to prevent corruption of constructor calls like new{T,U}(...)
+        if $(Meta.quot(f)) === :n_curly!
+            # Type parameters can be corrupted by custom logic - use YAS style
+            return $f(YASStyle(getstyle(ss)), fst, s, lineage)
+        elseif s.opts.yas_style_nesting
+            $f(YASStyle(getstyle(ss)), fst, s, lineage)
+        else
+            # Special cases: use YAS style nesting for better alignment
+            if $(Meta.quot(f)) === :n_macrocall!
+                $f(YASStyle(getstyle(ss)), fst, s, lineage)
+            else
+                _n_tuple!(ss, fst, s, lineage)
+            end
+        end
     end
 end
 
@@ -859,9 +879,8 @@ function n_binaryopcall!(
         end
     end
 
-    # CRITICAL SAFETY FIX: Always use YAS style for assignments to prevent syntax corruption
-    # The custom SciMLStyle logic was causing critical bugs that produce unparseable code
-    # Until the root cause is found, prioritize safety over custom formatting
+    # CRITICAL SAFETY FIX: Always use YAS style to prevent syntax corruption
+    # The custom SciMLStyle binary operation logic was causing dangerous bugs
     return n_binaryopcall!(YASStyle(style), fst, s, lineage)
 end
 

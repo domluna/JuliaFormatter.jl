@@ -395,7 +395,7 @@
                        ::Type{uBottomEltypeNoUnits}, ::Type{tTypeNoUnits}, uprev, uprev2, f, t,
                        dt, reltol, p, calck, ::Val{true}
                        ) where {uEltypeNoUnits,
-            uBottomEltypeNoUnits, tTypeNoUnits}
+        uBottomEltypeNoUnits, tTypeNoUnits}
         reduced_rate_prototype = rate_prototype.x[2]
         tab = FineRKN4ConstantCache(constvalue(uBottomEltypeNoUnits), constvalue(tTypeNoUnits))
         k1 = zero(rate_prototype)
@@ -426,7 +426,7 @@
                                    scale_rates = true, useiszero = true,
                                    nocopy = false
                                    ) where {A <: AVecOrNothing,
-            B <: AMatOrNothing, S, U, V}
+        B <: AMatOrNothing, S, U, V}
         SpatialMassActionJump{A, B, S, U, V}(urates, srates, rs, ns, pmapper, scale_rates,
                                              useiszero, nocopy)
     end"""
@@ -456,18 +456,19 @@
     end"""
     str = """
     function (p::CoevolveJumpAggregation{
-            T,
-            S,
-            F1,
-            F2
-    })(integrator::AbstractSSAIntegrator) where {
-            T,
-            S,
-            F1,
-            F2 <:
-            Union{
-                Tuple,
-                Nothing}}
+                                         T,
+                                         S,
+                                         F1,
+                                         F2
+                                         })(integrator::AbstractSSAIntegrator) where {
+        T,
+        S,
+        F1,
+        F2 <:
+        Union{
+              Tuple,
+              Nothing
+              }}
         body
     end"""
     @test format_text(str_, SciMLStyle(); margin = 1) == str
@@ -483,18 +484,19 @@
     end"""
     str = """
     macro (p::CoevolveJumpAggregation{
-            T,
-            S,
-            F1,
-            F2
-    })(integrator::AbstractSSAIntegrator) where {
-            T,
-            S,
-            F1,
-            F2 <:
-            Union{
-                Tuple,
-                Nothing}}
+                                      T,
+                                      S,
+                                      F1,
+                                      F2
+                                      })(integrator::AbstractSSAIntegrator) where {
+        T,
+        S,
+        F1,
+        F2 <:
+        Union{
+              Tuple,
+              Nothing
+              }}
         body
     end"""
     @test format_text(str_, SciMLStyle(); margin = 1) == str
