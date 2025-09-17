@@ -887,39 +887,10 @@ function n_binaryopcall!(
         end
     end
 
-    # Check if this is an assignment with a split LHS tuple that needs special handling
-    if !isnothing(fst.metadata) && (fst.metadata::Metadata).is_assignment
-        lhs = fst[1]
-        
-        # Check if LHS is a tuple that's already split
-        if lhs.typ === TupleN
-            has_newline = false
-            for n in lhs.nodes
-                if n.typ === NEWLINE
-                    has_newline = true
-                    break
-                end
-            end
-            
-            if has_newline
-                # For split LHS tuples, we need to ensure proper indentation
-                # by using a custom handler
-                return n_binaryopcall_split_lhs!(ss, fst, s, lineage)
-            elseif length(lhs) <= 80
-                # Short non-split tuple - preserve on one line
-                return n_binaryopcall!(DefaultStyle(style), fst, s, lineage)
-            end
-        end
-    end
-
-    # Fall back to default behavior
-    if s.opts.yas_style_nesting
-        n_binaryopcall!(YASStyle(style), fst, s, lineage)
-    else
-        # For SciMLStyle default, use YAS style for better alignment behavior
-        # This ensures anonymous functions and other constructs align properly
-        n_binaryopcall!(YASStyle(style), fst, s, lineage)
-    end
+    # CRITICAL SAFETY FIX: Always use YAS style for assignments to prevent syntax corruption
+    # The custom SciMLStyle logic was causing critical bugs that produce unparseable code
+    # Until the root cause is found, prioritize safety over custom formatting
+    return n_binaryopcall!(YASStyle(style), fst, s, lineage)
 end
 
 # Custom handler for anonymous functions with multi-line parameters
