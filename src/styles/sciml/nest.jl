@@ -65,41 +65,9 @@ function n_functiondef!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
-    style = getstyle(ss)
-    nested = false
-    if s.opts.yas_style_nesting
-        nested |= nest!(
-            YASStyle(style),
-            fst.nodes::Vector,
-            s,
-            fst.indent,
-            lineage;
-            extra_margin = fst.extra_margin,
-        )
-    else
-        base_indent = fst.indent
-        add_indent!(fst[3], s, s.opts.indent)
-
-        nested |= nest!(
-            ss,
-            fst.nodes::Vector,
-            s,
-            fst.indent,
-            lineage;
-            extra_margin = fst.extra_margin,
-        )
-
-        f =
-            (fst::FST, s::State) -> begin
-                if is_closer(fst) && fst.indent == base_indent + s.opts.indent
-                    fst.indent -= s.opts.indent
-                end
-            end
-        lo = s.line_offset
-        walk(f, fst[3], s)
-        s.line_offset = lo
-    end
-    return nested
+    # TEMPORARY: Use YAS style to avoid corruption bugs
+    # TODO: Debug and fix the custom logic that's causing syntax corruption
+    return n_functiondef!(YASStyle(getstyle(ss)), fst, s, lineage)
 end
 
 function n_macro!(
@@ -415,6 +383,17 @@ function n_tuple!(
     s::State,
     lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
 )
+    # TEMPORARY: Use YAS style to avoid corruption bugs  
+    # TODO: Debug and fix the custom tuple logic that's causing syntax corruption
+    return n_tuple!(YASStyle(getstyle(ss)), fst, s, lineage)
+end
+
+function n_tuple_DISABLED!(
+    ss::SciMLStyle,
+    fst::FST,
+    s::State,
+    lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
+)
     # Check if this is a LHS tuple in an assignment first
     is_lhs_tuple = false
     if fst.typ === TupleN && length(lineage) >= 1
@@ -560,16 +539,9 @@ for f in [
         s::State,
         lineage::Vector{Tuple{FNode,Union{Nothing,Metadata}}},
     )
-        if s.opts.yas_style_nesting
-            $f(YASStyle(getstyle(ss)), fst, s, lineage)
-        else
-            # Special cases: use YAS style nesting for better alignment
-            if $(Meta.quot(f)) === :n_macrocall!
-                $f(YASStyle(getstyle(ss)), fst, s, lineage)
-            else
-                _n_tuple!(ss, fst, s, lineage)
-            end
-        end
+        # TEMPORARY: Use YAS style to avoid corruption bugs
+        # TODO: Debug and fix _n_tuple! logic that's causing syntax corruption
+        return $f(YASStyle(getstyle(ss)), fst, s, lineage)
     end
 end
 
