@@ -324,7 +324,8 @@
     # With `variable_call_indent = false`, the comment will be eaten,
     # see https://github.com/domluna/JuliaFormatter.jl/issues/609
     @test_broken format_text(str, SciMLStyle()) == formatted_str
-    @test_broken format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) == formatted_str
+    @test_broken format_text(str, SciMLStyle(); variable_call_indent = ["Dict"]) ==
+                 formatted_str
 
     str = raw"""
     Dict{Int, Int}( # Comment
@@ -1745,7 +1746,7 @@
                        t) -> interpolated_pressure([tank_right_wall_x, P1_y_top])
         """
         @test format_text(str, SciMLStyle()) == str
-        
+
         # Test 2: Anonymous function in callback
         str2 = raw"""
         callback = PostprocessCallback(another_function=(system, v_ode, u_ode, semi,
@@ -1756,7 +1757,7 @@
                                                            t) -> 1)
         """
         @test format_text(str2, SciMLStyle()) == expected2
-        
+
         # Test 3: Nested anonymous function
         str3 = raw"""
         map_func = (x, y,
@@ -1834,14 +1835,24 @@
         """
         # Default style now uses YAS-style alignment
         @test format_text(str, SciMLStyle()) == expected
-        
+
         # With yas_style_nesting=true, arrays align with opening brackets and no initial line break is allowed
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
 
         # With variable_array_indent=true, both versions should be valid and not be reformatted
-        @test_broken format_text(str, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == str
-        @test format_text(expected, SciMLStyle(), yas_style_nesting = true, variable_array_indent=true) == expected
-        
+        @test_broken format_text(
+            str,
+            SciMLStyle(),
+            yas_style_nesting = true,
+            variable_array_indent = true,
+        ) == str
+        @test format_text(
+            expected,
+            SciMLStyle(),
+            yas_style_nesting = true,
+            variable_array_indent = true,
+        ) == expected
+
         # Test 1b: Bad array alignment (from efaulhaber's comment #3148497419)
         # With PR #807, existing line breaks are preserved with standard indentation
         str_bad = raw"""
@@ -1873,7 +1884,7 @@
                                                                              )
         """
         @test format_text(str, SciMLStyle(), yas_style_nesting = true) == expected
-        
+
         # Test when source already has split LHS - it should be preserved
         str_split = raw"""
         discrete_modified,
@@ -1947,7 +1958,12 @@
             ),
         )
         """
-        @test_broken format_text(str, SciMLStyle(), variable_call_indent=["Dict"], yas_style_nesting=true) == expected
+        @test_broken format_text(
+            str,
+            SciMLStyle(),
+            variable_call_indent = ["Dict"],
+            yas_style_nesting = true,
+        ) == expected
     end
 
     @testset "Tuple Destructuring - Issue #934 comments" begin
@@ -2000,16 +2016,16 @@
             very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3, very_long_variable_name_4,) = some_very_long_object_name
         """
         # The actual behavior is that it doesn't break at all for now
-        actual_result = format_text(str, SciMLStyle(), margin=92)
+        actual_result = format_text(str, SciMLStyle(), margin = 92)
         @test actual_result == str || actual_result == current_expected
-        
+
         # Ideal behavior: should also break the long line to fit within margin
         ideal_expected = """
         (;
             very_long_variable_name_1, very_long_variable_name_2, very_long_variable_name_3,
             very_long_variable_name_4,) = some_very_long_object_name
         """
-        @test_broken format_text(str, SciMLStyle(), margin=92) == ideal_expected
+        @test_broken format_text(str, SciMLStyle(), margin = 92) == ideal_expected
 
         # Test case 6: Multiple tuple destructuring with different objects
         str = """
@@ -2026,7 +2042,7 @@
     @testset "Critical parsing bug fixes from comment #3215186259" begin
         # FIXED: These cases now work correctly and produce parseable output
         # The syntax corruption bugs have been resolved by using YAS style for problematic constructs
-        
+
         # Test case 1: Named tuple with matrices should format correctly
         str1 = raw"""
         expected_zero(y) = (density=[NaN], neighbor_count=[0], point_coords=[0.0; y;;],
@@ -2037,7 +2053,7 @@
         @test result1 != str1  # Should be formatted (not unchanged)
         # The result must be parseable by Julia
         @test Meta.parse(result1) isa Expr
-        
+
         # Test case 2: Constructor with type parameters should format correctly  
         str2 = raw"""
         new{typeof(parallelization_backend), typeof(systems), typeof(ranges_u),
@@ -2049,5 +2065,38 @@
         # May or may not change depending on length, but must be parseable
         @test Meta.parse(result2) isa Expr
     end
-    
+
+    @testset "Fixpoint error with trailing comment after do - Issue #934 comment #3310846313" begin
+        # Test case from efaulhaber's comment #3310846313
+        # This was causing a fixpoint error where formatting never converged
+        str = """
+        open("file", "w") do #
+        end
+        """
+
+        # Should format without causing a fixpoint error
+        # The trailing comment after 'do' needs special handling
+        expected = """
+        open("file", "w") do #
+        end
+        """
+
+        # Test that it formats without error and reaches a fixpoint
+        # This is currently a known issue that causes a fixpoint error
+        @test_broken format_text(str, SciMLStyle()) == expected
+
+        # Also test with more content in the comment
+        str_with_comment = """
+        open("file", "w") do # some comment
+        end
+        """
+
+        expected_with_comment = """
+        open("file", "w") do # some comment
+        end
+        """
+
+        # This is also currently broken
+        @test_broken format_text(str_with_comment, SciMLStyle()) == expected_with_comment
+    end
 end
