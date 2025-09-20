@@ -28,7 +28,7 @@ function options(::SciMLStyle)
         align_conditional = false,
         align_pair_arrow = false,
         align_matrix = false,
-        trailing_comma = false,
+        trailing_comma = true,
         trailing_zero = true,
         indent_submodule = false,
         separate_kwargs_with_semicolon = false,
@@ -64,9 +64,9 @@ for f in [
     :p_using,
     :p_export,
     :p_public,
-    :p_vcat,
+    # :p_vcat,  # Custom implementation below
     :p_ncat,
-    :p_typedvcat,
+    # :p_typedvcat,  # Custom implementation below
     :p_typedncat,
     :p_row,
     :p_nrow,
@@ -87,14 +87,46 @@ for f in [
     end
 end
 
+# Custom p_vcat to use 4-space indentation instead of YAS alignment
+function p_vcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Use DefaultStyle instead of YAS to get 4-space indentation
+    p_vcat(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+# Custom p_typedvcat to preserve alignment for Issue #935
+function p_typedvcat(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Create a modified state that forces preservation of whitespace
+    # by temporarily setting join_lines_based_on_source if not already set
+    modified_s = if !s.opts.join_lines_based_on_source
+        State(s.doc, Options(s.opts; join_lines_based_on_source = true))
+    else
+        s
+    end
+
+    # Delegate to YAS with the modified state
+    p_typedvcat(YASStyle(getstyle(ss)), cst, modified_s, ctx, lineage)
+end
+
 for f in [
-    :p_call,
-    :p_curly,
-    :p_ref,
+    # :p_call,  # Use custom implementation that always uses YAS pretty printing
+    # :p_curly,  # Custom implementation below to handle where clauses
+    # :p_ref,  # Custom implementation below
     :p_braces,
-    # :p_vect, don't use YAS style vector formatting with `yas_style_nesting = true`
-    :p_parameters,
-    :p_invisbrackets,
+    # :p_vect,  # Custom implementation below to prevent unnecessary line breaks
+    # :p_parameters,     # Custom implementation below
+    # :p_invisbrackets,  # Custom implementation below
     :p_bracescat,
 ]
     @eval function $f(
@@ -112,6 +144,142 @@ for f in [
     end
 end
 
+# Custom implementations to ensure proper alignment
+function p_parameters(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for parameters to get alignment
+    p_parameters(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+function p_invisbrackets(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Always use YAS pretty printing for invisbrackets to get alignment
+    p_invisbrackets(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
+function p_curly(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Normal delegation - the where clause fix will be handled in p_whereopcall
+    if s.opts.yas_style_nesting
+        p_curly(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+    else
+        p_curly(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+    end
+end
+
+function p_whereopcall(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # For SciML style, we want to disable trailing commas in where clauses
+    # but the trailing comma logic is applied during nesting in p_curly
+    # So we'll use a different approach - modify the FST after creation
+
+    # First get the formatted result with the default behavior
+    t = p_whereopcall(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
+
+    # Now remove any trailing commas from the FST
+    function remove_trailing_commas!(fst::FST)
+        if fst.typ === TRAILINGCOMMA
+            # Replace trailing comma with empty whitespace
+            fst.typ = WHITESPACE
+            fst.val = ""
+            fst.len = 0
+        end
+        if isdefined(fst, :nodes) && !isnothing(fst.nodes)
+            for node in fst.nodes
+                if isa(node, FST)
+                    remove_trailing_commas!(node)
+                end
+            end
+        end
+    end
+
+    remove_trailing_commas!(t)
+    return t
+end
+
+function p_vect(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    style = getstyle(ss)
+    
+    # If variable_array_indent is enabled, detect the format early and use appropriate style
+    if s.opts.variable_array_indent && haschildren(cst)
+        childs = children(cst)
+        
+        # Check if there's a newline after the opening bracket
+        has_initial_newline = false
+        if length(childs) >= 2 && kind(childs[1]) === K"["
+            # Check the source between [ and the first element
+            src_between = ""
+            if length(childs) >= 2
+                start_pos = s.offset + span(childs[1])
+                # Find first non-trivia child
+                next_child_idx = 2
+                while next_child_idx <= length(childs) && JuliaSyntax.is_trivia(childs[next_child_idx])
+                    next_child_idx += 1
+                end
+                if next_child_idx <= length(childs)
+                    end_pos = s.offset + sum(span(childs[j]) for j in 1:(next_child_idx-1))
+                    if end_pos > start_pos && start_pos <= length(s.doc.srcfile.code) && end_pos <= length(s.doc.srcfile.code)
+                        src_between = s.doc.srcfile.code[start_pos:end_pos]
+                        has_initial_newline = '\n' in src_between
+                    end
+                end
+            end
+        end
+        
+        if has_initial_newline
+            # Use DefaultStyle which preserves the newline better
+            t = p_vect(DefaultStyle(style), cst, s, ctx, lineage)
+            # Mark that this array had an initial newline for n_vect!
+            t.metadata = Metadata(K"None", false, false, true, false, false, false)
+            return t
+        else
+            # Use YAS style for bracket alignment
+            return p_vect(YASStyle(style), cst, s, ctx, lineage)
+        end
+    else
+        # Default behavior
+        return p_vect(YASStyle(style), cst, s, ctx, lineage)
+    end
+end
+
+# Custom p_ref to preserve whitespace in typed arrays (Issue #935)
+function p_ref(
+    ss::SciMLStyle,
+    cst::JuliaSyntax.GreenNode,
+    s::State,
+    ctx::PrettyContext,
+    lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
+)
+    # Use YAS style which might have better array formatting
+    p_ref(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
+end
+
 function p_tuple(
     ss::SciMLStyle,
     cst::JuliaSyntax.GreenNode,
@@ -119,11 +287,10 @@ function p_tuple(
     ctx::PrettyContext,
     lineage::Vector{Tuple{JuliaSyntax.Kind,Bool,Bool}},
 )
-    if s.opts.yas_style_nesting
-        p_tuple(YASStyle(getstyle(ss)), cst, s, ctx, lineage)
-    else
-        p_tuple(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
-    end
+    # Fix for Issue #934 Example 3: Always use DefaultStyle for tuples to preserve comma spacing
+    # YAS style with whitespace_in_kwargs=false was removing spaces after commas in tuples
+    # like (0.0,1.0) -> (0.0, 1.0)
+    p_tuple(DefaultStyle(getstyle(ss)), cst, s, ctx, lineage)
 end
 
 function p_macrocall(
