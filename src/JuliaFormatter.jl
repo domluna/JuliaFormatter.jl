@@ -458,7 +458,7 @@ end
 """
     format(path, style::AbstractStyle; options...)::Bool
 """
-function format(path, style::AbstractStyle; options...)
+function format(path::AbstractString, style::AbstractStyle; options...)
     formatted = format(path; style = style, options...)
     formatted
 end
@@ -466,7 +466,12 @@ end
 """
     format(mod::Module, args...; options...)
 """
-function format(mod::Module, args...; options...)
+format(mod::Module; options...) = _format_module(mod; options...)
+format(mod::Module, style::AbstractStyle; options...) = _format_module(mod, style; options...)
+format(mod::Module, config::Configuration; options...) = _format_module(mod, config; options...)
+
+# This separate is needed to remove ambiguity in `format` without code duplication
+function _format_module(mod::Module, args...; options...)
     path = pkgdir(mod)
     if path === nothing
         throw(ArgumentError("couldn't find a directory of module `$mod`"))
