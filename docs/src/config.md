@@ -2,7 +2,7 @@
 CurrentModule = JuliaFormatter
 ```
 
-# Configuration File
+# [Configuration File](@id config)
 
 From v0.4.3, JuliaFormatter offers [`.prettierrc` style](https://prettier.io/docs/en/configuration.html)
 configuration file support.

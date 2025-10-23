@@ -15,6 +15,7 @@ makedocs(;
         "Blue Style" => "blue_style.md",
         "SciML Style" => "sciml_style.md",
         "Configuration File" => "config.md",
+        "Command Line Interface" => "cli.md",
         "API Reference" => "api.md",
     ],
     warnonly = true,
