@@ -66,6 +66,21 @@ Use `--prioritize-config-file` to make configuration file settings take preceden
 jlfmt --prioritize-config-file --indent=2 src/file.jl
 ```
 
+### Configuration with stdin
+
+When formatting from stdin, no configuration file is used by default.
+Use `--config-dir` to specify a directory for configuration file lookup:
+
+```bash
+# Format stdin using config from ./src directory
+echo 'f(x,y)=x+y' | jlfmt --config-dir=./src
+
+# Useful in editor integrations to respect project config
+cat file.jl | jlfmt --config-dir=$(dirname file.jl)
+```
+
+The formatter will search for `.JuliaFormatter.toml` in the specified directory and its parent directories, just like it does for regular file inputs.
+
 ## Conventions
 
 `jlfmt` follows standard CLI conventions:
