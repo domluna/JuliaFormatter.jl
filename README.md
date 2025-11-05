@@ -16,7 +16,7 @@ Width-sensitive formatter for Julia code. Inspired by gofmt, refmt, and black.
 ## Installation
 
 ```julia
-]add JuliaFormatter
+pkg> add JuliaFormatter
 ```
 
 ## Quick Start
@@ -35,6 +35,41 @@ julia> format_text(str)
 ```
 
 Check out [the docs](https://domluna.github.io/JuliaFormatter.jl/stable/) for further description of the formatter and its options.
+
+## Command Line Tool
+
+Starting from version 2.2.0, JuliaFormatter provides a command-line executable `jlfmt`.
+
+To install:
+
+```julia
+pkg> app add JuliaFormatter
+```
+
+Usage:
+
+```bash
+# Format a file and write to stdout
+jlfmt src/file.jl
+
+# Format a file in place
+jlfmt --inplace src/file.jl
+
+# Check if all files in a directory are already formatted with verbose mode
+jlfmt --check -v src/
+
+# Format all files in a directory with multiple threads
+jlfmt --threads=6 -- --inplace -v src/
+
+# Show diff without modifying files
+jlfmt --diff src/file.jl
+```
+
+Run `jlfmt --help` for more options.
+
+Check out [the CLI docs](https://domluna.github.io/JuliaFormatter.jl/dev/cli) for further description of the formatter and its options.
+
+## Github Actions
 
 [Use With GitHub Actions](https://github.com/julia-actions/julia-format)
 

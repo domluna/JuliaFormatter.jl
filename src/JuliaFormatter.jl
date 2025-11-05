@@ -467,8 +467,12 @@ end
     format(mod::Module, args...; options...)
 """
 format(mod::Module; options...) = _format_module(mod; options...)
-format(mod::Module, style::AbstractStyle; options...) = _format_module(mod, style; options...)
-format(mod::Module, config::Configuration; options...) = _format_module(mod, config; options...)
+function format(mod::Module, style::AbstractStyle; options...)
+    _format_module(mod, style; options...)
+end
+function format(mod::Module, config::Configuration; options...)
+    _format_module(mod, config; options...)
+end
 
 # This separate is needed to remove ambiguity in `format` without code duplication
 function _format_module(mod::Module, args...; options...)
@@ -498,20 +502,18 @@ function parse_config(tomlfile)
         end
     end
     if (style = get(config_dict, "style", nothing)) !== nothing
-        @assert (
-            style == "default" ||
-            style == "yas" ||
-            style == "blue" ||
-            style == "sciml" ||
-            style == "minimal"
-        ) "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", \"sciml\", or \"minimal\" for the style configuration"
-        config_dict["style"] = if (style == "yas" && @isdefined(YASStyle))
+        if style ∉ ("default", "yas", "blue", "sciml", "minimal")
+            error(
+                "currently $(CONFIG_FILE_NAME) accepts only \"default\" or \"yas\", \"blue\", \"sciml\", or \"minimal\" for the style configuration",
+            )
+        end
+        config_dict["style"] = if style == "yas"
             YASStyle()
-        elseif (style == "blue" && @isdefined(BlueStyle))
+        elseif style == "blue"
             BlueStyle()
-        elseif (style == "sciml" && @isdefined(SciMLStyle))
+        elseif style == "sciml"
             SciMLStyle()
-        elseif (style == "minimal" && @isdefined(MinimalStyle))
+        elseif style == "minimal"
             MinimalStyle()
         else
             DefaultStyle()
@@ -537,7 +539,9 @@ function isignored(path, options)
     return any(x -> occursin(Glob.FilenameMatch("*$x"), path), ignore)
 end
 
-@setup_workload begin
+include("app.jl")
+
+@setup_workload let
     dir = joinpath(@__DIR__, "..")
     sandbox_dir = joinpath(tempdir(), join(rand('a':'z', 24)))
     mkdir(sandbox_dir)
@@ -572,7 +576,14 @@ end
         for style in [DefaultStyle(), BlueStyle(), SciMLStyle(), YASStyle(), MinimalStyle()]
             format_text(str, style)
         end
+
+        redirect_stdout(devnull) do
+            redirect_stderr(devnull) do
+                main(String["--help"])
+                main(String["--check", "--verbose", sandbox_dir])
+            end
+        end
     end
 end
 
-end
+end # module JuliaFormatter
