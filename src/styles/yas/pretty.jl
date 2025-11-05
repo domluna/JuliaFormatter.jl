@@ -61,7 +61,7 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -69,7 +69,7 @@ function p_import(
         if kind(a) in KSet"import export using public"
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
-        elseif kind(a) === K":" && haschildren(a)
+        elseif kind(a) === K":" && !is_leaf(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
@@ -138,7 +138,7 @@ function p_curly(
     style = getstyle(ys)
     nws = s.opts.whitespace_typedefs ? 1 : 0
     t = FST(Curly, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -178,7 +178,7 @@ function p_braces(
 )
     style = getstyle(ys)
     t = FST(Braces, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
     from_typedef = ctx.from_typedef
@@ -221,7 +221,7 @@ function p_bracescat(
 )
     style = getstyle(ys)
     t = FST(BracesCat, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
     from_typedef = ctx.from_typedef
@@ -264,7 +264,7 @@ function p_tupleblock(
 )
     style = getstyle(ys)
     t = FST(TupleBlock, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -275,7 +275,7 @@ function p_tupleblock(
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = if kind(a) === K"=" && haschildren(a)
+        n = if kind(a) === K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -312,7 +312,7 @@ function p_tuple(
 )
     style = getstyle(ys)
     t = FST(TupleN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -323,7 +323,7 @@ function p_tuple(
         isnothing(idx) ? -1 : findnext(n -> !JuliaSyntax.is_whitespace(n), childs, idx + 1)
 
     for (i, a) in enumerate(childs)
-        n = if kind(a) === K"=" && haschildren(a)
+        n = if kind(a) === K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -361,7 +361,7 @@ function p_invisbrackets(
 )
     style = getstyle(ys)
     t = FST(Brackets, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -369,7 +369,7 @@ function p_invisbrackets(
     if length(args) > 0
         arg = args[1]
         if is_block(arg) ||
-           (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
+           (kind(arg) === K"generator" && !is_leaf(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
     end
@@ -395,7 +395,7 @@ function p_call(
 )
     style = getstyle(ys)
     t = FST(Call, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -406,7 +406,7 @@ function p_call(
     # and use `p_call` from `DefaultStyle` instead to allow both
     # `caller(something,...)` and `caller(\n,...)`.
     if length(s.opts.variable_call_indent) > 0
-        offset = if kind(childs[1]) === K"curly" && haschildren(childs[1])
+        offset = if kind(childs[1]) === K"curly" && !is_leaf(childs[1])
             childs2 = children(childs[1])::Vector{JuliaSyntax.GreenNode{JuliaSyntax.SyntaxHead}}
             if length(childs2) > 0
                 span(childs2[1]) + span(childs[2]) - 2
@@ -429,7 +429,7 @@ function p_call(
 
     for (i, a) in enumerate(childs)
         k = kind(a)
-        n = if k == K"=" && haschildren(a)
+        n = if k == K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -470,7 +470,7 @@ function p_vect(
 )
     style = getstyle(ys)
     t = FST(Vect, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -511,7 +511,7 @@ function p_vcat(
 )
     style = getstyle(ys)
     t = FST(Vcat, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -599,7 +599,7 @@ function p_ref(
 )
     style = getstyle(ys)
     t = FST(RefN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -643,7 +643,7 @@ function p_comprehension(
 )
     style = getstyle(ys)
     t = FST(Comprehension, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -654,7 +654,7 @@ function p_comprehension(
     )
     arg = childs[idx]
 
-    if is_block(arg) || (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
+    if is_block(arg) || (kind(arg) === K"generator" && !is_leaf(arg) && is_block(arg[1]))
         t.nest_behavior = AlwaysNest
     end
 
@@ -697,7 +697,7 @@ function p_macrocall(
 )
     style = getstyle(ys)
     t = FST(MacroCall, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -766,14 +766,14 @@ function p_whereopcall(
 )
     style = getstyle(ys)
     t = FST(Where, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
     from_typedef = ctx.from_typedef
 
     childs = children(cst)
-    where_idx = findfirst(c -> kind(c) === K"where" && !haschildren(c), childs)
+    where_idx = findfirst(c -> kind(c) === K"where" && is_leaf(c), childs)
     curly_ctx = if where_idx === nothing
         from_typedef
     else
@@ -793,7 +793,7 @@ function p_whereopcall(
 
     after_where = false
     for (i, a) in enumerate(childs)
-        if kind(a) === K"where" && !haschildren(a)
+        if kind(a) === K"where" && is_leaf(a)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
@@ -853,7 +853,7 @@ function p_generator(
 )
     style = getstyle(ys)
     t = FST(Generator, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -875,7 +875,7 @@ function p_generator(
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s, newctx(ctx; from_for = has_for_kw), lineage)
-        if JuliaSyntax.is_keyword(a) && !haschildren(a)
+        if JuliaSyntax.is_keyword(a) && is_leaf(a)
             idx = findprev(n -> !JuliaSyntax.is_whitespace(n), childs, i - 1)
             if !isnothing(idx) && is_block(childs[idx])
                 add_node!(t, Newline(), s)
