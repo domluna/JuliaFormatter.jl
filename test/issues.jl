@@ -1953,4 +1953,13 @@
         sf = "using Foo: (..)"
         @test fmt(s, 4, 100) == sf
     end
+
+    @testset "921" begin
+        s = "0x1p1"
+        @test fmt(s) == s
+        s = "+0x1p1"
+        @test fmt(s) == s
+        s = "-0x1p1"
+        @test fmt(s) == s
+    end
 end
