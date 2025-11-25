@@ -450,7 +450,7 @@ function p_literal(
     val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
 
     if !is_str_or_cmd(cst)
-        if kind(cst) in KSet"Float Float32" && !startswith(val, "0x")
+        if kind(cst) in KSet"Float Float32" && !startswith(val, r"[+-]?0x")
             float_suffix = if (fidx = findlast(==('f'), val)) === nothing
                 ""
             else
