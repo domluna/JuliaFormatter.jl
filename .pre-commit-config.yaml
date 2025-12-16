@@ -10,4 +10,5 @@ repos:
     always_run: false
     types: [file]
     files: \.(jl|[jq]?md)$
+    exclude: '^test/'
     language: "system"
