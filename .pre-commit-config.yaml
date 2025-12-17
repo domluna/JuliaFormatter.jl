@@ -12,3 +12,7 @@ repos:
     files: \.(jl|[jq]?md)$
     exclude: '^test/'
     language: "system"
+-   repo: meta
+    hooks:
+    -   id: check-hooks-apply
+    -   id: check-useless-excludes
