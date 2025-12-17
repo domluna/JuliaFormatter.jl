@@ -21,7 +21,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
       - uses: julia-actions/cache@v2
       - name: Add Julia bin to path
-        run: export PATH="$PATH:~/.julia/bin"
+        run: export PATH="${HOME}/.julia/bin:${PATH}"
       - name: Install local JuliaFormatter as Pkg app
         run: julia -e 'using Pkg; Pkg.Apps.develop(; path=".")'
       - uses: astral-sh/setup-uv@v7
