@@ -65,7 +65,8 @@ In order for alignment to occur the option must be set to `true`. Available opti
 - `align_pair_arrow`
 - `align_matrix`
 
-> **Caveat: Since nesting is disabled when alignment occurs be careful when adding comments to the RHS expression. This will be fixed in a future release**
+!!! warning "Caveat"
+    Since nesting is disabled when alignment occurs be careful when adding comments to the RHS expression. This will be fixed in a future release
 
 For example:
 
