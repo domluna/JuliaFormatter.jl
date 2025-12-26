@@ -212,7 +212,7 @@ pages = [
 
 Whitespace surrounding matrix elements in the original source file is maintained. Differs from other alignment options since it does not try to "detect" alignment and then adjust other elements.
 
-```julia
+```julia-repl
 # Elements left-aligned in original source
 julia> s = """
        a = [
