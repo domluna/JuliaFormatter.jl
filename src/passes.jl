@@ -473,7 +473,7 @@ foo(a::A) where A = body
 
 This transformation converts (2) to (1).
 
-ref https://github.com/julia-vscode/CSTParser.jl/issues/93
+ref <https://github.com/julia-vscode/CSTParser.jl/issues/93>
 """
 function binaryop_to_whereop!(fst::FST, s::State)
     # transform fst[1] to a Where
