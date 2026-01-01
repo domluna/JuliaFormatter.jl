@@ -390,7 +390,7 @@ function is_prev_newline(fst::FST)
 end
 
 """
-    `length_to(x::FST, ntyps; start::Int = 1)`
+    length_to(x::FST, ntyps; start::Int = 1)
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
@@ -671,7 +671,9 @@ function remove_empty_notcode(fst::FST)
 end
 
 """
-`cst` is assumed to be a single child node. Returnss true if the node is of the syntactic form `{...}, [...], or (...)`.
+    unnestable_node(cst::JuliaSyntax.GreenNode)
+
+`cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
 function unnestable_node(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"tuple vect braces bracescat comprehension parens"
