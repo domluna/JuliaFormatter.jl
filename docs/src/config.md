@@ -35,11 +35,11 @@ style = "yas"
 
 Styles choices are:
 
-- "default" (default choice if nothing is specified)
-- "yas"
-- "blue"
-- "sciml"
-- "minimal"
+- `"default"` (default choice if nothing is specified)
+- `"yas"`
+- `"blue"`
+- `"sciml"`
+- `"minimal"`
 
 
 
