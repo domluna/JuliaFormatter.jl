@@ -894,13 +894,13 @@ end
 Appends `n` to `t`.
 
 - `join_lines` if `false` a NEWLINE node will be added and `n` will appear
-on the next line, otherwise it will appear on the same line as the previous
-node (when printing).
+  on the next line, otherwise it will appear on the same line as the previous
+  node (when printing).
 - `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
-of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
-`n` will be added to `t`.
-- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`. In which
-`n` is added to `t` as if `join_lines_based_on_source` was false.
+  of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
+  `n` will be added to `t`.
+- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`.
+  In which `n` is added to `t` as if `join_lines_based_on_source` was false.
 """
 function add_node!(
     t::FST,
