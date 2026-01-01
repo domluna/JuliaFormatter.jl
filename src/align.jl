@@ -38,15 +38,15 @@ end
 
 Group of FST node indices and required metadata to potentially align them.
 
-    - `node_inds`. Indices of FST nodes affected by alignment.
-    - `nodes`. FST nodes affected by alignment.
-    - `line_offsets`. Line offset of the character nodes may be aligned to
-    in the source file.
-    - `lens`. Length of the FST node prior to the alignment character. Used
-    to calculate extra whitespace padding.
-    - `whitespaces`. Number of whitespaces between the alignment character and
-    the prior FST node. If this is > 1 it signifies additional whitespace was
-    manually added by the user since the formatter would only use 0 or 1 whitespaces.
+- `node_inds`. Indices of FST nodes affected by alignment.
+- `nodes`. FST nodes affected by alignment.
+- `line_offsets`. Line offset of the character nodes may be aligned to
+  in the source file.
+- `lens`. Length of the FST node prior to the alignment character. Used
+  to calculate extra whitespace padding.
+- `whitespaces`. Number of whitespaces between the alignment character and
+  the prior FST node. If this is > 1 it signifies additional whitespace was
+  manually added by the user since the formatter would only use 0 or 1 whitespaces.
 """
 struct AlignGroup
     nodes::Vector{FST}

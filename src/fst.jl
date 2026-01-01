@@ -390,7 +390,7 @@ function is_prev_newline(fst::FST)
 end
 
 """
-    `length_to(x::FST, ntyps; start::Int = 1)`
+    length_to(x::FST, ntyps; start::Int = 1)
 
 Returns the length to any node type in `ntyps` based off the `start` index.
 """
@@ -671,7 +671,9 @@ function remove_empty_notcode(fst::FST)
 end
 
 """
-`cst` is assumed to be a single child node. Returnss true if the node is of the syntactic form `{...}, [...], or (...)`.
+    unnestable_node(cst::JuliaSyntax.GreenNode)
+
+`cst` is assumed to be a single child node. Returns true if the node is of the syntactic form `{...}, [...], or (...)`.
 """
 function unnestable_node(cst::JuliaSyntax.GreenNode)
     kind(cst) in KSet"tuple vect braces bracescat comprehension parens"
@@ -782,7 +784,7 @@ for i = 1:10 body end
 
 `always_for_in=nothing` disables this normalization behavior.
 
-- https://github.com/domluna/JuliaFormatter.jl/issues/34
+- <https://github.com/domluna/JuliaFormatter.jl/issues/34>
 """
 function eq_to_in_normalization!(fst::FST, always_for_in::Bool, for_in_replacement::String)
     if fst.typ === Binary
@@ -892,13 +894,13 @@ end
 Appends `n` to `t`.
 
 - `join_lines` if `false` a NEWLINE node will be added and `n` will appear
-on the next line, otherwise it will appear on the same line as the previous
-node (when printing).
+  on the next line, otherwise it will appear on the same line as the previous
+  node (when printing).
 - `max_padding` >= 0 indicates margin of `t` should be based on whether the margin
-of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
-`n` will be added to `t`.
-- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`. In which
-`n` is added to `t` as if `join_lines_based_on_source` was false.
+  of `n` + `max_padding` is greater than the current margin of `t`. Otherwise the margin
+  `n` will be added to `t`.
+- `override_join_lines_based_on_source` is only used when `join_lines_based_on_source` option is `true`.
+  In which `n` is added to `t` as if `join_lines_based_on_source` was false.
 """
 function add_node!(
     t::FST,

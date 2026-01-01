@@ -3,7 +3,7 @@ flattenable(::Nothing) = false
 
 """
 Flattens a binary operation call tree if the operation repeats 2 or more times.
-"a && b && c" will be transformed while "a && b" will not.
+"`a && b && c`" will be transformed while "`a && b`" will not.
 """
 function flatten_binaryopcall(fst::FST; top = true)
     nodes = FST[]
@@ -473,7 +473,7 @@ foo(a::A) where A = body
 
 This transformation converts (2) to (1).
 
-ref https://github.com/julia-vscode/CSTParser.jl/issues/93
+ref <https://github.com/julia-vscode/CSTParser.jl/issues/93>
 """
 function binaryop_to_whereop!(fst::FST, s::State)
     # transform fst[1] to a Where
@@ -671,11 +671,11 @@ end
 """
     separate_kwargs_with_semicolon!(fst::FST)
 
-Ensures keyword arguments are separated by a ";".
+Ensures keyword arguments are separated by a "`;`".
 
 ### Examples
 
-Replace "," with ";".
+Replace "`,`" with "`;`".
 
 ```julia
 a = f(x, y = 3)
