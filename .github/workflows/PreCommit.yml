@@ -23,11 +23,8 @@ jobs:
       - run: mkdir ${HOME}/.julia/environments
       - run: mkdir ${HOME}/.julia/environments/apps
       - run: ls ${HOME}/.julia/
-      - run: ls .
-      - run: julia -e 'println(pwd())'
-      - run: julia -e 'println(readdir("."))'
       - name: Install local JuliaFormatter as Pkg app
-        run: julia -e 'using Pkg; Pkg.Apps.develop(; path=".")'
+        run: julia -e 'using Pkg; Pkg.Apps.develop(; path=pwd())'
       - uses: astral-sh/setup-uv@v7
       - run: uv tool install pre-commit
       - run: pre-commit install
