@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - master
+      - clihook2
     tags: ['*']
   pull_request:
   workflow_dispatch:
@@ -22,6 +23,9 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Install local JuliaFormatter as Pkg app
         run: julia -e 'using Pkg; Pkg.Apps.develop(; path=".")'
+      - run: echo ${HOME}/.julia/bin/
+      - run: ls ${HOME}/.julia/bin/
+      - run: ls /home/runner/.julia/bin/
       - uses: astral-sh/setup-uv@v7
       - run: uv tool install pre-commit
       - run: pre-commit install
