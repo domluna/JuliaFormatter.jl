@@ -21,6 +21,7 @@ jobs:
       - uses: julia-actions/setup-julia@v2
       - uses: julia-actions/cache@v2
       - run: mkdir ${HOME}/.julia/environments
+      - run: mkdir ${HOME}/.julia/environments/apps
       - run: ls ${HOME}/.julia/
       - name: Install local JuliaFormatter as Pkg app
         run: julia -e 'using Pkg; Pkg.Apps.develop(; path=".")'
