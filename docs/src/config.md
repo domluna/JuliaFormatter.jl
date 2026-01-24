@@ -35,11 +35,11 @@ style = "yas"
 
 Styles choices are:
 
-- "default" (default choice if nothing is specified)
-- "yas"
-- "blue"
-- "sciml"
-- "minimal"
+- `"default"` (default choice if nothing is specified)
+- `"yas"`
+- `"blue"`
+- `"sciml"`
+- `"minimal"`
 
 
 
@@ -79,7 +79,7 @@ and call `format("dir")`, `code.jl` and `sub_code2.jl` will be formatted accordi
 ## [Ignoring specific files and directories](@id ignore)
 
 If there is an entry in `.JuliaFormatter.toml` with
-```
+```toml
 ignore = ["file.jl", "directory", "file_*.jl"]
 ```
 then all of these files will be reported as already formatted: `./file.jl`,

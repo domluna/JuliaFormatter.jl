@@ -166,7 +166,7 @@ normalize_line_ending(s::AbstractString, replacer = WINDOWS_TO_UNIX) = replace(s
 Formats a Julia source passed in as a string, returning the formatted
 code as another string.
 
-See https://domluna.github.io/JuliaFormatter.jl/dev/#Formatting-Options for details on available options.
+See [Formatting Options](@ref "Formatting-Options") for details on available options.
 """
 function format_text(text::AbstractString; style::AbstractStyle = DefaultStyle(), kwargs...)
     return format_text(text, style; kwargs...)
@@ -338,7 +338,7 @@ const CONFIG_FILE_NAME = ".JuliaFormatter.toml"
 
 Formats the contents of `filename` assuming it's a `.jl`, `.md`, `.jmd` or `.qmd` file.
 
-See https://domluna.github.io/JuliaFormatter.jl/dev/#File-Options for details on available options.
+See [File Options](@ref "File-Options") for details on available options.
 
 ## Output
 
@@ -378,7 +378,7 @@ See [`format_file`](@ref) and [`format_text`](@ref) for a description of the opt
 This function will look for `.JuliaFormatter.toml` in the location of the file being
 formatted, and searching *up* the file tree until a config file is (or isn't) found.
 When found, the configurations in the file will overwrite the given `options`.
-See [Configuration File](@ref) for more details.
+See [Configuration File](@ref config) for more details.
 
 ### Output
 
