@@ -5,7 +5,7 @@ repos:
   hooks:
   - id: julia-formatter
     name: "Julia Formatter"
-    entry: "${HOME}/.julia/bin/jlfmt --inplace"
+    entry: "jlfmt --inplace"
     pass_filenames: true
     always_run: false
     types: [file]
