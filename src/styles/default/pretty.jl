@@ -192,6 +192,9 @@ function pretty(
         p_continue(style, node, s, ctx, lineage)
     elseif k === K"inert"
         p_inert(style, node, s, ctx, lineage)
+    elseif k === K"Placeholder"
+        # Placeholders have zero span and don't render any text
+        FST(NONE, 0, 0, 0, "")
     else
         @warn "unknown node" k node cursor_loc(s)
         if is_leaf(node)
