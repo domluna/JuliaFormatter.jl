@@ -1860,7 +1860,7 @@ function p_binaryopcall(
             end
             after_op = true
             # elseif (kind(c) === opkind || kind(c) === K".") && !!is_leaf(c)
-        elseif JuliaSyntax.is_operator(c) && !!is_leaf(c) && i in op_indices
+        elseif (JuliaSyntax.is_operator(c) || (has_dot && kind(c) === K"Identifier")) && !!is_leaf(c) && i in op_indices
             # there are some weird cases where we can assign an operator a value so that
             # the arguments are operators as well.
             #
