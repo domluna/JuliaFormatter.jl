@@ -29,7 +29,7 @@ function n_tuple!(
     if has_closer
         fst[end].indent = fst.indent
     end
-    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
+    if !(fst.typ in (TupleN, Iteration, Parameters)) || has_closer
         fst.indent += s.opts.indent
     end
 
@@ -49,7 +49,7 @@ function n_tuple!(
         args_diff_line = if src_diff_line
             # first arg
             first_arg_idx =
-                if fst.typ in (TupleN, CartesianIterator, Parameters) && !has_closer
+                if fst.typ in (TupleN, Iteration, Parameters) && !has_closer
                     1
                 elseif is_opener(fst[1])
                     # (...)
@@ -206,7 +206,7 @@ function n_bracescat!(
 )
     n_tuple!(bs, fst, s, lineage)
 end
-function n_cartesian_iterator!(
+function n_iteration!(
     bs::BlueStyle,
     fst::FST,
     s::State,
