@@ -135,7 +135,7 @@ function p_macrocall(
 )
     style = getstyle(ss)
     t = FST(MacroCall, nspaces(s))
-    if !haschildren(cst)
+    if !!is_leaf(cst)
         return t
     end
 
@@ -152,7 +152,7 @@ function p_macrocall(
         idx === nothing ? -1 : findnext(a -> !JuliaSyntax.is_whitespace(a), childs, idx + 1)
 
     # https://github.com/SciML/SciMLStyle?tab=readme-ov-file#macros
-    n_kw_args = count(a -> kind(a) === K"=" && haschildren(a), childs)
+    n_kw_args = count(a -> kind(a) === K"=" && !is_leaf(a), childs)
     nospace = n_kw_args > 1
 
     for (i, a) in enumerate(childs)

@@ -111,7 +111,7 @@ function _n_tuple!(
     if has_closer
         fst[end].indent = fst.indent
     end
-    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
+    if !(fst.typ in (TupleN, Iteration, Parameters)) || has_closer
         fst.indent += s.opts.indent
     end
 

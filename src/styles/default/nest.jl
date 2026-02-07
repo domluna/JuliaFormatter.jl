@@ -108,8 +108,8 @@ function nest!(
         n_typedvcat!(style, fst, s, lineage)
     elseif fst.typ === TupleN && length(fst.nodes) > 0
         n_tuple!(style, fst, s, lineage)
-    elseif fst.typ === CartesianIterator
-        n_cartesian_iterator!(style, fst, s, lineage)
+    elseif fst.typ === Iteration
+        n_iteration!(style, fst, s, lineage)
     elseif fst.typ === TupleBlock
         n_tupleblock!(style, fst, s, lineage)
     elseif fst.typ === Parameters
@@ -338,7 +338,7 @@ function n_tuple!(
     if has_closer
         fst[end].indent = fst.indent
     end
-    if !(fst.typ in (TupleN, CartesianIterator, Parameters)) || has_closer
+    if !(fst.typ in (TupleN, Iteration, Parameters)) || has_closer
         fst.indent += s.opts.indent
     end
 
@@ -408,7 +408,7 @@ function n_tuple!(
     return nested
 end
 
-function n_cartesian_iterator!(
+function n_iteration!(
     ds::AbstractStyle,
     fst::FST,
     s::State,
