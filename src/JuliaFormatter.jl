@@ -7,7 +7,7 @@ end
 
 using PrecompileTools: @setup_workload, @compile_workload
 using JuliaSyntax
-using JuliaSyntax: children, span, @K_str, kind, @KSet_str
+using JuliaSyntax: haschildren, children, span, @K_str, kind, @KSet_str
 using TOML: parsefile
 using Glob
 import CommonMark: block_modifier

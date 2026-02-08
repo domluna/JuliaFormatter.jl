@@ -209,7 +209,7 @@ function n_bracescat!(
 )
     n_tuple!(ys, fst, s, lineage)
 end
-function n_iteration!(
+function n_cartesian_iterator!(
     ys::YASStyle,
     fst::FST,
     s::State,
