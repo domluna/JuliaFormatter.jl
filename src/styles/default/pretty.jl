@@ -32,9 +32,9 @@ function pretty(
     style = getstyle(ds)
     push!(lineage, (k, is_iterable(node), is_assignment(node)))
 
-    ret = if k == K"Identifier" && !haschildren(node)
+    ret = if k == K"Identifier" && is_leaf(node)
         p_identifier(style, node, s, ctx, lineage)
-    elseif JuliaSyntax.is_operator(node) && !haschildren(node)
+    elseif JuliaSyntax.is_operator(node) && is_leaf(node)
         p_operator(style, node, s, ctx, lineage)
     elseif k == K"Comment"
         p_comment(style, node, s, ctx, lineage)
@@ -42,9 +42,9 @@ function pretty(
         p_whitespace(style, node, s, ctx, lineage)
     elseif k == K";"
         p_semicolon(style, node, s, ctx, lineage)
-    elseif is_punc(node) && !haschildren(node)
+    elseif is_punc(node) && is_leaf(node)
         p_punctuation(style, node, s, ctx, lineage)
-    elseif JuliaSyntax.is_keyword(node) && !haschildren(node)
+    elseif JuliaSyntax.is_keyword(node) && is_leaf(node)
         p_keyword(style, node, s, ctx, lineage)
     elseif k in KSet"string cmdstring char"
         p_stringh(style, node, s, ctx, lineage)
@@ -52,7 +52,7 @@ function pretty(
         p_literal(style, node, s, ctx, lineage)
     elseif k == K"as"
         p_as(style, node, s, ctx, lineage)
-    elseif k === K"." && haschildren(node)
+    elseif k === K"." && !is_leaf(node)
         p_accessor(style, node, s, ctx, lineage)
     elseif k === K"block" && length(children(node)) > 1 && kind(node[1]) === K"begin"
         p_begin(style, node, s, ctx, lineage)
@@ -60,8 +60,8 @@ function pretty(
         p_block(style, node, s, ctx, lineage)
     elseif k === K"function"
         p_functiondef(style, node, s, ctx, lineage)
-    elseif k in KSet"MacroName StringMacroName CmdMacroName core_@cmd"
-        p_macroname(style, node, s, ctx, lineage)
+    elseif k in KSet"macrocall"
+        p_macrocall(style, node, s, ctx, lineage)
     elseif k === K"macro"
         p_macro(style, node, s, ctx, lineage)
     elseif k === K"struct" && !JuliaSyntax.has_flags(node, JuliaSyntax.MUTABLE_FLAG)
@@ -84,9 +84,9 @@ function pretty(
         p_if(style, node, s, ctx, lineage)
     elseif k === K"toplevel"
         p_toplevel(style, node, s, ctx, lineage)
-    elseif k === K"quote" && haschildren(node) && kind(node[1]) === K":"
+    elseif k === K"quote" && !is_leaf(node) && kind(node[1]) === K":"
         p_quotenode(style, node, s, ctx, lineage)
-    elseif k === K"quote" && haschildren(node)
+    elseif k === K"quote" && !is_leaf(node)
         p_quote(style, node, s, ctx, lineage)
     elseif k === K"let"
         p_let(style, node, s, ctx, lineage)
@@ -102,7 +102,7 @@ function pretty(
         p_bracescat(style, node, s, ctx, lineage)
     elseif k === K"tuple"
         p_tuple(style, node, s, ctx, lineage)
-    elseif k === K"cartesian_iterator"
+    elseif k === K"iteration"
         p_cartesian_iterator(style, node, s, ctx, lineage)
     elseif k === K"parens"
         p_invisbrackets(style, node, s, ctx, lineage)
@@ -112,11 +112,14 @@ function pretty(
         p_macrostr(style, node, s, ctx, lineage)
     elseif k === K"doc"
         p_globalrefdoc(style, node, s, ctx, lineage)
+        # Treat them as if they were simple identifiers.
+    elseif k in KSet"MacroName StringMacroName CmdMacroName"
+        p_identifier(style, node, s, ctx, lineage)
     elseif k === K"macrocall"
         p_macrocall(style, node, s, ctx, lineage)
     elseif k === K"where"
         p_whereopcall(style, node, s, ctx, lineage)
-    elseif k === K"?" && haschildren(node)
+    elseif k === K"?" && !is_leaf(node)
         p_conditionalopcall(style, node, s, ctx, lineage)
     elseif is_binary(node)
         p_binaryopcall(style, node, s, ctx, lineage)
@@ -128,7 +131,7 @@ function pretty(
         p_call(style, node, s, ctx, lineage)
     elseif k === K"comparison"
         p_comparison(style, node, s, ctx, lineage)
-    elseif JuliaSyntax.is_operator(node) && haschildren(node)
+    elseif JuliaSyntax.is_operator(node) && !is_leaf(node)
         p_binaryopcall(style, node, s, ctx, lineage)
     elseif k in KSet"dotcall call"
         p_binaryopcall(style, node, s, ctx, lineage)
@@ -332,7 +335,7 @@ function p_juxtapose(
 )
     style = getstyle(ds)
     t = FST(Juxtapose, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -352,7 +355,7 @@ function p_continue(
 )
     style = getstyle(ds)
     t = FST(Continue, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -372,7 +375,7 @@ function p_break(
 )
     style = getstyle(ds)
     t = FST(Break, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -393,7 +396,7 @@ function p_inert(
 )
     style = getstyle(ds)
     t = FST(Inert, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -413,7 +416,7 @@ function p_macrostr(
 )
     style = getstyle(ds)
     t = FST(MacroStr, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -486,7 +489,7 @@ function p_accessor(
 )
     style = getstyle(ds)
     t = FST(Accessor, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -506,10 +509,10 @@ function p_stringh(
 )
     style = getstyle(ds)
     loc = cursor_loc(s)
-    if !haschildren(cst)
+    if is_leaf(cst)
         return FST(StringN, loc[2] - 1)
     end
-    loc2 = cursor_loc(s, s.offset+span(cst)-1)
+    loc2 = cursor_loc(s, s.offset + span(cst) - 1)
 
     val = getsrcval(s.doc, s.offset:(s.offset+span(cst)-1))
     startline = loc[1]
@@ -561,7 +564,7 @@ function p_globalrefdoc(
 )
     style = getstyle(ds)
     t = FST(GlobalRefDoc, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -595,7 +598,7 @@ function p_macrocall(
     style = getstyle(ds)
     t = FST(MacroCall, nspaces(s))
 
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -617,20 +620,23 @@ function p_macrocall(
     ctx = newctx(ctx; can_separate_kwargs = false)
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s, ctx, lineage)::FST
-        if JuliaSyntax.is_macro_name(a)
+        # **THIS IS THE MAIN FIX**
+        if i == 1
+            # The first child is always the name. Only apply the @ sign
+            # transformation if it's a dotted expression (qualified name).
+            if kind(a) === K"."
+                n = move_at_sign_to_the_end(n, s)
+            end
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K"("
+            # This correctly joins the parenthesis to the name with no space.
             add_node!(t, n, s; join_lines = true)
             if nest
                 add_node!(t, Placeholder(0), s)
-            else
-                false
             end
         elseif kind(a) === K")"
             if nest
                 add_node!(t, Placeholder(0), s)
-            else
-                false
             end
             add_node!(t, n, s; join_lines = true)
         elseif kind(a) === K","
@@ -641,35 +647,20 @@ function p_macrocall(
         elseif JuliaSyntax.is_whitespace(a)
             add_node!(t, n, s; join_lines = true)
         elseif is_macroblock
-            if n.typ === MacroBlock && t[end].typ === WHITESPACE
-                t[end] = Placeholder(length(t[end].val))
-            end
-
             max_padding = is_block(n) ? 0 : -1
             join_lines = t.endline == n.startline
-
             if join_lines && (i > 1 && kind(childs[i-1]) in KSet"NewlineWs Whitespace") ||
                next_node_is(nn -> kind(nn) in KSet"NewlineWs Whitespace", childs[i])
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, n, s; join_lines, max_padding)
         else
-            if has_closer
-                add_node!(t, n, s; join_lines = true)
-            else
-                padding = is_block(n) ? 0 : -1
-                add_node!(t, n, s; join_lines = true, max_padding = padding)
-            end
+            # Default case for other arguments.
+            add_node!(t, n, s; join_lines = true)
         end
     end
-
-    # move placement of @ to the end
-    #
-    # @Module.macro -> Module.@macro
-    t[1] = move_at_sign_to_the_end(t[1], s)
     t
 end
-
 # Block
 # length Block is the length of the longest expr
 function p_block(
@@ -681,7 +672,7 @@ function p_block(
 )
     style = getstyle(ds)
     t = FST(Block, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -730,7 +721,7 @@ function p_block(
         elseif single_line
             if kind(a) in KSet", ;"
                 add_node!(t, n, s; join_lines = true)
-                if needs_placeholder(childs, i+1, K")")
+                if needs_placeholder(childs, i + 1, K")")
                     add_node!(t, Placeholder(1), s)
                 end
             else
@@ -795,7 +786,7 @@ function p_abstract(
 )
     style = getstyle(ds)
     t = FST(Abstract, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -818,7 +809,7 @@ function p_primitive(
 )
     style = getstyle(ds)
     t = FST(Primitive, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -840,7 +831,7 @@ function p_var(
 )
     style = getstyle(ds)
     t = FST(NonStdIdentifier, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -860,7 +851,7 @@ function p_functiondef(
 )
     style = getstyle(ds)
     t = FST(FunctionN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -887,7 +878,7 @@ function p_functiondef(
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s; join_lines = true)
             end
-        elseif kind(c) === K"block" && haschildren(c)
+        elseif kind(c) === K"block" && !is_leaf(c)
             block_has_contents =
                 length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
 
@@ -931,7 +922,7 @@ function p_struct(
 )
     style = getstyle(ds)
     t = FST(Struct, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -958,7 +949,7 @@ function p_struct(
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s; join_lines = true)
             end
-        elseif kind(c) === K"block" && haschildren(c)
+        elseif kind(c) === K"block" && !is_leaf(c)
             block_has_contents =
                 length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
             s.indent += s.opts.indent
@@ -985,7 +976,7 @@ function p_mutable(
 )
     style = getstyle(ds)
     t = FST(Mutable, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1012,7 +1003,7 @@ function p_mutable(
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s; join_lines = true)
             end
-        elseif kind(c) === K"block" && haschildren(c)
+        elseif kind(c) === K"block" && !is_leaf(c)
             block_has_contents =
                 length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
             s.indent += s.opts.indent
@@ -1039,7 +1030,7 @@ function p_module(
 )
     style = getstyle(ds)
     t = FST(ModuleN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1049,7 +1040,7 @@ function p_module(
     indent_module = s.opts.indent_submodule && from_module
 
     for c in childs
-        if kind(c) in KSet"module baremodule" && !haschildren(c)
+        if kind(c) in KSet"module baremodule" && is_leaf(c)
             n = pretty(style, c, s, ctx, lineage)
             add_node!(t, n, s; join_lines = true)
             add_node!(t, Whitespace(1), s)
@@ -1069,7 +1060,7 @@ function p_module(
                 add_node!(t, Whitespace(1), s)
                 add_node!(t, n, s; join_lines = true)
             end
-        elseif kind(c) === K"block" && haschildren(c)
+        elseif kind(c) === K"block" && !is_leaf(c)
             block_has_contents =
                 length(filter(cc -> !JuliaSyntax.is_whitespace(cc), children(c))) > 0
 
@@ -1135,7 +1126,7 @@ function p_const(
 )
     style = getstyle(ds)
     t = FST(Const, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1143,7 +1134,7 @@ function p_const(
         if kind(c) === K","
         elseif !JuliaSyntax.is_whitespace(c) && !JuliaSyntax.is_keyword(c)
             add_node!(t, Whitespace(1), s)
-        elseif !JuliaSyntax.is_whitespace(c) && JuliaSyntax.is_keyword(c) && haschildren(c)
+        elseif !JuliaSyntax.is_whitespace(c) && JuliaSyntax.is_keyword(c) && !is_leaf(c)
             add_node!(t, Whitespace(1), s)
         end
         add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -1196,7 +1187,7 @@ function p_toplevel(
 )
     style = getstyle(ds)
     t = FST(TopLevel, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1220,7 +1211,7 @@ function p_begin(
 )
     style = getstyle(ds)
     t = FST(Begin, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1259,7 +1250,7 @@ function p_quote(
 )
     style = getstyle(ds)
     t = FST(Quote, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1287,7 +1278,7 @@ function p_quotenode(
 )
     style = getstyle(ds)
     t = FST(Quotenode, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1325,7 +1316,7 @@ function p_let(
 )
     style = getstyle(ds)
     t = FST(Let, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
     block_id = 1
@@ -1338,7 +1329,7 @@ function p_let(
             s.indent += s.opts.indent
             if block_id == 1
                 has_let_args =
-                    haschildren(c) &&
+                    !is_leaf(c) &&
                     any(n -> kind(n) === K"," || is_iterable(n), children(c))
                 add_node!(
                     t,
@@ -1402,14 +1393,14 @@ function p_for(
 )
     style = getstyle(ds)
     t = FST(For, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
     ends_in_iterable = false
 
     for c in children(cst)
-        if kind(c) in KSet"for while" && !haschildren(c)
+        if kind(c) in KSet"for while" && is_leaf(c)
             add_node!(t, pretty(style, c, s), s)
         elseif kind(c) === K"end"
             add_node!(t, pretty(style, c, s), s)
@@ -1426,7 +1417,7 @@ function p_for(
             add_node!(t, pretty(style, c, s, ctx, lineage), s)
         else
             add_node!(t, Whitespace(1), s)
-            n = if kind(c) === K"cartesian_iterator"
+            n = if kind(c) === K"iteration"
                 s.indent += s.opts.indent
                 n = pretty(style, c, s, newctx(ctx; from_for = true), lineage)
                 s.indent -= s.opts.indent
@@ -1457,7 +1448,7 @@ function p_cartesian_iterator(
 )
     style = getstyle(ds)
     t = FST(CartesianIterator, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1505,13 +1496,13 @@ function p_do(
 )
     style = getstyle(ds)
     t = FST(Do, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
     childs = children(cst)
     for (i, c) in enumerate(childs)
-        if kind(c) === K"do" && !haschildren(c)
+        if kind(c) === K"do" && is_leaf(c)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             if !next_node_is(K"NewlineWs", childs[i+1])
@@ -1544,7 +1535,7 @@ function p_try(
 )
     style = getstyle(ds)
     t = FST(Try, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1559,7 +1550,7 @@ function p_try(
     childs = children(cst)
     for c in childs
         if kind(c) in KSet"try catch finally else"
-            if !haschildren(c)
+            if is_leaf(c)
                 if kind(c) in KSet"catch finally else"
                     s.indent -= s.opts.indent
                 end
@@ -1583,7 +1574,7 @@ function p_try(
             )
         elseif !JuliaSyntax.is_whitespace(c)
             # "catch" vs "catch ..."
-            if !(kind(cst) === K"catch" && any(n -> kind(n) === K"false", childs))
+            if !(kind(cst) === K"catch" && any(n -> kind(n) === K"Bool", childs))
                 add_node!(t, Whitespace(1), s)
             end
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
@@ -1604,13 +1595,13 @@ function p_if(
 )
     style = getstyle(ds)
     t = FST(If, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
     for c in children(cst)
         if kind(c) in KSet"if elseif else"
-            if !haschildren(c)
+            if is_leaf(c)
                 add_node!(t, pretty(style, c, s, ctx, lineage), s; max_padding = 0)
             else
                 len = length(t)
@@ -1676,7 +1667,7 @@ function p_kw(
 )
     style = getstyle(ds)
     t = FST(Kw, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1724,7 +1715,7 @@ function p_binaryopcall(
 )
     style = getstyle(ds)
     t = FST(Binary, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1836,7 +1827,7 @@ function p_binaryopcall(
         )
 
         is_dot = kind(c) === K"."
-        if is_dot && haschildren(c) && length(children(c)) == 2
+        if is_dot && !is_leaf(c) && length(children(c)) == 2
             # [.]
             #   .
             #   <=
@@ -1856,8 +1847,8 @@ function p_binaryopcall(
                 end
             end
             after_op = true
-            # elseif (kind(c) === opkind || kind(c) === K".") && !haschildren(c)
-        elseif JuliaSyntax.is_operator(c) && !haschildren(c) && i in op_indices
+            # elseif (kind(c) === opkind || kind(c) === K".") && is_leaf(c)
+        elseif JuliaSyntax.is_operator(c) && is_leaf(c) && i in op_indices
             # there are some weird cases where we can assign an operator a value so that
             # the arguments are operators as well.
             #
@@ -1868,7 +1859,7 @@ function p_binaryopcall(
             if ns > 0 && i > 1
                 if kind(childs[i-1]) !== K"."  # Don't add space if previous was a dot
                     add_node!(t, Whitespace(ns), s)
-                elseif kind(childs[i-1]) === K"." && haschildren(childs[i-1])  # Don't add space if previous was a dot
+                elseif kind(childs[i-1]) === K"." && !is_leaf(childs[i-1])  # Don't add space if previous was a dot
                     add_node!(t, Whitespace(ns), s)
                 end
             end
@@ -1952,7 +1943,7 @@ function p_whereopcall(
 )
     style = getstyle(ds)
     t = FST(Where, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -1964,7 +1955,7 @@ function p_whereopcall(
         )
 
     childs = children(cst)
-    where_idx = findfirst(c -> kind(c) === K"where" && !haschildren(c), childs)
+    where_idx = findfirst(c -> kind(c) === K"where" && is_leaf(c), childs)
     curly_ctx = if where_idx === nothing
         ctx.from_typedef
     else
@@ -1980,7 +1971,7 @@ function p_whereopcall(
 
     after_where = false
     for (i, a) in enumerate(childs)
-        if kind(a) === K"where" && !haschildren(a)
+        if kind(a) === K"where" && is_leaf(a)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
@@ -2030,12 +2021,12 @@ function p_conditionalopcall(
 )
     style = getstyle(ds)
     t = FST(Conditional, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
     for c in children(cst)
-        if kind(c) in KSet"? :" && !haschildren(c)
+        if kind(c) in KSet"? :" && is_leaf(c)
             add_node!(t, Whitespace(1), s)
             add_node!(t, pretty(style, c, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Placeholder(1), s)
@@ -2056,7 +2047,7 @@ function p_unaryopcall(
 )
     style = getstyle(ds)
     t = FST(Unary, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2083,7 +2074,7 @@ function p_curly(
 )
     style = getstyle(ds)
     t = FST(Curly, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2132,7 +2123,7 @@ function p_call(
 )
     style = getstyle(ds)
     t = FST(Call, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2146,7 +2137,7 @@ function p_call(
     childs = children(cst)
     for (i, a) in enumerate(childs)
         k = kind(a)
-        n = if k == K"=" && haschildren(a)
+        n = if k == K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -2191,7 +2182,7 @@ function p_invisbrackets(
 )
     style = getstyle(ds)
     t = FST(Brackets, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2199,7 +2190,7 @@ function p_invisbrackets(
     nest = if length(args) > 0
         arg = args[1]
         if is_block(arg) ||
-           (kind(arg) === K"generator" && haschildren(arg) && is_block(arg[1]))
+           (kind(arg) === K"generator" && !is_leaf(arg) && is_block(arg[1]))
             t.nest_behavior = AlwaysNest
         end
         if !ctx.nonest && !s.opts.disallow_single_arg_nesting
@@ -2252,7 +2243,7 @@ function p_tupleblock(
 )
     style = getstyle(ds)
     t = FST(TupleBlock, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2265,7 +2256,7 @@ function p_tupleblock(
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = if kind(a) === K"=" && haschildren(a)
+        n = if kind(a) === K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -2301,7 +2292,7 @@ function p_tuple(
 )
     style = getstyle(ds)
     t = FST(TupleN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2314,7 +2305,7 @@ function p_tuple(
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = if kind(a) === K"=" && haschildren(a)
+        n = if kind(a) === K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -2360,7 +2351,7 @@ function p_braces(
 )
     style = getstyle(ds)
     t = FST(Braces, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2411,7 +2402,7 @@ function p_bracescat(
 )
     style = getstyle(ds)
     t = FST(BracesCat, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2461,7 +2452,7 @@ function p_vect(
 )
     style = getstyle(ds)
     t = FST(Vect, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2510,7 +2501,7 @@ function p_comprehension(
 )
     style = getstyle(ds)
     t = FST(Comprehension, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2523,7 +2514,7 @@ function p_comprehension(
 
     if is_block(arg)
         t.nest_behavior = AlwaysNest
-    elseif kind(arg) === K"generator" && haschildren(arg)
+    elseif kind(arg) === K"generator" && !is_leaf(arg)
         idx = findfirst(n -> !JuliaSyntax.is_whitespace(kind(n)), children(arg))
         if !isnothing(idx) && is_block(arg[idx])
             t.nest_behavior = AlwaysNest
@@ -2567,7 +2558,7 @@ function p_parameters(
 )
     style = getstyle(ds)
     t = FST(Parameters, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2575,7 +2566,7 @@ function p_parameters(
 
     childs = children(cst)
     for (i, a) in enumerate(childs)
-        n = if kind(a) === K"=" && haschildren(a)
+        n = if kind(a) === K"=" && !is_leaf(a)
             p_kw(style, a, s, ctx, lineage)
         else
             pretty(style, a, s, ctx, lineage)
@@ -2602,7 +2593,7 @@ function p_import(
 )
     style = getstyle(ds)
     t = FST(Import, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2610,7 +2601,7 @@ function p_import(
         if kind(a) in KSet"import export public using"
             add_node!(t, pretty(style, a, s, ctx, lineage), s; join_lines = true)
             add_node!(t, Whitespace(1), s)
-        elseif kind(a) === K":" && haschildren(a)
+        elseif kind(a) === K":" && !is_leaf(a)
             nodes = children(a)
             for n in nodes
                 add_node!(t, pretty(style, n, s, ctx, lineage), s; join_lines = true)
@@ -2675,7 +2666,7 @@ function p_importpath(
 )
     style = getstyle(ds)
     t = FST(ImportPath, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2695,7 +2686,7 @@ function p_as(
 )
     style = getstyle(ds)
     t = FST(As, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2722,7 +2713,7 @@ function p_ref(
 )
     style = getstyle(ds)
     t = FST(RefN, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2772,7 +2763,7 @@ function p_vcat(
 )
     style = getstyle(ds)
     t = FST(Vcat, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2854,7 +2845,7 @@ function p_hcat(
 )
     style = getstyle(ds)
     t = FST(Hcat, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2923,7 +2914,7 @@ function p_row(
 )
     style = getstyle(ds)
     t = FST(Row, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2973,7 +2964,7 @@ function p_generator(
 )
     style = getstyle(ds)
     t = FST(Generator, nspaces(s))
-    if !haschildren(cst)
+    if is_leaf(cst)
         return t
     end
 
@@ -2994,7 +2985,7 @@ function p_generator(
 
     for (i, a) in enumerate(childs)
         n = pretty(style, a, s, newctx(ctx; from_for = has_for_kw), lineage)
-        if JuliaSyntax.is_keyword(a) && !haschildren(a)
+        if JuliaSyntax.is_keyword(a) && is_leaf(a)
             # for keyword can only be on the following line
             # if this expression is within an iterable expression
             if kind(a) === K"for" && from_iterable
