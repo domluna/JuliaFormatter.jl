@@ -31,7 +31,7 @@ function options(::SciMLStyle)
         trailing_comma = false,
         trailing_zero = true,
         indent_submodule = false,
-        separate_kwargs_with_semicolon = false,
+        separate_kwargs_with_semicolon = true,
         surround_whereop_typeparameters = true,
         variable_call_indent = [],
         yas_style_nesting = false,
